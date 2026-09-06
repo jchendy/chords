@@ -19,8 +19,9 @@ hi-hat click.
   every root-note location for the progression (colour-coded, legend gives
   each root's roman numeral); CAGED chords — the five chord shapes, outlined
   and colour-coded, every note named, shared notes split-coloured; and CAGED
-  pentatonic — the full major/minor pentatonic scale with scale degrees in
-  the dots and the chord-shape outlines drawn through the chord tones
+  pentatonic — the full major/minor pentatonic scale, every note coloured by
+  the CAGED box it belongs to (seam notes split-coloured), scale degrees in
+  the dots, and the chord-shape outlines drawn through the chord tones
 
 ## Usage
 

@@ -15,9 +15,9 @@
     --line: #35322e;
     --ink: #eceae4;
     --muted: #9a9284;
-    --accent: #6fb3a3;
-    --accent-hi: #8cc6b8;
-    --on-accent: #16211e;
+    --accent: #8f7fd1;
+    --accent-hi: #a99ae0;
+    --on-accent: #1b1630;
   }
 
   *{ box-sizing: border-box; }
@@ -39,7 +39,7 @@
 
   .app{
     width:100%;
-    max-width: 520px;
+    max-width: none;
     display:flex;
     flex-direction:column;
     gap: 16px;
@@ -197,12 +197,34 @@
   }
 
   .key{
-    margin: 0 0 26px;
+    margin: 0 0 14px;
     font-family: 'Fraunces', Georgia, serif;
     font-weight: 500;
     font-style: italic;
     font-size: clamp(1.05rem, 3.5vw, 1.3rem);
     color: var(--muted);
+  }
+
+  .playmini{
+    -webkit-appearance:none;
+    appearance:none;
+    cursor:pointer;
+    display:inline-block;
+    margin: 0 0 24px;
+    font-family: inherit;
+    font-weight:600;
+    font-size: 0.82rem;
+    color: var(--on-accent);
+    background: var(--accent);
+    border: none;
+    border-radius: 7px;
+    padding: 7px 20px;
+    transition: background 0.15s ease;
+  }
+  .playmini:hover{ background: var(--accent-hi); }
+  .playmini:focus-visible{
+    outline: 2px solid var(--accent-hi);
+    outline-offset: 2px;
   }
 
   .measure-readout{
@@ -265,7 +287,7 @@
 
   /* ---- fretboard ---- */
   .fret-scroll{ overflow-x:auto; margin-top: 6px; }
-  .fret-scroll svg{ display:block; width:100%; min-width: 440px; height:auto; }
+  .fret-scroll svg{ display:block; width:100%; min-width: 440px; max-width: 820px; margin: 0 auto; height:auto; }
 
   .fret-string, .fret-wire{ stroke: var(--line); stroke-width: 1; }
   .fret-nut{ stroke: var(--muted); stroke-width: 3; }
@@ -331,6 +353,7 @@
 
   <section class="panel display">
     <p class="key" id="keyReadout">Key of —</p>
+    <button id="playBtn2" class="playmini" type="button">Play</button>
     <div class="chords" id="chords"></div>
     <p class="measure-readout" id="measureReadout"></p>
   </section>
@@ -349,7 +372,7 @@
       <div class="segmented" id="cagedChordGroup"></div>
     </div>
     <div class="fret-scroll">
-      <svg id="fretboard" viewBox="0 0 520 196" role="img" aria-label="Guitar fretboard"></svg>
+      <svg id="fretboard" viewBox="0 0 520 172" role="img" aria-label="Guitar fretboard"></svg>
     </div>
     <div class="caged-legend" id="cagedLegend"></div>
   </section>
@@ -651,6 +674,7 @@
   const tempoInput = document.getElementById('tempo');
   const tempoVal = document.getElementById('tempoVal');
   const playBtn = document.getElementById('playBtn');
+  const playBtn2 = document.getElementById('playBtn2');
   const commonToggle = document.getElementById('commonToggle');
   const clickToggle = document.getElementById('clickToggle');
   const countInToggle = document.getElementById('countInToggle');
@@ -775,23 +799,67 @@
     });
   }
 
-  // polylines through each CAGED chord shape's tones (root / 3rd / 5th only)
-  function cagedShapeLines(rootPc, shapeSet){
-    const lines = [];
-    const rendered = new Set();
+  // every CAGED shape placement that fits on the neck, with its played cells
+  function cagedPlacements(rootPc, shapeSet){
+    const out = [];
     CAGED_ORDER.forEach(name => {
       const shape = shapeSet[name];
       const r0 = ((rootPc - STRING_TUNING[shape.ref]) % 12 + 12) % 12;
       [r0, r0 + 12].forEach(r => {
         const frets = shape.offs.map(o => o === null ? null : r + o);
-        if (frets.some(x => x !== null && (x < 0 || x > FRET_COUNT))) return;
-        rendered.add(name);
+        if (frets.some(f => f !== null && (f < 0 || f > FRET_COUNT))) return;
         const cells = [];
-        frets.forEach((x, s) => { if (x !== null) cells.push({ string: s, fret: x }); });
-        if (cells.length > 1) lines.push({ color: CAGED_COLORS[name], cells });
+        frets.forEach((f, s) => { if (f !== null) cells.push({ string: s, fret: f }); });
+        const fs = cells.map(c => c.fret);
+        out.push({
+          name, cells,
+          meanFret: fs.reduce((a, b) => a + b, 0) / fs.length,
+          fretMin: Math.min(...fs),
+          fretMax: Math.max(...fs),
+        });
       });
     });
-    return { lines, shapes: CAGED_ORDER.filter(n => rendered.has(n)) };
+    return out;
+  }
+
+  // pentatonic "box" templates, one per CAGED position: two fret offsets per
+  // string (index 0 = high e ... 5 = low E) relative to the box's anchor fret
+  // on the low-E string. `a` is that anchor for a root pitch-class of 0.
+  const PENTA_MAJOR = {
+    E: { a: 8,  offs: [[0, 2], [0, 2], [-1, 1], [-1, 2], [-1, 2], [0, 2]] },
+    D: { a: 10, offs: [[0, 2], [0, 3], [-1, 2], [0, 2], [0, 2], [0, 2]] },
+    C: { a: 12, offs: [[0, 3], [1, 3], [0, 2], [0, 2], [0, 3], [0, 3]] },
+    A: { a: 3,  offs: [[0, 2], [0, 2], [-1, 2], [-1, 2], [0, 2], [0, 2]] },
+    G: { a: 5,  offs: [[0, 3], [0, 3], [0, 2], [0, 2], [0, 2], [0, 3]] },
+  };
+  const PENTA_MINOR = {
+    E: { a: 8,  offs: [[0, 3], [0, 3], [0, 2], [0, 2], [0, 2], [0, 3]] },
+    D: { a: 11, offs: [[0, 2], [0, 2], [-1, 1], [-1, 2], [-1, 2], [0, 2]] },
+    C: { a: 1,  offs: [[0, 2], [0, 3], [-1, 2], [0, 2], [0, 2], [0, 2]] },
+    A: { a: 3,  offs: [[0, 3], [1, 3], [0, 2], [0, 2], [0, 3], [0, 3]] },
+    G: { a: 6,  offs: [[0, 2], [0, 2], [-1, 2], [-1, 2], [0, 2], [0, 2]] },
+  };
+
+  // every pentatonic box placement that touches the neck (including partial
+  // boxes near the nut / 15th fret); a note may belong to two adjacent boxes
+  function pentaBoxPlacements(rootPc, isMinor){
+    const set = isMinor ? PENTA_MINOR : PENTA_MAJOR;
+    const out = [];
+    CAGED_ORDER.forEach(name => {
+      const box = set[name];
+      const base = (((box.a + rootPc) % 12) + 12) % 12;
+      [base - 12, base, base + 12].forEach(anchor => {
+        const cells = [];
+        box.offs.forEach((pair, s) => {
+          pair.forEach(o => {
+            const fret = anchor + o;
+            if (fret >= 0 && fret <= FRET_COUNT) cells.push({ string: s, fret });
+          });
+        });
+        if (cells.length) out.push({ name, anchor, cells });
+      });
+    });
+    return out;
   }
 
   function computeFretData(){
@@ -808,23 +876,42 @@
         : [[0, '1'], [2, '2'], [4, '3'], [7, '5'], [9, '6']];               // major pentatonic
       const degByPc = {};
       scale.forEach(([off, deg]) => { degByPc[(rootPc + off) % 12] = deg; });
-      const chordTonePc = new Set([0, isMinor ? 3 : 4, 7].map(o => (rootPc + o) % 12));
 
+      const placements = pentaBoxPlacements(rootPc, isMinor);
+      cagedShapesShown = CAGED_ORDER.filter(n => placements.some(p => p.name === n));
+
+      // lines trace each CAGED chord shape (root / 3rd / 5th), one note per
+      // string, following the actual fingering — same as "CAGED chords" mode
+      const lines = cagedPlacements(rootPc, isMinor ? CAGED_MINOR : CAGED_MAJOR)
+        .filter(p => p.cells.length > 1)
+        .map(p => ({ color: CAGED_COLORS[p.name], cells: p.cells.map(c => ({ string: c.string, fret: c.fret })) }));
+
+      // every pentatonic note is coloured by the CAGED box(es) that actually
+      // contain it: notes shared by two adjacent boxes get a split dot
+      // (left half = lower box, right half = higher box)
       const markers = [];
       for (let s = 0; s < 6; s++){
         for (let f = 0; f <= FRET_COUNT; f++){
           const pc = (STRING_TUNING[s] + f) % 12;
           if (!(pc in degByPc)) continue;
-          const chordTone = chordTonePc.has(pc);
-          markers.push({
-            string: s, fret: f, label: degByPc[pc], isRoot: pc === rootPc,
-            color: chordTone ? 'var(--accent)' : '#413e35', dim: !chordTone,
-          });
+          const owners = placements.filter(p => p.cells.some(c => c.string === s && c.fret === f));
+          const base = { string: s, fret: f, label: degByPc[pc], isRoot: pc === rootPc };
+          if (owners.length >= 2){
+            const two = owners.slice()
+              .sort((a, b) => Math.abs(f - a.anchor) - Math.abs(f - b.anchor))
+              .slice(0, 2)
+              .sort((a, b) => a.anchor - b.anchor);
+            markers.push({ ...base, split: [CAGED_COLORS[two[0].name], CAGED_COLORS[two[1].name]] });
+          } else if (owners.length === 1){
+            markers.push({ ...base, color: CAGED_COLORS[owners[0].name] });
+          } else {
+            let best = null, bd = Infinity;
+            placements.forEach(p => { const d = Math.abs(f - p.anchor); if (d < bd){ bd = d; best = p; } });
+            markers.push({ ...base, color: best ? CAGED_COLORS[best.name] : '#6b655b' });
+          }
         }
       }
-      const sl = cagedShapeLines(rootPc, isMinor ? CAGED_MINOR : CAGED_MAJOR);
-      cagedShapesShown = sl.shapes;
-      return { markers, lines: sl.lines };
+      return { markers, lines };
     }
 
     if (fretMode === 'roots'){
@@ -917,7 +1004,7 @@
       `<span><i style="background:${CAGED_COLORS[n]}"></i>${n} shape</span>`);
     parts.push(`<span><i class="ring"></i>root</span>`);
     if (fretMode === 'penta'){
-      parts.push(`<span><i style="background:var(--accent)"></i>chord tone</span>`);
+      parts.push(`<span>split dot = shared by two boxes</span>`);
       parts.push(`<span>lines trace chord tones</span>`);
     } else {
       parts.push(`<span>split dot = shared by two shapes</span>`);
@@ -926,7 +1013,7 @@
   }
 
   function renderFretboard(){
-    const W = 520, H = 196;
+    const W = 520, H = 172;
     const padL = 44, padR = 12, padT = 14, padB = 22;
     const nutX = padL + 12;
     const cellW = (W - nutX - padR) / FRET_COUNT;
@@ -992,6 +1079,14 @@
   let chordIdx = 0;
   let beatInChord = 0;
   let scheduledLog = []; // {idx, time} for syncing the visual highlight
+  let playbackStartTime = 0; // audioCtx time of the first chord (after any count-in)
+  let countInFrom = 0;       // audioCtx time of the first count-in click
+  let countInSpb = 0;        // seconds per beat during the count-in
+
+  function setPlayLabel(text){
+    playBtn.textContent = text;
+    playBtn2.textContent = text;
+  }
 
   function resetPlaybackCursor(){
     chordIdx = 0;
@@ -1047,6 +1142,16 @@
   function syncHighlight(){
     if (!isPlaying) return;
     const now = audioCtx.currentTime;
+
+    // during the count-in, show the running beat number where the
+    // measure.beat readout normally sits
+    if (now < playbackStartTime - 0.0005){
+      const b = Math.min(4, Math.max(1, Math.floor((now - countInFrom) / countInSpb) + 1));
+      measureReadout.textContent = String(b);
+      requestAnimationFrame(syncHighlight);
+      return;
+    }
+
     while (scheduledLog.length > 1 && scheduledLog[1].time <= now){
       scheduledLog.shift();
     }
@@ -1071,24 +1176,27 @@
       isPlaying = true;
       resetPlaybackCursor();
       nextNoteTime = audioCtx.currentTime + 0.05;
+      countInSpb = 60 / getTempo();
+      countInFrom = nextNoteTime;
       if (countInToggle.checked){
-        const secondsPerBeat = 60 / getTempo();
-        for (let i = 0; i < 4; i++) playHiHat(nextNoteTime + i * secondsPerBeat);
-        nextNoteTime += 4 * secondsPerBeat;
+        for (let i = 0; i < 4; i++) playHiHat(nextNoteTime + i * countInSpb);
+        nextNoteTime += 4 * countInSpb;
       }
+      playbackStartTime = nextNoteTime;
       scheduler();
       requestAnimationFrame(syncHighlight);
-      playBtn.textContent = 'Pause';
+      setPlayLabel('Pause');
     } else {
       isPlaying = false;
       clearTimeout(schedulerId);
       document.querySelectorAll('.chord').forEach(el => el.classList.remove('dim', 'active'));
       measureReadout.textContent = '';
-      playBtn.textContent = 'Play';
+      setPlayLabel('Play');
     }
   }
 
   playBtn.addEventListener('click', togglePlay);
+  playBtn2.addEventListener('click', togglePlay);
 
   updateFretUI();
   render();
