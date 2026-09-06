@@ -6,8 +6,9 @@ hi-hat click.
 
 ## Features
 
-- Random major/minor key selection, with an occasional harmonic-minor
-  dominant (V) substitution
+- Major / Minor / Random mode toggle, with an occasional harmonic-minor
+  dominant (V) substitution in minor
+- Dark theme
 - Adjustable number of chords (2–7)
 - "Common chords only" mode (I, ii, IV, V, vi / i, iv, v–V, VI, VII)
 - Web Audio playback: additive piano tone, adjustable tempo (40–200 BPM),
