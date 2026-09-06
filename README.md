@@ -9,12 +9,18 @@ hi-hat click.
 - Major / Minor / Random mode toggle, with an occasional harmonic-minor
   dominant (V) substitution in minor
 - Dark theme
-- Adjustable number of chords (2–7)
+- Adjustable number of chords (1–7)
 - "Common chords only" mode (I, ii, IV, V, vi / i, iv, v–V, VI, VII)
 - Web Audio playback: additive piano tone, adjustable tempo (40–200 BPM),
-  measures per chord, note value (quarter / half / whole), metronome
-  click, and a roots-only mode
-- Live chord highlighting synced to playback
+  measures per chord, note value (quarter / half / whole), a 4-beat
+  count-in, metronome click, and a roots-only mode
+- Live chord highlighting synced to playback, with a measure.beat position readout
+- Fretboard panel (6 strings, 15 frets) with three views for a chosen chord:
+  every root-note location for the progression (colour-coded, legend gives
+  each root's roman numeral); CAGED chords — the five chord shapes, outlined
+  and colour-coded, every note named, shared notes split-coloured; and CAGED
+  pentatonic — the full major/minor pentatonic scale with scale degrees in
+  the dots and the chord-shape outlines drawn through the chord tones
 
 ## Usage
 
