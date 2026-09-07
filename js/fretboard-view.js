@@ -170,6 +170,7 @@
   const cagedViewRow = document.getElementById('cagedViewRow');
   const wholeArpeggioToggle = document.getElementById('wholeArpeggioToggle');
   const cagedShapeGroup = document.getElementById('cagedShapeGroup');
+  const wholeArpeggioWrap = document.getElementById('wholeArpeggioWrap');
   const cagedPosMethodGroup = document.getElementById('cagedPosMethodGroup');
   const viewGroup = document.getElementById('viewGroup');
   const cagedPosMethodWrap = document.getElementById('cagedPosMethodWrap');
@@ -241,7 +242,12 @@
     cagedChordRow.hidden = !chordModes && !inPosition;
     scaleTheoryRow.hidden = fretMode !== 'scale';
     stringSetRow.hidden = fretMode !== 'triads3';
-    cagedViewRow.hidden = fretMode !== 'caged';
+    // Chords, Pentatonic and Scales are all built out of the CAGED shapes, so
+    // all three get to choose which ones — and share the choice, so following a
+    // chord into its scale doesn't put shapes back that you'd switched off.
+    // Opening the shapes out into their arpeggio is Chords' alone.
+    cagedViewRow.hidden = !['caged', 'penta', 'scale'].includes(fretMode);
+    wholeArpeggioWrap.hidden = fretMode !== 'caged';
     // one position, one Position row — the same row whatever the mode
     boxRow.hidden = !inPosition;
     // only Chords draws several chords at once, so only Chords has a choice
@@ -507,11 +513,13 @@
     shownWindow = { min: Math.min(shownWindow.min, ...frets), max: Math.max(shownWindow.max, ...frets) };
   }
 
-  // The five CAGED grips traced through, whatever else a view is drawing on top
-  // of them — the shape you already know, under the scale or the arpeggio.
+  // The CAGED grips traced through, whatever else a view is drawing on top of
+  // them — the shape you already know, under the scale or the arpeggio. Only
+  // the ones you're working on: a shape switched off leaves the outlines along
+  // with everything else.
   function gripOutlines(rootPc, isMinor){
     return cagedPlacements(rootPc, isMinor ? CAGED_MINOR : CAGED_MAJOR)
-      .filter(p => p.cells.length > 1)
+      .filter(p => shapeOn(p.name) && p.cells.length > 1)
       .map(p => ({ color: CAGED_COLORS[p.name], shape: p.name,
                    cells: p.cells.map(c => ({ string: c.string, fret: c.fret })) }));
   }
@@ -989,7 +997,7 @@
       // down at the nut, putting a run in the legend for a box the arrows can
       // never reach.
       const placements = pentaBoxPlacements(rootPc, isMinor)
-        .filter(p => p.anchor >= 0 && p.anchor <= FRET_COUNT);
+        .filter(p => shapeOn(p.name) && p.anchor >= 0 && p.anchor <= FRET_COUNT);
       cagedShapesShown = CAGED_ORDER.filter(n => placements.some(p => p.name === n));
       const tones = chordTonePcs(chord);
 
@@ -1045,7 +1053,7 @@
       }
 
       const boxes = scaleBoxPlacements(rootPc, isMinor, scalePcs)
-        .filter(b => b.anchor >= 0 && b.anchor <= FRET_COUNT);
+        .filter(b => shapeOn(b.name) && b.anchor >= 0 && b.anchor <= FRET_COUNT);
       cagedShapesShown = CAGED_ORDER.filter(n => boxes.some(b => b.name === n));
       const tones = chordTonePcs(chord);
 

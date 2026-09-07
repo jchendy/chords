@@ -53,10 +53,14 @@
     b.id = id;
     root.appendChild(b);
   });
-  // the view greys a checkbox out by reaching for the label wrapping it
-  ['cagedFollowToggle', 'holdPositionToggle', 'wholeArpeggioToggle'].forEach(id => {
+  // the view greys a checkbox out by reaching for the label wrapping it, and
+  // hides Whole arpeggio by that label's own id — so the wrapper has to be the
+  // label here too, as it is on the page, not a box beside it
+  const WRAPPER_ID = { wholeArpeggioToggle: 'wholeArpeggioWrap' };
+  ['cagedFollowToggle', 'wholeArpeggioToggle'].forEach(id => {
     const label = document.createElement('label');
     label.className = 'inline-check';
+    if (WRAPPER_ID[id]) label.id = WRAPPER_ID[id];
     const box = document.createElement('input');
     box.type = 'checkbox';
     box.id = id;
@@ -485,13 +489,20 @@
   // Every run the legend draws should be a position you can reach: count them.
   function testEveryBoxNamedCanBeReached(t){
     loadProgression(['C', 'F', 'G']);
+    const all = ['C', 'A', 'G', 'E', 'D'];
     ['penta', 'scale'].forEach(mode => {
       setMode(mode);
+      // The runs come from the neck reading and the windows from the position
+      // one, and the two carry their own sets of shapes — so put both on all
+      // five, or this would be counting a five-shape legend against a
+      // three-shape stepper and calling the difference a bug.
       setView('neck');
+      setShapes(all);
       const runs = [...q('#cagedLegend').querySelectorAll('.range')]
         .reduce((n, el) => n + el.textContent.split('·').length, 0);
       // walk the stepper right round and collect the distinct windows it lands on
       setView('position');
+      setShapes(all);
       const seen = new Set();
       for (let i = 0; i < 16; i++){
         const last = [...q('#cagedLegend').querySelectorAll('span')].pop();
@@ -501,6 +512,8 @@
       t.equal(runs, seen.size,
         `${mode}: the legend names ${runs} stretches of neck and the arrows reach ${seen.size}`);
     });
+    setView('position'); setShapes(['A', 'E', 'D']);      // back to the defaults
+    setView('neck'); setShapes(all);
   }
 
   // Across the neck, a dot's colour is the CAGED box it belongs to, and the
@@ -555,16 +568,17 @@
   function testDisabledShapesLeaveTheView(t){
     const bad = [];
     loadProgression(['Am7', 'Dm7', 'E7']);
-    setMode('caged');
     // the reading first: each keeps its own set of shapes, so setting them
     // before choosing one would edit whichever set happened to be showing
+    setMode('caged');
     setView('neck');
     [['A', 'E', 'D'], ['C', 'G'], ['E'], ['C', 'A', 'G', 'E', 'D']].forEach(on => {
       setShapes(on);
-      [false, true].forEach(arp => {
+      [['caged', false], ['caged', true], ['penta', false], ['scale', false]].forEach(([mode, arp]) => {
+        setMode(mode);
         const cb = q('#wholeArpeggioToggle');
         if (cb.checked !== arp) cb.click();
-        const where = `${on.join('')} arp=${arp}`;
+        const where = `${mode} ${on.join('')} arp=${arp}`;
         const drawn = new Set([...svg.querySelectorAll('.note-dot')]
           .flatMap(g => (g.getAttribute('data-shapes') || '').split(',').filter(Boolean)));
         const traced = new Set([...svg.querySelectorAll('.shape-line')]
@@ -576,6 +590,7 @@
         if (!drawn.size) bad.push(`${where}: nothing drawn at all`);
       });
     });
+    setMode('caged');
     setShapes(['C', 'A', 'G', 'E', 'D']);      // back to what this reading opens on
     t.ok(!bad.length, `A shape switched off leaves the neck, the outlines and the legend`
       + (bad.length ? ` — ${bad[0]}` : ''));
@@ -639,6 +654,34 @@
     t.ok(!bad.length, 'Each reading keeps its own shapes' + (bad.length ? ` — ${bad[0]}` : ''));
   }
 
+  // Chords, Pentatonic and Scales are three views of the same five shapes, so
+  // the choice of which to work on follows you between them: switching off the
+  // G shape and then following a chord into its scale shouldn't hand it back.
+  function testShapesCarryBetweenViews(t){
+    const bad = [];
+    loadProgression(['Am7', 'Dm7', 'E7']);
+    setMode('caged');
+    ['neck', 'position'].forEach(reading => {
+      setView(reading);
+      setShapes(['A', 'D']);
+      ['penta', 'scale', 'caged'].forEach(mode => {
+        setMode(mode);
+        if (shapesOn().join('') !== 'AD')
+          bad.push(`${reading}: ${mode} shows ${shapesOn().join('') || 'nothing'}`);
+      });
+      // and a change made in one of them is the same change in the others
+      setMode('scale');
+      setShapes(['E']);
+      setMode('caged');
+      if (shapesOn().join('') !== 'E')
+        bad.push(`${reading}: a change made in Scales didn't reach Chords (${shapesOn().join('')})`);
+    });
+    setView('position'); setShapes(['A', 'E', 'D']);
+    setView('neck'); setShapes(['C', 'A', 'G', 'E', 'D']);
+    t.ok(!bad.length, 'The shapes you\u2019re working on follow you between the views'
+      + (bad.length ? ` — ${bad[0]}` : ''));
+  }
+
   GT.fretboardSuites = [
     ['Fretboard: chords are drawn as shapes you can hold', testGripsAreGrips],
     ['Fretboard: whole arpeggio opens the shapes out', testArpeggioReallyOpensOut],
@@ -654,6 +697,7 @@
     ['Fretboard: every colour comes from a box the note is in', testEveryColourComesFromItsBox],
     ['Fretboard: a shape switched off leaves the view', testDisabledShapesLeaveTheView],
     ['Fretboard: each reading keeps its own shapes', testEachReadingKeepsItsOwnShapes],
+    ['Fretboard: the shapes follow you between views', testShapesCarryBetweenViews],
     ['Fretboard: One box goes when it cannot hold the progression', testOneBoxGoesWhenItCannotHold],
   ];
 })();
