@@ -545,6 +545,11 @@
   .shape-line.ghost.ghost-next{ opacity: 0.3; }
   #fretboard.shape-focus .note-dot.ghost{ opacity: 0.04; }
   #fretboard.shape-focus .shape-line.ghost{ opacity: 0.02; }
+  /* ...but a spotlighted chord comes forward even when it's one of the ones
+     sitting behind — these have to outrank the push-back above, which shares
+     their specificity and would otherwise win on order alone */
+  #fretboard.shape-focus .note-dot.ghost.hot{ opacity: 1; }
+  #fretboard.shape-focus .shape-line.ghost.hot{ opacity: 1; }
   .caged-legend .ghost-entry{ opacity: 0.62; }
 
   #cagedChordGroup.locked{ opacity: 0.45; pointer-events: none; }
