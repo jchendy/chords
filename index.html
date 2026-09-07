@@ -468,6 +468,9 @@
      playback), dim every note except each chord's lowest root */
   #fretboard.positions-mode:not(.shape-focus):not(.pos-follow) .note-dot{ opacity: 0.22; }
   #fretboard.positions-mode:not(.shape-focus):not(.pos-follow) .note-dot.pos-root{ opacity: 1; }
+  /* with every chord tone shown, the notes two chords share are the point of
+     the picture, so they stay lit alongside each chord's anchor root */
+  #fretboard.positions-mode:not(.shape-focus):not(.pos-follow) .note-dot.ringed{ opacity: 1; }
   #fretboard.positions-mode:not(.shape-focus):not(.pos-follow) .shape-line{ opacity: 0.12; }
 
   /* Chord positions: "Follow playback" — current chord lit, next chord
@@ -898,12 +901,13 @@
   <section class="panel">
     <div class="setting">
       <span class="setting-label">Fretboard
-        <button type="button" class="info-dot" data-tip="Roots: every root of the progression's chords, colour-coded. Chord positions: one location per chord, clustered close together on the neck. CAGED triads: the five movable CAGED shapes for one chosen chord. CAGED pentatonic: that chord's pentatonic scale, boxed and coloured by CAGED shape. CAGED scales: the full 7-note scale for that chord, same colouring.">i</button>
+        <button type="button" class="info-dot" data-tip="Roots: every root of the progression's chords, colour-coded. Chord positions: one location per chord, clustered close together on the neck. CAGED triads: the five movable CAGED shapes for one chosen chord. CAGED arpeggios: those same shapes opened out — every chord tone on the neck, boxed by the shape it sits in. CAGED pentatonic: that chord's pentatonic scale, boxed and coloured by CAGED shape. CAGED scales: the full 7-note scale for that chord, same colouring.">i</button>
       </span>
       <div class="segmented" id="fretModeGroup">
         <button type="button" class="seg-btn" data-value="roots">Roots</button>
         <button type="button" class="seg-btn" data-value="positions">Chord positions</button>
         <button type="button" class="seg-btn active" data-value="caged">CAGED triads</button>
+        <button type="button" class="seg-btn" data-value="arp">CAGED arpeggios</button>
         <button type="button" class="seg-btn" data-value="penta">CAGED pentatonic</button>
         <button type="button" class="seg-btn" data-value="scale">CAGED scales</button>
       </div>
@@ -960,10 +964,14 @@
     </div>
     <div class="setting" id="chordPosRow" hidden>
       <span class="setting-label">Position
-        <button type="button" class="info-dot" data-tip="Shows one shape per chord in the progression, chosen so they all sit close together on the neck. Next cycles to the next cluster of positions, wrapping back to the lowest. Follow playback highlights the chord currently sounding and dims the others, with the upcoming chord shown half-lit.">i</button>
+        <button type="button" class="info-dot" data-tip="Shows one shape per chord in the progression, chosen so they all sit close together on the neck. Next cycles to the next cluster of positions, wrapping back to the lowest. All chord tones shows each chord's whole arpeggio within reach of its shape instead of just the grip, ringing every note two chords share — the notes your fingers keep as the chord changes. Voice leading picks each chord's shape closest to where the previous one landed, so the shapes walk up the neck instead of all crowding one position. Follow playback highlights the chord currently sounding and dims the others, with the upcoming chord shown half-lit.">i</button>
       </span>
       <div class="row-control">
         <button type="button" class="seg-btn" id="chordPosNext">Next position ▸</button>
+        <label class="inline-check">
+          <input type="checkbox" id="allTonesToggle">
+          <span>All chord tones</span>
+        </label>
         <label class="inline-check">
           <input type="checkbox" id="voiceLeadToggle">
           <span>Voice leading</span>

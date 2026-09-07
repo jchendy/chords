@@ -115,7 +115,7 @@ names the tab you're on.
 - Live chord highlighting synced to playback, with a measure.beat position
   readout under the chords (the key itself is shown plainly above them,
   e.g. "C major" / "C#m")
-- Fretboard panel (6 strings, 15 frets) with five views, "Roots" and
+- Fretboard panel (6 strings, 15 frets) with six views, "Roots" and
   "Chord positions" first:
   Roots — every root-note location for the progression (colour-coded,
   legend gives each root's roman numeral; while playing, the currently
@@ -130,7 +130,13 @@ names the tab you're on.
   note is dimmed except each chord's lowest root, so the anchor notes stand
   out; the barred
   G-shape is skipped everywhere except its own open-G-chord form, since it's
-  not realistically playable elsewhere. **Voice leading** picks each chord's
+  not realistically playable elsewhere. **All chord tones** turns the cluster
+  of grips into a map of the progression: instead of one shape per chord,
+  each chord's whole arpeggio within reach of that shape, and a ring on every
+  note two chords share — so you can see what your fingers keep as the chord
+  changes. (In that mode the ring means "shared", since the roots are already
+  named by their label.) A ii–V–I is mostly shared notes, which is the point.
+  **Voice leading** picks each chord's
   shape closest to where the *previous* one landed rather than to one fixed
   fret, so the shapes walk from one to the next the way a hand does — an
   Am7 that would otherwise jump back to the nut carries on up the neck
@@ -149,6 +155,13 @@ names the tab you're on.
   keeps its note name), shared notes split-coloured; a chord carrying a 7th
   shows its 7th-chord shapes, the 7th drawn as a hollow dot, so this view
   and "Chord positions" agree;
+  CAGED arpeggios — the same five shapes opened out into arpeggios: every
+  chord tone on the neck, each one coloured by the CAGED box it sits in
+  (seam notes split-coloured), labelled by degree, with the chord shape
+  itself still traced through the middle of its box. This is the CAGED
+  arpeggio a method book teaches — the shape you already know, plus the
+  notes around it on each string — and it takes the same Box row as the
+  scale views, so you can drill one position at a time;
   CAGED pentatonic — the chosen chord's major/minor pentatonic, every note
   coloured by the CAGED box it belongs to (seam notes split-coloured), scale
   degrees in the dots, chord-shape outlines through the chord tones. The
