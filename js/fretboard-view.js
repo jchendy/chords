@@ -51,6 +51,7 @@
   let boxIndex = 0;              // which box, low to high, when showing one
   let heldWindow = null;         // { min, max } of frets kept while holding position
   let shownWindow = null;        // what the legend reports
+  let shownBoxName = '';         // ...and which CAGED shape that box is
   let lastShownWindow = null;    // ...and what it was before the chord changed
   let rebaseBox = false;         // re-pick the box by position rather than by index
   let fretRange = 'all';         // 'all' | 'fit' | 'from-to' — how much neck to draw
@@ -176,8 +177,11 @@
     holdPositionToggle.closest('.inline-check').classList.toggle('off', !cagedPos && !singleBox);
     // Roots is already coloured by root and Progression by chord, so
     // there's nothing for the interval colouring to say in those
-    colorByGroup.hidden = !singleChordModes;
-    colorByLabel.hidden = !singleChordModes;
+    // colour already means "which chord" in the position reading, the same as
+    // in Progression, so there's nothing for the interval option to say there
+    const colourIsChord = fretMode === 'caged' && cagedReading === 'position';
+    colorByGroup.hidden = !singleChordModes || colourIsChord;
+    colorByLabel.hidden = !singleChordModes || colourIsChord;
   }
 
   fretRangeSelect.addEventListener('change', () => {
@@ -235,7 +239,7 @@
   // span — "0–3 · 12–15" is useful where "0–15" would be a lie.
   function collectShapeRanges(markers){
     const fretsByShape = {};
-    markers.filter(m => !m.ghost).forEach(m => {
+    markers.forEach(m => {
       (m.shapes || []).forEach(n => (fretsByShape[n] = fretsByShape[n] || new Set()).add(m.fret));
     });
     shapeRanges = {};
@@ -307,6 +311,7 @@
       win = heldWindow;
     }
     shownWindow = win;
+    shownBoxName = box.name || '';
     lastShownWindow = win;
     const inWin = f => f >= win.min && f <= win.max;
     return {
@@ -719,6 +724,17 @@
       // hands the choice of which position to the progression itself.
       const inPosition = cagedReading === 'position';
       const cands = host.progression().filter(c => c.quality !== 'dim');
+      const curIdx = Math.min(cagedChordIdx, cands.length - 1);
+      const curTag = 'c' + curIdx;
+      const curColor = ROOT_PALETTE[curIdx % ROOT_PALETTE.length];
+      // In one position several chords share the neck, so colour says which
+      // chord a note belongs to and the legend names its shape — the same
+      // scheme Progression uses. Across the neck only one chord is drawn, so
+      // colour is free to say which of its five shapes a note is in instead.
+      const asChord = (m) => {
+        const { split, ...rest } = m;
+        return { ...rest, color: curColor, shapes: [curTag] };
+      };
       const boxOpts = { single: inPosition };
       if (inPosition && cagedVoiceLead){
         boxOpts.index = voiceLedBoxIndex(cands, Math.min(cagedChordIdx, cands.length - 1));
@@ -740,11 +756,14 @@
           name: l.shape, anchor: Math.min(...l.cells.map(c => c.fret)), cells: l.cells,
         }));
         const one = applyBoxWindow(board.markers, board.lines, grips, boxOpts);
-        const lit = applyColorBy(one.markers, chord);
+        const lit = inPosition ? one.markers.map(asChord) : applyColorBy(one.markers, chord);
+        const litLines = inPosition
+          ? one.lines.map(l => ({ ...l, color: curColor, shape: curTag })) : one.lines;
         const ghosts = inPosition
           ? ghostMarkers(shownWindow, new Set(lit.map(m => m.string + ':' + m.fret)), true)
           : { markers: [], lines: [] };
-        return { markers: [...ghosts.markers, ...lit], lines: [...ghosts.lines, ...one.lines] };
+        if (inPosition) noteCurrentChord(cands, curIdx, curTag, curColor);
+        return { markers: [...ghosts.markers, ...lit], lines: [...ghosts.lines, ...litLines] };
       }
 
       const degByPc = { [rootPc]: chord.note };
@@ -781,11 +800,14 @@
         }
       }
       const shown = applyBoxWindow(markers, lines, boxes, boxOpts);
-      const lit = applyColorBy(shown.markers, chord);
+      const lit = inPosition ? shown.markers.map(asChord) : applyColorBy(shown.markers, chord);
+      const litLines = inPosition
+        ? shown.lines.map(l => ({ ...l, color: curColor, shape: curTag })) : shown.lines;
       const ghosts = inPosition
         ? ghostMarkers(shownWindow, new Set(lit.map(m => m.string + ':' + m.fret)), false)
         : { markers: [], lines: [] };
-      return { markers: [...ghosts.markers, ...lit], lines: [...ghosts.lines, ...shown.lines] };
+      if (inPosition) noteCurrentChord(cands, curIdx, curTag, curColor);
+      return { markers: [...ghosts.markers, ...lit], lines: [...ghosts.lines, ...litLines] };
     }
 
     if (fretMode === 'penta'){
@@ -975,8 +997,9 @@
         pc === rootPc ? c.note : pc === thirdPc ? degreeLabel(c, 'third') :
         pc === fifthPc ? degreeLabel(c, 'fifth') : degreeLabel(c, 'seventh');
 
-      const grips = cagedPlacements(rootPc, isMinor ? CAGED_MINOR : CAGED_MAJOR)
-        .map(p => (sevPc == null ? p.cells : seventhCells(p, rootPc, sevPc)));
+      const placements = cagedPlacements(rootPc, isMinor ? CAGED_MINOR : CAGED_MAJOR);
+      const gripNames = placements.map(p => p.name);
+      const grips = placements.map(p => (sevPc == null ? p.cells : seventhCells(p, rootPc, sevPc)));
       // whatever the view in front is showing, the ghosts show the same of:
       // the grips, or every chord tone
       const cells = useGrips
@@ -985,8 +1008,9 @@
             new Set([c.note, c.third, c.fifth, c.seventh].filter(Boolean).map(n => SEMITONE[n] % 12)));
 
       const color = ROOT_PALETTE[i % ROOT_PALETTE.length];
-      const tag = 'ghost' + i;
+      const tag = 'c' + i;
       let drew = false;
+      let letter = '';
       cells.forEach(cell => {
         if (!inWin(cell)) return;
         const k = cell.string + ':' + cell.fret;
@@ -998,13 +1022,15 @@
                        isRoot: pc === rootPc, shapes: [tag], ghost: true, ghostNext: i === next });
       });
       // and its grip traced through, where one sits wholly inside the box
-      grips.forEach(g => {
+      grips.forEach((g, gi) => {
         if (g.length > 1 && g.every(inWin)){
-          lines.push({ color, shape: tag, ghost: true, ghostNext: i === next,
+          if (!letter) letter = gripNames[gi] || '';
+          lines.push({ color, shape: tag, ghost: true, ghostNext: i === next, letter,
                        cells: g.map(cell => ({ string: cell.string, fret: cell.fret })) });
         }
       });
-      if (drew) ghostLegendData.push({ name: displayName(c), numeral: c.numeral, color });
+      if (drew) ghostLegendData.push({ name: displayName(c), numeral: c.numeral,
+                                       color, tag, shapeLetter: letter, order: i });
     });
     return { markers, lines };
   }
@@ -1049,6 +1075,16 @@
     return chosen;
   }
 
+  // The chord in front takes its place in the same list the ghosted ones
+  // build, so the legend reads as one entry per chord in progression order.
+  function noteCurrentChord(cands, curIdx, tag, color){
+    const c = cands[curIdx];
+    if (!c) return;
+    ghostLegendData.push({ name: displayName(c), numeral: c.numeral, color, tag,
+                           shapeLetter: shownBoxName, order: curIdx, current: true });
+    ghostLegendData.sort((a, b) => a.order - b.order);
+  }
+
   // the chord the single-chord views are showing
   function currentChord(){
     const cands = host.progression().filter(c => c.quality !== 'dim');
@@ -1076,6 +1112,20 @@
       cagedLegend.innerHTML = entries.join('');
       return;
     }
+    // Chords in one position is Progression's picture, so it gets
+    // Progression's legend: one entry per chord, named, numbered, tagged with
+    // the CAGED shape it's sitting in, and spotlightable by hovering it.
+    if (fretMode === 'caged' && cagedReading === 'position'){
+      const entries = ghostLegendData.map(g =>
+        `<span data-shape="${g.tag}" tabindex="0" role="button" aria-label="Highlight ${g.name}"` +
+        `${g.current ? ' class="legend-current"' : ''}>` +
+        `<i style="background:${g.color}"></i>${g.name}<em>${g.numeral}</em>` +
+        `${g.shapeLetter ? `<small class="pos-shape-tag">${g.shapeLetter}</small>` : ''}${range(g.tag)}</span>`);
+      if (shownWindow) entries.push(`<span><em>position: frets ${shownWindow.min}–${shownWindow.max}</em></span>`);
+      cagedLegend.innerHTML = entries.join('');
+      return;
+    }
+
     const parts = [];
     // The inversions are what this view is *about*, so they keep their
     // entries (and their spotlight) whichever way the dots are coloured.
@@ -1111,10 +1161,6 @@
       cagedShapesShown.filter(n => drawn.has(n)).forEach(n =>
         parts.push(`<span data-shape="${n}" tabindex="0" role="button" aria-label="Highlight ${n} shape"><i style="background:${CAGED_COLORS[n]}"></i>${n} shape${range(n)}</span>`));
     }
-    // the other chords sit with the rest of the colour key, named the way
-    // Progression names them, since they're drawn the same
-    ghostLegendData.forEach(g =>
-      parts.push(`<span class="ghost-entry"><i style="background:${g.color}"></i>${g.name}<em>${g.numeral}</em></span>`));
     // colouring by interval, the swatches already name the root and the 7th —
     // saying it twice reads as two different things
     if (colorBy !== 'interval'){
