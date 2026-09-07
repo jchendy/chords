@@ -452,6 +452,10 @@
       </div>`;
   }
 
+  // What the last search drew, in the order the cards show it — runChordFinder
+  // fills it and a click on a card reads it back to strum the right shape.
+  let shownVoicings = [];
+
   function runChordFinder(){
     const raw = chordFinderInput.value;
     if (!raw.trim()){
@@ -503,7 +507,6 @@
   }
 
   // ---- hearing a shape ----------------------------------------------------
-  let shownVoicings = [];
   const OPEN_MIDI = [64, 59, 55, 50, 45, 40];     // high e down to low E
   const freqOf = (string, fret) => 440 * Math.pow(2, (OPEN_MIDI[string] + fret - 69) / 12);
 

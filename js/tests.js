@@ -554,6 +554,19 @@
       t.ok(!badDeg.length && !usesMinorV && bars > 0 && bars <= 16, `preset ${label}: ${bars} bars, degrees in range`);
       if (/blues/i.test(p.name) && !/8-bar/.test(v.name)) t.equal(bars, 12, `preset ${label} is twelve bars`);
     }));
+
+    // A preset the key's mode offers must have a variant that mode can show.
+    // Choosing one whose variants are all written for the other mode leaves
+    // nothing to select, and the practice tab now drops a selection whose
+    // variant the mode has no room for — so such a preset would clear itself
+    // the instant you picked it.
+    const fits = (item, mode) => !item.mode || item.mode === mode;
+    const orphans = [];
+    GT.progressionPresets.forEach(p => ['major', 'minor'].forEach(mode => {
+      if (fits(p, mode) && !p.variants.some(v => fits(v, mode)))
+        orphans.push(`${p.name} is offered in ${mode} with no variant for it`);
+    }));
+    t.equal(orphans.join('; '), '', 'every preset a mode offers has a variant that mode can show');
   }
 
   // ---- a very small test runner ----

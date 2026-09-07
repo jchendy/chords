@@ -283,12 +283,29 @@
   const fitsMode = item => !item.mode || item.mode === currentMode;
 
   function renderPresetVariants(){
+    // A variant written for one mode can't survive the key moving to the other.
+    // Its degrees still transpose — the chart keeps playing — but what's on it
+    // is no longer any variant this preset lists, so the selection has to go,
+    // the way buildPresetSelect already drops a preset the mode has no room
+    // for. Left alone the row sat there with nothing marked, still claiming a
+    // preset while the chords underneath had come from somewhere else.
+    if (presetIdx != null){
+      const chosen = GT.progressionPresets[presetIdx].variants[variantIdx];
+      if (!chosen || !fitsMode(chosen)){
+        presetIdx = null;
+        presetSelect.value = '';
+        mirror(presetSelect, quickPreset);
+      }
+    }
     const preset = presetIdx == null ? null : GT.progressionPresets[presetIdx];
     const shown = preset ? preset.variants.map((v, i) => [v, i]).filter(([v]) => fitsMode(v)) : [];
     const many = shown.length > 1;
     presetVariantRow.hidden = !many;
-    if (!many) return;
+    // Empty it even when the row is about to hide: leaving the last preset's
+    // buttons behind means the group holds controls for a preset that isn't
+    // selected any more, still carrying their click handlers.
     presetVariantGroup.innerHTML = '';
+    if (!many) return;
     shown.forEach(([v, i]) => {
       const b = document.createElement('button');
       b.type = 'button';
