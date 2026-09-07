@@ -30,6 +30,12 @@
   // `name` is what the picker shows; `numerals` spells the progression out
   // beside it. Where a progression has a name people use, it gets it.
   GT.progressionPresets = [
+    // First in each mode's list, and so what a fresh page opens on: the
+    // plainest thing you can practise over, before any of the shapes with
+    // names. Major first, minor next — the picker filters by mode, so each
+    // ends up at the top of its own list.
+    { name: 'Three-chord', numerals: 'I–IV–V', mode: 'major', chords: [d(0,2), d(3,2), d(4,2)] },
+    { name: 'Minor three-chord', numerals: 'i–iv–V', mode: 'minor', chords: [d(0,2), d(3,2), d(7,2)] },
     {
       name: 'Blues', numerals: 'I7–IV7–V7', numeralsMinor: 'i7–iv7–V7',
       variants: [
@@ -55,7 +61,6 @@
       ],
     },
     // ---- major
-    { name: 'Three-chord', numerals: 'I–IV–V', mode: 'major', chords: [d(0,2), d(3,2), d(4,2)] },
     { name: 'Rock vamp', numerals: 'I–IV–V–IV', mode: 'major', chords: [d(0), d(3), d(4), d(3)] },
     { name: 'Four-chord pop', numerals: 'I–V–vi–IV', mode: 'major', chords: [d(0), d(4), d(5), d(3)] },
     { name: 'Four-chord, minor start', numerals: 'vi–IV–I–V', mode: 'major', chords: [d(5), d(3), d(0), d(4)] },
@@ -69,7 +74,6 @@
     // ---- both: the ii–V–I reads ii°–V–i in minor, and is the minor ii–V–i
     { name: 'Jazz cadence', numerals: 'ii–V–I', numeralsMinor: 'ii°–V–i', chords: [dia(1), dom7(4), dia(0,2)] },
     // ---- minor
-    { name: 'Minor three-chord', numerals: 'i–iv–V', mode: 'minor', chords: [d(0,2), d(3,2), d(7,2)] },
     { name: 'Minor four-chord', numerals: 'i–VI–III–VII', mode: 'minor', chords: [d(0), d(5), d(2), d(6)] },
     { name: 'Minor pop', numerals: 'i–VI–VII', mode: 'minor', chords: [d(0,2), d(5), d(6)] },
     { name: 'Minor rock', numerals: 'i–VII–VI–VII', mode: 'minor', chords: [d(0), d(6), d(5), d(6)] },

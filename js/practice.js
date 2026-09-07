@@ -201,6 +201,16 @@
       deg == null ? currentProgression[i] : chordForDegree(deg, shapeFor(i, deg)));
   }
 
+  // A whole progression, chosen for you: how many chords, how long each one
+  // holds, and then the chords themselves. Short and squarish on purpose —
+  // two to four chords of a bar or two is the shape of most things worth
+  // practising over, and anything longer is better built by hand.
+  function randomizeProgression(){
+    setSlotCount(2 + Math.floor(Math.random() * 3));          // 2, 3 or 4
+    slotMeasures = slotChoices.map(() => 1 + Math.floor(Math.random() * 2));
+    randomizeChords();   // degrees and shapes, honouring the two roll settings
+  }
+
   // A different key, chosen for you — the same progression lands in it, since
   // each chord keeps its degree.
   function randomizeKey(){
@@ -543,6 +553,13 @@
   const randomKey = () => { clearPreset(); randomizeKey(); };
   randomKeyBtn.addEventListener('click', randomKey);
   document.getElementById('quickKeyDice').addEventListener('click', randomKey);
+  document.getElementById('quickRandomChords').addEventListener('click', () => {
+    loadedLabel = null;
+    clearPreset();
+    randomizeProgression();
+    view.resetPosition();
+    renderAll();
+  });
   quickKey.addEventListener('change', () => forward(quickKey, keySelect));
   quickPreset.addEventListener('change', () => forward(quickPreset, presetSelect));
 

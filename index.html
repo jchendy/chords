@@ -151,6 +151,17 @@
   .setting:first-child{ border-top:none; padding-top: 2px; }
   .setting:last-child{ padding-bottom: 2px; }
 
+  /* A row that belongs to the button above it: no divider of its own, and an
+     accent down the left tying it to the choice that turned it on. */
+  .setting.sub-setting{
+    border-top: none;
+    margin-left: 14px;
+    padding-left: 14px;
+    padding-top: 4px;
+    border-left: 2px solid var(--accent);
+  }
+  .setting.sub-setting .setting-label{ font-size: 0.85rem; color: var(--muted); }
+
   .settings-heading{
     font-size: 0.7rem;
     font-weight: 700;
@@ -881,6 +892,7 @@
       <select id="quickKey" class="mini-select" aria-label="Key"></select>
       <button type="button" class="seg-btn dice-btn" id="quickKeyDice" aria-label="Random key" title="Random key">⚄</button>
       <select id="quickPreset" class="mini-select" aria-label="Progression"></select>
+      <button type="button" class="seg-btn dice-btn" id="quickRandomChords" aria-label="Random progression" title="Random progression">⚄</button>
     </div>
     <p class="key" id="keyReadout">—</p>
     <div class="chords" id="chords"></div>
@@ -911,6 +923,30 @@
       <div class="segmented" id="viewGroup">
         <button type="button" class="seg-btn active" data-value="neck">Across the neck</button>
         <button type="button" class="seg-btn" data-value="position">In one position</button>
+      </div>
+    </div>
+    <div class="setting sub-setting" id="boxRow" hidden>
+      <span class="setting-label">Position
+        <button type="button" class="info-dot" data-tip="Which stretch of neck you're working in, and how it gets chosen — ◂ ▸ walk it up and down.">i</button>
+      </span>
+      <div class="row-control">
+        <div class="segmented" id="boxStep">
+          <button type="button" class="seg-btn" id="boxPrev" aria-label="Previous box">◂</button>
+          <button type="button" class="seg-btn" id="boxNext" aria-label="Next box">▸</button>
+        </div>
+        <label class="inline-check">
+          <input type="checkbox" id="holdPositionToggle">
+          <span>Hold position</span>
+          <button type="button" class="info-dot" data-tip="Keeps the stretch of frets you're on fixed when the chord changes during playback. Instead of the neck jumping to the new chord's own box, you see that chord's notes under the hand you already have there — which is what you actually do when comping through changes.">i</button>
+        </label>
+        <span class="ctl-group" id="cagedPosMethodWrap" hidden>
+          <span class="segmented" id="cagedPosMethodGroup" aria-label="How the position is chosen">
+            <button type="button" class="seg-btn active" data-value="box">One box</button>
+            <button type="button" class="seg-btn" data-value="cluster">Cluster</button>
+            <button type="button" class="seg-btn" data-value="lead">Voice leading</button>
+          </span>
+          <button type="button" class="info-dot" data-tip="Three ways of putting the progression in one place. One box: every chord clipped into a single CAGED box, so nothing leaves the stretch of frets you're on — ◂ ▸ walk the box up and down. Cluster: each chord at its own best position, chosen to sit close to the others, so the shapes are the ones you'd really play; ◂ ▸ cycle to the next cluster up the neck. Voice leading: each chord takes whichever of its own shapes sits nearest where the last one landed, so the hand walks through the changes instead of jumping back down the neck.">i</button>
+        </span>
       </div>
     </div>
     <div class="setting" id="displayRow">
@@ -964,30 +1000,6 @@
         <button type="button" class="seg-btn" data-value="3">B–G–D</button>
         <button type="button" class="seg-btn" data-value="4">G–D–A</button>
         <button type="button" class="seg-btn" data-value="5">D–A–E</button>
-      </div>
-    </div>
-    <div class="setting" id="boxRow" hidden>
-      <span class="setting-label">Position
-        <button type="button" class="info-dot" data-tip="Which stretch of neck you're working in, and how it gets chosen — ◂ ▸ walk it up and down.">i</button>
-      </span>
-      <div class="row-control">
-        <div class="segmented" id="boxStep">
-          <button type="button" class="seg-btn" id="boxPrev" aria-label="Previous box">◂</button>
-          <button type="button" class="seg-btn" id="boxNext" aria-label="Next box">▸</button>
-        </div>
-        <label class="inline-check">
-          <input type="checkbox" id="holdPositionToggle">
-          <span>Hold position</span>
-          <button type="button" class="info-dot" data-tip="Keeps the stretch of frets you're on fixed when the chord changes during playback. Instead of the neck jumping to the new chord's own box, you see that chord's notes under the hand you already have there — which is what you actually do when comping through changes.">i</button>
-        </label>
-        <span class="ctl-group" id="cagedPosMethodWrap" hidden>
-          <span class="segmented" id="cagedPosMethodGroup" aria-label="How the position is chosen">
-            <button type="button" class="seg-btn active" data-value="box">One box</button>
-            <button type="button" class="seg-btn" data-value="cluster">Cluster</button>
-            <button type="button" class="seg-btn" data-value="lead">Voice leading</button>
-          </span>
-          <button type="button" class="info-dot" data-tip="Three ways of putting the progression in one place. One box: every chord clipped into a single CAGED box, so nothing leaves the stretch of frets you're on — ◂ ▸ walk the box up and down. Cluster: each chord at its own best position, chosen to sit close to the others, so the shapes are the ones you'd really play; ◂ ▸ cycle to the next cluster up the neck. Voice leading: each chord takes whichever of its own shapes sits nearest where the last one landed, so the hand walks through the changes instead of jumping back down the neck.">i</button>
-        </span>
       </div>
     </div>
     <div class="setting" id="scaleTheoryRow" hidden>

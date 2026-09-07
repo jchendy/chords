@@ -21,13 +21,16 @@ names the tab you're on.
 
 ## Features
 
-- Opens on the first preset the key's mode offers rather than on a random
+- Opens on the first preset the key's mode offers — the three-chord
+  progression, plainest ground to practise over — rather than on a random
   roll, so a fresh page starts on something recognisable and the picker says
   which it is; the dice are there for a random one. A shared link still wins
 - The chart carries its own copy of the key picker, the key dice and the
-  preset picker, so the two things you reach for most while playing are on
-  the chart rather than two panels down. They're views on the same state, not
-  a second copy of it: change either and both follow
+  preset picker, plus a dice that rolls a whole progression — two to four
+  chords, a bar or two each, then the chords themselves, honouring the same
+  two roll settings. So the things you reach for most while playing are on the
+  chart rather than two panels down. They're views on the same state, not a
+  second copy of it: change either and both follow
 - One key picker: all 24 keys, major and minor side by side, always naming
   the key you're actually in, with a dice beside it that picks a new one. In
   minor, the V is occasionally the harmonic-minor dominant. Changing key —
