@@ -35,12 +35,18 @@
   let fretMode = 'caged';        // 'roots' | 'caged' | 'penta' | 'scale' | 'positions'
   let cagedChordIdx = 0;
   let cagedShapesShown = [];
-  // Which of the five CAGED shapes Chords is working on. Three to start with:
-  // A, E and D are the shapes most players learn first and the ones that fall
-  // under the hand without a stretch, so the view opens on something you can
-  // actually practise rather than on all five at once.
-  const enabledShapes = new Set(['A', 'E', 'D']);
-  const shapeOn = name => enabledShapes.has(name);
+  // Which of the five CAGED shapes Chords is working on — one set per reading,
+  // because the two are asking different questions. Across the neck the point
+  // is where a chord lives, so all five are on: that picture is the map. In one
+  // position the point is a stretch of frets you can actually hold, so it opens
+  // on A, E and D, the three that fall under the hand without a stretch. Each
+  // reading keeps whatever you set it to while the other stays as it was.
+  const shapesByReading = {
+    neck: new Set(['C', 'A', 'G', 'E', 'D']),
+    position: new Set(['A', 'E', 'D']),
+  };
+  const enabledShapes = () => shapesByReading[inPosition ? 'position' : 'neck'];
+  const shapeOn = name => enabledShapes().has(name);
   let rootLegendData = [];
   let chordPosIndex = 0;         // which cluster of the chords' own positions is showing
   let stuckShape = null;         // shape name pinned by a tap on its legend entry
@@ -208,7 +214,7 @@
   }
 
   function oneBoxPossible(){
-    return enabledShapes.size > 0 && positionSpan() <= HAND_SPAN;
+    return enabledShapes().size > 0 && positionSpan() <= HAND_SPAN;
   }
 
   // the shapes a chord can sit in, in whichever reading Chords is showing
@@ -219,7 +225,15 @@
       .filter(b => shapeOn(b.name));
   }
 
+  // the buttons show the set belonging to the reading you're in
+  function paintShapeButtons(){
+    const shapes = enabledShapes();
+    cagedShapeGroup.querySelectorAll('.seg-btn')
+      .forEach(b => b.classList.toggle('active', shapes.has(b.dataset.value)));
+  }
+
   function updateFretUI(){
+    paintShapeButtons();
     const chordModes = ['caged', 'triads3', 'penta', 'scale'].includes(fretMode);
     // Every view but Roots is about one chord, so it picks one. Roots draws
     // every chord's roots at once and needs no chord — except in one position,
@@ -282,13 +296,14 @@
   cagedShapeGroup.querySelectorAll('.seg-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const name = btn.dataset.value;
-      if (enabledShapes.has(name)){
-        if (enabledShapes.size === 1) return;
-        enabledShapes.delete(name);
+      const shapes = enabledShapes();
+      if (shapes.has(name)){
+        if (shapes.size === 1) return;
+        shapes.delete(name);
       } else {
-        enabledShapes.add(name);
+        shapes.add(name);
       }
-      btn.classList.toggle('active', enabledShapes.has(name));
+      btn.classList.toggle('active', shapes.has(name));
       // the box the hand was in may not exist any more
       rebaseBox = true;
       updateFretUI();
@@ -899,7 +914,7 @@
       // The grips, and the outlines tracing them. A chord carrying a 7th gets
       // its 7th-chord voicings, so what's traced is a shape you'd actually
       // finger rather than the plain triad underneath it.
-      const board = cagedTriadBoard(rootPc, isMinor, chord.note, seventhPc, enabledShapes);
+      const board = cagedTriadBoard(rootPc, isMinor, chord.note, seventhPc, enabledShapes());
       board.markers = withTagColors(board.markers, n => CAGED_COLORS[n]);
       if (!wholeArpeggio){
         cagedShapesShown = board.shapesShown;
@@ -1206,7 +1221,7 @@
     if (!chord) return [];
     const rootPc = SEMITONE[chord.note] % 12;
     return cagedTriadBoard(rootPc, chord.quality === 'min', chord.note,
-      chord.seventh ? SEMITONE[chord.seventh] % 12 : null, enabledShapes).lines.map(l => ({
+      chord.seventh ? SEMITONE[chord.seventh] % 12 : null, enabledShapes()).lines.map(l => ({
         name: l.shape, anchor: Math.min(...l.cells.map(c => c.fret)), cells: l.cells,
       }));
   }

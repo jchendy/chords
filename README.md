@@ -204,8 +204,11 @@ names the tab you're on.
   frets the position covers.
   **Shapes** picks which of the five you're working on — switch the rest off
   and they leave the neck, the outlines, the legend and the positions the
-  arrows walk through. It opens on A, E and D, the three that fall under the
-  hand without a stretch, and the last one standing can't be switched off.
+  arrows walk through. Each reading keeps its own set, since the two are asking
+  different things: across the neck all five are on, because that picture is
+  the map of where a chord lives, while in one position it opens on A, E and D,
+  the three that fall under the hand without a stretch. Change one and the
+  other stays as you left it. The last shape standing can't be switched off.
   One box needs the shapes left on to be able to meet somewhere: on Am–Dm–E,
   all five or A–E–D hold one shape of every chord inside four frets, A and E
   need five, but a single shape needs ten to twelve — most of the neck, and not

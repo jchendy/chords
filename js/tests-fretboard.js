@@ -68,8 +68,10 @@
   // its own state from JavaScript and only writes the classes back: a fixture
   // that disagreed would make a test toggling a control do the opposite of
   // what it meant. Every group is a picker whose first option is the default —
-  // except the shapes, which are independent toggles opening on A, E and D.
-  const SEG_ACTIVE = { cagedShapeGroup: ['A', 'E', 'D'] };
+  // except the shapes, which are independent toggles, and which open on all
+  // five because the view starts across the neck — in one position it's A, E
+  // and D, and the buttons are repainted when the reading changes.
+  const SEG_ACTIVE = { cagedShapeGroup: ['C', 'A', 'G', 'E', 'D'] };
   Object.entries(SEG).forEach(([id, values]) => {
     const group = document.createElement('div');
     group.id = id;
@@ -554,12 +556,14 @@
     const bad = [];
     loadProgression(['Am7', 'Dm7', 'E7']);
     setMode('caged');
+    // the reading first: each keeps its own set of shapes, so setting them
+    // before choosing one would edit whichever set happened to be showing
+    setView('neck');
     [['A', 'E', 'D'], ['C', 'G'], ['E'], ['C', 'A', 'G', 'E', 'D']].forEach(on => {
       setShapes(on);
       [false, true].forEach(arp => {
         const cb = q('#wholeArpeggioToggle');
         if (cb.checked !== arp) cb.click();
-        setView('neck');
         const where = `${on.join('')} arp=${arp}`;
         const drawn = new Set([...svg.querySelectorAll('.note-dot')]
           .flatMap(g => (g.getAttribute('data-shapes') || '').split(',').filter(Boolean)));
@@ -572,7 +576,7 @@
         if (!drawn.size) bad.push(`${where}: nothing drawn at all`);
       });
     });
-    setShapes(['A', 'E', 'D']);
+    setShapes(['C', 'A', 'G', 'E', 'D']);      // back to what this reading opens on
     t.ok(!bad.length, `A shape switched off leaves the neck, the outlines and the legend`
       + (bad.length ? ` — ${bad[0]}` : ''));
   }
@@ -607,6 +611,34 @@
       + (bad.length ? ` — ${bad[0]}` : ''));
   }
 
+  // The two readings ask different questions, so each keeps its own set of
+  // shapes: across the neck all five, which is the map of where a chord lives;
+  // in one position the three that sit under a hand. Switching between them
+  // must bring the right set back rather than carrying one over — including
+  // the buttons, which are the only place the set is visible.
+  function testEachReadingKeepsItsOwnShapes(t){
+    const bad = [];
+    loadProgression(['Am7', 'Dm7', 'E7']);
+    setMode('caged');
+    setView('neck');
+    if (shapesOn().join('') !== 'CAGED') bad.push(`across the neck opens on ${shapesOn().join('') || 'nothing'}`);
+    setView('position');
+    if (shapesOn().join('') !== 'AED') bad.push(`in one position opens on ${shapesOn().join('') || 'nothing'}`);
+    // change one, and the other must be untouched when you come back
+    setShapes(['C', 'A']);
+    setView('neck');
+    if (shapesOn().join('') !== 'CAGED') bad.push(`the neck's set followed the position's: ${shapesOn().join('')}`);
+    setShapes(['G']);
+    setView('position');
+    if (shapesOn().join('') !== 'CA') bad.push(`the position's set was not kept: ${shapesOn().join('')}`);
+    setView('neck');
+    if (shapesOn().join('') !== 'G') bad.push(`the neck's set was not kept: ${shapesOn().join('')}`);
+    setShapes(['C', 'A', 'G', 'E', 'D']);
+    setView('position');
+    setShapes(['A', 'E', 'D']);
+    t.ok(!bad.length, 'Each reading keeps its own shapes' + (bad.length ? ` — ${bad[0]}` : ''));
+  }
+
   GT.fretboardSuites = [
     ['Fretboard: chords are drawn as shapes you can hold', testGripsAreGrips],
     ['Fretboard: whole arpeggio opens the shapes out', testArpeggioReallyOpensOut],
@@ -621,6 +653,7 @@
     ['Fretboard: every box named is a box you can reach', testEveryBoxNamedCanBeReached],
     ['Fretboard: every colour comes from a box the note is in', testEveryColourComesFromItsBox],
     ['Fretboard: a shape switched off leaves the view', testDisabledShapesLeaveTheView],
+    ['Fretboard: each reading keeps its own shapes', testEachReadingKeepsItsOwnShapes],
     ['Fretboard: One box goes when it cannot hold the progression', testOneBoxGoesWhenItCannotHold],
   ];
 })();
