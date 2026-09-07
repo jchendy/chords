@@ -17,7 +17,6 @@
   // through this host object, so the view never reaches into it directly.
   let host = {
     progression: () => [],
-    useSevenths: () => false,
     isPlaying: () => false,
     mode: () => 'major',
     tonic: () => 'C',
@@ -260,7 +259,7 @@
       const b = document.createElement('button');
       b.type = 'button';
       b.className = 'seg-btn' + (i === cagedChordIdx ? ' active' : '');
-      b.textContent = displayName(chord, host.useSevenths());
+      b.textContent = displayName(chord);
       b.addEventListener('click', () => {
         cagedChordIdx = i;
         cagedChordGroup.querySelectorAll('.seg-btn').forEach(x => x.classList.remove('active'));
@@ -310,7 +309,7 @@
           Math.abs(p.meanFret - targetFret) < Math.abs(best.meanFret - targetFret) ? p : best);
         const color = ROOT_PALETTE[i % ROOT_PALETTE.length];
         const tag = String(i);   // reuses the shape-spotlight mechanism, keyed by chord index
-        posLegendData.push({ name: displayName(chord, host.useSevenths()), numeral: chord.numeral, color, tag, shapeLetter: placement.name });
+        posLegendData.push({ name: displayName(chord), numeral: chord.numeral, color, tag, shapeLetter: placement.name });
 
         const rootPc = SEMITONE[chord.note] % 12;
         const thirdPc = SEMITONE[chord.third] % 12;
@@ -319,7 +318,7 @@
           pc === rootPc ? chord.note : pc === thirdPc ? degreeLabel(chord, 'third') :
           pc === fifthPc ? degreeLabel(chord, 'fifth') : degreeLabel(chord, 'seventh');
 
-        const cellsToShow = (host.useSevenths() && chord.seventh)
+        const cellsToShow = chord.seventh
           ? seventhCells(placement, rootPc, SEMITONE[chord.seventh] % 12)
           : placement.cells.slice();
 

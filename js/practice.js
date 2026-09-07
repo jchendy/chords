@@ -7,7 +7,7 @@
 
   const {
     MAJOR_KEYS, MINOR_KEYS, MAJOR_COMMON, MINOR_COMMON, LEADING_TONE, SEMITONE,
-    pick, buildDiatonicChords, displayName, chordFromName, NOTE_NAMES_SHARP,
+    pick, buildDiatonicChords, displayName, chordFromName, NOTE_NAMES_SHARP, SUFFIX,
   } = GT.theory;
   const audio = GT.audio;
   const {
@@ -23,6 +23,7 @@
   let keyChoice = null;                 // null = random, else { mode, tonic }
   let slotChoices = [null, null, null]; // per slot: null = random, else a diatonic degree
   let slotMeasures = [];                // per slot: how many measures that chord lasts
+  let slotSevenths = [];                // per slot: the shape you chose, or null to follow the key
   let loadedLabel = null;               // set when a progression came in from elsewhere
   let currentMode = 'major';
   let currentTonic = 'C';
@@ -58,25 +59,97 @@
     return d;
   }
 
-  // `opts.dom` flattens the 7th, so a degree reads as a dominant while keeping
-  // the triad the key gives it — that's what makes a blues in a minor key come
-  // out minor. `opts.maj` also raises the 3rd, for a genuine secondary
-  // dominant like the VI7 in a jazz blues.
-  function chordForDegree(deg, opts){
+  // Name the shape a chord is currently in — the key a slot stores.
+  function seventhLabelOf(chord){
+    if (!chord.seventh) return chord.quality === 'min' ? 'min' : chord.quality === 'dim' ? 'dim' : 'maj';
+    const iv = ((SEMITONE[chord.seventh] - SEMITONE[chord.note]) % 12 + 12) % 12;
+    if (chord.quality === 'dim') return iv === 9 ? 'dim7' : 'm7♭5';
+    if (chord.quality === 'min') return 'm7';
+    return iv === 11 ? 'maj7' : '7';
+  }
+
+  // The seventh a key's own scale puts on a degree — what "use 7ths" rolls.
+  // Read from the diatonic list, since a chord built as a triad has none.
+  function diatonicSeventhFor(deg){
     const c = currentDiatonic.find(x => x.deg === deg) || currentDiatonic[0];
-    const chord = { ...c, _deg: c.deg };
+    return seventhLabelOf(c);
+  }
+
+  // the flat-7 that keeps the triad it's built on
+  function flatSeventh(quality){
+    return quality === 'dim' ? 'm7♭5' : quality === 'min' ? 'm7' : '7';
+  }
+
+  // Every shape a slot can be set to, as a triad plus an optional seventh
+  // (semitones above the root). A slot isn't limited to the chord its key
+  // gives that degree — this is how you get a secondary dominant on the ii, a
+  // borrowed minor iv, or a major III.
+  const CHORD_SHAPES = {
+    maj:    { triad: 'maj', seventh: null, label: 'Major' },
+    min:    { triad: 'min', seventh: null, label: 'Minor' },
+    dim:    { triad: 'dim', seventh: null, label: 'dim'   },
+    '7':    { triad: 'maj', seventh: 10,   label: '7'     },
+    maj7:   { triad: 'maj', seventh: 11,   label: 'maj7'  },
+    m7:     { triad: 'min', seventh: 10,   label: 'm7'    },
+    'm7♭5': { triad: 'dim', seventh: 10,   label: 'm7♭5'  },
+    dim7:   { triad: 'dim', seventh: 9,    label: 'dim7'  },
+  };
+
+  // The five everyday shapes, plus the diminished ones on the one degree whose
+  // own chord is diminished — otherwise the vii° couldn't be spelled at all.
+  function shapeOptions(quality){
+    const dim = quality === 'dim';
+    return ['maj', 'min', ...(dim ? ['dim'] : []), '7', 'maj7', 'm7',
+            ...(dim ? ['m7♭5', 'dim7'] : [])];
+  }
+
+  const triadShapeOf = quality => quality === 'min' ? 'min' : quality === 'dim' ? 'dim' : 'maj';
+
+  // The shape a slot should take: whatever you set it to, otherwise the key's
+  // own triad — or the key's own seventh, if random slots are set to come up
+  // as sevenths. Leaving that last case implicit rather than writing it into
+  // `slotSevenths` is what lets the checkbox turn triads into sevenths and
+  // back without disturbing anything else about the progression.
+  function shapeFor(i, deg){
+    if (slotSevenths[i]) return slotSevenths[i];
+    if (slotChoices[i] == null && randomSeventhsToggle.checked) return diatonicSeventhFor(deg);
+    return null;
+  }
+
+  // the two shapes the key itself puts on a degree: its triad and its 7th
+  function diatonicShapesFor(deg){
+    const c = currentDiatonic.find(x => x.deg === deg) || currentDiatonic[0] || {};
+    return [triadShapeOf(c.quality), diatonicSeventhFor(deg)];
+  }
+
+  // Re-cast a roman numeral for a quality the key doesn't give that degree —
+  // a borrowed iv, a secondary V7 sitting on the ii, a diminished vii°.
+  function recaseNumeral(numeral, triad){
+    const plain = numeral.replace('°', '');
+    if (triad === 'maj') return plain.toUpperCase();
+    if (triad === 'min') return plain.toLowerCase();
+    return plain.toLowerCase() + '°';
+  }
+
+  // Build a degree's chord in whichever shape that slot asks for. Passing
+  // nothing gives the key's own triad, which is what lets an untouched slot
+  // follow along when the key or the mode changes.
+  function chordForDegree(deg, shape){
+    const c = currentDiatonic.find(x => x.deg === deg) || currentDiatonic[0];
+    const chord = { ...c, _deg: c.deg, _sev: shape || null };
+    const spec = CHORD_SHAPES[shape];
+
+    if (!spec){ chord.seventh = null; return chord; }
+
     const at = semis => NOTE_NAMES_SHARP[((SEMITONE[chord.note] + semis) % 12 + 12) % 12];
-    if (opts && opts.maj){
-      chord.third = at(4);
-      chord.quality = 'maj';
-      chord.name = chord.note;
-      chord.numeral = chord.numeral.replace('°', '').toUpperCase();
-      chord._maj = true;
+    if (spec.triad !== chord.quality){
+      chord.third = at(spec.triad === 'maj' ? 4 : 3);
+      chord.fifth = at(spec.triad === 'dim' ? 6 : 7);
+      chord.quality = spec.triad;
+      chord.name = chord.note + SUFFIX[spec.triad];
+      chord.numeral = recaseNumeral(chord.numeral, spec.triad);
     }
-    if (opts && opts.dom){
-      chord.seventh = at(10);
-      chord._dom = true;
-    }
+    chord.seventh = spec.seventh == null ? null : at(spec.seventh);
     return chord;
   }
 
@@ -95,16 +168,20 @@
     const validDegs = new Set(currentDiatonic.map(c => c.deg));
     slotChoices = slotChoices.map(s => (s == null || validDegs.has(s)) ? s : null);
 
+    // a slot being re-rolled gets a fresh shape too; a pinned slot keeps the
+    // one you gave it
+    slotSevenths = slotSevenths.map((s, i) => slotChoices[i] == null ? null : s);
+
     const prog = [];
     for (let i = 0; i < chordCount; i++){
       const deg = slotChoices[i] != null ? slotChoices[i]
         : rollDegree(prog.length ? prog[prog.length - 1]._deg : -1);
-      prog.push(chordForDegree(deg));
+      prog.push(chordForDegree(deg, shapeFor(i, deg)));
     }
     // keep fully-random progressions grounded on the tonic
     if (slotChoices.some(s => s == null) && !prog.some(c => c._deg === 0)){
       const i = slotChoices.findIndex(s => s == null);
-      prog[i] = chordForDegree(0);
+      prog[i] = chordForDegree(0, shapeFor(i, 0));
     }
     currentProgression = prog;
   }
@@ -136,12 +213,15 @@
     // leaves every chord editable from its own picker afterwards
     slotChoices = chords.map(c => c.deg);
     slotMeasures = chords.map(c => c.bars);
-    currentProgression = chords.map(c => chordForDegree(c.deg, c));
+    // `maj` asks for a real dominant; `dom` keeps whatever triad the key gives
+    // the degree and just flattens its 7th
+    slotSevenths = chords.map(c => {
+      if (c.dia) return diatonicSeventhFor(c.deg);
+      if (!c.dom) return null;
+      return c.maj ? '7' : flatSeventh(chordForDegree(c.deg).quality);
+    });
+    currentProgression = chords.map((c, i) => chordForDegree(c.deg, slotSevenths[i]));
     loadedLabel = null;
-    if (chords.some(c => c.dom) && !useSevenths){
-      useSevenths = true;
-      seventhToggle.checked = true;
-    }
     renderAll();
   }
 
@@ -191,6 +271,19 @@
     renderPresetVariants();
   }
 
+  // Which degree of the current key a slot is sitting on. Chords generated
+  // here carry their degree; one loaded from a genre example doesn't, so match
+  // it by root and fall back to the tonic.
+  function degreeOf(i){
+    if (slotChoices[i] != null) return slotChoices[i];
+    const chord = currentProgression[i];
+    if (!chord) return currentDiatonic[0].deg;
+    if (chord._deg != null) return chord._deg;
+    const rootPc = SEMITONE[chord.note] % 12;
+    const match = currentDiatonic.find(c => SEMITONE[c.note] % 12 === rootPc);
+    return match ? match.deg : currentDiatonic[0].deg;
+  }
+
   function renderChordSlots(){
     chordSlotsEl.innerHTML = '';
     for (let i = 0; i < chordCount; i++){
@@ -200,20 +293,19 @@
       const sel = document.createElement('select');
       sel.className = 'mini-select chord-degree';
       sel.setAttribute('aria-label', `Chord ${i + 1}`);
+      // just which degree of the key this is — the shape picker beside it says
+      // whether it's a triad or a seventh, so naming one here would only
+      // contradict the other
       sel.innerHTML = `<option value="random">Random</option>` +
-        currentDiatonic.map(o => `<option value="${o.deg}">${displayName(o, useSevenths)} · ${o.numeral}</option>`).join('');
+        currentDiatonic.map(o => `<option value="${o.deg}">${o.name} · ${o.numeral}</option>`).join('');
       sel.value = slotChoices[i] == null ? 'random' : String(slotChoices[i]);
-      // a preset can make a degree dominant, which the key's own diatonic
-      // chord list doesn't know about — label that option with what's actually
-      // sounding so the picker doesn't contradict the display
-      const current = currentProgression[i];
-      if (current && (current._dom || current._maj)){
-        const opt = [...sel.options].find(o => o.value === String(current._deg));
-        if (opt) opt.textContent = `${displayName(current, useSevenths)} · ${current.numeral}`;
-      }
       sel.addEventListener('change', () => {
         slotChoices[i] = sel.value === 'random' ? null : Number(sel.value);
-        currentProgression[i] = chordForDegree(slotChoices[i] != null ? slotChoices[i] : rollDegree(-1));
+        // handing a slot back to Random hands its shape back too, so a rolled
+        // chord is always one the key actually contains
+        if (slotChoices[i] == null) slotSevenths[i] = null;
+        const rolled = slotChoices[i] != null ? slotChoices[i] : rollDegree(-1);
+        currentProgression[i] = chordForDegree(rolled, shapeFor(i, rolled));
         loadedLabel = null;
         clearPreset();
         renderAll();
@@ -232,47 +324,77 @@
       bars.addEventListener('change', () => {
         slotMeasures[i] = Number(bars.value) || DEFAULT_MEASURES;
         clearPreset();      // once the bar lengths change it isn't that preset any more
-        refreshBarLabels();
+        renderChordDisplay();
         resetPlaybackCursor();
       });
       slot.appendChild(bars);
+
+      // what shape the chord takes — free to leave the key, with a ✓ on the
+      // two shapes the key itself gives this degree
+      const sev = document.createElement('select');
+      sev.className = 'mini-select seventh-select';
+      sev.setAttribute('aria-label', `Chord quality for chord ${i + 1}`);
+      sev.title = 'Chord quality — ✓ marks the shapes in this key';
+      const deg = degreeOf(i);
+      const dia = currentDiatonic.find(x => x.deg === deg) || currentDiatonic[0] || {};
+      const inKey = diatonicShapesFor(deg);
+      sev.innerHTML = shapeOptions(dia.quality).map(tok =>
+        `<option value="${tok}">${CHORD_SHAPES[tok].label}${inKey.includes(tok) ? ' ✓' : ''}</option>`
+      ).join('');
+      // what this slot would be showing if you'd never touched it
+      const implied = (slotChoices[i] == null && randomSeventhsToggle.checked)
+        ? diatonicSeventhFor(deg) : inKey[0];
+      sev.value = shapeFor(i, deg) || inKey[0];
+      sev.addEventListener('change', () => {
+        // leaving the untouched choice unrecorded is what lets a slot follow
+        // the key when you transpose or flip Major/Minor
+        slotSevenths[i] = sev.value === implied ? null : sev.value;
+        currentProgression[i] = chordForDegree(deg, shapeFor(i, deg));
+        clearPreset();
+        renderAll();
+      });
+      slot.appendChild(sev);
 
       chordSlotsEl.appendChild(slot);
     }
   }
 
-  function barsLabel(i){
-    const n = measuresFor(i);
-    return n === 1 ? '1 bar' : `${n} bars`;
+  // The display is laid out a bar at a time, the way a chart reads: a chord
+  // held for three bars is written out three times. Four bars to a line.
+  function barCells(){
+    const cells = [];
+    currentProgression.forEach((chord, i) => {
+      for (let b = 0; b < measuresFor(i); b++){
+        cells.push({ chord, chordIndex: i, bar: cells.length, held: b > 0 });
+      }
+    });
+    return cells;
   }
 
-  // update the bar counts in place, so changing one doesn't replay the
-  // chord display's entrance animation
-  function refreshBarLabels(){
-    document.querySelectorAll('#chords .chord').forEach((item, i) => {
-      const el = item.querySelector('.chord-bars');
-      if (el) el.textContent = barsLabel(i);
-    });
+  function barOffset(chordIndex){
+    let bars = 0;
+    for (let i = 0; i < chordIndex; i++) bars += measuresFor(i);
+    return bars;
   }
 
   function renderChordDisplay(){
     const chordsEl = document.getElementById('chords');
-    const names = currentProgression.map(c => displayName(c, useSevenths));
-    const n = currentProgression.length;
-    // seventh-chord names (e.g. "Bm7♭5") run much longer than triad names
-    // ("Am", "B°") — shrink the font to fit the longest one, not just the count
-    const maxLen = Math.max(1, ...names.map(name => name.length));
-    chordsEl.style.setProperty('--n', Math.max(n, n * maxLen / 3));
-    chordsEl.classList.toggle('tight', currentProgression.length === 2);
+    const cells = barCells();
+    // seventh-chord names ("Bm7♭5") run much longer than triads ("Am"), so the
+    // font follows the longest name as well as how many bars share the line
+    const maxLen = Math.max(1, ...cells.map(c => displayName(c.chord).length));
+    chordsEl.style.setProperty('--cols', Math.min(4, Math.max(1, cells.length)));
+    chordsEl.style.setProperty('--len', maxLen);
     chordsEl.innerHTML = '';
-    currentProgression.forEach((chord, i) => {
+    cells.forEach((cell, i) => {
       const item = document.createElement('div');
-      item.className = 'chord';
-      item.style.animationDelay = `${i * 70}ms`;
+      item.className = 'bar' + (cell.held ? ' held' : '');
+      item.dataset.bar = cell.bar;
+      item.dataset.chord = cell.chordIndex;
+      item.style.animationDelay = `${Math.min(i, 8) * 55}ms`;
       item.innerHTML = `
-        <span class="chord-name">${names[i]}</span>
-        <span class="chord-numeral">${chord.numeral}</span>
-        <span class="chord-bars">${barsLabel(i)}</span>
+        <span class="chord-name">${displayName(cell.chord)}</span>
+        <span class="chord-numeral">${cell.chord.numeral}</span>
       `;
       chordsEl.appendChild(item);
     });
@@ -281,15 +403,7 @@
   // update chord name labels in place (no re-roll, no re-triggering the
   // entrance animation) — used when a display-only setting like "7" flips
   function refreshChordNames(){
-    const chordsEl = document.getElementById('chords');
-    const names = currentProgression.map(c => displayName(c, useSevenths));
-    const n = currentProgression.length;
-    const maxLen = Math.max(1, ...names.map(name => name.length));
-    chordsEl.style.setProperty('--n', Math.max(n, n * maxLen / 3));
-    [...chordsEl.querySelectorAll('.chord')].forEach((item, i) => {
-      const nameEl = item.querySelector('.chord-name');
-      if (nameEl) nameEl.textContent = names[i];
-    });
+    renderChordDisplay();
     renderChordSlots();
     view.rebuildChordPicker();
   }
@@ -349,9 +463,9 @@
     currentDiatonic = keyChordChoices();
     const validDegs = new Set(currentDiatonic.map(c => c.deg));
 
-    currentProgression = currentProgression.map(chord =>
+    currentProgression = currentProgression.map((chord, i) =>
       (chord._deg != null && validDegs.has(chord._deg))
-        ? chordForDegree(chord._deg, { dom: chord._dom, maj: chord._maj })
+        ? chordForDegree(chord._deg, shapeFor(i, chord._deg))
         : transposeChord(chord, shift));
 
     // a pin that has no chord in the new key falls back to random
@@ -384,8 +498,7 @@
   const playBtn = document.getElementById('playBtn');
   const playBtn2 = document.getElementById('playBtn2');
   const commonToggle = document.getElementById('commonToggle');
-  const seventhToggle = document.getElementById('seventhToggle');
-  let useSevenths = false;   // triads vs seventh chords (root/3rd/5th/7th), naming + playback
+  const randomSeventhsToggle = document.getElementById('randomSeventhsToggle');
   const clickToggle = document.getElementById('clickToggle');
   const countInToggle = document.getElementById('countInToggle');
   const rootOnlyToggle = document.getElementById('rootOnlyToggle');
@@ -440,9 +553,15 @@
   });
 
   commonToggle.addEventListener('change', render);
-  seventhToggle.addEventListener('change', () => {
-    useSevenths = seventhToggle.checked;
-    refreshChordNames();   // same chords, just relabel/replay them as triads or 7ths
+  // only governs what a fresh roll produces; chords on screen keep their own
+  // Swaps triads for sevenths in place: the roots, the degrees, the bar
+  // lengths and any chord you've set yourself all stay exactly as they are.
+  randomSeventhsToggle.addEventListener('change', () => {
+    currentProgression = currentProgression.map((chord, i) => {
+      if (chord._deg == null) return chord;    // loaded from elsewhere; not ours to change
+      return chordForDegree(chord._deg, shapeFor(i, chord._deg));
+    });
+    renderAll();
   });
 
   // resize the per-slot arrays to match; kept separate from setChordCount so a
@@ -454,6 +573,8 @@
     slotChoices.length = chordCount;
     while (slotMeasures.length < chordCount) slotMeasures.push(DEFAULT_MEASURES);
     slotMeasures.length = chordCount;
+    while (slotSevenths.length < chordCount) slotSevenths.push(null);
+    slotSevenths.length = chordCount;
   }
 
   function setChordCount(n){
@@ -546,7 +667,7 @@
     beatInChord = 0;
     scheduledLog = [];
     view.resetFollow();
-    document.querySelectorAll('.chord').forEach(el => el.classList.remove('dim', 'active'));
+    document.querySelectorAll('#chords .bar').forEach(el => el.classList.remove('dim', 'active'));
     measureReadout.textContent = '';
   }
 
@@ -565,7 +686,7 @@
         // boost the lone root so it sits at a similar loudness to a full triad
         playNote(noteFreq(chord.note, ROOT_OCTAVE), nextNoteTime, duration, velocity * 1.9);
       } else {
-        playChord(chord, nextNoteTime, duration, velocity, useSevenths);
+        playChord(chord, nextNoteTime, duration, velocity);
       }
       scheduledLog.push({
         idx: chordIdx, time: nextNoteTime,
@@ -596,7 +717,7 @@
 
       if (chord){
         const ce = style.chord && style.chord.find(e => e.slot === slot);
-        if (ce) playStyleVoice(style.voice, chord, t, ce.dur * slotDur, ce.vel, useSevenths);
+        if (ce) playStyleVoice(style.voice, chord, t, ce.dur * slotDur, ce.vel);
 
         const be = style.bass && style.bass.find(e => e.slot === slot);
         if (be){
@@ -657,8 +778,9 @@
     }
     const active = scheduledLog[0];
     if (active){
-      document.querySelectorAll('.chord').forEach((el, i) => {
-        const isActive = i === active.idx;
+      const currentBar = barOffset(active.idx) + Math.min(active.measure, measuresFor(active.idx)) - 1;
+      document.querySelectorAll('#chords .bar').forEach(el => {
+        const isActive = Number(el.dataset.bar) === currentBar;
         el.classList.toggle('active', isActive);
         el.classList.toggle('dim', !isActive);
       });
@@ -693,7 +815,7 @@
     } else {
       isPlaying = false;
       clearTimeout(schedulerId);
-      document.querySelectorAll('.chord').forEach(el => el.classList.remove('dim', 'active'));
+      document.querySelectorAll('#chords .bar').forEach(el => el.classList.remove('dim', 'active'));
       measureReadout.textContent = '';
       setPlayLabel('Play');
       view.onPlaybackStopped();
@@ -728,19 +850,35 @@
     if (!built.length) return;
 
     setSlotCount(built.length);
-    // remember the key it came in, so changing key from here shifts by the
-    // right interval rather than from whatever was last generated
-    if (key && SEMITONE[key] !== undefined) currentTonic = key;
+    // Move to the key it came in, so changing key from here shifts by the right
+    // interval rather than from whatever was last generated — and so the chord
+    // pickers rate its chords against the right scale. Nothing says which mode
+    // it's in, so read that off the chord sitting on the tonic.
+    if (key && SEMITONE[key] !== undefined){
+      const tonicChord = built.find(c => SEMITONE[c.note] % 12 === SEMITONE[key] % 12);
+      const mode = tonicChord && tonicChord.quality === 'min' ? 'minor' : 'major';
+      const table = mode === 'major' ? MAJOR_KEYS : MINOR_KEYS;
+      if (table[key]){
+        currentTonic = key;
+        currentMode = mode;
+        currentDiatonic = keyChordChoices();
+        document.querySelectorAll('#modeGroup .seg-btn').forEach(b =>
+          b.classList.toggle('active', b.dataset.value === mode));
+        modeSetting = mode;
+        buildKeySelect();
+        keyChoice = { mode, tonic: key };
+        keySelect.value = `${mode}:${key}`;
+      } else {
+        currentTonic = key;
+      }
+    }
     currentProgression = built;
     slotChoices = built.map(() => null);
     slotMeasures = kept.slice(0, built.length).map(r => r.bars);
+    // spelled out rather than left to the key: a loaded progression is whatever
+    // it is, so its pickers should show the chord that's actually sounding
+    slotSevenths = built.map(seventhLabelOf);
     loadedLabel = label || null;
-
-    // a progression written with 7th chords should sound like one
-    if (built.some(c => c.seventh) && !useSevenths){
-      useSevenths = true;
-      seventhToggle.checked = true;
-    }
     if (tempo){
       tempoInput.value = tempo;
       tempoInput.dispatchEvent(new Event('input'));
@@ -755,7 +893,6 @@
     init(){
       view.init({
         progression: () => currentProgression,
-        useSevenths: () => useSevenths,
         isPlaying:   () => isPlaying,
         mode:        () => currentMode,
         tonic:       () => currentTonic,

@@ -82,14 +82,15 @@
     const rootPc = SEMITONE[chord.note] % 12;
     const seventhPc = SEMITONE[chord.seventh] % 12;
     const interval = (seventhPc - rootPc + 12) % 12;
-    if (chord.quality === 'dim') return 'm7♭5';
+    if (chord.quality === 'dim') return interval === 9 ? 'dim7' : 'm7♭5';
     if (chord.quality === 'min') return 'm7';
     return interval === 11 ? 'maj7' : '7';
   }
 
-  // the name to display for a chord, honoring the "Seventh chords" toggle
-  function displayName(chord, useSevenths){
-    if (!useSevenths || !chord.seventh) return chord.name;
+  // What to call a chord: its triad name, or the seventh-chord name when it
+  // carries a 7th. Each chord decides for itself — there's no global switch.
+  function displayName(chord){
+    if (!chord.seventh) return chord.name;
     return chord.note + seventhSuffix(chord);
   }
 

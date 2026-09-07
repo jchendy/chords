@@ -13,7 +13,7 @@
     return 440 * Math.pow(2, (midi - 69) / 12);
   }
 
-  function chordFrequencies(chord, useSevenths){
+  function chordFrequencies(chord){
     // stack root/third/fifth(/seventh) upward in pitch, wrapping octaves as needed
     const rootSemi = SEMITONE[chord.note];
     const thirdSemi = SEMITONE[chord.third];
@@ -28,7 +28,7 @@
       noteFreq(chord.fifth, fifthOctave),
     ];
 
-    if (useSevenths && chord.seventh){
+    if (chord.seventh){
       const seventhSemi = SEMITONE[chord.seventh];
       const seventhOctave = fifthOctave + (seventhSemi <= fifthSemi ? 1 : 0);
       freqs.push(noteFreq(chord.seventh, seventhOctave));
@@ -146,8 +146,8 @@
     });
   }
 
-  function playChord(chord, time, duration, velocity, useSevenths){
-    chordFrequencies(chord, useSevenths).forEach(freq => playNote(freq, time, duration, velocity));
+  function playChord(chord, time, duration, velocity){
+    chordFrequencies(chord).forEach(freq => playNote(freq, time, duration, velocity));
   }
 
   // ---- extra voices for the genre styles ----
@@ -261,10 +261,10 @@
     osc.stop(time + 0.13);
   }
 
-  function playStyleVoice(voice, chord, time, duration, velocity, useSevenths){
+  function playStyleVoice(voice, chord, time, duration, velocity){
     if (voice === 'dom7') return playChord7(chord, time, duration, velocity, false);
     if (voice === 'jazz') return playChord7(chord, time, duration, velocity, true);
-    return playChord(chord, time, duration, velocity, useSevenths);   // 'triad'
+    return playChord(chord, time, duration, velocity);   // 'triad'
   }
 
   // A plucked-string voice for the genre examples. Sawtooth pairs give the

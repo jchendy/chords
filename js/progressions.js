@@ -18,6 +18,8 @@
   const d = (deg, bars, dom) => ({ deg, bars: bars || 1, dom: !!dom });
   // a secondary dominant: major triad and a flat 7, whatever the key says
   const dom7 = (deg, bars) => ({ deg, bars: bars || 1, dom: true, maj: true });
+  // takes whatever seventh the key's own scale puts on that degree
+  const dia = (deg, bars) => ({ deg, bars: bars || 1, dia: true });
 
   GT.progressionPresets = [
     {
@@ -32,7 +34,7 @@
         { name: 'Jazz blues',
           // a ii–V turnaround and a VI7 to set it up
           chords: [d(0,1,1), d(3,1,1), d(0,2,1), d(3,2,1), d(0,1,1), dom7(5),
-                   d(1,1), d(4,1,1), d(0,1,1), d(4,1,1)] },
+                   dia(1), d(4,1,1), d(0,1,1), d(4,1,1)] },
         { name: 'Slow blues',
           // the same twelve bars, two chords per line to sit on
           chords: [d(0,4,1), d(3,2,1), d(0,2,1), d(4,2,1), d(0,2,1)] },
@@ -43,7 +45,7 @@
     { name: 'vi–IV–I–V', chords: [d(5), d(3), d(0), d(4)] },
     { name: 'I–vi–IV–V', chords: [d(0), d(5), d(3), d(4)] },
     { name: 'I–vi–ii–V', chords: [d(0), d(5), d(1), d(4)] },
-    { name: 'ii–V–I', chords: [d(1), d(4), d(0,2)] },
+    { name: 'ii–V–I', chords: [dia(1), d(4,1,1), dia(0,2)] },
     { name: 'I–IV–vi–V', chords: [d(0), d(3), d(5), d(4)] },
     { name: 'Descending', chords: [d(0), d(4), d(5), d(2), d(3), d(0), d(3), d(4)] },
     { name: 'i–VII–VI–V', chords: [d(0), d(6), d(5), d(4)] },
