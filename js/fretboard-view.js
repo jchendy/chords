@@ -94,6 +94,18 @@
   const clusterMode = () =>
     fretMode === 'caged' && inPosition && cagedPosMethod !== 'box';
 
+  // A dot shared by several shapes is drawn once, in whichever colour got
+  // there first. Remembering every owner's colour lets the spotlight repaint
+  // it as the shape you're actually looking at.
+  function withTagColors(markers, colorFor){
+    return markers.map(m => {
+      if (!m.shapes || m.shapes.length < 2) return m;
+      const colorsByTag = {};
+      m.shapes.forEach(t => { const c = colorFor(t); if (c) colorsByTag[t] = c; });
+      return Object.keys(colorsByTag).length > 1 ? { ...m, colorsByTag } : m;
+    });
+  }
+
   // recolour a finished marker list, keeping everything else about it
   function applyColorBy(markers, chord){
     if (colorBy !== 'interval' || !chord) return markers;
@@ -370,6 +382,25 @@
   // ---- Progression: a cell shared by two chords labels itself
   // differently depending on which of them is currently in focus (root for
   // one, some other degree for another) ----
+  const fillsIn = g => [...g.querySelectorAll('circle:not(.dot-ring), path')];
+  // a hollow dot wears its colour on the stroke, with the panel showing
+  // through — repainting its fill would solidify the very thing that makes
+  // it read as a 7th
+  const paint = (g, colors) => {
+    const prop = g.classList.contains('hollow') ? 'stroke' : 'fill';
+    fillsIn(g).forEach((el, i) => el.setAttribute(prop, colors[Math.min(i, colors.length - 1)]));
+  };
+  function setDotColor(g, tag){
+    const raw = g.getAttribute('data-colors');
+    if (!raw) return;
+    const hit = raw.split(',').map(p => p.split(':')).find(([t]) => t === tag);
+    if (hit) paint(g, [hit[1]]);
+  }
+  function resetDotColor(g){
+    const def = g.getAttribute('data-default-color');
+    if (def) paint(g, def.split(','));
+  }
+
   function setDotLabel(g, tag){
     const raw = g.getAttribute('data-labels');
     if (!raw) return;
@@ -397,6 +428,7 @@
       fretboardSvg.querySelectorAll('.pos-current, .pos-next, .suppress-ring')
         .forEach(el => el.classList.remove('pos-current', 'pos-next', 'suppress-ring'));
       fretboardSvg.querySelectorAll('.note-dot[data-labels]').forEach(resetDotLabel);
+      fretboardSvg.querySelectorAll('.note-dot[data-colors]').forEach(resetDotColor);
       cagedLegend.querySelectorAll('.legend-current').forEach(el => el.classList.remove('legend-current'));
       return;
     }
@@ -421,9 +453,9 @@
       // and it should read as whichever degree it is *for* the chord that's
       // actually lighting it up right now, not whichever chord happened to
       // render its label first
-      if (isCurrent) setDotLabel(g, cur);
-      else if (isNext) setDotLabel(g, next);
-      else resetDotLabel(g);
+      if (isCurrent){ setDotLabel(g, cur); setDotColor(g, cur); }
+      else if (isNext){ setDotLabel(g, next); setDotColor(g, next); }
+      else { resetDotLabel(g); resetDotColor(g); }
     });
     fretboardSvg.querySelectorAll('.shape-line').forEach(l => {
       const tag = l.getAttribute('data-shape');
@@ -446,9 +478,9 @@
       const isHot = !!shape && list.includes(shape);
       g.classList.toggle('hot', isHot);
       // a shared cell reads as whatever degree it is *for* the spotlighted
-      // chord, not whichever chord happened to render its label first
-      if (isHot) setDotLabel(g, shape);
-      else resetDotLabel(g);
+      // chord, and wears that chord's colour, not whichever one drew it first
+      if (isHot){ setDotLabel(g, shape); setDotColor(g, shape); }
+      else { resetDotLabel(g); resetDotColor(g); }
     });
     fretboardSvg.querySelectorAll('.shape-line').forEach(l => {
       l.classList.toggle('hot', !!shape && l.getAttribute('data-shape') === shape);
@@ -704,14 +736,14 @@
         if (!cellMap.has(key)) cellMap.set(key, { string: c.string, fret: c.fret, invs: new Set() });
         cellMap.get(key).invs.add(invOf(t.bassPc));
       }));
-      const markers = [...cellMap.values()].map(m => {
+      const markers = withTagColors([...cellMap.values()].map(m => {
         const pc = (STRING_TUNING[m.string] + m.fret) % 12;
         const invs = INVERSIONS.map(i => i.tag).filter(t => m.invs.has(t));
         const base = { string: m.string, fret: m.fret, label: degByPc[pc], isRoot: pc === rootPc, shapes: invs };
         return invs.length >= 2
           ? { ...base, split: [INVERSION_COLOR[invs[0]], INVERSION_COLOR[invs[1]]] }
           : { ...base, color: INVERSION_COLOR[invs[0]] };
-      });
+      }), t => INVERSION_COLOR[t]);
       // Triads has shapes of its own, so those are its positions — borrowing
       // the CAGED grips could land you on a stretch of neck holding no triad
       // for the very chord you picked. Stepping now walks this chord's own
@@ -753,9 +785,16 @@
         });
       };
       const ghosts = ghostMarkers(shownWindow,
-        new Map(lit.map(m => [m.string + ':' + m.fret, m])), true, triadShapes);
+        new Map(lit.map(m => [m.string + ':' + m.fret, m])), true, triadShapes, true);
       noteCurrentChord(cands, curIdx, curTag, curColor);
-      return { markers: [...ghosts.markers, ...lit], lines: [...ghosts.lines, ...litLines] };
+      const all = [...ghosts.markers, ...lit];
+      // a nearest shape can sit a fret or two outside the box, so the readout
+      // covers what's drawn rather than the box it was measured from
+      if (shownWindow && all.length){
+        const fs = all.map(m => m.fret);
+        shownWindow = { min: Math.min(shownWindow.min, ...fs), max: Math.max(shownWindow.max, ...fs) };
+      }
+      return { markers: all, lines: [...ghosts.lines, ...litLines] };
     }
 
     // The five movable CAGED shapes for one chord. "Whole arpeggio" opens each
@@ -791,6 +830,7 @@
       // its 7th-chord voicings, so what's traced is a shape you'd actually
       // finger rather than the plain triad underneath it.
       const board = cagedTriadBoard(rootPc, isMinor, chord.note, seventhPc);
+      board.markers = withTagColors(board.markers, n => CAGED_COLORS[n]);
       if (!wholeArpeggio){
         cagedShapesShown = board.shapesShown;
         // Each grip is its own box, so "Single box" walks the neck one CAGED
@@ -851,6 +891,7 @@
         }
       }
       const shown = applyBoxWindow(markers, lines, boxes, boxOpts);
+      shown.markers = withTagColors(shown.markers, n => CAGED_COLORS[n]);
       const lit = inPosition ? shown.markers.map(asChord) : applyColorBy(shown.markers, chord);
       const litLines = inPosition
         ? shown.lines.map(l => ({ ...l, color: curColor, shape: curTag })) : shown.lines;
@@ -911,7 +952,7 @@
         }
       }
       const onNeck = placements.filter(p => p.anchor >= 0 && p.anchor <= FRET_COUNT);
-      const shown = applyBoxWindow(markers, lines, onNeck);
+      const shown = applyBoxWindow(withTagColors(markers, n => CAGED_COLORS[n]), lines, onNeck);
       return { markers: applyColorBy(shown.markers, chord), lines: shown.lines };
     }
 
@@ -987,7 +1028,7 @@
           }
         }
       }
-      const shown = applyBoxWindow(markers, lines, boxes.filter(onNeck));
+      const shown = applyBoxWindow(withTagColors(markers, n => CAGED_COLORS[n]), lines, boxes.filter(onNeck));
       return { markers: applyColorBy(shown.markers, chord), lines: shown.lines };
     }
 
@@ -1032,7 +1073,12 @@
   // already there rather than being dropped. Otherwise spotlighting that chord
   // would light an incomplete version of it, missing exactly the notes it
   // holds in common with the chord in front.
-  function ghostMarkers(win, placed, useGrips, shapesOf){
+  // `nearest` changes what "here" means for the chords behind. Where a view's
+  // shapes are dense — CAGED grips, five to a chord — the ones inside the
+  // window are the ones under your hand. Where they're sparse — close triads,
+  // roughly one every four frets — insisting on that shows nothing but the
+  // chord you're on, so each chord gives its nearest shape instead, whole.
+  function ghostMarkers(win, placed, useGrips, shapesOf, nearest){
     ghostLegendData = [];
     if (!win) return { markers: [], lines: [] };
     const cands = host.progression().filter(c => c.quality !== 'dim');
@@ -1072,8 +1118,19 @@
       // union of all five clipped to the window is not a shape anyone plays
       // whole shapes only — half a grip clipped by the box edge is not
       // something you can put your hand on
-      const whole = shapes.filter(g => g.cells.every(inWin));
-      const bestGrip = whole.length ? whole[0].cells : [];
+      let bestGrip = [];
+      if (nearest && shapes.length){
+        const aim = (win.min + win.max) / 2;
+        const midOfCells = g => {
+          const fs = g.cells.map(x => x.fret);
+          return (Math.min(...fs) + Math.max(...fs)) / 2;
+        };
+        bestGrip = shapes.reduce((a, b) =>
+          Math.abs(midOfCells(b) - aim) < Math.abs(midOfCells(a) - aim) ? b : a).cells;
+      } else {
+        const whole = shapes.filter(g => g.cells.every(inWin));
+        bestGrip = whole.length ? whole[0].cells : [];
+      }
       // whatever the view in front is showing, the ghosts show the same of:
       // the grips, or every chord tone
       const cells = useGrips
@@ -1086,12 +1143,15 @@
       let drew = false;
       let letter = '';
       cells.forEach(cell => {
-        if (!inWin(cell)) return;
+        if (!nearest && !inWin(cell)) return;
         drew = true;
         const k = cell.string + ':' + cell.fret;
         const already = placed.get(k);
         if (already){                       // shared note: one dot, two owners
           if (!already.shapes.includes(tag)) already.shapes.push(tag);
+          already.colorsByTag = already.colorsByTag
+            || { [already.shapes[0]]: already.color };
+          already.colorsByTag[tag] = color;
           // if one of them is the chord you're heading into, the brighter
           // reading wins — the note is coming up either way
           if (isNext && already.ghost) already.ghostNext = true;
@@ -1105,7 +1165,8 @@
       });
       // and its grip traced through, where one sits wholly inside the box
       grips.forEach((g, gi) => {
-        if (g.length > 1 && g.every(inWin)){
+        const shown = nearest ? g === bestGrip : g.every(inWin);
+        if (g.length > 1 && shown){
           if (!letter) letter = gripNames[gi] || '';
           lines.push({ color, shape: tag, ghost: true, ghostNext: isNext, letter,
                        cells: g.map(cell => ({ string: cell.string, fret: cell.fret })) });

@@ -89,10 +89,16 @@
           : '';
         // `hollow` marks a note outside the triad (the 7th); `passing` a scale
         // note that isn't a chord tone, drawn quieter so the chord tones stand out
+        const fills = m.hollow ? [m.color || (m.split && m.split[0])]
+          : m.split ? m.split : [m.color];
+        const colorsAttr = m.colorsByTag
+          ? ` data-colors="${Object.entries(m.colorsByTag).map(([t, c]) => `${t}:${c}`).join(',')}"` +
+            ` data-default-color="${fills.join(',')}"`
+          : '';
         const extraClass = (m.isLowestRoot ? ' pos-root' : '') + (m.hollow ? ' hollow' : '')
           + (m.passing ? ' passing' : '') + (m.ringed ? ' ringed' : '')
           + (m.ghost ? ' ghost' : '') + (m.ghostNext ? ' ghost-next' : '');
-        let g = `<g class="note-dot${extraClass}"${shapeAttr}${rootPcAttr}${rootForAttr}${labelsAttr}>`;
+        let g = `<g class="note-dot${extraClass}"${shapeAttr}${rootPcAttr}${rootForAttr}${labelsAttr}${colorsAttr}>`;
         if (m.hollow){
           const stroke = m.color || (m.split && m.split[0]);
           g += `<circle cx="${cx}" cy="${cy}" r="${r - 1.2}" fill="var(--panel)" stroke="${stroke}" stroke-width="2.4"/>`;
