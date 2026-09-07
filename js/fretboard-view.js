@@ -9,9 +9,18 @@
   const {
     STRING_TUNING, STRING_LABELS, FRET_COUNT,
     CAGED_MAJOR, CAGED_MINOR, CAGED_ORDER, CAGED_COLORS, ROOT_PALETTE,
-    cagedPlacements, seventhCells, arpeggioCells, cagedArpeggioBoxes,
+    cagedPlacements, seventhCells, arpeggioCells, cagedArpeggioBoxes, stringSetTriads,
     pentaBoxPlacements, scaleBoxPlacements, cagedTriadBoard,
   } = GT.fretboard;
+
+  // Which chord tone is underneath a three-string triad — the thing that
+  // tells one shape from another once you're comping with them.
+  const INVERSIONS = [
+    { tag: 'root', label: 'root position', color: '#e6733a' },
+    { tag: '1st', label: '1st inversion', color: '#2fbccb' },
+    { tag: '2nd', label: '2nd inversion', color: '#8ec93f' },
+  ];
+  const INVERSION_COLOR = Object.fromEntries(INVERSIONS.map(i => [i.tag, i.color]));
 
   // Everything the view needs to know about the practice tab's state arrives
   // through this host object, so the view never reaches into it directly.
@@ -46,6 +55,7 @@
   let colorBy = 'shape';         // 'shape' (which CAGED box) | 'interval' (what the note is)
   let voiceLead = false;         // Chord positions: follow the previous shape, not one fret
   let allTones = false;          // Chord positions: each chord's whole arpeggio, not just its grip
+  let stringSetLow = 2;          // Triad inversions: lowest string of the set (2 = e-B-G)
   let shapeRanges = {};          // per shape: the frets it spans, for the legend
 
   // What each note *is* in the chord it's being read against. Colouring by
@@ -120,12 +130,22 @@
   const colorByLabel = document.getElementById('colorByLabel');
   const voiceLeadToggle = document.getElementById('voiceLeadToggle');
   const allTonesToggle = document.getElementById('allTonesToggle');
+  const stringSetRow = document.getElementById('stringSetRow');
+
+  document.querySelectorAll('#stringSetGroup .seg-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#stringSetGroup .seg-btn').forEach(b => b.classList.toggle('active', b === btn));
+      stringSetLow = Number(btn.dataset.value);
+      renderFretboard();
+    });
+  });
 
   function updateFretUI(){
-    const singleChordModes = ['caged', 'arp', 'penta', 'scale'].includes(fretMode);
+    const singleChordModes = ['caged', 'arp', 'triads3', 'penta', 'scale'].includes(fretMode);
     cagedChordRow.hidden = !singleChordModes;
     scaleTheoryRow.hidden = fretMode !== 'scale';
     chordPosRow.hidden = fretMode !== 'positions';
+    stringSetRow.hidden = fretMode !== 'triads3';
     boxRow.hidden = !['arp', 'penta', 'scale'].includes(fretMode);
     // stepping and holding only mean something once you're looking at one box
     document.getElementById('boxStep').classList.toggle('locked', !singleBox);
@@ -541,6 +561,45 @@
       return { markers, lines };
     }
 
+    // Close triads on one set of three strings, every inversion, all the way
+    // up the neck — each shape outlined and coloured by what's in the bass.
+    if (fretMode === 'triads3'){
+      const chord = currentChord();
+      if (!chord) return { markers: [], lines: [] };
+      const rootPc = SEMITONE[chord.note] % 12;
+      const thirdPc = SEMITONE[chord.third] % 12;
+      const fifthPc = SEMITONE[chord.fifth] % 12;
+      const degByPc = {
+        [rootPc]: '1',
+        [thirdPc]: degreeLabel(chord, 'third'),
+        [fifthPc]: degreeLabel(chord, 'fifth'),
+      };
+      const invOf = pc => pc === rootPc ? 'root' : pc === thirdPc ? '1st' : '2nd';
+
+      const triads = stringSetTriads(stringSetLow, new Set([rootPc, thirdPc, fifthPc]));
+      const lines = triads.map(t => ({
+        color: INVERSION_COLOR[invOf(t.bassPc)], shape: invOf(t.bassPc),
+        cells: t.cells.slice().sort((a, b) => a.string - b.string),
+      }));
+
+      // a note can serve two neighbouring shapes; it gets a half of each
+      const cellMap = new Map();
+      triads.forEach(t => t.cells.forEach(c => {
+        const key = c.string + ':' + c.fret;
+        if (!cellMap.has(key)) cellMap.set(key, { string: c.string, fret: c.fret, invs: new Set() });
+        cellMap.get(key).invs.add(invOf(t.bassPc));
+      }));
+      const markers = [...cellMap.values()].map(m => {
+        const pc = (STRING_TUNING[m.string] + m.fret) % 12;
+        const invs = INVERSIONS.map(i => i.tag).filter(t => m.invs.has(t));
+        const base = { string: m.string, fret: m.fret, label: degByPc[pc], isRoot: pc === rootPc, shapes: invs };
+        return invs.length >= 2
+          ? { ...base, split: [INVERSION_COLOR[invs[0]], INVERSION_COLOR[invs[1]]] }
+          : { ...base, color: INVERSION_COLOR[invs[0]] };
+      });
+      return { markers: applyColorBy(markers, chord), lines };
+    }
+
     // Every chord tone across the neck, grouped into the five CAGED boxes —
     // the chord shape you already know, opened out into the arpeggio around
     // it, with the shape itself still traced through the middle.
@@ -784,16 +843,25 @@
       return;
     }
     const parts = [];
+    // The inversions are what this view is *about*, so they keep their
+    // entries (and their spotlight) whichever way the dots are coloured.
+    if (fretMode === 'triads3'){
+      const drawn = new Set([...fretboardSvg.querySelectorAll('.note-dot[data-shapes]')]
+        .flatMap(g => g.getAttribute('data-shapes').split(',')));
+      INVERSIONS.filter(i => drawn.has(i.tag)).forEach(i =>
+        parts.push(`<span data-shape="${i.tag}" tabindex="0" role="button" aria-label="Highlight ${i.label}"><i style="background:${i.color}"></i>${i.label}${range(i.tag)}</span>`));
+    }
     if (colorBy === 'interval'){
       // the dots are coloured by what each note is in the chord, so that's
       // what the legend has to explain — the shape outlines still trace boxes
       const chord = currentChord();
       const names = ['root', '3rd', '5th'];
-      if (chord && chord.seventh) names.push('7th');
+      // the triad views draw no 7th, whatever the chord carries
+      if (chord && chord.seventh && fretMode !== 'triads3') names.push('7th');
       if (fretMode === 'penta' || fretMode === 'scale') names.push('other');
       ROLE_ORDER.filter(n => names.includes(n)).forEach(n =>
         parts.push(`<span><i style="background:${ROLE_COLORS[n]}"></i>${n === 'other' ? 'scale tone' : n}</span>`));
-    } else {
+    } else if (fretMode !== 'triads3'){
       // only the shapes actually on screen get an entry — a single box, or a
       // zoomed-in stretch of neck, leaves the others out
       const drawn = new Set([...fretboardSvg.querySelectorAll('.note-dot[data-shapes]')]

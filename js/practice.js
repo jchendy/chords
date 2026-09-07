@@ -426,6 +426,35 @@
     }
   }
 
+  // ---- hearing one chord on its own ---------------------------------------
+  // Click a bar and just that chord sounds, whether or not the progression is
+  // playing — for checking a shape against what it's supposed to sound like.
+  function auditionBar(bar){
+    const chord = currentProgression[Number(bar.dataset.chord)];
+    if (!chord) return;
+    ensureAudio();
+    if (audio.ctx().state === 'suspended') audio.ctx().resume();
+    playChord(chord, audio.ctx().currentTime + 0.02, 1.8, 0.85);
+    bar.classList.remove('rang');
+    void bar.offsetWidth;            // restart the flash
+    bar.classList.add('rang');
+  }
+
+  const chordsRoot = document.getElementById('chords');
+  chordsRoot.addEventListener('click', e => {
+    const bar = e.target.closest('.bar');
+    if (bar) auditionBar(bar);
+  });
+  chordsRoot.addEventListener('keydown', e => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    const bar = e.target.closest('.bar');
+    if (!bar) return;
+    // on a focused bar the space bar means "hear this one", not play/pause
+    e.preventDefault();
+    e.stopPropagation();
+    auditionBar(bar);
+  });
+
   // The display is laid out a bar at a time, the way a chart reads: a chord
   // held for three bars is written out three times. Four bars to a line.
   function barCells(){
@@ -458,6 +487,10 @@
       item.className = 'bar' + (cell.held ? ' held' : '');
       item.dataset.bar = cell.bar;
       item.dataset.chord = cell.chordIndex;
+      // each bar is a button that plays its own chord
+      item.tabIndex = 0;
+      item.setAttribute('role', 'button');
+      item.title = `Play ${displayName(cell.chord)}`;
       item.style.animationDelay = `${Math.min(i, 8) * 55}ms`;
       item.innerHTML = `
         <span class="chord-name">${displayName(cell.chord)}</span>

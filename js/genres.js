@@ -12,7 +12,7 @@
   const GT = (window.GT = window.GT || {});
 
   const { SEMITONE, parseChordName } = GT.theory;
-  const { STRING_TUNING, FRET_COUNT } = GT.fretboard;
+  const { STRING_TUNING, STRING_MIDI, FRET_COUNT } = GT.fretboard;
 
   // ---------------------------------------------------------------- voicings
   //
@@ -166,8 +166,6 @@
   // slot of the pattern it lands on, and how long it rings. The tab drawing and
   // the player both read this, so what you see is what you hear.
 
-  // open-string MIDI numbers, high e down to low E
-  const STRING_MIDI = [64, 59, 55, 50, 45, 40];
   function midiFor(string, fret){ return STRING_MIDI[string] + fret; }
   function freqFor(string, fret){ return 440 * Math.pow(2, (midiFor(string, fret) - 69) / 12); }
 

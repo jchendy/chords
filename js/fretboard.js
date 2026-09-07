@@ -5,6 +5,7 @@
   const GT = (window.GT = window.GT || {});
 
   const STRING_TUNING = [4, 11, 7, 2, 9, 4];        // index 0 = high e (top) ... 5 = low E (bottom)
+  const STRING_MIDI = [64, 59, 55, 50, 45, 40];     // the same strings as absolute pitch
   const STRING_LABELS = ['e', 'B', 'G', 'D', 'A', 'E'];
   const FRET_COUNT = 15;
 
@@ -111,6 +112,43 @@
         window: { min: lo, max: hi },
       };
     }).filter(b => b.cells.length);
+  }
+
+  // Close-voiced triads on one set of three adjacent strings, in every
+  // inversion, everywhere they sit on the neck — the "triads on the top three
+  // strings" study, and the shapes rhythm players comp with. `lowString` is
+  // the set's lowest-pitched string (its highest index).
+  //
+  // A voicing qualifies when it plays one of each chord tone, one note per
+  // string, rising in pitch across the set, inside an octave and inside a
+  // hand span.
+  function stringSetTriads(lowString, tonePcs, maxSpan = 4){
+    const set = [lowString, lowString - 1, lowString - 2];   // low pitch to high
+    if (lowString > 5 || set[2] < 0) return [];
+    const per = set.map(s => {
+      const frets = [];
+      for (let f = 0; f <= FRET_COUNT; f++){
+        if (tonePcs.has((STRING_TUNING[s] + f) % 12)) frets.push(f);
+      }
+      return frets;
+    });
+
+    const out = [];
+    per[0].forEach(f0 => per[1].forEach(f1 => per[2].forEach(f2 => {
+      const frets = [f0, f1, f2];
+      if (Math.max(...frets) - Math.min(...frets) > maxSpan) return;
+      const pcs = set.map((s, i) => (STRING_TUNING[s] + frets[i]) % 12);
+      if (new Set(pcs).size !== 3) return;                       // one of each tone
+      const notes = set.map((s, i) => STRING_MIDI[s] + frets[i]);
+      if (notes[1] <= notes[0] || notes[2] <= notes[1]) return;   // rising across the set
+      if (notes[2] - notes[0] >= 12) return;                      // close voicing
+      out.push({
+        cells: set.map((s, i) => ({ string: s, fret: frets[i] })),
+        bassPc: pcs[0],                                           // which tone is underneath
+        startFret: Math.min(...frets),
+      });
+    })));
+    return out.sort((a, b) => a.startFret - b.startFret);
   }
 
   // pentatonic "box" templates, one per CAGED position: two fret offsets per
@@ -263,9 +301,9 @@
   }
 
   GT.fretboard = {
-    STRING_TUNING, STRING_LABELS, FRET_COUNT,
+    STRING_TUNING, STRING_MIDI, STRING_LABELS, FRET_COUNT,
     CAGED_MAJOR, CAGED_MINOR, CAGED_ORDER, CAGED_COLORS, ROOT_PALETTE,
-    cagedPlacements, seventhCells, arpeggioCells, cagedArpeggioBoxes,
+    cagedPlacements, seventhCells, arpeggioCells, cagedArpeggioBoxes, stringSetTriads,
     pentaBoxPlacements, scaleBoxPlacements,
     cagedTriadBoard, identifyCagedShape, cagedShapeMatch,
   };
