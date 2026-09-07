@@ -317,7 +317,7 @@ by what each part does:
 | --- | --- |
 | `theory.js` | Keys, scale degrees, chord formulas, chord naming, chord identification. Pure — no DOM, no audio, no app state. |
 | `fretboard.js` | Tuning, CAGED and pentatonic shape templates, the maths that places them on the neck, and CAGED shape matching. Also pure. |
-| `neck.js` | Draws a full 15-fret neck as SVG from markers and shape outlines — shared by the practice fretboard and the chord finder's CAGED overview. |
+| `neck.js` | Draws a full 15-fret neck as SVG from markers and shape outlines — shared by the practice fretboard, the chord finder's CAGED overview and the reverse finder, so all three necks are one drawing. |
 | `progressions.js` | The preset progressions, written as scale degrees. Pure data. |
 | `genres.js` | Voicing templates and the code that turns a progression × rhythm into notes. Pure. |
 | `genre-data.js` | The genre library itself: progressions, rhythm patterns and lead lines. Pure data. |
@@ -327,7 +327,7 @@ by what each part does:
 | `fretboard-view.js` | The practice tab's fretboard panel: the five views, the legend, the hover spotlight, the follow-playback highlighting. |
 | `practice.js` | The CAGED practice tab: progression generation, the chord display and settings, and the playback transport. |
 | `chord-finder.js` | Chord finder tab: voicing search, fingering, chord diagrams. |
-| `reverse-finder.js` | Reverse chord finder tab: the clickable neck and the name lookup. |
+| `reverse-finder.js` | Reverse chord finder tab: click targets over the shared neck, and the name lookup. |
 | `tooltips.js` | The (i) info bubbles. |
 | `tabs.js` | Tab switching, plus the URL fragment and page title that go with each tab. |
 | `main.js` | Boots each tab and wires the header together. |

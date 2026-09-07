@@ -444,14 +444,6 @@
   }
   .measure-readout:empty{ margin: 0; }
 
-  .display-genre{
-    margin-top: 18px;
-    padding-top: 14px;
-    border-top: 1px solid var(--line);
-    width: 100%;
-  }
-  .genre-picker{ justify-content:center; }
-
   /* one cell per bar, four bars to a line, the way a chart reads */
   .chords{
     display: grid;
@@ -893,16 +885,6 @@
     <div class="share-row">
       <button type="button" class="link-btn" id="shareBtn">Copy link to this progression</button>
       <input type="text" class="text-input share-out" id="shareOut" readonly aria-label="Link to this progression" hidden>
-    </div>
-    <div class="display-genre">
-      <div class="segmented genre-picker" id="displayGenreGroup">
-        <button type="button" class="seg-btn genre-btn active" data-value="simple">Simple</button>
-        <button type="button" class="seg-btn genre-btn" data-value="rock">Rock</button>
-        <button type="button" class="seg-btn genre-btn" data-value="blues">Blues</button>
-        <button type="button" class="seg-btn genre-btn" data-value="jazz">Jazz</button>
-        <button type="button" class="seg-btn genre-btn" data-value="pop">Pop</button>
-        <button type="button" class="seg-btn genre-btn" data-value="funk">Funk</button>
-      </div>
     </div>
   </section>
 
