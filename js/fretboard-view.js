@@ -380,10 +380,25 @@
       l.classList.toggle('hot', !!shape && l.getAttribute('data-shape') === shape);
     });
   }
+  // In Root notes mode the spotlight belongs to the chord that's sounding, not
+  // to a legend entry: ring its root(s) wherever they fall on the neck.
+  function paintRootSpotlight(){
+    const on = fretMode === 'roots' && activeRootPc != null;
+    fretboardSvg.classList.toggle('shape-focus', on);
+    if (!on) return;
+    fretboardSvg.querySelectorAll('.note-dot[data-rootpc]').forEach(g => {
+      g.classList.toggle('hot', g.getAttribute('data-rootpc') === String(activeRootPc));
+    });
+  }
+
   function refreshShapeSpotlight(hoverShape){
     const shape = hoverShape || stuckShape;
     paintShapeSpotlight(shape);
-    if (!shape) paintPositionsFollow();   // restore the live follow-highlight once released
+    // put back whatever the view was highlighting on its own once released
+    if (!shape){
+      paintPositionsFollow();
+      paintRootSpotlight();
+    }
   }
 
   cagedLegend.addEventListener('mouseover', e => {
@@ -419,9 +434,12 @@
     stuckShape = stuckShape === el.dataset.shape ? null : el.dataset.shape;
     refreshShapeSpotlight(null);
   });
-  // tapping / clicking anywhere else releases a pinned shape
+  // tapping / clicking anywhere else releases a pinned shape — but only when
+  // one is actually pinned. Repainting on every click anywhere on the page
+  // would also wipe the root spotlight Root notes puts up while it plays.
   document.addEventListener('click', () => {
-    if (stuckShape !== null) stuckShape = null;
+    if (stuckShape === null) return;
+    stuckShape = null;
     refreshShapeSpotlight(null);
   });
 
@@ -445,6 +463,10 @@
   }
 
   function computeFretData(){
+    // Only the box views set a window, and only some of the time. Clearing it
+    // here is what stops a "Fit to box" zoom — and the legend's box reading —
+    // from following you into a view that has no boxes at all.
+    shownWindow = null;
     if (!host.progression().length) return { markers: [], lines: [] };
 
     if (fretMode === 'positions'){
@@ -497,17 +519,26 @@
           pc === rootPc ? chord.note : pc === thirdPc ? degreeLabel(chord, 'third') :
           pc === fifthPc ? degreeLabel(chord, 'fifth') : degreeLabel(chord, 'seventh');
 
+        const tonePcs = new Set([chord.note, chord.third, chord.fifth, chord.seventh]
+          .filter(Boolean).map(n => SEMITONE[n] % 12));
+        // the grip itself — the CAGED shape, or its 7th-chord voicing
+        const gripCells = chord.seventh
+          ? seventhCells(placement, rootPc, SEMITONE[chord.seventh] % 12)
+          : placement.cells.slice();
+        // Traced through, so each chord in the cluster reads as a shape a hand
+        // makes rather than as loose dots — and so that, with "All chord tones"
+        // on, you can still see where the grip sits inside its arpeggio.
+        if (gripCells.length > 1){
+          lines.push({ color, shape: tag, cells: gripCells.map(c => ({ string: c.string, fret: c.fret })) });
+        }
+
         // The grip, or — with "All chord tones" on — every chord tone a hand
         // sitting on that grip can reach. That turns the cluster of shapes
         // into a map of the progression: each chord's arpeggio in its own
         // position, and you can see which notes carry over to the next chord.
-        const tonePcs = new Set([chord.note, chord.third, chord.fifth, chord.seventh]
-          .filter(Boolean).map(n => SEMITONE[n] % 12));
         const cellsToShow = allTones
           ? arpeggioCells(placement.fretMin, Math.max(placement.fretMax, placement.fretMin + 3), tonePcs)
-          : chord.seventh
-            ? seventhCells(placement, rootPc, SEMITONE[chord.seventh] % 12)
-            : placement.cells.slice();
+          : gripCells;
 
         // the "lowest root" is the root-note cell closest to the low E string
         // (highest string index) — the one a player would actually anchor on
@@ -893,12 +924,9 @@
     renderFretLegend();
     fretboardSvg.classList.toggle('positions-mode', fretMode === 'positions');
 
-    if (fretMode === 'roots' && activeRootPc != null){
-      // highlight the root(s) of whichever chord is currently playing
-      fretboardSvg.classList.add('shape-focus');
-      fretboardSvg.querySelectorAll('.note-dot[data-rootpc]').forEach(g => {
-        g.classList.toggle('hot', g.getAttribute('data-rootpc') === String(activeRootPc));
-      });
+    if (fretMode === 'roots'){
+      stuckShape = null;
+      paintRootSpotlight();
     } else if (fretMode === 'positions'){
       stuckShape = null;
       fretboardSvg.classList.remove('shape-focus');

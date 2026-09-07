@@ -558,10 +558,28 @@
     currentDiatonic = keyChordChoices();
     const validDegs = new Set(currentDiatonic.map(c => c.deg));
 
-    currentProgression = currentProgression.map((chord, i) =>
-      (chord._deg != null && validDegs.has(chord._deg))
-        ? chordForDegree(chord._deg, shapeFor(i, chord._deg))
-        : transposeChord(chord, shift));
+    currentProgression = currentProgression.map((chord, i) => {
+      if (chord._deg != null && validDegs.has(chord._deg)){
+        return chordForDegree(chord._deg, shapeFor(i, chord._deg));
+      }
+      const moved = transposeChord(chord, shift);
+      // A pin the new key has no degree for — the harmonic-minor V, on the way
+      // out of a minor key — still lands on a chord the new key does contain.
+      // Re-pin it there rather than handing the slot back to Random, which
+      // would leave the picker saying "Random" over a chord that never moves.
+      const rootPc = SEMITONE[moved.note] % 12;
+      const match = chord._deg != null
+        ? currentDiatonic.find(c => SEMITONE[c.note] % 12 === rootPc) : null;
+      if (match){
+        slotChoices[i] = match.deg;
+        slotShapes[i] = shapeOf(moved);
+        return chordForDegree(match.deg, slotShapes[i]);
+      }
+      // Otherwise it's a chord of no degree at all (one loaded from a genre
+      // example). Spell its shape out, so its picker describes what's sounding.
+      slotShapes[i] = shapeOf(moved);
+      return moved;
+    });
 
     // a pin that has no chord in the new key falls back to random
     slotChoices = slotChoices.map(s => (s == null || validDegs.has(s)) ? s : null);
@@ -585,6 +603,11 @@
       fifth: move(chord.fifth),
       seventh: move(chord.seventh),
       name: note + (chord.name || '').slice((chord.note || '').length),
+      // Shifted by an interval rather than rebuilt from a degree: whatever
+      // degree it used to be, it isn't one of this key's, so saying so would
+      // only mislead the pickers that read it.
+      _deg: null,
+      _shape: null,
     });
   }
 
