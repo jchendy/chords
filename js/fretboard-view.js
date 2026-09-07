@@ -296,6 +296,21 @@
     return (Math.min(...frets) + Math.max(...frets)) / 2;
   };
 
+  // Which of a chord's shapes sits nearest a fret. Both the position landing
+  // on a box and a chord behind choosing its shape go through here: two shapes
+  // can be equally close, and a tie has to break the same way for both or the
+  // shape you're shown isn't the one you get. Sorting first is what makes the
+  // tie-break "the lower one" rather than "whichever the caller listed first".
+  function nearestShape(shapes, aim){
+    const sorted = shapes.slice().sort((a, b) => a.anchor - b.anchor);
+    let best = sorted[0], bd = Infinity;
+    sorted.forEach(g => {
+      const d = Math.abs(midOf(g) - aim);
+      if (d < bd){ bd = d; best = g; }
+    });
+    return best;
+  }
+
   // `opts.single` overrides the shared Single box checkbox (Chords decides it
   // from which way it's reading); `opts.index` overrides the stepper.
   function applyBoxWindow(markers, lines, boxes, opts = {}){
@@ -316,14 +331,7 @@
     // back in would move the target a little further each time — which walks
     // the hand up the neck over a few chord changes.
     const rebased = forcedIndex == null && rebaseBox && positionAnchor != null;
-    if (rebased){
-      let best = 0, bd = Infinity;
-      sorted.forEach((b, k) => {
-        const d = Math.abs(midOf(b) - positionAnchor);
-        if (d < bd){ bd = d; best = k; }
-      });
-      boxIndex = best;
-    }
+    if (rebased) boxIndex = sorted.indexOf(nearestShape(sorted, positionAnchor));
     rebaseBox = false;
     const want = forcedIndex == null ? boxIndex : forcedIndex;
     const box = sorted[((want % sorted.length) + sorted.length) % sorted.length];
@@ -733,6 +741,19 @@
       const invOf = pc => pc === rootPc ? 'root' : pc === thirdPc ? '1st' : '2nd';
 
       const isMinor = chord.quality === 'min';
+      // The one list of a chord's shapes in this view, same as Chords has:
+      // the position picks a box from it for the chord in front, and a chord
+      // behind picks the one nearest the same anchor.
+      const triadShapes = c => {
+        const rp = SEMITONE[c.note] % 12;
+        const thirdOf = SEMITONE[c.third] % 12;
+        const tones = new Set([rp, thirdOf, SEMITONE[c.fifth] % 12]);
+        return stringSetTriads(stringSetLow, tones).map(t => ({
+          name: t.bassPc === rp ? 'root' : t.bassPc === thirdOf ? '1st' : '2nd',
+          anchor: t.startFret,
+          cells: t.cells.slice().sort((a, b) => a.string - b.string),
+        }));
+      };
       const triads = stringSetTriads(stringSetLow, new Set([rootPc, thirdPc, fifthPc]));
       // Each shape also says which CAGED grip it's cut from, so a triad reads
       // as somewhere you already know rather than as a shape of its own.
@@ -761,11 +782,7 @@
       // the CAGED grips could land you on a stretch of neck holding no triad
       // for the very chord you picked. Stepping now walks this chord's own
       // shapes up the neck, and each stop is one you can actually play.
-      const triadBoxes = triads.map(t => ({
-        name: invOf(t.bassPc), anchor: t.startFret,
-        cells: t.cells.slice().sort((a, b) => a.string - b.string),
-      }));
-      const shown = applyBoxWindow(markers, lines, triadBoxes, { minSpan: 4 });
+      const shown = applyBoxWindow(markers, lines, triadShapes(chord), { minSpan: 4 });
       // applyBoxWindow keeps a line only when all three of its notes are in
       // the window, but filters the dots one at a time — so a triad reaching
       // one fret past the box came through as a two-note fragment, a shape
@@ -788,15 +805,6 @@
         return { ...rest, color: curColor, shapes: [curTag] };
       });
       const litLines = shown.lines.map(l => ({ ...l, color: curColor, shape: curTag }));
-      const triadShapes = c => {
-        const rp = SEMITONE[c.note] % 12;
-        const tones = new Set([rp, SEMITONE[c.third] % 12, SEMITONE[c.fifth] % 12]);
-        return stringSetTriads(stringSetLow, tones).map(t => {
-          const bass = t.bassPc;
-          const inv = bass === rp ? 'root' : bass === SEMITONE[c.third] % 12 ? '1st' : '2nd';
-          return { name: inv, cells: t.cells.slice().sort((a, b) => a.string - b.string) };
-        });
-      };
       const ghosts = ghostMarkers(shownWindow,
         new Map(lit.map(m => [m.string + ':' + m.fret, m])), true, triadShapes, true);
       noteCurrentChord(cands, curIdx, curTag, curColor);
@@ -847,14 +855,24 @@
       // finger rather than the plain triad underneath it.
       const board = cagedTriadBoard(rootPc, isMinor, chord.note, seventhPc);
       board.markers = withTagColors(board.markers, n => CAGED_COLORS[n]);
+      // The one list of a chord's shapes in this view. The position picks a box
+      // from it for the chord in front, and a chord behind picks the one
+      // nearest the same anchor — so the shape you're shown for a chord is the
+      // shape you get when you switch to it, by construction rather than by
+      // two pieces of code agreeing.
+      const chordShapes = c => {
+        const rp = SEMITONE[c.note] % 12;
+        const sp = c.seventh ? SEMITONE[c.seventh] % 12 : null;
+        return cagedTriadBoard(rp, c.quality === 'min', c.note, sp).lines.map(l => ({
+          name: l.shape, anchor: Math.min(...l.cells.map(x => x.fret)), cells: l.cells,
+        }));
+      };
       if (!wholeArpeggio){
         cagedShapesShown = board.shapesShown;
         // Each grip is its own box, so "Single box" walks the neck one CAGED
         // shape at a time here just as it walks one arpeggio box at a time
         // with the shapes opened out.
-        const grips = board.lines.map(l => ({
-          name: l.shape, anchor: Math.min(...l.cells.map(c => c.fret)), cells: l.cells,
-        }));
+        const grips = chordShapes(chord);
         const one = applyBoxWindow(board.markers, board.lines, grips, boxOpts);
         // cagedTriadBoard draws all five shapes at once, so clipping that to a
         // window leaves fragments of the neighbouring ones — notes that belong
@@ -866,11 +884,24 @@
         const lit = inPosition ? boxOnly.map(asChord) : applyColorBy(boxOnly, chord);
         const litLines = inPosition
           ? one.lines.map(l => ({ ...l, color: curColor, shape: curTag })) : one.lines;
+        // Nearest shape, not only one lying wholly inside the box. A CAGED
+        // grip is four frets wide and a box at the nut can be three, so the
+        // strict rule silently drops a chord whose grip reaches one fret past
+        // the edge — an open Dm is 0-3 against a window of 0-2.
         const ghosts = inPosition
-          ? ghostMarkers(shownWindow, new Map(lit.map(m => [m.string + ':' + m.fret, m])), true)
+          ? ghostMarkers(shownWindow, new Map(lit.map(m => [m.string + ':' + m.fret, m])), true,
+                         chordShapes, true)
           : { markers: [], lines: [] };
-        if (inPosition) noteCurrentChord(cands, curIdx, curTag, curColor);
-        return { markers: [...ghosts.markers, ...lit], lines: [...ghosts.lines, ...litLines] };
+        if (!inPosition) return { markers: lit, lines: litLines };
+        noteCurrentChord(cands, curIdx, curTag, curColor);
+        const all = [...ghosts.markers, ...lit];
+        // a nearest shape can sit a fret or two outside the box, so the
+        // readout covers what's drawn rather than the box it was measured from
+        if (shownWindow && all.length){
+          const fs = all.map(m => m.fret);
+          shownWindow = { min: Math.min(shownWindow.min, ...fs), max: Math.max(shownWindow.max, ...fs) };
+        }
+        return { markers: all, lines: [...ghosts.lines, ...litLines] };
       }
 
       const degByPc = { [rootPc]: chord.note };
@@ -912,7 +943,8 @@
       const litLines = inPosition
         ? shown.lines.map(l => ({ ...l, color: curColor, shape: curTag })) : shown.lines;
       const ghosts = inPosition
-        ? ghostMarkers(shownWindow, new Map(lit.map(m => [m.string + ':' + m.fret, m])), false)
+        ? ghostMarkers(shownWindow, new Map(lit.map(m => [m.string + ':' + m.fret, m])), false,
+                       chordShapes)
         : { markers: [], lines: [] };
       if (inPosition) noteCurrentChord(cands, curIdx, curTag, curColor);
       return { markers: [...ghosts.markers, ...lit], lines: [...ghosts.lines, ...litLines] };
@@ -1123,11 +1155,7 @@
         pc === rootPc ? c.note : pc === thirdPc ? degreeLabel(c, 'third') :
         pc === fifthPc ? degreeLabel(c, 'fifth') : degreeLabel(c, 'seventh');
 
-      const shapes = shapesOf ? shapesOf(c) : (() => {
-        const placements = cagedPlacements(rootPc, isMinor ? CAGED_MINOR : CAGED_MAJOR);
-        return placements.map(p => ({ name: p.name,
-          cells: sevPc == null ? p.cells : seventhCells(p, rootPc, sevPc) }));
-      })();
+      const shapes = shapesOf(c);
       const gripNames = shapes.map(g => g.name);
       const grips = shapes.map(g => g.cells);
       // one shape per chord, the one most of which is under this hand — a
@@ -1136,17 +1164,10 @@
       // something you can put your hand on
       let bestGrip = [];
       if (nearest && shapes.length){
-        // Aim at the same fret a chord change aims at, not at the middle of
-        // the window: those differ once the window has been padded out and
-        // stretched over the other chords, and then the shape previewed here
-        // isn't the shape you get when you switch to that chord.
+        // the same fret a chord change aims at, and the same picker, so the
+        // shape shown here is the shape switching to this chord gives you
         const aim = positionAnchor != null ? positionAnchor : (win.min + win.max) / 2;
-        const midOfCells = g => {
-          const fs = g.cells.map(x => x.fret);
-          return (Math.min(...fs) + Math.max(...fs)) / 2;
-        };
-        bestGrip = shapes.reduce((a, b) =>
-          Math.abs(midOfCells(b) - aim) < Math.abs(midOfCells(a) - aim) ? b : a).cells;
+        bestGrip = nearestShape(shapes, aim).cells;
       } else {
         const whole = shapes.filter(g => g.cells.every(inWin));
         bestGrip = whole.length ? whole[0].cells : [];

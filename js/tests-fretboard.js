@@ -227,24 +227,31 @@
   // inside the window left the sparse triad views showing one chord alone.
   function testEveryChordIsDrawn(t){
     let bad = null, checked = 0;
-    PROGRESSIONS.forEach(names => {
-      loadProgression(names);
-      const want = new Set(progression.filter(c => c.quality !== 'dim')
-        .map(GT.theory.displayName)).size;
-      setMode('triads3'); setView('position');
-      STRING_SETS.forEach(set => {
-        setStringSet(set);
-        for (let p = 0; p < POSITIONS; p++){
-          checked++;
-          const got = Object.keys(drawnByTag()).length;
-          if (got < want && !bad){
-            bad = `${names.join('-')} set ${set} position ${p}: ${got} of ${want} chords drawn`;
+    // Both views, and the nut especially: a CAGED grip is four frets wide and
+    // a box down there can be three, so a chord whose shape reaches one fret
+    // past the edge is exactly what goes missing.
+    ['triads3', 'caged'].forEach(mode => {
+      PROGRESSIONS.forEach(names => {
+        loadProgression(names);
+        const want = new Set(progression.filter(c => c.quality !== 'dim')
+          .map(GT.theory.displayName)).size;
+        setMode(mode); setView('position');
+        (mode === 'triads3' ? STRING_SETS : ['2']).forEach(set => {
+          if (mode === 'triads3') setStringSet(set);
+          // walk from the nut upward, so the tight low boxes are covered
+          for (let i = 0; i < 8; i++) click('#boxPrev');
+          for (let p = 0; p < POSITIONS; p++){
+            checked++;
+            const got = Object.keys(drawnByTag()).length;
+            if (got < want && !bad){
+              bad = `${mode} ${names.join('-')} set ${set} position ${p}: ${got} of ${want} chords drawn`;
+            }
+            stepPosition();
           }
-          stepPosition();
-        }
+        });
       });
     });
-    t.ok(!bad, `Triads in one position: the whole progression is on the neck (${checked} positions)`
+    t.ok(!bad, `In one position the whole progression is on the neck (${checked} positions)`
       + (bad ? ` — ${bad}` : ''));
   }
 
@@ -408,7 +415,7 @@
     ['Fretboard: chords are drawn as shapes you can hold', testGripsAreGrips],
     ['Fretboard: whole arpeggio opens the shapes out', testArpeggioReallyOpensOut],
     ['Fretboard: triads are drawn whole', testTriadsAreWhole],
-    ['Fretboard: the progression is all there', testEveryChordIsDrawn],
+    ['Fretboard: the progression is all there, in both views', testEveryChordIsDrawn],
     ['Fretboard: the legend matches the neck', testLegendMatchesTheNeck],
     ['Fretboard: shared notes know their colours', testSharedNotesCarryEveryColour],
     ['Fretboard: the hand stays put while a progression plays', testPositionHoldsStillWhilePlaying],
