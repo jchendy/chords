@@ -804,7 +804,16 @@
   .transport{ text-align: left; margin-top: 14px; }
   .transport .setting:first-child{ border-top: 1px solid var(--line); padding-top: 13px; }
   /* the chart, with its key line, closes the panel */
-  .display .key{ margin: 20px 0 14px; padding-top: 16px; border-top: 1px solid var(--line); }
+  /* the chart's own quick actions, sitting above it */
+  .chart-actions{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex-wrap:wrap;
+    gap: 6px;
+    margin-bottom: 16px;
+  }
+  .chart-actions .mini-select{ max-width: 15rem; }
   .options-row{ gap: 8px 18px; }
   .options-row .inline-check{ white-space: normal; }
   .options-row .info-dot{ margin-left: 4px; }
@@ -865,6 +874,14 @@
   <!-- The chart on its own at the top: the thing you read while you play,
        with the neck directly under it and every setting below the two. -->
   <section class="panel narrow display">
+    <!-- Quick actions on the chart itself: the two things you reach for most
+         while playing, without scrolling down to the settings. They drive the
+         same pickers rather than keeping any state of their own. -->
+    <div class="chart-actions">
+      <select id="quickKey" class="mini-select" aria-label="Key"></select>
+      <button type="button" class="seg-btn dice-btn" id="quickKeyDice" aria-label="Random key" title="Random key">⚄</button>
+      <select id="quickPreset" class="mini-select" aria-label="Progression"></select>
+    </div>
     <p class="key" id="keyReadout">—</p>
     <div class="chords" id="chords"></div>
     <p class="measure-readout" id="measureReadout"></p>

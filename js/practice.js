@@ -33,6 +33,13 @@
   let currentDiatonic = [];             // the chord choices available for the current key
 
   const keySelect = document.getElementById('keySelect');
+  // The chart carries a copy of the two pickers you reach for while playing.
+  // They're views onto the same state, not a second copy of it: each mirrors
+  // the real picker's options and forwards a change straight to it.
+  const quickKey = document.getElementById('quickKey');
+  const quickPreset = document.getElementById('quickPreset');
+  const mirror = (from, to) => { to.innerHTML = from.innerHTML; to.value = from.value; };
+  const forward = (from, to) => { to.value = from.value; to.dispatchEvent(new Event('change')); };
   const chordSlotsEl = document.getElementById('chordSlots');
 
   // chords a manual slot can be set to: the 7 diatonic triads, plus the
@@ -212,6 +219,7 @@
     // the key you're actually in, and the dice beside it picks a new one
     keySelect.innerHTML = grp('Major keys', MAJOR_KEYS, 'major') + grp('Minor keys', MINOR_KEYS, 'minor');
     keySelect.value = `${currentMode}:${currentTonic}`;
+    mirror(keySelect, quickKey);
   }
 
   // ---- ready-made progressions -------------------------------------------
@@ -302,15 +310,20 @@
     // a preset that doesn't exist in this mode is no longer the one showing
     if (presetIdx != null && !fitsMode(GT.progressionPresets[presetIdx])) presetIdx = null;
     presetSelect.value = presetIdx == null ? '' : String(presetIdx);
+    mirror(presetSelect, quickPreset);
   }
 
-  presetSelect.addEventListener('change', () => {
-    if (presetSelect.value === ''){ clearPreset(); return; }
-    presetIdx = Number(presetSelect.value);
+  function loadPreset(i){
+    presetIdx = i;
     const preset = GT.progressionPresets[presetIdx];
     variantIdx = preset.variants.findIndex(fitsMode);
     renderPresetVariants();
     applyPreset(preset, preset.variants[variantIdx]);
+  }
+
+  presetSelect.addEventListener('change', () => {
+    if (presetSelect.value === ''){ clearPreset(); return; }
+    loadPreset(Number(presetSelect.value));
   });
 
   // once you've changed something by hand it isn't that preset any more
@@ -527,10 +540,11 @@
   }
 
   genBtn.addEventListener('click', render);
-  randomKeyBtn.addEventListener('click', () => {
-    clearPreset();
-    randomizeKey();         // transposes what's there; it renders itself
-  });
+  const randomKey = () => { clearPreset(); randomizeKey(); };
+  randomKeyBtn.addEventListener('click', randomKey);
+  document.getElementById('quickKeyDice').addEventListener('click', randomKey);
+  quickKey.addEventListener('change', () => forward(quickKey, keySelect));
+  quickPreset.addEventListener('change', () => forward(quickPreset, presetSelect));
 
   keySelect.addEventListener('change', () => {
     const [m, t] = keySelect.value.split(':');
@@ -1091,13 +1105,20 @@
       });
       updatePlaybackUI();
       setPlayLabel('Play');
-      // A shared link opens on its progression; otherwise start somewhere
-      // concrete — a random key and a rolled set of chords, both of which the
-      // pickers then name.
+      // A shared link opens on its progression; otherwise open on something
+      // recognisable rather than a random roll — the first preset the key's
+      // own mode offers, with the picker showing which one it is. The dice
+      // are right there for a random one.
       if (!applyShareState(GT.tabs.stateParams())){
         const mode = Math.random() < 0.5 ? 'major' : 'minor';
         setKey(mode, pick(Object.keys(mode === 'major' ? MAJOR_KEYS : MINOR_KEYS)));
-        render();
+        const first = GT.progressionPresets.findIndex(fitsMode);
+        if (first === -1) render();          // no preset for this mode: roll one
+        else {
+          loadPreset(first);
+          buildPresetSelect();               // ...and show which one it is
+          presetSelect.value = String(first);
+        }
       }
     },
   };
