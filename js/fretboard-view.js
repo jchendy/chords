@@ -51,6 +51,8 @@
   let boxIndex = 0;              // which box, low to high, when showing one
   let heldWindow = null;         // { min, max } of frets kept while holding position
   let shownWindow = null;        // what the legend reports
+  let lastShownWindow = null;    // ...and what it was before the chord changed
+  let rebaseBox = false;         // re-pick the box by position rather than by index
   let fretRange = 'all';         // 'all' | 'fit' | 'from-to' — how much neck to draw
   let colorBy = 'shape';         // 'shape' (which CAGED box) | 'interval' (what the note is)
   let voiceLead = false;         // Progression: follow the previous shape, not one fret
@@ -241,10 +243,30 @@
   // box" on, cut that down to one — the box at `boxIndex`, low to high — or,
   // while holding position, to whatever stretch of frets was on screen when
   // the chord changed, so the new chord's notes appear under the same hand.
+  const midOf = box => {
+    const frets = box.cells.map(c => c.fret);
+    return (Math.min(...frets) + Math.max(...frets)) / 2;
+  };
+
   function applyBoxWindow(markers, lines, boxes){
     shownWindow = null;
     if (!singleBox || !boxes.length) return { markers, lines };
     const sorted = boxes.slice().sort((a, b) => a.anchor - b.anchor);
+    // A box index means different frets for different chords — each chord has
+    // its own list of boxes — so carrying the index across a chord change
+    // makes the neck jump. Re-pick by position instead: the new chord's box
+    // nearest where the hand already was, which is also the one the previous
+    // chord's "up next" ghost was previewing.
+    if (rebaseBox && lastShownWindow){
+      const want = (lastShownWindow.min + lastShownWindow.max) / 2;
+      let best = 0, bd = Infinity;
+      sorted.forEach((b, k) => {
+        const d = Math.abs(midOf(b) - want);
+        if (d < bd){ bd = d; best = k; }
+      });
+      boxIndex = best;
+    }
+    rebaseBox = false;
     const box = sorted[((boxIndex % sorted.length) + sorted.length) % sorted.length];
     const frets = box.cells.map(c => c.fret);
     let win = { min: Math.min(...frets), max: Math.max(...frets) };
@@ -253,6 +275,7 @@
       win = heldWindow;
     }
     shownWindow = win;
+    lastShownWindow = win;
     const inWin = f => f >= win.min && f <= win.max;
     return {
       markers: markers.filter(m => inWin(m.fret)),
@@ -284,6 +307,7 @@
     }
     if (ci === cagedChordIdx && !force) return;
     cagedChordIdx = ci;
+    rebaseBox = true;      // stay where the hand is rather than where the index points
     cagedChordGroup.querySelectorAll('.seg-btn').forEach((b, k) => b.classList.toggle('active', k === ci));
     renderFretboard();
   }
@@ -469,6 +493,7 @@
       b.textContent = displayName(chord);
       b.addEventListener('click', () => {
         cagedChordIdx = i;
+        rebaseBox = true;
         cagedChordGroup.querySelectorAll('.seg-btn').forEach(x => x.classList.remove('active'));
         b.classList.add('active');
         renderFretboard();
