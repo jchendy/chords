@@ -53,7 +53,12 @@
   let shownWindow = null;        // what the legend reports
   let shownBoxName = '';         // ...and which CAGED shape that box is
   let shownBoxCells = null;      // ...and the cells that shape actually plays
-  let lastShownWindow = null;    // ...and what it was before the chord changed
+  // Where the hand is, as a fret. Set when you move it yourself and left alone
+  // otherwise: re-deriving it from wherever the last chord happened to land
+  // makes every chord change a small step, and those accumulate into a walk up
+  // or down the neck across a progression.
+  let positionAnchor = null;
+  let anchorFromIndex = true;    // the next box picked by index sets the anchor
   let rebaseBox = false;         // re-pick the box by position rather than by index
   let fretRange = 'all';         // 'all' | 'fit' | 'from-to' — how much neck to draw
   let colorBy = 'shape';         // 'shape' (which CAGED box) | 'interval' (what the note is)
@@ -278,6 +283,7 @@
     if (clusterMode()) chordPosIndex += d;
     else boxIndex += d;
     heldWindow = null;
+    anchorFromIndex = true;    // you moved the hand, so this is where it is now
     renderFretboard();
   }
   document.getElementById('boxPrev').addEventListener('click', () => stepPosition(-1));
@@ -306,8 +312,13 @@
     // makes the neck jump. Re-pick by position instead: the new chord's box
     // nearest where the hand already was, which is also the one the previous
     // chord's "up next" ghost was previewing.
-    if (forcedIndex == null && rebaseBox && lastShownWindow){
-      const want = (lastShownWindow.min + lastShownWindow.max) / 2;
+    // Aim at the middle of the box that was chosen, never at the middle of
+    // the window drawn around it. The window is padded out to a hand's reach
+    // and stretched to cover the other chords, and feeding either of those
+    // back in would move the target a little further each time — which walks
+    // the hand up the neck over a few chord changes.
+    if (forcedIndex == null && rebaseBox && positionAnchor != null){
+      const want = positionAnchor;
       let best = 0, bd = Infinity;
       sorted.forEach((b, k) => {
         const d = Math.abs(midOf(b) - want);
@@ -336,7 +347,10 @@
     shownWindow = win;
     shownBoxName = box.name || '';
     shownBoxCells = new Set(box.cells.map(c => c.string + ':' + c.fret));
-    lastShownWindow = win;
+    // only a box you chose moves the hand; one picked to match a chord change
+    // is measured against the anchor and leaves it where it was
+    if (positionAnchor == null || anchorFromIndex) positionAnchor = midOf(box);
+    anchorFromIndex = false;
     const inWin = f => f >= win.min && f <= win.max;
     return {
       markers: markers.filter(m => inWin(m.fret)),
@@ -771,7 +785,7 @@
       const { tag: curTag, color: curColor } = idOf(cands, curIdx);
       // the box is one triad, so its name is the inversion — that's the tag
       const lit = shown.markers.map(m => {
-        const { split, ...rest } = m;
+        const { split, colorsByTag, ...rest } = m;
         return { ...rest, color: curColor, shapes: [curTag] };
       });
       const litLines = shown.lines.map(l => ({ ...l, color: curColor, shape: curTag }));
@@ -815,7 +829,10 @@
       // scheme Progression uses. Across the neck only one chord is drawn, so
       // colour is free to say which of its five shapes a note is in instead.
       const asChord = (m) => {
-        const { split, ...rest } = m;
+        // drop the shape-keyed colours it was drawn with: this dot now answers
+        // to a chord, not to a CAGED shape, and a stale key here would leave
+        // the spotlight repainting it as something it no longer is
+        const { split, colorsByTag, ...rest } = m;
         return { ...rest, color: curColor, shapes: [curTag] };
       };
       const boxOpts = { single: inPosition };

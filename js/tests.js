@@ -561,7 +561,7 @@
       ['Chord finder shows the everyday grips', testCanonicalGrips],
       ['Theory: naming and identification', testTheory],
       ['Genre library and presets are well-formed', testData],
-    ];
+    ].concat(GT.fretboardSuites || []);   // added by js/tests-fretboard.js, if it loaded
     const out = [];
     suites.forEach(([title, fn]) => {
       const from = results.length;

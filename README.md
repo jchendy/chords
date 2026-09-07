@@ -345,8 +345,22 @@ Open `tests.html` — the tests run on load and print a pass/fail list, with no
 server, runner or build step. They also leave the results on
 `window.TEST_RESULTS` so a headless browser can read them.
 
-Five things are guarded. The first two run over a fixed list of chords (C,
-A, G, E, D, Cm, Am, Gm, Em, Dm, Ab, Gb, C#, A9, E9, C7, D7, Cm7, CM7):
+The second group draws the fretboard for real. The five views decide their
+shapes while rendering, against the practice tab's own markup, so there's no
+pure seam to test through: `tests-fretboard.js` builds the controls the view
+binds to — ids and data-values, nothing else — points it at a made-up
+progression and reads the SVG. Every check there guards a bug that shipped,
+and they were all the same mistake in different places: a shape is something
+you put your hand on, so clipping one to a window, or letting several blur
+together, leaves something on screen nobody can play. What it asserts is that
+a chord is drawn as a grip (one note per string), a triad is drawn whole or
+not at all, the whole progression is on the neck, the legend names exactly
+what's drawn, a note two chords share carries a colour for each of them, and
+playing through a progression doesn't walk the hand along the neck.
+
+Two groups are guarded. The first five run over the pure modules; the first
+two of those over a fixed list of chords (C, A, G, E, D, Cm, Am, Gm, Em, Dm,
+Ab, Gb, C#, A9, E9, C7, D7, Cm7, CM7):
 
 1. **The chord finder keeps the shapes it already had.** Ranking and
    playability are judgement calls, so the test holds a snapshot of every
@@ -425,6 +439,7 @@ by what each part does:
 | `tabs.js` | Tab switching, plus the URL fragment and page title that go with each tab. |
 | `main.js` | Boots each tab and wires the header together. |
 | `tests.js` | The regression tests, run by `tests.html`. |
+| `tests-fretboard.js` | What the fretboard draws: builds the controls the view binds to, then checks the shapes it renders. Loads before `fretboard-view.js`. |
 
 Each file wraps itself in an IIFE and hangs its public interface off a single
 `GT` namespace, so nothing else leaks into global scope. Dependencies run one
