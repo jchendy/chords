@@ -10,7 +10,7 @@
   const { parseChordName, identifyChords, chordFromName, seventhSuffix, NOTE_NAMES_SHARP,
           degreeLabel, SEMITONE } = GT.theory;
   const { STRING_TUNING, FRET_COUNT, seventhCells, cagedPlacements, CAGED_MAJOR,
-          cagedTriadBoard } = GT.fretboard;
+          cagedTriadBoard, scaleBoxPlacements, pentaBoxPlacements } = GT.fretboard;
   const { findChordVoicings } = GT.chordFinder;
   const { voiceChord, midiFor } = GT.genres;
 
@@ -616,6 +616,175 @@
     t.equal(clashes.join('; '), '', `one note, one degree name, whoever draws it (${compared} compared)`);
   }
 
+
+  // ---- what every scale box holds, exactly ---------------------------------
+  // A snapshot, not a judgement: each row is one box as "shape@anchor" followed
+  // by the frets it uses on each string, high e first, "." for a string it
+  // doesn't touch. Scale boxes are built by a rule rather than written down, so
+  // a change to that rule moves all of them at once — this is what makes such a
+  // change visible and reviewable instead of silent.
+  const SCALE_BOXES = {
+    'C': [
+      'C@0 0-1-3 1-3 0-2 0-2 0-2-3 0-1-3',
+      'C@12 12-13-15 13-15 12-14 12-14 12-14-15 12-13-15',
+      'A@3 3-5 3-5 2-4-5 2-3-5 3-5 3-5',
+      'A@15 15 15 14 14 15 15',
+      'G@5 5-7-8 5-6-8 5-7 5-7 5-7 5-7-8',
+      'E@8 8-10 8-10 7-9 7-9-10 7-8-10 8-10',
+      'D@-2 0 1 0 0 0 0',
+      'D@10 10-12 10-12-13 9-10-12 10-12 10-12 10-12',
+    ],
+    'Cm': [
+      'C@1 1-3 1-3-4 0-1-3 1-3 1-3 1-3',
+      'C@13 13-15 13 12-13-15 13-15 13-15 13-15',
+      'A@3 3-4-6 4-6 3-5 3-5 3-5-6 3-4-6',
+      'A@15 15 . 15 15 15 15',
+      'G@6 6-8 6-8 5-7-8 5-6-8 6-8 6-8',
+      'E@8 8-10-11 8-9-11 8-10 8-10 8-10 8-10-11',
+      'D@-1 1 1 0 1 1 1',
+      'D@11 11-13 11-13 10-12 10-12-13 10-11-13 11-13',
+    ],
+    'G': [
+      'C@7 7-8-10 8-10 7-9 7-9 7-9-10 7-8-10',
+      'A@-2 0 0 0 0 0 0',
+      'A@10 10-12 10-12 9-11-12 9-10-12 10-12 10-12',
+      'G@0 0-2-3 0-1-3 0-2 0-2 0-2 0-2-3',
+      'G@12 12-14-15 12-13-15 12-14 12-14 12-14 12-14-15',
+      'E@3 3-5 3-5 2-4 2-4-5 2-3-5 3-5',
+      'E@15 15 15 14 14 14 15',
+      'D@5 5-7 5-7-8 4-5-7 5-7 5-7 5-7',
+    ],
+    'Gm': [
+      'C@8 8-10 8-10-11 7-8-10 8-10 8-10 8-10',
+      'A@-2 1 1 0 0 1 1',
+      'A@10 10-11-13 11-13 10-12 10-12 10-12-13 10-11-13',
+      'G@1 1-3 1-3 0-2-3 0-1-3 1-3 1-3',
+      'G@13 13-15 13-15 12-14-15 12-13-15 13-15 13-15',
+      'E@3 3-5-6 3-4-6 3-5 3-5 3-5 3-5-6',
+      'E@15 15 15 15 15 15 15',
+      'D@6 6-8 6-8 5-7 5-7-8 5-6-8 6-8',
+    ],
+    'A': [
+      'C@-3 0 0 . . 0 0',
+      'C@9 9-10-12 10-12 9-11 9-11 9-11-12 9-10-12',
+      'A@0 0-2 0-2 2 2 0-2 0-2',
+      'A@12 12-14 12-14 11-13-14 11-12-14 12-14 12-14',
+      'G@2 2-4-5 2-3-5 2-4 2-4 2-4 2-4-5',
+      'G@14 14 14 14 14 14 14',
+      'E@5 5-7 5-7 4-6 4-6-7 4-5-7 5-7',
+      'D@7 7-9 7-9-10 6-7-9 7-9 7-9 7-9',
+    ],
+    'Am': [
+      'C@-2 0 1 0 0 0 0',
+      'C@10 10-12 10-12-13 9-10-12 10-12 10-12 10-12',
+      'A@0 0-1-3 1-3 0-2 0-2 0-2-3 0-1-3',
+      'A@12 12-13-15 13-15 12-14 12-14 12-14-15 12-13-15',
+      'G@3 3-5 3-5 2-4-5 2-3-5 3-5 3-5',
+      'G@15 15 15 14 14 15 15',
+      'E@5 5-7-8 5-6-8 5-7 5-7 5-7 5-7-8',
+      'D@8 8-10 8-10 7-9 7-9-10 7-8-10 8-10',
+    ],
+  };
+
+  function testScaleBoxesAreUnchanged(t){
+    const MAJ = [0, 2, 4, 5, 7, 9, 11], MIN = [0, 2, 3, 5, 7, 8, 10];
+    Object.entries(SCALE_BOXES).forEach(([key, expected]) => {
+      const isMinor = key.endsWith('m');
+      const rootPc = SEMITONE[key.replace(/m$/, '')] % 12;
+      const pcs = new Set((isMinor ? MIN : MAJ).map(o => (rootPc + o) % 12));
+      const got = scaleBoxPlacements(rootPc, isMinor, pcs).map(b => {
+        const byString = {};
+        b.cells.forEach(c => { (byString[c.string] = byString[c.string] || []).push(c.fret); });
+        const strings = [0, 1, 2, 3, 4, 5]
+          .map(s => (byString[s] || []).sort((a, x) => a - x).join('-') || '.');
+        return `${b.name}@${b.anchor} ${strings.join(' ')}`;
+      });
+      t.equal(got.join('\n'), expected.join('\n'), `${key}: its scale boxes are where they were`);
+    });
+  }
+
+
+  // The pentatonic boxes, checked by hand and pinned here. Scale boxes are
+  // grown from these, so a change meant for the scales must not reach back and
+  // move the shapes they were grown from — which is exactly what this catches.
+  const PENTA_BOXES = {
+    'C': [
+      'C@0 0-3 1-3 0-2 0-2 0-3 0-3',
+      'C@12 12-15 13-15 12-14 12-14 12-15 12-15',
+      'A@3 3-5 3-5 2-5 2-5 3-5 3-5',
+      'A@15 15 15 14 14 15 15',
+      'G@5 5-8 5-8 5-7 5-7 5-7 5-8',
+      'E@8 8-10 8-10 7-9 7-10 7-10 8-10',
+      'D@-2 0 1 0 0 0 0',
+      'D@10 10-12 10-13 9-12 10-12 10-12 10-12',
+    ],
+    'Cm': [
+      'C@1 1-3 1-4 0-3 1-3 1-3 1-3',
+      'C@13 13-15 13 12-15 13-15 13-15 13-15',
+      'A@3 3-6 4-6 3-5 3-5 3-6 3-6',
+      'A@15 15 . 15 15 15 15',
+      'G@6 6-8 6-8 5-8 5-8 6-8 6-8',
+      'E@8 8-11 8-11 8-10 8-10 8-10 8-11',
+      'D@-1 1 1 0 1 1 1',
+      'D@11 11-13 11-13 10-12 10-13 10-13 11-13',
+    ],
+    'G': [
+      'C@7 7-10 8-10 7-9 7-9 7-10 7-10',
+      'A@-2 0 0 0 0 0 0',
+      'A@10 10-12 10-12 9-12 9-12 10-12 10-12',
+      'G@0 0-3 0-3 0-2 0-2 0-2 0-3',
+      'G@12 12-15 12-15 12-14 12-14 12-14 12-15',
+      'E@3 3-5 3-5 2-4 2-5 2-5 3-5',
+      'E@15 15 15 14 14 14 15',
+      'D@5 5-7 5-8 4-7 5-7 5-7 5-7',
+    ],
+    'Gm': [
+      'C@8 8-10 8-11 7-10 8-10 8-10 8-10',
+      'A@-2 1 1 0 0 1 1',
+      'A@10 10-13 11-13 10-12 10-12 10-13 10-13',
+      'G@1 1-3 1-3 0-3 0-3 1-3 1-3',
+      'G@13 13-15 13-15 12-15 12-15 13-15 13-15',
+      'E@3 3-6 3-6 3-5 3-5 3-5 3-6',
+      'E@15 15 15 15 15 15 15',
+      'D@6 6-8 6-8 5-7 5-8 5-8 6-8',
+    ],
+    'A': [
+      'C@-3 0 0 . . 0 0',
+      'C@9 9-12 10-12 9-11 9-11 9-12 9-12',
+      'A@0 0-2 0-2 2 2 0-2 0-2',
+      'A@12 12-14 12-14 11-14 11-14 12-14 12-14',
+      'G@2 2-5 2-5 2-4 2-4 2-4 2-5',
+      'G@14 14 14 14 14 14 14',
+      'E@5 5-7 5-7 4-6 4-7 4-7 5-7',
+      'D@7 7-9 7-10 6-9 7-9 7-9 7-9',
+    ],
+    'Am': [
+      'C@-2 0 1 0 0 0 0',
+      'C@10 10-12 10-13 9-12 10-12 10-12 10-12',
+      'A@0 0-3 1-3 0-2 0-2 0-3 0-3',
+      'A@12 12-15 13-15 12-14 12-14 12-15 12-15',
+      'G@3 3-5 3-5 2-5 2-5 3-5 3-5',
+      'G@15 15 15 14 14 15 15',
+      'E@5 5-8 5-8 5-7 5-7 5-7 5-8',
+      'D@8 8-10 8-10 7-9 7-10 7-10 8-10',
+    ],
+  };
+
+  function testPentatonicBoxesAreUnchanged(t){
+    Object.entries(PENTA_BOXES).forEach(([key, expected]) => {
+      const isMinor = key.endsWith('m');
+      const rootPc = SEMITONE[key.replace(/m$/, '')] % 12;
+      const got = pentaBoxPlacements(rootPc, isMinor).map(b => {
+        const byString = {};
+        b.cells.forEach(c => { (byString[c.string] = byString[c.string] || []).push(c.fret); });
+        const strings = [0, 1, 2, 3, 4, 5]
+          .map(s => (byString[s] || []).sort((a, x) => a - x).join('-') || '.');
+        return `${b.name}@${b.anchor} ${strings.join(' ')}`;
+      });
+      t.equal(got.join('\n'), expected.join('\n'), `${key}: its pentatonic boxes are where they were`);
+    });
+  }
+
   // ---- a very small test runner ----
   function run(){
     const results = [];
@@ -632,6 +801,8 @@
       ['Chord finder shows the everyday grips', testCanonicalGrips],
       ['Theory: naming and identification', testTheory],
       ['Theory: one answer for what degree a note is', testDegreeNamesAgree],
+      ['Fretboard: the pentatonic boxes are unchanged', testPentatonicBoxesAreUnchanged],
+      ['Fretboard: the scale boxes are unchanged', testScaleBoxesAreUnchanged],
       ['Genre library and presets are well-formed', testData],
     ].concat(GT.fretboardSuites || []).concat(GT.practiceSuites || []);   // added by js/tests-fretboard.js, if it loaded
     const out = [];
