@@ -130,6 +130,21 @@
     });
     return out;
   }
+  // the exact notes a chord owns, as "string:fret" keys read off the drawing
+  function cellsOf(tag){
+    const out = [];
+    svg.querySelectorAll('.note-dot').forEach(g => {
+      if (!(g.getAttribute('data-shapes') || '').split(',').includes(tag)) return;
+      const c = g.querySelector('circle') || g.querySelector('path');
+      if (c) out.push((c.getAttribute('cx') || '') + '@' + (c.getAttribute('cy') || c.getAttribute('d')));
+    });
+    return out.sort().join(' ');
+  }
+  const pickChord = i => {
+    const b = q('#cagedChordGroup').querySelectorAll('.seg-btn')[i];
+    if (b) b.click();
+  };
+
   const legendTags = () =>
     [...q('#cagedLegend').querySelectorAll('[data-shape]')].map(e => e.getAttribute('data-shape'));
 
@@ -336,6 +351,45 @@
       + (bad ? ` — ${bad}` : ''));
   }
 
+  // B24 — what a chord looks like sitting behind must be what you get when
+  // you switch to it. The preview aimed at the middle of the window while the
+  // switch aimed at the position anchor, and once the window had been padded
+  // out and stretched over the other chords those were different frets — so a
+  // chord could be previewed in one place and arrive in another.
+  function testPreviewMatchesArrival(t){
+    let bad = null, compared = 0;
+    ['triads3', 'caged'].forEach(mode => {
+      PROGRESSIONS.forEach(names => {
+        loadProgression(names);
+        setMode(mode);
+        setView('position');
+        (mode === 'triads3' ? STRING_SETS : ['2']).forEach(set => {
+          if (mode === 'triads3') setStringSet(set);
+          for (let p = 0; p < POSITIONS; p++){
+            const tags = legendTags();
+            // what each chord looks like from where we are now...
+            const preview = {};
+            tags.forEach(tag => { preview[tag] = cellsOf(tag); });
+            // ...against what it looks like once it's the chord in front
+            tags.forEach((tag, i) => {
+              pickChord(i);
+              const arrived = cellsOf(tag);
+              compared++;
+              if (preview[tag] !== arrived && !bad){
+                bad = `${mode} ${names.join('-')} set ${set} position ${p}, ${tag}: `
+                  + `previewed [${preview[tag] || 'nothing'}], arrived [${arrived || 'nothing'}]`;
+              }
+            });
+            pickChord(0);
+            stepPosition();
+          }
+        });
+      });
+    });
+    t.ok(!bad, `A chord looks the same previewed as it does selected (${compared} compared)`
+      + (bad ? ` — ${bad}` : ''));
+  }
+
   // and narrowing to a position must actually narrow, in every view
   function testPositionNarrows(t){
     loadProgression(['Am7', 'Dm7', 'E7']);
@@ -358,6 +412,7 @@
     ['Fretboard: the legend matches the neck', testLegendMatchesTheNeck],
     ['Fretboard: shared notes know their colours', testSharedNotesCarryEveryColour],
     ['Fretboard: the hand stays put while a progression plays', testPositionHoldsStillWhilePlaying],
+    ['Fretboard: a chord previewed is the chord you get', testPreviewMatchesArrival],
     ['Fretboard: one position narrows the neck', testPositionNarrows],
   ];
 })();

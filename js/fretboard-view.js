@@ -58,7 +58,6 @@
   // makes every chord change a small step, and those accumulate into a walk up
   // or down the neck across a progression.
   let positionAnchor = null;
-  let anchorFromIndex = true;    // the next box picked by index sets the anchor
   let rebaseBox = false;         // re-pick the box by position rather than by index
   let fretRange = 'all';         // 'all' | 'fit' | 'from-to' — how much neck to draw
   let colorBy = 'shape';         // 'shape' (which CAGED box) | 'interval' (what the note is)
@@ -283,7 +282,6 @@
     if (clusterMode()) chordPosIndex += d;
     else boxIndex += d;
     heldWindow = null;
-    anchorFromIndex = true;    // you moved the hand, so this is where it is now
     renderFretboard();
   }
   document.getElementById('boxPrev').addEventListener('click', () => stepPosition(-1));
@@ -317,11 +315,11 @@
     // and stretched to cover the other chords, and feeding either of those
     // back in would move the target a little further each time — which walks
     // the hand up the neck over a few chord changes.
-    if (forcedIndex == null && rebaseBox && positionAnchor != null){
-      const want = positionAnchor;
+    const rebased = forcedIndex == null && rebaseBox && positionAnchor != null;
+    if (rebased){
       let best = 0, bd = Infinity;
       sorted.forEach((b, k) => {
-        const d = Math.abs(midOf(b) - want);
+        const d = Math.abs(midOf(b) - positionAnchor);
         if (d < bd){ bd = d; best = k; }
       });
       boxIndex = best;
@@ -347,10 +345,11 @@
     shownWindow = win;
     shownBoxName = box.name || '';
     shownBoxCells = new Set(box.cells.map(c => c.string + ':' + c.fret));
-    // only a box you chose moves the hand; one picked to match a chord change
-    // is measured against the anchor and leaves it where it was
-    if (positionAnchor == null || anchorFromIndex) positionAnchor = midOf(box);
-    anchorFromIndex = false;
+    // The anchor is simply where the hand is — so every box follows it into
+    // place, except one picked *because* the chord changed. Those are measured
+    // against the anchor, and letting them move it too is what made a
+    // progression walk the hand along the neck.
+    if (!rebased) positionAnchor = midOf(box);
     const inWin = f => f >= win.min && f <= win.max;
     return {
       markers: markers.filter(m => inWin(m.fret)),
@@ -1137,7 +1136,11 @@
       // something you can put your hand on
       let bestGrip = [];
       if (nearest && shapes.length){
-        const aim = (win.min + win.max) / 2;
+        // Aim at the same fret a chord change aims at, not at the middle of
+        // the window: those differ once the window has been padded out and
+        // stretched over the other chords, and then the shape previewed here
+        // isn't the shape you get when you switch to that chord.
+        const aim = positionAnchor != null ? positionAnchor : (win.min + win.max) / 2;
         const midOfCells = g => {
           const fs = g.cells.map(x => x.fret);
           return (Math.min(...fs) + Math.max(...fs)) / 2;
