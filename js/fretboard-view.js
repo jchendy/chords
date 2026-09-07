@@ -892,8 +892,12 @@
     const markers = [], lines = [];
     const seen = new Set(taken);
     const inWin = c => c.fret >= win.min && c.fret <= win.max;
+    const cur = Math.min(cagedChordIdx, cands.length - 1);
+    // the chord you're heading into reads brighter than the ones after it,
+    // the same three tiers Progression uses while it plays
+    const next = cands.length > 1 ? (cur + 1) % cands.length : -1;
     cands.forEach((c, i) => {
-      if (i === Math.min(cagedChordIdx, cands.length - 1)) return;   // that's the one in front
+      if (i === cur) return;                                        // that's the one in front
       const rootPc = SEMITONE[c.note] % 12;
       const thirdPc = SEMITONE[c.third] % 12;
       const fifthPc = SEMITONE[c.fifth] % 12;
@@ -925,12 +929,12 @@
         drew = true;
         const pc = (STRING_TUNING[cell.string] + cell.fret) % 12;
         markers.push({ string: cell.string, fret: cell.fret, color, label: nameOf(pc),
-                       isRoot: pc === rootPc, shapes: [tag], ghost: true });
+                       isRoot: pc === rootPc, shapes: [tag], ghost: true, ghostNext: i === next });
       });
       // and its grip traced through, where one sits wholly inside the box
       grips.forEach(g => {
         if (g.length > 1 && g.every(inWin)){
-          lines.push({ color, shape: tag, ghost: true,
+          lines.push({ color, shape: tag, ghost: true, ghostNext: i === next,
                        cells: g.map(cell => ({ string: cell.string, fret: cell.fret })) });
         }
       });

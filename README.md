@@ -179,9 +179,10 @@ names the tab you're on.
   so you can see where the changes fall without moving your hand — the same
   picture Progression paints while it plays, and drawn identically: each chord
   in its own colour, labelled by degree, its grip traced faintly through, and
-  everything that isn't the chord in front dimmed evenly, roots included. Only
-  the frets the chord in front isn't already using are drawn, so it stays
-  behind rather than competing;
+  the same three tiers of brightness: the chord in front lit, the chord you're
+  heading into next half-lit, the rest dimmed much further — roots included,
+  with no chord's root singled out. Only the frets the chord in front isn't
+  already using are drawn, so it stays behind rather than competing;
   Triads — close three-note triads on one set of three adjacent
   strings (e–B–G, B–G–D, G–D–A or D–A–E), every inversion, all the way up
   the neck, each legend entry also naming the CAGED grip its shapes are cut

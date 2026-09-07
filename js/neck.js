@@ -70,7 +70,8 @@
       lines.filter(ln => ln.cells.every(c => inRange(c.fret))).forEach(ln => {
         const pts = ln.cells.map(c => `${fretX(c.fret)},${stringY(c.string)}`).join(' ');
         const letter = ln.letter ? ` data-shape-letter="${ln.letter}"` : '';
-        els.push(`<polyline class="shape-line${ln.ghost ? ' ghost' : ''}" data-shape="${ln.shape || ''}"${letter} points="${pts}" stroke="${ln.color}"/>`);
+        const ghostCls = (ln.ghost ? ' ghost' : '') + (ln.ghostNext ? ' ghost-next' : '');
+        els.push(`<polyline class="shape-line${ghostCls}" data-shape="${ln.shape || ''}"${letter} points="${pts}" stroke="${ln.color}"/>`);
       });
 
       markers.filter(m => inRange(m.fret)).forEach(m => {
@@ -90,7 +91,7 @@
         // note that isn't a chord tone, drawn quieter so the chord tones stand out
         const extraClass = (m.isLowestRoot ? ' pos-root' : '') + (m.hollow ? ' hollow' : '')
           + (m.passing ? ' passing' : '') + (m.ringed ? ' ringed' : '')
-          + (m.ghost ? ' ghost' : '');
+          + (m.ghost ? ' ghost' : '') + (m.ghostNext ? ' ghost-next' : '');
         let g = `<g class="note-dot${extraClass}"${shapeAttr}${rootPcAttr}${rootForAttr}${labelsAttr}>`;
         if (m.hollow){
           const stroke = m.color || (m.split && m.split[0]);
