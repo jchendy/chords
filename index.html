@@ -872,11 +872,10 @@
     <div class="caged-legend" id="cagedLegend"></div>
     <div class="setting">
       <span class="setting-label">Fretboard
-        <button type="button" class="info-dot" data-tip="Every view but Roots and Progression shows one chord at a time, picked below. Roots: every root of the progression's chords, colour-coded. Progression: one grip per chord, clustered close together so the whole progression sits under one hand. Chords: the five movable CAGED shapes for the chosen chord — with &quot;Whole arpeggio&quot; on, those same shapes opened out into every chord tone on the neck. Triads: close three-string triads on one set of strings, coloured by inversion and named by the CAGED grip they're cut from. Pentatonic: that chord's pentatonic scale, boxed and coloured by CAGED shape. Scales: the full 7-note scale for that chord, same colouring.">i</button>
+        <button type="button" class="info-dot" data-tip="Every view but Roots shows one chord at a time, picked below. Roots: every root of the progression's chords, colour-coded. Chords: the five movable CAGED shapes for the chosen chord, either across the whole neck or with the whole progression gathered into one position. Triads: close three-string triads on one set of strings, coloured by inversion and named by the CAGED grip they're cut from. Pentatonic: that chord's pentatonic scale, boxed and coloured by CAGED shape. Scales: the full 7-note scale for that chord, same colouring.">i</button>
       </span>
       <div class="segmented" id="fretModeGroup">
         <button type="button" class="seg-btn" data-value="roots">Roots</button>
-        <button type="button" class="seg-btn" data-value="positions">Progression</button>
         <button type="button" class="seg-btn active" data-value="caged">Chords</button>
         <button type="button" class="seg-btn" data-value="triads3">Triads</button>
         <button type="button" class="seg-btn" data-value="penta">Pentatonic</button>
@@ -958,32 +957,14 @@
           <span>Hold position</span>
           <button type="button" class="info-dot" data-tip="Keeps the stretch of frets you're on fixed when the chord changes during playback. Instead of the neck jumping to the new chord's own box, you see that chord's notes under the hand you already have there — which is what you actually do when comping through changes.">i</button>
         </label>
-        <label class="inline-check" id="cagedVoiceLeadCheck">
-          <input type="checkbox" id="cagedVoiceLeadToggle">
-          <span>Voice leading</span>
-          <button type="button" class="info-dot" data-tip="Lets the progression choose the position instead of you stepping to it: the first chord takes its lowest shape, and each one after it takes whichever of its own sits nearest where the last one landed. The hand then walks through the changes rather than jumping back down the neck.">i</button>
-        </label>
-      </div>
-    </div>
-    <div class="setting" id="chordPosRow" hidden>
-      <span class="setting-label">Position
-        <button type="button" class="info-dot" data-tip="Shows one shape per chord in the progression, chosen so they all sit close together on the neck. Next cycles to the next cluster of positions, wrapping back to the lowest. All chord tones shows each chord's whole arpeggio within reach of its shape instead of just the grip, ringing every note two chords share — the notes your fingers keep as the chord changes. Voice leading picks each chord's shape closest to where the previous one landed, so the shapes walk up the neck instead of all crowding one position. Follow playback highlights the chord currently sounding and dims the others, with the upcoming chord shown half-lit.">i</button>
-      </span>
-      <div class="row-control">
-        <button type="button" class="seg-btn" id="chordPosNext">Next position ▸</button>
-        <label class="inline-check">
-          <input type="checkbox" id="allTonesToggle">
-          <span>All chord tones</span>
-        </label>
-        <label class="inline-check">
-          <input type="checkbox" id="voiceLeadToggle">
-          <span>Voice leading</span>
-          <button type="button" class="info-dot" data-tip="Picks each chord's shape closest to where the previous one landed, rather than to one fixed fret. The shapes then walk from one to the next the way a hand does — an Am7 that would otherwise jump back to the nut carries on up the neck instead.">i</button>
-        </label>
-        <label class="inline-check">
-          <input type="checkbox" id="chordPosFollowToggle" checked>
-          <span>Follow playback</span>
-        </label>
+        <span class="ctl-group" id="cagedPosMethodWrap" hidden>
+          <span class="segmented" id="cagedPosMethodGroup" aria-label="How the position is chosen">
+            <button type="button" class="seg-btn active" data-value="box">One box</button>
+            <button type="button" class="seg-btn" data-value="cluster">Cluster</button>
+            <button type="button" class="seg-btn" data-value="lead">Voice leading</button>
+          </span>
+          <button type="button" class="info-dot" data-tip="Three ways of putting the progression in one place. One box: every chord clipped into a single CAGED box, so nothing leaves the stretch of frets you're on — ◂ ▸ walk the box up and down. Cluster: each chord at its own best position, chosen to sit close to the others, so the shapes are the ones you'd really play; ◂ ▸ cycle to the next cluster up the neck. Voice leading: each chord takes whichever of its own shapes sits nearest where the last one landed, so the hand walks through the changes instead of jumping back down the neck.">i</button>
+        </span>
       </div>
     </div>
     <div class="setting" id="scaleTheoryRow" hidden>

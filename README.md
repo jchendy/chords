@@ -127,47 +127,17 @@ names the tab you're on.
 - Live chord highlighting synced to playback, with a measure.beat position
   readout under the chords (the key itself is shown plainly above them,
   e.g. "C major" / "C#m")
-- Fretboard panel (6 strings, 15 frets) with six views, each named in one
+- Fretboard panel (6 strings, 15 frets) with five views, each named in one
   word — the tab is already CAGED practice and the legend already says
   "C shape", so the prefix was carrying nothing:
   Roots — every root-note location for the progression (colour-coded,
   legend gives each root's roman numeral; while playing, the currently
   sounding chord's root is ringed and spotlighted);
-  Progression — one shape per chord, colour-coded by
-  chord, chosen so every shape sits close together on the neck (shared notes
-  split-coloured, no shape outlines since several overlapping shapes made
-  them confusing here, and hovering/tapping a chord name in the legend —
-  which also names each chord's CAGED shape letter — spotlights it, same as
-  Chords); every note is labelled by scale degree except the root,
-  which keeps its note name; with the whole cluster shown at rest, every
-  note is dimmed except each chord's lowest root, so the anchor notes stand
-  out; the barred
-  G-shape is skipped everywhere except its own open-G-chord form, since it's
-  not realistically playable elsewhere. **All chord tones** turns the cluster
-  of grips into a map of the progression: instead of one shape per chord,
-  each chord's whole arpeggio within reach of that shape, and a ring on every
-  note two chords share — so you can see what your fingers keep as the chord
-  changes. (In that mode the ring means "shared", since the roots are already
-  named by their label.) A ii–V–I is mostly shared notes, which is the point.
-  **Voice leading** picks each chord's
-  shape closest to where the *previous* one landed rather than to one fixed
-  fret, so the shapes walk from one to the next the way a hand does — an
-  Am7 that would otherwise jump back to the nut carries on up the neck
-  instead. "Next position" cycles to the next
-  cluster up the neck, wrapping back to the lowest. When a chord carries a
-  seventh, its shapes turn into the 7th-chord voicing guitarists use for it —
-  flattening that shape's own doubled root by a half step (major 7th) or a
-  whole step (dominant/minor 7th) — rather than tacking a note onto some
-  other string. "Follow playback" (on by default) lights up whichever
-  chord is currently sounding (in both the fretboard and its legend entry),
-  lightly dims the next chord, and dims the rest much further; a lit note
-  only wears the root ring when it's actually the sounding chord's own root,
-  not just a note it happens to share with another chord's root;
   Chords — the five CAGED shapes for the chosen chord, outlined and
   colour-coded, every note labelled by scale degree except the root (which
   keeps its note name), shared notes split-coloured; a chord carrying a 7th
   shows its 7th-chord shapes, the 7th drawn as a hollow dot, so this view
-  and Progression agree. **Whole arpeggio** opens those same five
+  and the position reading agree. **Whole arpeggio** opens those same five
   shapes out: every chord tone on the neck, each one coloured by the CAGED
   box it sits in (seam notes split-coloured), labelled by degree, with the
   grip itself still traced through the middle of its box. That's the CAGED
@@ -178,24 +148,31 @@ names the tab you're on.
   at a time, its five shapes everywhere they fall — the view for learning where
   a chord lives. *In one position* is the whole progression under one hand: the
   chord that's sounding lit, and the rest of the changes drawn in behind it,
-  the same picture Progression paints while it plays and drawn identically —
+  the whole progression gathered into one place, drawn the way it plays —
   each chord in its own colour, labelled by degree, its grip traced faintly
   through, and the same three tiers of brightness (the chord in front lit, the
   one you're heading into next half-lit, the rest dimmed much further, roots
   included). Only the frets the chord in front isn't already using are drawn,
   so the rest stays behind rather than competing. Colour there means which
-  chord a note belongs to, as it does in Progression, so the legend reads the
-  same way too: one entry per chord with its name, numeral, the CAGED shape
+  chord a note belongs to, so the legend reads the same way: one entry per chord with its name, numeral, the CAGED shape
   it's sitting in and the frets it spans, each spotlighting its chord when you
   hover it, and the chord in front marked. Across the neck only one chord is
   drawn, so colour is free to say which of its five shapes a note is in
   instead, and the interval colouring stays available there.
-  Whole arpeggio applies to both. Everything about *choosing* a position belongs to the second reading,
-  since the first has no position to choose — it shows them all: ◂ ▸ walk the
-  hand up and down, **Hold position** pins it while the chords change, and
-  **Voice leading** hands the choice to the progression itself, each chord
-  taking whichever of its own shapes sits nearest where the last one landed,
-  so the hand walks through the changes rather than jumping back down the neck;
+  Whole arpeggio applies to both — in one position it also rings every note two
+  chords share, which is what your fingers keep as the chord changes; a ii–V–I
+  is mostly shared notes, which is the point. Everything about *choosing* a
+  position belongs to the second reading, since the first has no position to
+  choose — it shows them all. Three ways of putting the progression in one
+  place: **One box** clips every chord into a single CAGED box, so nothing
+  leaves the frets you're on and **Hold position** can pin it while the chords
+  change; **Cluster** gives each chord its own best position, chosen to sit
+  close to the others, so the shapes are the ones you'd really play (the barred
+  G-shape is skipped everywhere except its own open-G form, since it isn't
+  realistically playable elsewhere); **Voice leading** gives each chord
+  whichever of its own shapes sits nearest where the last one landed, so the
+  hand walks through the changes rather than jumping back down the neck. ◂ ▸
+  step the box or cycle to the next cluster;
   Triads — close three-note triads on one set of three adjacent
   strings (e–B–G, B–G–D, G–D–A or D–A–E), every inversion, all the way up
   the neck, each legend entry also naming the CAGED grip its shapes are cut
@@ -235,7 +212,7 @@ names the tab you're on.
   scale tone. The roles come from the chord itself, so a ♭5 reads as that
   chord's 5th while a ♭6 in the scale around it reads as a scale tone. The
   shape outlines stay shape-coloured either way; colouring by interval has
-  nothing to add to Roots (already coloured by root) or Progression
+  nothing to add to Roots (already coloured by root) or the position reading
   (coloured by chord), so the control is hidden there
 - The legend says where each shape sits — "C shape 6–10" — and, for a shape
   that appears twice on a 15-fret neck, both places ("D shape 0–2 · 12–14").

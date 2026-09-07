@@ -37,9 +37,7 @@
   let cagedShapesShown = [];
   let rootLegendData = [];
   let posLegendData = [];
-  let chordPosIndex = 0;         // which clustered position Progression mode is showing
-  let chordPosFollow = true;     // highlight the currently-playing chord in Progression (on by default)
-  let activePosChordIdx = 0;     // index (within the non-dim chords shown) currently highlighted
+  let chordPosIndex = 0;         // which cluster of the chords' own positions is showing
   let stuckShape = null;         // shape name pinned by a tap on its legend entry
   let cagedFollow = true;        // selected CAGED chord tracks the playing chord (on by default)
   let activeRootPc = null;       // pitch class of the currently-playing chord's root, for Root notes mode
@@ -56,15 +54,17 @@
   let rebaseBox = false;         // re-pick the box by position rather than by index
   let fretRange = 'all';         // 'all' | 'fit' | 'from-to' — how much neck to draw
   let colorBy = 'shape';         // 'shape' (which CAGED box) | 'interval' (what the note is)
-  let voiceLead = false;         // Progression: follow the previous shape, not one fret
-  let allTones = false;          // Progression: each chord's whole arpeggio, not just its grip
   let wholeArpeggio = false;     // Chords: the shapes opened out into the whole arpeggio
   // Chords reads two ways: one chord across the whole neck, or the whole
   // progression under one hand. Everything about choosing a position — the
   // stepper, voice leading, holding — belongs to the second; the first has no
   // position to choose, it shows them all.
   let cagedReading = 'neck';     // 'neck' | 'position'
-  let cagedVoiceLead = false;    // Chords: let the progression choose the position, not you
+  // How the position gets chosen, once you're reading one:
+  //   box     — one CAGED box, every chord clipped into it
+  //   cluster — each chord at its own best position, near a shared fret
+  //   lead    — each chord nearest wherever the one before it landed
+  let cagedPosMethod = 'box';
   let stringSetLow = 2;          // Triads: lowest string of the set (2 = e-B-G)
   let shapeRanges = {};          // per shape: the frets it spans, for the legend
 
@@ -86,6 +86,12 @@
     return { rootPc, roles };
   }
 
+  // The cluster reading — every chord at its own placement rather than clipped
+  // into one box. This is what the old Progression mode drew; it lives inside
+  // Chords now, as one of the ways a position gets chosen.
+  const clusterMode = () =>
+    fretMode === 'caged' && cagedReading === 'position' && cagedPosMethod !== 'box';
+
   // recolour a finished marker list, keeping everything else about it
   function applyColorBy(markers, chord){
     if (colorBy !== 'interval' || !chord) return markers;
@@ -102,8 +108,6 @@
   const cagedChordGroup = document.getElementById('cagedChordGroup');
   const cagedFollowToggle = document.getElementById('cagedFollowToggle');
   const scaleTheoryRow = document.getElementById('scaleTheoryRow');
-  const chordPosRow = document.getElementById('chordPosRow');
-  const chordPosFollowToggle = document.getElementById('chordPosFollowToggle');
   const cagedLegend = document.getElementById('cagedLegend');
   const fretboardSvg = document.getElementById('fretboard');
 
@@ -116,11 +120,6 @@
       updateFretUI();
       renderFretboard();
     });
-  });
-
-  document.getElementById('chordPosNext').addEventListener('click', () => {
-    chordPosIndex++;
-    renderFretboard();
   });
 
   document.querySelectorAll('#scaleTheoryGroup .seg-btn').forEach(btn => {
@@ -138,15 +137,13 @@
   const fretRangeSelect = document.getElementById('fretRangeSelect');
   const colorByGroup = document.getElementById('colorByGroup');
   const colorByLabel = document.getElementById('colorByLabel');
-  const voiceLeadToggle = document.getElementById('voiceLeadToggle');
-  const allTonesToggle = document.getElementById('allTonesToggle');
   const stringSetRow = document.getElementById('stringSetRow');
   const cagedViewRow = document.getElementById('cagedViewRow');
   const wholeArpeggioToggle = document.getElementById('wholeArpeggioToggle');
-  const cagedVoiceLeadToggle = document.getElementById('cagedVoiceLeadToggle');
+  const cagedPosMethodGroup = document.getElementById('cagedPosMethodGroup');
   const cagedReadingGroup = document.getElementById('cagedReadingGroup');
   const singleBoxCheck = document.getElementById('singleBoxCheck');
-  const cagedVoiceLeadCheck = document.getElementById('cagedVoiceLeadCheck');
+  const cagedPosMethodWrap = document.getElementById('cagedPosMethodWrap');
 
   document.querySelectorAll('#stringSetGroup .seg-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -160,7 +157,6 @@
     const singleChordModes = ['caged', 'triads3', 'penta', 'scale'].includes(fretMode);
     cagedChordRow.hidden = !singleChordModes;
     scaleTheoryRow.hidden = fretMode !== 'scale';
-    chordPosRow.hidden = fretMode !== 'positions';
     stringSetRow.hidden = fretMode !== 'triads3';
     cagedViewRow.hidden = fretMode !== 'caged';
     // Choosing a position only means something where there is one: the two
@@ -170,11 +166,14 @@
     boxRow.hidden = !(cagedPos || ['penta', 'scale'].includes(fretMode));
     // in Chords the reading picks the box, so there's no checkbox to offer
     singleBoxCheck.hidden = fretMode === 'caged';
-    cagedVoiceLeadCheck.hidden = fretMode !== 'caged';
+    cagedPosMethodWrap.hidden = !cagedPos;
     // ...and stepping goes quiet when the progression is choosing for you
-    const picksItself = cagedPos ? cagedVoiceLead : !singleBox;
+    const picksItself = cagedPos ? cagedPosMethod === 'lead' : !singleBox;
     document.getElementById('boxStep').classList.toggle('locked', picksItself);
-    holdPositionToggle.closest('.inline-check').classList.toggle('off', !cagedPos && !singleBox);
+    // holding a position needs there to be one: a single box, not a cluster
+    // of each chord's own placements
+    const holdApplies = cagedPos ? cagedPosMethod === 'box' : singleBox;
+    holdPositionToggle.closest('.inline-check').classList.toggle('off', !holdApplies);
     // Roots is already coloured by root and Progression by chord, so
     // there's nothing for the interval colouring to say in those
     // colour already means "which chord" in the position reading, the same as
@@ -195,14 +194,6 @@
       renderFretboard();
     });
   });
-  voiceLeadToggle.addEventListener('change', () => {
-    voiceLead = voiceLeadToggle.checked;
-    renderFretboard();
-  });
-  allTonesToggle.addEventListener('change', () => {
-    allTones = allTonesToggle.checked;
-    renderFretboard();
-  });
   wholeArpeggioToggle.addEventListener('change', () => {
     wholeArpeggio = wholeArpeggioToggle.checked;
     heldWindow = null;      // the grips and the arpeggio don't share a window
@@ -217,11 +208,14 @@
       renderFretboard();
     });
   });
-  cagedVoiceLeadToggle.addEventListener('change', () => {
-    cagedVoiceLead = cagedVoiceLeadToggle.checked;
-    heldWindow = null;
-    updateFretUI();       // it picks the position for you, so the stepper goes quiet
-    renderFretboard();
+  cagedPosMethodGroup.querySelectorAll('.seg-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      cagedPosMethodGroup.querySelectorAll('.seg-btn').forEach(b => b.classList.toggle('active', b === btn));
+      cagedPosMethod = btn.dataset.value;
+      heldWindow = null;    // the three ways of choosing don't share a window
+      updateFretUI();
+      renderFretboard();
+    });
   });
 
   // Which slice of neck to draw. "Fit to box" follows whatever single box is
@@ -267,8 +261,16 @@
     heldWindow = null;
     renderFretboard();
   });
-  document.getElementById('boxPrev').addEventListener('click', () => { boxIndex--; heldWindow = null; renderFretboard(); });
-  document.getElementById('boxNext').addEventListener('click', () => { boxIndex++; heldWindow = null; renderFretboard(); });
+  // The stepper walks whichever thing the current reading is stepping: one
+  // CAGED box, or one cluster of the whole progression's own positions.
+  function stepPosition(d){
+    if (clusterMode()) chordPosIndex += d;
+    else boxIndex += d;
+    heldWindow = null;
+    renderFretboard();
+  }
+  document.getElementById('boxPrev').addEventListener('click', () => stepPosition(-1));
+  document.getElementById('boxNext').addEventListener('click', () => stepPosition(1));
 
   // The pentatonic and scale views draw every box on the neck; with "Single
   // box" on, cut that down to one — the box at `boxIndex`, low to high — or,
@@ -333,7 +335,7 @@
   // while "follows playback" is on, jump the CAGED chord picker to whatever
   // chord is currently sounding
   function followPlayingChord(force){
-    if (!cagedFollow || fretMode === 'roots' || fretMode === 'positions') return;
+    if (!cagedFollow || fretMode === 'roots') return;
     const active = host.activeChord();
     if (!active) return;
     const chord = host.progression()[active.idx];
@@ -379,7 +381,7 @@
   // ---- Progression: "Follow playback" highlights the sounding chord,
   // half-lights the next one, and dims the rest ----
   function paintPositionsFollow(){
-    const active = fretMode === 'positions' && chordPosFollow && host.isPlaying();
+    const active = clusterMode() && cagedFollow && host.isPlaying();
     fretboardSvg.classList.toggle('pos-follow', active);
     if (!active){
       fretboardSvg.querySelectorAll('.pos-current, .pos-next, .suppress-ring')
@@ -388,9 +390,12 @@
       cagedLegend.querySelectorAll('.legend-current').forEach(el => el.classList.remove('legend-current'));
       return;
     }
+    // one chord in front everywhere now, so the tiers read off the same index
+    // the chord picker uses rather than a second one of their own
     const total = posLegendData.length;
-    const nextIdx = total ? (activePosChordIdx + 1) % total : -1;
-    const cur = String(activePosChordIdx), next = String(nextIdx);
+    const curIdx = Math.min(cagedChordIdx, Math.max(0, total - 1));
+    const nextIdx = total ? (curIdx + 1) % total : -1;
+    const cur = String(curIdx), next = String(nextIdx);
     fretboardSvg.querySelectorAll('.note-dot').forEach(g => {
       const tags = (g.getAttribute('data-shapes') || '').split(',').filter(Boolean);
       const isCurrent = tags.includes(cur);
@@ -418,25 +423,6 @@
     });
   }
 
-  // while "follow playback" is on, track which chord in the cluster is sounding
-  function followPositionsChord(active, force){
-    if (fretMode !== 'positions' || !chordPosFollow) return;
-    const chord = host.progression()[active.idx];
-    if (!chord || chord.quality === 'dim') return;   // keep showing the last real chord
-    let ci = 0;
-    for (let k = 0; k < active.idx; k++){
-      if (host.progression()[k] && host.progression()[k].quality !== 'dim') ci++;
-    }
-    if (ci === activePosChordIdx && !force) return;
-    activePosChordIdx = ci;
-    renderFretboard();
-  }
-
-  chordPosFollowToggle.addEventListener('change', () => {
-    chordPosFollow = chordPosFollowToggle.checked;
-    if (chordPosFollow && host.isPlaying() && host.activeChord()) followPositionsChord(host.activeChord(), true);
-    else renderFretboard();
-  });
 
   // ---- spotlight one CAGED shape (or, in Progression, one chord) when
   // its legend entry is hovered / tapped ----
@@ -546,7 +532,7 @@
     shownWindow = null;
     if (!host.progression().length) return { markers: [], lines: [] };
 
-    if (fretMode === 'positions'){
+    if (clusterMode()){
       const chords = host.progression().filter(c => c.quality !== 'dim');
       if (!chords.length) return { markers: [], lines: [] };
 
@@ -584,7 +570,7 @@
         if (!placements.length) return;
         const placement = placements.reduce((best, p) =>
           Math.abs(p.meanFret - aimFret) < Math.abs(best.meanFret - aimFret) ? p : best);
-        if (voiceLead) aimFret = placement.meanFret;
+        if (cagedPosMethod === 'lead') aimFret = placement.meanFret;
         const color = ROOT_PALETTE[i % ROOT_PALETTE.length];
         const tag = String(i);   // reuses the shape-spotlight mechanism, keyed by chord index
         posLegendData.push({ name: displayName(chord), numeral: chord.numeral, color, tag, shapeLetter: placement.name });
@@ -613,7 +599,7 @@
         // sitting on that grip can reach. That turns the cluster of shapes
         // into a map of the progression: each chord's arpeggio in its own
         // position, and you can see which notes carry over to the next chord.
-        const cellsToShow = allTones
+        const cellsToShow = wholeArpeggio
           ? arpeggioCells(placement.fretMin, Math.max(placement.fretMax, placement.fretMin + 3), tonePcs)
           : gripCells;
 
@@ -656,8 +642,8 @@
         // Showing every chord tone, the ring means "two chords share this
         // note" — the thing you're looking for — and the roots are already
         // named by their label, so it isn't needed for them as well.
-        const ringed = allTones && shapes.length > 1;
-        const ring = allTones ? { isRoot: false, ringed } : { isRoot };
+        const ringed = wholeArpeggio && shapes.length > 1;
+        const ring = wholeArpeggio ? { isRoot: false, ringed } : { isRoot };
         if (uniqueContribs.length === 1){
           return { string: m.string, fret: m.fret, color: uniqueContribs[0].color, label: uniqueContribs[0].label, ...ring, isLowestRoot, shapes, rootShapes, labelsByTag };
         }
@@ -736,7 +722,7 @@
         return { ...rest, color: curColor, shapes: [curTag] };
       };
       const boxOpts = { single: inPosition };
-      if (inPosition && cagedVoiceLead){
+      if (inPosition && cagedPosMethod === 'lead'){
         boxOpts.index = voiceLedBoxIndex(cands, Math.min(cagedChordIdx, cands.length - 1));
       }
       const rootPc = SEMITONE[chord.note] % 12;
@@ -1105,10 +1091,10 @@
       if (!runs || !runs.length) return '';
       return `<em class="range">${runs.map(r => `${r.min}–${r.max}`).join(' · ')}</em>`;
     };
-    if (fretMode === 'positions'){
+    if (clusterMode()){
       const entries = posLegendData
         .map(c => `<span data-shape="${c.tag}" tabindex="0" role="button" aria-label="Highlight ${c.name}"><i style="background:${c.color}"></i>${c.name}<em>${c.numeral}</em><small class="pos-shape-tag">${c.shapeLetter}</small>${range(c.tag)}</span>`);
-      if (allTones) entries.push(`<span><i class="ring"></i>shared with another chord</span>`);
+      if (wholeArpeggio) entries.push(`<span><i class="ring"></i>shared with another chord</span>`);
       cagedLegend.innerHTML = entries.join('');
       return;
     }
@@ -1189,12 +1175,12 @@
     fretboardSvg.style.minWidth = geo.minWidth + 'px';
     fretboardSvg.innerHTML = geo.buildSVG(markers, lines);
     renderFretLegend();
-    fretboardSvg.classList.toggle('positions-mode', fretMode === 'positions');
+    fretboardSvg.classList.toggle('positions-mode', clusterMode());
 
     if (fretMode === 'roots'){
       stuckShape = null;
       paintRootSpotlight();
-    } else if (fretMode === 'positions'){
+    } else if (clusterMode()){
       stuckShape = null;
       fretboardSvg.classList.remove('shape-focus');
       paintPositionsFollow();
@@ -1220,17 +1206,15 @@
   function followChord(active){
     if (cagedFollow) followPlayingChord(false);
     followRootHighlight(active);
-    followPositionsChord(active);
   }
 
   function resetFollow(){
     activeRootPc = null;
-    activePosChordIdx = 0;
   }
 
   function onPlaybackStarted(){
     updateCagedLock();
-    if (fretMode === 'positions') renderFretboard();   // paint the follow tiers from beat one
+    if (clusterMode()) renderFretboard();   // paint the follow tiers from beat one
   }
 
   function onPlaybackStopped(){
@@ -1239,7 +1223,7 @@
       activeRootPc = null;
       if (fretMode === 'roots') renderFretboard();
     }
-    if (fretMode === 'positions') renderFretboard();   // drop the follow highlight
+    if (clusterMode()) renderFretboard();   // drop the follow highlight
   }
 
   GT.fretboardView = {

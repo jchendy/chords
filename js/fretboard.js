@@ -65,7 +65,7 @@
   const CAGED_DUP_ROOT_STRING = { C: 1, A: 2, G: 0, E: 3, D: 1 };
 
   // turn a triad placement into its 7th-chord voicing the way it's actually
-  // fingered on guitar (used by Progression when 7 chords is on)
+  // fingered on guitar (used by Chords when the chord carries a 7th)
   function seventhCells(placement, rootPc, seventhPc){
     const dupString = CAGED_DUP_ROOT_STRING[placement.name];
     const dup = placement.cells.find(c => c.string === dupString);
@@ -219,7 +219,7 @@
   // data behind the practice tab's Chords view; the chord finder draws
   // the same thing, so both stay identical by construction.
   // Pass `seventhPc` and each shape turns into its 7th-chord voicing (the
-  // same way Progression does it), with the 7th drawn as a hollow dot.
+  // same way the position reading does it), with the 7th drawn as a hollow dot.
   function cagedTriadBoard(rootPc, isMinor, rootLabel, seventhPc = null){
     const thirdPc = (rootPc + (isMinor ? 3 : 4)) % 12;
     const fifthPc = (rootPc + 7) % 12;
