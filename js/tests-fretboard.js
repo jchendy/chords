@@ -481,6 +481,50 @@
     });
   }
 
+  // Across the neck, a dot's colour is the CAGED box it belongs to, and the
+  // three views that draw that picture — the Chords arpeggio, Pentatonic and
+  // Scales — each say so in their own copy of the same loop. That's how B5
+  // happened: one copy coloured notes with a box anchored off the end of the
+  // neck while the others didn't. The invariant behind all three is that the
+  // colour on a dot has to be the colour of a box that dot claims to be in.
+  function testEveryColourComesFromItsBox(t){
+    const colours = GT.fretboard.CAGED_COLORS;
+    const bad = [];
+    let dots = 0;
+    loadProgression(['Am7', 'Dm7', 'E7']);
+    ['caged', 'penta', 'scale'].forEach(mode => {
+      setMode(mode);
+      setView('neck');
+      [false, true].forEach(arp => {
+        const cb = q('#wholeArpeggioToggle');
+        if (cb.checked !== arp) cb.click();
+        svg.querySelectorAll('.note-dot').forEach(g => {
+          const shapes = (g.getAttribute('data-shapes') || '').split(',').filter(Boolean);
+          const halves = [...g.querySelectorAll('path')];
+          // a hollow dot — the 7th — wears its colour on the stroke, with the
+          // panel showing through, so reading its fill would read the panel
+          const paint = g.classList.contains('hollow') ? 'stroke' : 'fill';
+          const fills = halves.length
+            ? halves.map(h => h.getAttribute(paint))
+            : [...g.querySelectorAll('circle:not(.dot-ring)')].map(c => c.getAttribute(paint));
+          if (!fills.length) return;
+          dots++;
+          const owned = shapes.map(n => colours[n]).filter(Boolean);
+          // a half painted in a colour no box of this dot wears
+          const stray = fills.filter(f => f && !owned.includes(f));
+          if (stray.length && bad.length < 4)
+            bad.push(`${mode} arp=${arp}: a dot in [${shapes.join(',')}] is painted ${stray[0]}`);
+          // a split dot is how "two boxes share this note" is drawn, so two
+          // halves of one colour would be saying nothing in two places
+          if (halves.length === 2 && fills[0] === fills[1] && bad.length < 4)
+            bad.push(`${mode} arp=${arp}: a split dot has both halves ${fills[0]}`);
+        });
+      });
+    });
+    t.ok(!bad.length, `Every dot wears the colour of a box it's in (${dots} checked)`
+      + (bad.length ? ` — ${bad[0]}` : ''));
+  }
+
   GT.fretboardSuites = [
     ['Fretboard: chords are drawn as shapes you can hold', testGripsAreGrips],
     ['Fretboard: whole arpeggio opens the shapes out', testArpeggioReallyOpensOut],
@@ -493,5 +537,6 @@
     ['Fretboard: one position narrows the neck', testPositionNarrows],
     ['Fretboard: every position method draws alike', testPositionMethodsRenderAlike],
     ['Fretboard: every box named is a box you can reach', testEveryBoxNamedCanBeReached],
+    ['Fretboard: every colour comes from a box the note is in', testEveryColourComesFromItsBox],
   ];
 })();

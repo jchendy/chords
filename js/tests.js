@@ -7,8 +7,10 @@
 (function(){
   'use strict';
   const GT = window.GT;
-  const { parseChordName, identifyChords, chordFromName, seventhSuffix, NOTE_NAMES_SHARP } = GT.theory;
-  const { STRING_TUNING, FRET_COUNT, seventhCells, cagedPlacements, CAGED_MAJOR } = GT.fretboard;
+  const { parseChordName, identifyChords, chordFromName, seventhSuffix, NOTE_NAMES_SHARP,
+          degreeLabel, SEMITONE } = GT.theory;
+  const { STRING_TUNING, FRET_COUNT, seventhCells, cagedPlacements, CAGED_MAJOR,
+          cagedTriadBoard } = GT.fretboard;
   const { findChordVoicings } = GT.chordFinder;
   const { voiceChord, midiFor } = GT.genres;
 
@@ -578,6 +580,42 @@
     t.equal(orphans.join('; '), '', 'every preset a mode offers has a variant that mode can show');
   }
 
+  // ---- two answers to "what degree is this note", which must agree --------
+  // cagedTriadBoard labels the notes it draws from a root pitch class and a
+  // minor flag; the position reading labels the chords sitting behind the front
+  // one through theory's degreeLabel, from the chord object. In one position
+  // both are on screen at once — the lit chord wears the first set of labels
+  // and the ghosts wear the second — so a note that is a ♭7 has to be spelled
+  // the same either way, whichever of the two happened to draw it.
+  function testDegreeNamesAgree(t){
+    const names = ['C', 'Cm', 'C7', 'Cm7', 'Cmaj7', 'Cdim', 'Cm7b5', 'Cdim7',
+                   'A', 'Am7', 'Ebmaj7', 'F#m7', 'Bb7', 'G#m'];
+    const clashes = [];
+    let compared = 0;
+    names.forEach(n => {
+      const ch = chordFromName(n, 0, 'major');
+      if (!ch) { clashes.push(`${n} doesn't build`); return; }
+      const rootPc = SEMITONE[ch.note] % 12;
+      const sevPc = ch.seventh ? SEMITONE[ch.seventh] % 12 : null;
+      // what the board writes on each pitch class
+      const board = {};
+      cagedTriadBoard(rootPc, ch.quality === 'min', ch.note, sevPc).markers
+        .forEach(m => { if (m.label) board[(STRING_TUNING[m.string] + m.fret) % 12] = m.label; });
+      // what the ghosts write on the same ones
+      const ghost = { [rootPc]: ch.note,
+        [SEMITONE[ch.third] % 12]: degreeLabel(ch, 'third'),
+        [SEMITONE[ch.fifth] % 12]: degreeLabel(ch, 'fifth') };
+      if (ch.seventh) ghost[sevPc] = degreeLabel(ch, 'seventh');
+      Object.keys(ghost).forEach(pc => {
+        if (board[pc] === undefined) return;
+        compared++;
+        if (board[pc] !== ghost[pc])
+          clashes.push(`${n}: the board writes "${board[pc]}" where a ghost writes "${ghost[pc]}"`);
+      });
+    });
+    t.equal(clashes.join('; '), '', `one note, one degree name, whoever draws it (${compared} compared)`);
+  }
+
   // ---- a very small test runner ----
   function run(){
     const results = [];
@@ -593,6 +631,7 @@
       ['Chord finder output is identifiable in reverse', testFinderOutputIsIdentifiable],
       ['Chord finder shows the everyday grips', testCanonicalGrips],
       ['Theory: naming and identification', testTheory],
+      ['Theory: one answer for what degree a note is', testDegreeNamesAgree],
       ['Genre library and presets are well-formed', testData],
     ].concat(GT.fretboardSuites || []);   // added by js/tests-fretboard.js, if it loaded
     const out = [];
