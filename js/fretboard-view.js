@@ -47,9 +47,7 @@
   // in. Switching mode keeps the reading, so moving from a chord to its scale
   // doesn't throw you back out to the whole neck.
   let inPosition = false;
-  let holdPosition = false;
   let boxIndex = 0;              // which box, low to high, when showing one
-  let heldWindow = null;         // { min, max } of frets kept while holding position
   let shownWindow = null;        // what the legend reports
   let shownBoxName = '';         // ...and which CAGED shape that box is
   let shownBoxCells = null;      // ...and the cells that shape actually plays
@@ -134,7 +132,6 @@
       fretModeGroup.querySelectorAll('.seg-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       fretMode = btn.dataset.value;
-      heldWindow = null;
       // Each view numbers its positions differently — a pentatonic box list
       // isn't the same length as a list of CAGED grips — so carrying the raw
       // index across a view change moves the hand for no reason. Re-pick by
@@ -155,7 +152,6 @@
   });
 
   const boxRow = document.getElementById('boxRow');
-  const holdPositionToggle = document.getElementById('holdPositionToggle');
   const fretRangeSelect = document.getElementById('fretRangeSelect');
   const colorByGroup = document.getElementById('colorByGroup');
   const colorByLabel = document.getElementById('colorByLabel');
@@ -189,12 +185,6 @@
     // about how they're gathered
     const cagedPos = fretMode === 'caged' && inPosition;
     cagedPosMethodWrap.hidden = !cagedPos;
-    // stepping goes quiet when the progression is choosing the position itself
-    document.getElementById('boxStep').classList.toggle('locked', cagedPos && cagedPosMethod === 'lead');
-    // and holding one needs there to be a single window to hold, not a cluster
-    // of each chord's own placements
-    const holdApplies = cagedPos ? cagedPosMethod === 'box' : true;
-    holdPositionToggle.closest('.inline-check').classList.toggle('off', !holdApplies);
     // Roots is already coloured by root; and in one position Chords colours by
     // chord, so there's nothing for the interval option to say in either
     const colourIsChord = inPosition && ['caged', 'triads3'].includes(fretMode);
@@ -215,14 +205,12 @@
   });
   wholeArpeggioToggle.addEventListener('change', () => {
     wholeArpeggio = wholeArpeggioToggle.checked;
-    heldWindow = null;      // the grips and the arpeggio don't share a window
     renderFretboard();
   });
   viewGroup.querySelectorAll('.seg-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       viewGroup.querySelectorAll('.seg-btn').forEach(b => b.classList.toggle('active', b === btn));
       inPosition = btn.dataset.value === 'position';
-      heldWindow = null;      // the two readings don't share a window
       rebaseBox = true;       // ...and coming back lands where you left off
       updateFretUI();
       renderFretboard();
@@ -232,7 +220,6 @@
     btn.addEventListener('click', () => {
       cagedPosMethodGroup.querySelectorAll('.seg-btn').forEach(b => b.classList.toggle('active', b === btn));
       cagedPosMethod = btn.dataset.value;
-      heldWindow = null;    // the three ways of choosing don't share a window
       updateFretUI();
       renderFretboard();
     });
@@ -271,17 +258,11 @@
   }
 
 
-  holdPositionToggle.addEventListener('change', () => {
-    holdPosition = holdPositionToggle.checked;
-    heldWindow = null;
-    renderFretboard();
-  });
   // The stepper walks whichever thing the current reading is stepping: one
   // CAGED box, or one cluster of the whole progression's own positions.
   function stepPosition(d){
     if (clusterMode()) chordPosIndex += d;
     else boxIndex += d;
-    heldWindow = null;
     renderFretboard();
   }
   document.getElementById('boxPrev').addEventListener('click', () => stepPosition(-1));
@@ -336,19 +317,15 @@
     const want = forcedIndex == null ? boxIndex : forcedIndex;
     const box = sorted[((want % sorted.length) + sorted.length) % sorted.length];
     const frets = box.cells.map(c => c.fret);
-    let win = { min: Math.min(...frets), max: Math.max(...frets) };
+    const win = { min: Math.min(...frets), max: Math.max(...frets) };
     // A three-string triad spans two or three frets, which is tighter than a
     // hand and would let almost nothing else into the position. Open the
     // window out to a hand's reach around it, so the other chords' shapes in
     // that position can be seen alongside it.
     if (opts.minSpan && win.max - win.min + 1 < opts.minSpan){
       const grow = opts.minSpan - (win.max - win.min + 1);
-      win = { min: Math.max(0, win.min - Math.floor(grow / 2)),
-              max: Math.min(FRET_COUNT, win.max + Math.ceil(grow / 2)) };
-    }
-    if (holdPosition){
-      if (!heldWindow) heldWindow = win;
-      win = heldWindow;
+      win.min = Math.max(0, win.min - Math.floor(grow / 2));
+      win.max = Math.min(FRET_COUNT, win.max + Math.ceil(grow / 2));
     }
     shownWindow = win;
     shownBoxName = box.name || '';
@@ -1258,14 +1235,12 @@
     for (let i = 0; i <= curIdx; i++){
       const boxes = cagedBoxesFor(cands[i]).slice().sort((a, b) => a.anchor - b.anchor);
       if (!boxes.length) continue;
-      let k = 0;
-      if (prevMid != null){
-        let bd = Infinity;
-        boxes.forEach((b, j) => {
-          const d = Math.abs(midOf(b) - prevMid);
-          if (d < bd){ bd = d; k = j; }
-        });
-      }
+      // The first chord takes whichever box the arrows are on, and every
+      // chord after it follows the one before — so stepping moves the whole
+      // walk up or down the neck rather than doing nothing.
+      const k = prevMid == null
+        ? ((boxIndex % boxes.length) + boxes.length) % boxes.length
+        : boxes.indexOf(nearestShape(boxes, prevMid));
       prevMid = midOf(boxes[k]);
       chosen = k;
     }

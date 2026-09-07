@@ -143,9 +143,9 @@ names the tab you're on.
   them all decides whether you're looking at the whole neck or at one hand
   position, and it stays put when you switch view, so following a chord into
   its scale doesn't throw you back out to the whole neck. In one position a
-  single Position row appears — ◂ ▸ to move the hand, **Hold position** to pin
-  it while the chords change — and each view narrows to its own notes inside
-  that stretch. The views number their positions differently (a pentatonic box
+  single Position row appears — ◂ ▸ to move the hand — and each view narrows
+  to its own notes inside that stretch. It stays where you put it as the chords
+  change; only the arrows move it. The views number their positions differently (a pentatonic box
   isn't the same width as a CAGED grip), so switching view re-picks the
   nearest one rather than carrying the index across, and the hand stays where
   it was:
@@ -190,8 +190,7 @@ names the tab you're on.
   position belongs to the second reading, since the first has no position to
   choose — it shows them all. Three ways of putting the progression in one
   place: **One box** clips every chord into a single CAGED box, so nothing
-  leaves the frets you're on and **Hold position** can pin it while the chords
-  change; **Cluster** gives each chord its own best position, chosen to sit
+  leaves the frets you're on; **Cluster** gives each chord its own best position, chosen to sit
   close to the others, so the shapes are the ones you'd really play (the barred
   G-shape is skipped everywhere except its own open-G form, since it isn't
   realistically playable elsewhere); **Voice leading** gives each chord
@@ -223,13 +222,12 @@ names the tab you're on.
   natural minor) and Key mode (chord-scale theory — the progression key's
   mode rooted on the chosen chord, e.g. a IV chord reads as Lydian); same
   CAGED-box colouring and chord-tone emphasis either way.
-  Both scale views have a "Box" row: **Single box** shows one CAGED
-  position at a time, with ◂ ▸ to walk up and down the neck and the legend
-  naming the fret range; **Hold position** keeps that stretch of frets fixed
-  when the chord changes (by hand or by following playback), so the new
-  chord's notes appear under the hand you already have there rather than the
-  view jumping to the new chord's box — the "stay in one position while the
-  ii–V–I goes by" exercise
+  Both scale views take the same Position row as the others: ◂ ▸ walk one
+  CAGED position at a time up and down the neck, with the legend naming the
+  fret range. The position stays where you leave it as the chords change, so
+  the new chord's notes appear under the hand you already have there rather
+  than the view jumping — the "stay in one position while the ii–V–I goes by"
+  exercise
 - A "Display" row applies to every view. **Frets** zooms in on a stretch of
   the neck — all frets, 0–7, 4–11, 8–15, or "Fit to box", which follows
   whichever single box is on screen. The frets keep their width, so a shorter
