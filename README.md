@@ -1,8 +1,17 @@
-# Guitar chords
+# Jeff's Guitar Tools
 
-A single-page, dependency-free tool that generates random diatonic chord
-progressions and plays them back with a synthesized piano and optional
-hi-hat click.
+A single-page, dependency-free site with three tabs under one header:
+
+- **CAGED practice** — generates random diatonic chord progressions and
+  plays them back with a synthesized piano and optional hi-hat click.
+- **Chord finder** — type a chord name (e.g. `G#9`, `Cmaj7`, `Dm7b5`) and
+  see the common places to play it on the neck.
+- **Reverse chord finder** — click frets on an interactive fretboard and
+  see what chord name(s) the selected notes could be.
+
+Switching tabs stops any playback that was running.
+
+## CAGED practice
 
 ## Features
 
@@ -57,21 +66,27 @@ hi-hat click.
   sounding chord's root is ringed and spotlighted);
   Chord positions — one shape per chord in the progression, colour-coded by
   chord, chosen so every shape sits close together on the neck (shared notes
-  split-coloured, and hovering/tapping a chord name in the legend — which
-  also names each chord's CAGED shape letter — spotlights it, same as CAGED
-  triads); with the whole cluster shown at rest, every note is dimmed except
-  each chord's lowest root, so the anchor notes stand out; the barred
+  split-coloured, no shape outlines since several overlapping shapes made
+  them confusing here, and hovering/tapping a chord name in the legend —
+  which also names each chord's CAGED shape letter — spotlights it, same as
+  CAGED triads); every note is labelled by scale degree except the root,
+  which keeps its note name; with the whole cluster shown at rest, every
+  note is dimmed except each chord's lowest root, so the anchor notes stand
+  out; the barred
   G-shape is skipped everywhere except its own open-G-chord form, since it's
   not realistically playable elsewhere. "Next position" cycles to the next
-  cluster up the neck, wrapping back to the lowest. With "7 chords" on, it
-  also adds each chord's 7th nearby on an open string of that shape, when
-  one is reachable. "Follow playback" (on by default) lights up whichever
+  cluster up the neck, wrapping back to the lowest. With "7 chords" on, each
+  shape turns into the 7th-chord voicing guitarists actually use for it —
+  flattening that shape's own doubled root by a half step (major 7th) or a
+  whole step (dominant/minor 7th) — rather than tacking a note onto some
+  other string. "Follow playback" (on by default) lights up whichever
   chord is currently sounding (in both the fretboard and its legend entry),
   lightly dims the next chord, and dims the rest much further; a lit note
   only wears the root ring when it's actually the sounding chord's own root,
   not just a note it happens to share with another chord's root;
   CAGED triads — the five chord shapes for the chosen chord, outlined and
-  colour-coded, every note named, shared notes split-coloured;
+  colour-coded, every note labelled by scale degree except the root (which
+  keeps its note name), shared notes split-coloured;
   CAGED pentatonic — the chosen chord's major/minor pentatonic, every note
   coloured by the CAGED box it belongs to (seam notes split-coloured), scale
   degrees in the dots, chord-shape outlines through the chord tones;
@@ -84,7 +99,75 @@ hi-hat click.
   shape; "Follow playback" (on by default) lets the fretboard track whichever
   chord is currently sounding
 
+## Chord finder
+
+Type a chord name — root note plus an optional accidental (`#`/`b`) and a
+quality/extension suffix (`m`, `7`, `maj7`, `m7b5`, `dim7`, `sus4`, `9`,
+`13`, `7#9`, and around two dozen others) — and the tab searches every
+string/fret combination within a comfortable 4-fret stretch for shapes that
+sound all of that chord's defining tones (the plain 5th is treated as
+optional, same as real players drop it).
+
+Every shape is then handed to a fingering pass, which either works out a
+playable left hand for it or throws it out. Fingers are numbered 1 (index)
+to 4 (pinky); up to three fingers may share a fret, and when that isn't
+enough the shape is barred — the index across the lowest fret, or a higher
+finger laid flat over neighbouring strings (the ring-finger barre that
+shapes like C9 and Em9 need). A barre that would silence an open string, or
+sound a note outside the chord, means the shape isn't offered at all.
+
+The results walk up the neck, showing the best grip at each position plus
+the strongest runners-up, so every place the chord can be played gets a
+look in. Open-position shapes draw a nut, higher ones are labelled with
+their starting fret, and a shape built on a CAGED form says which one.
+Two toggles sit above the results: dots can show **finger numbers** or
+**scale degrees**, and for a plain triad you can ask for **three-note
+voicings only**. A major or minor triad also gets the whole-neck CAGED
+picture at the top — the same five shapes the practice tab draws, from the
+same code, so the two always agree.
+
+## Reverse chord finder
+
+Click frets on the interactive fretboard to select notes (clicking a
+selected fret again clears it; picking a different fret on the same string
+replaces the old selection, since a string only sounds one note at a time).
+Once one or more frets are selected, every chord name that fits — trying
+each selected note in turn as the root — is listed below, using the same
+chord-formula table as the chord finder.
+
 ## Usage
 
 Open `index.html` in any modern browser. No build step, no dependencies
 (fonts load from Google Fonts).
+
+## Code layout
+
+`index.html` is markup and styles only; the JavaScript lives in `js/`, split
+by what each part does:
+
+| File | Responsibility |
+| --- | --- |
+| `theory.js` | Keys, scale degrees, chord formulas, chord naming, chord identification. Pure — no DOM, no audio, no app state. |
+| `fretboard.js` | Tuning, CAGED and pentatonic shape templates, the maths that places them on the neck, and CAGED shape matching. Also pure. |
+| `neck.js` | Draws a full 15-fret neck as SVG from markers and shape outlines — shared by the practice fretboard and the chord finder's CAGED overview. |
+| `audio.js` | The Web Audio synth voices (piano, bass, drums) and the per-genre groove patterns. Owns the `AudioContext`; knows nothing about the UI. |
+| `fretboard-view.js` | The practice tab's fretboard panel: the five views, the legend, the hover spotlight, the follow-playback highlighting. |
+| `practice.js` | The CAGED practice tab: progression generation, the chord display and settings, and the playback transport. |
+| `chord-finder.js` | Chord finder tab: voicing search, fingering, chord diagrams. |
+| `reverse-finder.js` | Reverse chord finder tab: the clickable neck and the name lookup. |
+| `tooltips.js`, `tabs.js` | Small shared UI pieces. |
+| `main.js` | Boots each tab and wires the header together. |
+
+Each file wraps itself in an IIFE and hangs its public interface off a single
+`GT` namespace, so nothing else leaks into global scope. Dependencies run one
+way — `theory` and `fretboard` know about nothing, `audio` uses `theory`, the
+tab modules use those, and `main` starts them.
+
+`practice.js` and `fretboard-view.js` share state (which chord is sounding,
+whether 7ths are on), so rather than reaching into each other, the view gets a
+small **host object** of getters at `init()` and exposes a handful of methods
+(`render`, `followChord`, `onPlaybackStarted`, …) for the practice tab to call.
+
+They're plain `<script>` tags rather than ES modules on purpose: modules are
+blocked by CORS when a page is opened straight from disk, and this one is meant
+to work by double-clicking `index.html`, with no server and no build step.
