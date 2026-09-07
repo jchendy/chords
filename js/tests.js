@@ -471,6 +471,15 @@
     t.equal(parseChordName('C/H'), null, '"C/H" is rejected');
     t.equal(parseChordName('H7'), null, '"H7" is rejected');
     t.equal(parseChordName('Cxyz'), null, '"Cxyz" is rejected');
+    // Two suffixes have a slash inside them, so the slash can't simply mean
+    // "bass note follows": read that way, neither spelling parses at all.
+    const named = n => { const p = parseChordName(n); return p && p.rootName + p.formula.name; };
+    t.equal(named('Cm/maj7'), 'Cm(maj7)', '"Cm/maj7" names the minor-major 7th');
+    t.equal(named('C6/9'), 'C6/9', '"C6/9" names the 6/9');
+    // and a bass note still reads as one, including under those same chords
+    t.equal(parseChordName('Cm/G').bassName, 'G', '"Cm/G" is still C minor over G');
+    t.equal(parseChordName('C/'), null, '"C/" is rejected');
+    t.equal(parseChordName('C/Gm'), null, '"C/Gm" is rejected');
 
     const am6 = chordFromName('Am6');
     t.equal(am6 && am6.seventh, null, 'Am6 comes through as a triad, not an m7');

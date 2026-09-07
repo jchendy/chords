@@ -178,20 +178,26 @@
   // formula }. A slash chord ("D/F#", "C/E") adds bassPc and bassName: the
   // same chord, with that note underneath.
   function parseChordName(input){
-    const m = (input || '').trim().match(/^([A-Ga-g])([#♯b♭]?)([^/]*)(?:\/([A-Ga-g])([#♯b♭]?))?$/);
+    const m = (input || '').trim().match(/^([A-Ga-g])([#♯b♭]?)(.*)$/);
     if (!m) return null;
     const root = parseNote(m[1], m[2]);
     if (!root) return null;
-    const formula = CHORD_ALIAS_MAP[normalizeSuffix(m[3])];
+    const tail = m[3];
+    // A slash usually separates the chord from the note under it — but not
+    // always: "6/9" and "m/maj7" are suffixes with a slash inside them. Give
+    // the whole tail its chance to name a chord before reading a trailing
+    // "/G" as a bass note, or those two spellings can never be parsed at all.
+    const whole = CHORD_ALIAS_MAP[normalizeSuffix(tail)];
+    if (whole) return { rootPc: root.pc, rootName: root.name, formula: whole };
+
+    const slash = tail.match(/^(.*)\/([A-Ga-g])([#♯b♭]?)$/);
+    if (!slash) return null;
+    const formula = CHORD_ALIAS_MAP[normalizeSuffix(slash[1])];
     if (!formula) return null;
-    const out = { rootPc: root.pc, rootName: root.name, formula };
-    if (m[4]){
-      const bass = parseNote(m[4], m[5] || '');
-      if (!bass) return null;
-      out.bassPc = bass.pc;
-      out.bassName = bass.name;
-    }
-    return out;
+    const bass = parseNote(slash[2], slash[3] || '');
+    if (!bass) return null;
+    return { rootPc: root.pc, rootName: root.name, formula,
+             bassPc: bass.pc, bassName: bass.name };
   }
 
   function identifyChords(pcs){

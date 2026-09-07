@@ -801,7 +801,7 @@
   let beatInChord = 0;
   let scheduledLog = []; // {idx, time} for syncing the visual highlight
   let playbackStartTime = 0; // audioCtx time of the first chord (after any count-in)
-  let countInFrom = 0;       // audioCtx time of the first count-in click
+  let countInFrom = null;    // audioCtx time of the first count-in click, or null for no count-in
   let countInSpb = 0;        // seconds per beat during the count-in
 
   const ICON_PLAY = '<svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><path d="M3.5 2.2v11.6c0 .78.85 1.26 1.52.86l9.3-5.8c.65-.4.65-1.32 0-1.72l-9.3-5.8c-.67-.4-1.52.08-1.52.86Z" fill="currentColor"/></svg>';
@@ -919,7 +919,7 @@
 
     // during the count-in, show the running beat number where the
     // measure.beat readout normally sits
-    if (now < playbackStartTime - 0.0005){
+    if (countInFrom != null && now < playbackStartTime - 0.0005){
       const b = Math.min(4, Math.max(1, Math.floor((now - countInFrom) / countInSpb) + 1));
       measureReadout.textContent = String(b);
       requestAnimationFrame(syncHighlight);
@@ -955,7 +955,11 @@
       resetPlaybackCursor();
       nextNoteTime = audio.ctx().currentTime + 0.05;
       countInSpb = 60 / getTempo();
-      countInFrom = nextNoteTime;
+      // null when there's no count-in to show. The first chord is scheduled
+      // 50ms out either way, and reading that gap as a count-in printed a
+      // clamped "1" in the measure readout for those 50ms before the real
+      // measure.beat took over.
+      countInFrom = countInToggle.checked ? nextNoteTime : null;
       if (countInToggle.checked){
         for (let i = 0; i < 4; i++) playHiHat(nextNoteTime + i * countInSpb);
         nextNoteTime += 4 * countInSpb;
@@ -1139,6 +1143,17 @@
       });
       updatePlaybackUI();
       setPlayLabel('Play');
+      // A shared link doesn't only arrive on a cold page: it gets pasted into
+      // the bar of a tab already open here, and back/forward walks between two
+      // of them. tabs.js hears those, but it only switches tabs — the state
+      // half of the fragment went unread, so the link quietly did nothing.
+      // Our own writes go through history.replaceState, which fires neither
+      // event, so this can't loop.
+      ['hashchange', 'popstate'].forEach(e =>
+        window.addEventListener(e, () => {
+          if (isPlaying) togglePlay();      // don't leave the old one playing
+          applyShareState(GT.tabs.stateParams());
+        }));
       // A shared link opens on its progression; otherwise open on something
       // recognisable rather than a random roll — the first preset the key's
       // own mode offers, with the picker showing which one it is. The dice
