@@ -509,7 +509,7 @@
   .pos-shape-tag{
     font-size: 0.68rem;
     opacity: 0.55;
-    margin-left: 2px;
+    margin-left: 5px;
     border: 1px solid currentColor;
     border-radius: 4px;
     padding: 0 4px;
@@ -727,12 +727,19 @@
   /* the one secondary action in the build panel; it says what it will do */
   .reroll-btn{ font-weight: 600; }
   .reroll-btn:disabled{ opacity: 0.45; cursor: default; border-color: var(--line); }
+  /* the dice beside the key picker: square, so it reads as an action on the
+     control next to it rather than as another value */
+  .dice-btn{ padding: 7px 10px; font-size: 1rem; line-height: 1; }
 
-  /* the transport lives under the chords, in the same list style as the
-     build panel but left-aligned inside the centred display */
-  .display .play-btn{ margin-top: 18px; gap: 8px; }
+  /* The transport sits above the chords, in the same list style as the build
+     panel but left-aligned inside the centred display — everything you touch
+     is above the chart, so the chart itself ends the panel and sits against
+     the fretboard below it. */
+  .display .play-btn{ margin-top: 0; gap: 8px; }
   .transport{ text-align: left; margin-top: 14px; }
   .transport .setting:first-child{ border-top: 1px solid var(--line); padding-top: 13px; }
+  /* the chart, with its key line, closes the panel */
+  .display .key{ margin: 20px 0 14px; padding-top: 16px; border-top: 1px solid var(--line); }
   .options-row{ gap: 8px 18px; }
   .options-row .inline-check{ white-space: normal; }
   .options-row .info-dot{ margin-left: 4px; }
@@ -795,10 +802,11 @@
     <div class="settings">
       <div class="setting">
         <span class="setting-label">Key
-          <button type="button" class="info-dot" data-tip="Any of the 24 keys, or a fresh random one on every roll. Changing key moves the progression you have rather than rolling a new one — each chord keeps its degree, so a I–V–vi–IV in C major becomes i–v–VI–iv in C minor.">i</button>
+          <button type="button" class="info-dot" data-tip="Any of the 24 keys. Changing key moves the progression you have rather than rolling a new one — each chord keeps its degree, so a I–V–vi–IV in C major becomes i–v–VI–iv in C minor. The dice picks a key for you, and moves the progression there the same way.">i</button>
         </span>
         <div class="row-control">
           <select id="keySelect" class="mini-select" aria-label="Key"></select>
+          <button type="button" class="seg-btn dice-btn" id="randomKeyBtn" aria-label="Random key" title="Random key">⚄</button>
         </div>
       </div>
       <div class="setting">
@@ -813,7 +821,7 @@
       </div>
       <div class="setting">
         <span class="setting-label">Chords
-          <button type="button" class="info-dot" data-tip="Each chord has three pickers: which scale degree it is, how many measures it lasts, and whether it's a plain triad or a seventh. Picking &quot;7&quot; on a minor or diminished degree raises its 3rd, giving you a secondary dominant.">i</button>
+          <button type="button" class="info-dot" data-tip="Each chord has three pickers: which scale degree it is, how many measures it lasts, and whether it's a plain triad or a seventh. Every one always names a real chord — the dice below rolls them all at once. Picking &quot;7&quot; on a minor or diminished degree raises its 3rd, giving you a secondary dominant.">i</button>
         </span>
         <div class="row-control">
           <div class="stepper">
@@ -824,23 +832,23 @@
           <div class="chord-slots" id="chordSlots"></div>
         </div>
       </div>
-      <div class="settings-heading">When rolling random chords</div>
+      <div class="settings-heading">When randomizing</div>
       <label class="setting">
         <span class="setting-label">Use 7ths
-          <button type="button" class="info-dot" data-tip="Chords rolled at random take the seventh their scale degree implies (maj7, dominant 7, m7 or m7♭5) instead of a plain triad. It swaps triads for sevenths where they stand — the roots and bar lengths don't move — and leaves any chord you've set yourself, or pinned to a degree, alone.">i</button>
+          <button type="button" class="info-dot" data-tip="Every chord whose quality you haven't set yourself takes the seventh its scale degree implies (maj7, dominant 7, m7 or m7♭5) instead of a plain triad. It swaps triads for sevenths where they stand — no root, degree or bar length moves — and leaves any chord you've set by hand alone.">i</button>
         </span>
         <input type="checkbox" id="randomSeventhsToggle">
       </label>
       <label class="setting">
         <span class="setting-label">Common chords only
-          <button type="button" class="info-dot" data-tip="Only use the most common diatonic chords when rolling a Random slot: I, ii, IV, V, vi (or i, iv, v, VI, VII in minor). Turn off to allow any diatonic chord, including the less-used iii and vii°. Manual chord picks always ignore this.">i</button>
+          <button type="button" class="info-dot" data-tip="Limit the dice to the most common diatonic chords: I, ii, IV, V, vi (or i, iv, v, VI, VII in minor). Turn off to let it reach any diatonic chord, including the less-used iii and vii°. Picking a chord by hand always ignores this.">i</button>
         </span>
         <input type="checkbox" id="commonToggle" checked>
       </label>
       <div class="setting">
         <span class="setting-label"></span>
         <div class="row-control">
-          <button type="button" class="seg-btn reroll-btn" id="genBtn">Re-roll random chords</button>
+          <button type="button" class="seg-btn reroll-btn" id="genBtn">⚄ Randomize all chords</button>
         </div>
       </div>
     </div>
@@ -848,9 +856,6 @@
 
   <!-- The chords and everything you touch while they play -->
   <section class="panel narrow display">
-    <p class="key" id="keyReadout">—</p>
-    <div class="chords" id="chords"></div>
-    <p class="measure-readout" id="measureReadout"></p>
     <button id="playBtn" class="primary play-btn" type="button" aria-label="Play"></button>
     <div class="settings transport">
       <div class="setting">
@@ -903,9 +908,21 @@
       <button type="button" class="link-btn" id="shareBtn">Copy link to this progression</button>
       <input type="text" class="text-input share-out" id="shareOut" readonly aria-label="Link to this progression" hidden>
     </div>
+    <!-- The chart sits last in this panel so it lands directly above the
+         fretboard, and the two can be read together while you play. -->
+    <p class="key" id="keyReadout">—</p>
+    <div class="chords" id="chords"></div>
+    <p class="measure-readout" id="measureReadout"></p>
   </section>
 
   <section class="panel">
+    <!-- The neck comes first so it lands directly under the chord chart in the
+         panel above; its controls follow, the way the transport sits above the
+         chart rather than between the two things you're reading. -->
+    <div class="fret-scroll">
+      <svg id="fretboard" viewBox="0 0 520 156" role="img" aria-label="Guitar fretboard"></svg>
+    </div>
+    <div class="caged-legend" id="cagedLegend"></div>
     <div class="setting">
       <span class="setting-label">Fretboard
         <button type="button" class="info-dot" data-tip="Roots: every root of the progression's chords, colour-coded. Chord positions: one location per chord, clustered close together on the neck. CAGED chords: the five movable CAGED shapes for one chosen chord — with &quot;Whole arpeggio&quot; on, those same shapes opened out into every chord tone on the neck, boxed by the shape it sits in. Triad inversions: close three-string triads on one set of strings, coloured by inversion. CAGED pentatonic: that chord's pentatonic scale, boxed and coloured by CAGED shape. CAGED scales: the full 7-note scale for that chord, same colouring.">i</button>
@@ -1020,10 +1037,6 @@
         <button type="button" class="seg-btn" data-value="modal">Key mode</button>
       </div>
     </div>
-    <div class="fret-scroll">
-      <svg id="fretboard" viewBox="0 0 520 156" role="img" aria-label="Guitar fretboard"></svg>
-    </div>
-    <div class="caged-legend" id="cagedLegend"></div>
   </section>
 
 </div>

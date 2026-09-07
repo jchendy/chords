@@ -19,8 +19,12 @@
   let currentProgression = [];
   let chordCount = 3;
   const MAX_CHORDS = 12;        // enough to hold a twelve-bar blues once repeats are merged
-  let keyChoice = null;                 // null = a random key each roll, else { mode, tonic }
-  let slotChoices = [null, null, null]; // per slot: null = random, else a diatonic degree
+  // The key and every chord are always something concrete you can read off the
+  // pickers; randomness is a button you press, not a state a slot sits in. A
+  // slot holds the scale degree it's on — or null, which means only that this
+  // chord isn't a degree of the key at all (one loaded from a genre example),
+  // and its picker names the chord itself instead.
+  let slotChoices = [0, 0, 0];          // per slot: the diatonic degree it's on
   let slotMeasures = [];                // per slot: how many measures that chord lasts
   let slotShapes = [];                // per slot: the shape you chose, or null to follow the key
   let loadedLabel = null;               // set when a progression came in from elsewhere
@@ -122,7 +126,11 @@
 
   function shapeFor(i, deg){
     if (slotShapes[i]) return resolveShape(slotShapes[i], deg);
-    if (slotChoices[i] == null && randomSeventhsToggle.checked) return diatonicSeventhFor(deg);
+    // A chord whose shape you haven't set follows the key — as its triad, or
+    // as the seventh the key puts on that degree when "Use 7ths" is on. That's
+    // what lets the checkbox swap triads for sevenths where they stand without
+    // disturbing a single root, degree or bar length.
+    if (randomSeventhsToggle.checked) return diatonicSeventhFor(deg);
     return null;
   }
 
@@ -163,37 +171,36 @@
     return chord;
   }
 
-  // rebuild the whole progression: pinned slots keep their choice, random slots re-roll
-  function rollProgression(){
-    if (keyChoice){
-      currentMode = keyChoice.mode;
-      currentTonic = keyChoice.tonic;
-    } else {
-      currentMode = Math.random() < 0.5 ? 'major' : 'minor';
-      currentTonic = pick(Object.keys(currentMode === 'major' ? MAJOR_KEYS : MINOR_KEYS));
-    }
-    currentDiatonic = keyChordChoices();
-
-    // drop any pin that no longer exists in this key (e.g. the minor-only V)
-    const validDegs = new Set(currentDiatonic.map(c => c.deg));
-    slotChoices = slotChoices.map(s => (s == null || validDegs.has(s)) ? s : null);
-
-    // a slot being re-rolled gets a fresh shape too; a pinned slot keeps the
-    // one you gave it
-    slotShapes = slotShapes.map((s, i) => slotChoices[i] == null ? null : s);
-
-    const prog = [];
+  // Roll every chord afresh. The key stays where it is — that's the other
+  // button's job — so this is only ever "give me different chords in this key".
+  function randomizeChords(){
+    const degs = [];
     for (let i = 0; i < chordCount; i++){
-      const deg = slotChoices[i] != null ? slotChoices[i]
-        : rollDegree(prog.length ? prog[prog.length - 1]._deg : -1);
-      prog.push(chordForDegree(deg, shapeFor(i, deg)));
+      degs.push(rollDegree(degs.length ? degs[degs.length - 1] : -1));
     }
-    // keep fully-random progressions grounded on the tonic
-    if (slotChoices.some(s => s == null) && !prog.some(c => c._deg === 0)){
-      const i = slotChoices.findIndex(s => s == null);
-      prog[i] = chordForDegree(0, shapeFor(i, 0));
-    }
-    currentProgression = prog;
+    // a progression that never touches its tonic doesn't sound like it's in a
+    // key at all, so plant one somewhere
+    if (!degs.includes(0)) degs[Math.floor(Math.random() * degs.length)] = 0;
+
+    slotChoices = degs;
+    slotShapes = degs.map(() => null);   // freshly rolled chords follow the key
+    rebuildProgression();
+  }
+
+  // Build the chords from what the pickers say. Everything that changes a
+  // degree, a shape or the key comes back through here.
+  function rebuildProgression(){
+    currentProgression = slotChoices.map((deg, i) =>
+      deg == null ? currentProgression[i] : chordForDegree(deg, shapeFor(i, deg)));
+  }
+
+  // A different key, chosen for you — the same progression lands in it, since
+  // each chord keeps its degree.
+  function randomizeKey(){
+    const mode = Math.random() < 0.5 ? 'major' : 'minor';
+    const keys = Object.keys(mode === 'major' ? MAJOR_KEYS : MINOR_KEYS)
+      .filter(t => !(mode === currentMode && t === currentTonic));
+    transposeToKey(mode, pick(keys));
   }
 
   function buildKeySelect(){
@@ -201,11 +208,10 @@
       `<optgroup label="${label}">` +
       Object.keys(obj).slice().sort().map(t => `<option value="${mode}:${t}">${t} ${mode}</option>`).join('') +
       `</optgroup>`;
-    // one picker for all 24 keys, major and minor side by side; "Random key"
-    // means a fresh one, either mode, on every roll
-    keySelect.innerHTML = `<option value="random">Random key</option>`
-      + grp('Major keys', MAJOR_KEYS, 'major') + grp('Minor keys', MINOR_KEYS, 'minor');
-    keySelect.value = keyChoice ? `${keyChoice.mode}:${keyChoice.tonic}` : 'random';
+    // one picker for all 24 keys, major and minor side by side; it always names
+    // the key you're actually in, and the dice beside it picks a new one
+    keySelect.innerHTML = grp('Major keys', MAJOR_KEYS, 'major') + grp('Minor keys', MINOR_KEYS, 'minor');
+    keySelect.value = `${currentMode}:${currentTonic}`;
   }
 
   // ---- ready-made progressions -------------------------------------------
@@ -222,7 +228,6 @@
     currentMode = mode;
     currentTonic = tonic;
     currentDiatonic = keyChordChoices();
-    keyChoice = { mode, tonic };
     buildKeySelect();
   }
 
@@ -316,22 +321,11 @@
     renderPresetVariants();
   }
 
-  // The re-roll button says what it will do, and does nothing when every
-  // chord is pinned — it used to be the biggest thing on the page while
-  // being the one action that throws work away.
+  // Rolls every chord in the progression at once. Randomness is an action
+  // here rather than a state a slot sits in, so this always has something to
+  // do and the pickers always show what it came up with.
   const genBtn = document.getElementById('genBtn');
-  function updateRerollButton(){
-    const n = slotChoices.filter(s => s == null).length;
-    const chords = n === 0 ? '' : n === chordCount ? 'all chords' : `${n} random chord${n === 1 ? '' : 's'}`;
-    if (keyChoice == null){
-      // a random key is itself something to re-roll, whatever the chords
-      genBtn.disabled = false;
-      genBtn.textContent = chords ? `Re-roll key and ${chords}` : 'Re-roll key';
-    } else {
-      genBtn.disabled = n === 0;
-      genBtn.textContent = chords ? `Re-roll ${chords}` : 'All chords pinned';
-    }
-  }
+  const randomKeyBtn = document.getElementById('randomKeyBtn');
 
   // Which degree of the current key a slot is sitting on. Chords generated
   // here carry their degree; one loaded from a genre example doesn't, so match
@@ -355,19 +349,26 @@
       const sel = document.createElement('select');
       sel.className = 'mini-select chord-degree';
       sel.setAttribute('aria-label', `Chord ${i + 1}`);
-      // just which degree of the key this is — the shape picker beside it says
+      // Just which degree of the key this is — the shape picker beside it says
       // whether it's a triad or a seventh, so naming one here would only
-      // contradict the other
-      sel.innerHTML = `<option value="random">Random</option>` +
-        currentDiatonic.map(o => `<option value="${o.deg}">${o.name} · ${o.numeral}</option>`).join('');
-      sel.value = slotChoices[i] == null ? 'random' : String(slotChoices[i]);
+      // contradict the other. There's no "Random" entry: the picker always
+      // names the chord that's actually sounding, and the dice roll the whole
+      // progression at once.
+      const degOptions = currentDiatonic
+        .map(o => `<option value="${o.deg}">${o.name} · ${o.numeral}</option>`);
+      // a chord loaded from a genre example may be no degree of this key at
+      // all; it still gets to name itself, and picking anything else replaces it
+      if (slotChoices[i] == null && currentProgression[i]){
+        degOptions.unshift(`<option value="off">${displayName(currentProgression[i])}</option>`);
+      }
+      sel.innerHTML = degOptions.join('');
+      sel.value = slotChoices[i] == null ? 'off' : String(slotChoices[i]);
       sel.addEventListener('change', () => {
-        slotChoices[i] = sel.value === 'random' ? null : Number(sel.value);
-        // handing a slot back to Random hands its shape back too, so a rolled
-        // chord is always one the key actually contains
-        if (slotChoices[i] == null) slotShapes[i] = null;
-        const rolled = slotChoices[i] != null ? slotChoices[i] : rollDegree(-1);
-        currentProgression[i] = chordForDegree(rolled, shapeFor(i, rolled));
+        if (sel.value === 'off') return;         // it's already that chord
+        slotChoices[i] = Number(sel.value);
+        // a chord picked by hand starts from the key's own shape for it,
+        // unless a shape was already set on this slot
+        currentProgression[i] = chordForDegree(slotChoices[i], shapeFor(i, slotChoices[i]));
         loadedLabel = null;
         clearPreset();
         renderAll();
@@ -409,8 +410,7 @@
         `<option value="${tok}">${CHORD_SHAPES[tok].label}${inKey.includes(tok) ? ' ✓' : ''}</option>`
       ).join('');
       // what this slot would be showing if you'd never touched it
-      const implied = (slotChoices[i] == null && randomSeventhsToggle.checked)
-        ? diatonicSeventhFor(deg) : inKey[0];
+      const implied = randomSeventhsToggle.checked ? diatonicSeventhFor(deg) : inKey[0];
       sev.value = shapeFor(i, deg) || inKey[0];
       sev.addEventListener('change', () => {
         // leaving the untouched choice unrecorded is what lets a slot follow
@@ -506,7 +506,6 @@
       loadedLabel || (currentMode === 'major' ? `${currentTonic} major` : `${currentTonic}m`);
     renderChordDisplay();
     renderChordSlots();
-    updateRerollButton();
     buildPresetSelect();          // the list follows whichever mode the key is in
     renderPresetVariants();
     view.rebuildChordPicker();
@@ -514,36 +513,31 @@
     resetPlaybackCursor();
   }
 
-  // re-roll the random slots, then render (New progression, key / mode / count changes)
+  // roll a whole new set of chords, then render
   function render(){
     loadedLabel = null;
     clearPreset();
-    rollProgression();
+    randomizeChords();
     view.resetPosition();   // a newly-rolled progression starts at the lowest cluster
     renderAll();
   }
 
   genBtn.addEventListener('click', render);
+  randomKeyBtn.addEventListener('click', () => {
+    clearPreset();
+    randomizeKey();         // transposes what's there; it renders itself
+  });
 
   keySelect.addEventListener('change', () => {
-    if (keySelect.value === 'random'){
-      keyChoice = null;
-      render();
-      return;
-    }
     const [m, t] = keySelect.value.split(':');
     const known = (m === 'major' && MAJOR_KEYS[t]) || (m === 'minor' && MINOR_KEYS[t]);
-    if (!known){          // the option list changed under us — fall back to random
-      keyChoice = null;
+    if (!known){          // the option list changed under us
       buildKeySelect();
-      render();
       return;
     }
     // Same progression, other key: each chord keeps its degree, so picking C
     // minor from C major turns I–V–vi–IV into i–v–VI–iv rather than rolling
     // something unrelated.
-    keyChoice = { mode: m, tonic: t };
-    buildKeySelect();
     transposeToKey(m, t);
   });
 
@@ -581,9 +575,11 @@
       return moved;
     });
 
-    // a pin that has no chord in the new key falls back to random
+    // a degree the new key has no chord for is re-pinned above, or else the
+    // chord stays as a plain transposition and its picker names it
     slotChoices = slotChoices.map(s => (s == null || validDegs.has(s)) ? s : null);
     loadedLabel = null;      // it's no longer the key that progression came in
+    buildKeySelect();        // the picker always names the key you're in
     renderAll();
   }
 
@@ -669,7 +665,6 @@
     });
   });
 
-  commonToggle.addEventListener('change', render);
   // Swaps triads for sevenths in place: the roots, the degrees, the bar
   // lengths and any chord you've set yourself all stay exactly as they are.
   randomSeventhsToggle.addEventListener('change', () => {
@@ -685,7 +680,11 @@
   function setSlotCount(n){
     chordCount = Math.max(1, Math.min(MAX_CHORDS, n));
     chordCountValue.textContent = chordCount;
-    while (slotChoices.length < chordCount) slotChoices.push(null);
+    // a slot added by the stepper comes up on a rolled degree, since every
+    // slot always holds a real chord
+    while (slotChoices.length < chordCount){
+      slotChoices.push(rollDegree(slotChoices[slotChoices.length - 1]));
+    }
     slotChoices.length = chordCount;
     while (slotMeasures.length < chordCount) slotMeasures.push(DEFAULT_MEASURES);
     slotMeasures.length = chordCount;
@@ -693,9 +692,14 @@
     slotShapes.length = chordCount;
   }
 
+  // Changing the count adds or drops a chord and leaves the rest alone —
+  // there's no reason for it to throw away chords you chose.
   function setChordCount(n){
     setSlotCount(n);
-    render();
+    clearPreset();
+    loadedLabel = null;
+    rebuildProgression();
+    renderAll();
   }
   document.getElementById('chordCountDown').addEventListener('click', () => {
     if (chordCount <= 1) return;
@@ -1042,7 +1046,16 @@
       else currentTonic = key;
     }
     currentProgression = built;
-    slotChoices = built.map(() => null);
+    // A loaded chord that happens to be a degree of the key it came in gets
+    // pinned to it, so its picker reads as a degree like every other slot;
+    // one that isn't (a borrowed ♭VII, a secondary dominant) keeps null and
+    // names itself instead.
+    slotChoices = built.map(c => {
+      const rootPc = SEMITONE[c.note] % 12;
+      const match = currentDiatonic.find(d => SEMITONE[d.note] % 12 === rootPc
+        && d.quality === c.quality);
+      return match ? match.deg : null;
+    });
     slotMeasures = kept.slice(0, built.length).map(r => r.bars);
     // spelled out rather than left to the key: a loaded progression is whatever
     // it is, so its pickers should show the chord that's actually sounding
@@ -1067,11 +1080,16 @@
         tonic:       () => currentTonic,
         activeChord: () => scheduledLog[0],
       });
-      buildKeySelect();
       updatePlaybackUI();
       setPlayLabel('Play');
-      // a shared link opens on its progression; otherwise roll one
-      if (!applyShareState(GT.tabs.stateParams())) render();
+      // A shared link opens on its progression; otherwise start somewhere
+      // concrete — a random key and a rolled set of chords, both of which the
+      // pickers then name.
+      if (!applyShareState(GT.tabs.stateParams())){
+        const mode = Math.random() < 0.5 ? 'major' : 'minor';
+        setKey(mode, pick(Object.keys(mode === 'major' ? MAJOR_KEYS : MINOR_KEYS)));
+        render();
+      }
     },
   };
 })();

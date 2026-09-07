@@ -69,7 +69,8 @@
 
       lines.filter(ln => ln.cells.every(c => inRange(c.fret))).forEach(ln => {
         const pts = ln.cells.map(c => `${fretX(c.fret)},${stringY(c.string)}`).join(' ');
-        els.push(`<polyline class="shape-line" data-shape="${ln.shape || ''}" points="${pts}" stroke="${ln.color}"/>`);
+        const letter = ln.letter ? ` data-shape-letter="${ln.letter}"` : '';
+        els.push(`<polyline class="shape-line" data-shape="${ln.shape || ''}"${letter} points="${pts}" stroke="${ln.color}"/>`);
       });
 
       markers.filter(m => inRange(m.fret)).forEach(m => {

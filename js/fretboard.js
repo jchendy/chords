@@ -295,6 +295,26 @@
     return bestHits >= 3 ? { name: best, exact } : null;
   }
 
+  // Which CAGED shape a close three-string triad is cut from. A triad has only
+  // three notes, so `cagedShapeMatch`'s three-note threshold would only ever
+  // recognise one sitting entirely inside a grip — four in five do, and the
+  // rest still sit squarely in a grip's position while borrowing a note from
+  // outside it. Take the grip sharing the most notes, nearest one breaking a
+  // tie, and require at least two so the answer means something.
+  function closeTriadShape(cells, rootPc, isMinor){
+    const played = new Set(cells.map(c => `${c.string}:${c.fret}`));
+    const mid = cells.reduce((a, c) => a + c.fret, 0) / cells.length;
+    let best = null, bestHits = 1, bestDist = Infinity;
+    cagedPlacements(rootPc, isMinor ? CAGED_MINOR : CAGED_MAJOR).forEach(p => {
+      const hits = p.cells.filter(c => played.has(`${c.string}:${c.fret}`)).length;
+      const dist = Math.abs(mid - p.meanFret);
+      if (hits > bestHits || (hits === bestHits && dist < bestDist)){
+        best = p.name; bestHits = hits; bestDist = dist;
+      }
+    });
+    return best;
+  }
+
   function identifyCagedShape(cells, rootPc, isMinor){
     const m = cagedShapeMatch(cells, rootPc, isMinor);
     return m ? m.name : null;
@@ -305,6 +325,6 @@
     CAGED_MAJOR, CAGED_MINOR, CAGED_ORDER, CAGED_COLORS, ROOT_PALETTE,
     cagedPlacements, seventhCells, arpeggioCells, cagedArpeggioBoxes, stringSetTriads,
     pentaBoxPlacements, scaleBoxPlacements,
-    cagedTriadBoard, identifyCagedShape, cagedShapeMatch,
+    cagedTriadBoard, identifyCagedShape, cagedShapeMatch, closeTriadShape,
   };
 })();

@@ -21,10 +21,11 @@ names the tab you're on.
 
 ## Features
 
-- One key picker: all 24 keys, major and minor side by side, or "Random key"
-  for a fresh one (either mode) on every roll. In minor, the V is
-  occasionally the harmonic-minor dominant. Changing key transposes what's
-  already there rather than rolling something new: each chord keeps its scale
+- One key picker: all 24 keys, major and minor side by side, always naming
+  the key you're actually in, with a dice beside it that picks a new one. In
+  minor, the V is occasionally the harmonic-minor dominant. Changing key —
+  by hand or by dice — transposes what's already there rather than rolling
+  something new: each chord keeps its scale
   degree, so a I–V–vi–IV in A becomes the I–V–vi–IV of wherever you land, and
   picking C minor from C major turns it into i–v–VI–iv. A progression loaded
   from a genre example isn't diatonic, so it shifts by the same interval
@@ -49,10 +50,12 @@ names the tab you're on.
   those sevenths are stored relative to the key rather than frozen when the
   preset landed. A preset that isn't in the new list simply stops being "the
   preset" while its chords stay, transposed
-- Per-slot chord selection — pin any chord in the progression to a specific
-  diatonic degree (or leave it Random); "New progression" only re-rolls the
-  slots left on Random. The presets sit above these, so you can drop a shape
-  in and then edit it
+- Per-slot chord selection — every chord picker always names a real chord of
+  the key, and "Randomize all chords" rolls the whole set at once. Randomness
+  is an action rather than a state a slot sits in, so what you see in the
+  pickers is always what's sounding. A chord loaded from a genre example that
+  isn't a degree of the key names itself instead. The presets sit above these,
+  so you can drop a shape in and then edit it
 - Per-slot chord quality — the degree picker names the degree and nothing
   else (`Dm · ii`); a second picker beside it sets the shape, and offers
   Major, Minor, 7, maj7 and m7 on any degree, with dim, m7♭5 and dim7 added
@@ -70,15 +73,14 @@ names the tab you're on.
   a chord held for two reads `F C C`, wrapping four bars to a line the way a
   chart does, with the numeral under each bar and the carried-over bars
   dimmed so you can still see where the chord changes
-- "Common chords only" — restricts the Random rolls to I, ii, IV, V, vi /
-  i, iv, v–V, VI, VII (manual slots can still pick anything)
-- "Use 7ths for randomized chords" — a slot left on Random comes up as the
-  diatonic seventh of whatever degree it landed on (maj7 / dominant 7 / m7 /
-  m7♭5, whichever the scale implies) instead of a plain triad. Ticking it
-  swaps triads for sevenths where they stand: the roots, the degrees and the
-  bar lengths don't move, and any chord you've set yourself — or that a preset
-  pinned — is left alone. A rolled chord is always one the key contains;
-  handing a slot back to Random hands its shape back too
+- "Common chords only" — limits the dice to I, ii, IV, V, vi / i, iv, v–V,
+  VI, VII (picking a chord by hand can still reach anything)
+- "Use 7ths" — every chord whose quality you haven't set yourself takes the
+  diatonic seventh of its degree (maj7 / dominant 7 / m7 / m7♭5, whichever the
+  scale implies) instead of a plain triad. Ticking it swaps triads for
+  sevenths where they stand: the roots, the degrees and the bar lengths don't
+  move, and any chord you've set by hand — or that a preset pinned — is left
+  alone
 - Click a bar in the chord display to hear that chord on its own, playing or
   not — for checking a shape against what it's meant to sound like. Each bar
   is a button, so Enter or the space bar does the same to a focused one
@@ -93,14 +95,14 @@ names the tab you're on.
 - Info tooltips (ⓘ) on the less-obvious controls — hover on desktop, tap on
   touch, tap elsewhere to dismiss
 - The tab is three panels in the order a session runs: build the
-  progression (key, preset, the per-chord pickers, and what a random roll
-  may use), then the chords with the transport right under them (Play,
-  tempo with 60/90/120 shortcuts, style and feel, the Simple-only note value,
-  and the metronome / roots-only / count-in options), then the fretboard. The
-  one re-roll button sits at the foot of the build panel and says what it
-  will do — "Re-roll 2 random chords" — or goes quiet when every chord is
-  pinned, since then it has nothing to do. A "Style" picker chooses the
-  backing:
+  progression (key, preset, the per-chord pickers, and what the dice may
+  use), then everything you touch while it plays (Play, tempo with 60/90/120
+  shortcuts, style and feel, the Simple-only note value, the metronome /
+  roots-only / count-in options, and the share link), and then the chord
+  chart itself. The chart closes that panel and the neck opens the next one,
+  so the two things you read while playing sit against each other rather than
+  with the controls between them. "Randomize all chords" sits at the foot of
+  the build panel. A "Style" picker chooses the backing:
   Simple — the plain piano voicing, with note value (quarter / half / whole),
   metronome click and a roots-only mode;
   Rock — driving 8th-note piano chords and a basic kit, with a half-time
@@ -169,7 +171,9 @@ names the tab you're on.
   what you're looking at;
   Triad inversions — close three-note triads on one set of three adjacent
   strings (e–B–G, B–G–D, G–D–A or D–A–E), every inversion, all the way up
-  the neck. Each shape is outlined and coloured by which chord tone is
+  the neck, each legend entry also naming the CAGED grip its shapes are cut
+  from so a triad reads as somewhere you already know. Each shape is outlined
+  and coloured by which chord tone is
   underneath — root position, 1st inversion (3rd in the bass), 2nd inversion
   (5th in the bass) — and hovering an inversion in the legend picks out just
   those. A voicing qualifies when it plays one of each chord tone, one per

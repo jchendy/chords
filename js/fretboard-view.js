@@ -10,7 +10,7 @@
     STRING_TUNING, STRING_LABELS, FRET_COUNT,
     CAGED_MAJOR, CAGED_MINOR, CAGED_ORDER, CAGED_COLORS, ROOT_PALETTE,
     cagedPlacements, seventhCells, arpeggioCells, cagedArpeggioBoxes, stringSetTriads,
-    pentaBoxPlacements, scaleBoxPlacements, cagedTriadBoard,
+    pentaBoxPlacements, scaleBoxPlacements, cagedTriadBoard, closeTriadShape,
   } = GT.fretboard;
 
   // Which chord tone is underneath a three-string triad — the thing that
@@ -619,9 +619,13 @@
       };
       const invOf = pc => pc === rootPc ? 'root' : pc === thirdPc ? '1st' : '2nd';
 
+      const isMinor = chord.quality === 'min';
       const triads = stringSetTriads(stringSetLow, new Set([rootPc, thirdPc, fifthPc]));
+      // Each shape also says which CAGED grip it's cut from, so a triad reads
+      // as somewhere you already know rather than as a shape of its own.
       const lines = triads.map(t => ({
         color: INVERSION_COLOR[invOf(t.bassPc)], shape: invOf(t.bassPc),
+        letter: closeTriadShape(t.cells, rootPc, isMinor),
         cells: t.cells.slice().sort((a, b) => a.string - b.string),
       }));
 
@@ -891,8 +895,16 @@
     if (fretMode === 'triads3'){
       const drawn = new Set([...fretboardSvg.querySelectorAll('.note-dot[data-shapes]')]
         .flatMap(g => g.getAttribute('data-shapes').split(',')));
+      // which CAGED grips this inversion's shapes are cut from, read off what
+      // is actually on the neck so a zoomed-in view only names what it shows
+      const lettersFor = tag => {
+        const seen = [...fretboardSvg.querySelectorAll(`.shape-line[data-shape="${tag}"][data-shape-letter]`)]
+          .map(l => l.getAttribute('data-shape-letter'));
+        const uniq = CAGED_ORDER.filter(n => seen.includes(n));
+        return uniq.length ? `<small class="pos-shape-tag">${uniq.join(' ')}</small>` : '';
+      };
       INVERSIONS.filter(i => drawn.has(i.tag)).forEach(i =>
-        parts.push(`<span data-shape="${i.tag}" tabindex="0" role="button" aria-label="Highlight ${i.label}"><i style="background:${i.color}"></i>${i.label}${range(i.tag)}</span>`));
+        parts.push(`<span data-shape="${i.tag}" tabindex="0" role="button" aria-label="Highlight ${i.label}"><i style="background:${i.color}"></i>${i.label}${lettersFor(i.tag)}${range(i.tag)}</span>`));
     }
     if (colorBy === 'interval'){
       // the dots are coloured by what each note is in the chord, so that's
