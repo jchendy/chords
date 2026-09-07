@@ -183,8 +183,14 @@ names the tab you're on.
   through, and the same three tiers of brightness (the chord in front lit, the
   one you're heading into next half-lit, the rest dimmed much further, roots
   included). Only the frets the chord in front isn't already using are drawn,
-  so the rest stays behind rather than competing. Whole arpeggio applies to
-  both. Everything about *choosing* a position belongs to the second reading,
+  so the rest stays behind rather than competing. Colour there means which
+  chord a note belongs to, as it does in Progression, so the legend reads the
+  same way too: one entry per chord with its name, numeral, the CAGED shape
+  it's sitting in and the frets it spans, each spotlighting its chord when you
+  hover it, and the chord in front marked. Across the neck only one chord is
+  drawn, so colour is free to say which of its five shapes a note is in
+  instead, and the interval colouring stays available there.
+  Whole arpeggio applies to both. Everything about *choosing* a position belongs to the second reading,
   since the first has no position to choose — it shows them all: ◂ ▸ walk the
   hand up and down, **Hold position** pins it while the chords change, and
   **Voice leading** hands the choice to the progression itself, each chord
