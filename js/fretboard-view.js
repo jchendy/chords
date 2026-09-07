@@ -746,7 +746,7 @@
         const litLines = inPosition
           ? one.lines.map(l => ({ ...l, color: curColor, shape: curTag })) : one.lines;
         const ghosts = inPosition
-          ? ghostMarkers(shownWindow, new Set(lit.map(m => m.string + ':' + m.fret)), true)
+          ? ghostMarkers(shownWindow, new Map(lit.map(m => [m.string + ':' + m.fret, m])), true)
           : { markers: [], lines: [] };
         if (inPosition) noteCurrentChord(cands, curIdx, curTag, curColor);
         return { markers: [...ghosts.markers, ...lit], lines: [...ghosts.lines, ...litLines] };
@@ -790,7 +790,7 @@
       const litLines = inPosition
         ? shown.lines.map(l => ({ ...l, color: curColor, shape: curTag })) : shown.lines;
       const ghosts = inPosition
-        ? ghostMarkers(shownWindow, new Set(lit.map(m => m.string + ':' + m.fret)), false)
+        ? ghostMarkers(shownWindow, new Map(lit.map(m => [m.string + ':' + m.fret, m])), false)
         : { markers: [], lines: [] };
       if (inPosition) noteCurrentChord(cands, curIdx, curTag, curColor);
       return { markers: [...ghosts.markers, ...lit], lines: [...ghosts.lines, ...litLines] };
@@ -959,12 +959,17 @@
   // only where the chord you're on isn't already using the fret, so it reads as
   // background rather than as competing with the shape.
   let ghostLegendData = [];
-  function ghostMarkers(win, taken, useGrips){
+  // `placed` maps a cell to the marker already drawn there, whoever drew it.
+  // A cell two chords share gets drawn once, in the front chord's colour, but
+  // it belongs to both — so the second chord adds its tag to the marker that's
+  // already there rather than being dropped. Otherwise spotlighting that chord
+  // would light an incomplete version of it, missing exactly the notes it
+  // holds in common with the chord in front.
+  function ghostMarkers(win, placed, useGrips){
     ghostLegendData = [];
     if (!win) return { markers: [], lines: [] };
     const cands = host.progression().filter(c => c.quality !== 'dim');
     const markers = [], lines = [];
-    const seen = new Set(taken);
     const inWin = c => c.fret >= win.min && c.fret <= win.max;
     const cur = Math.min(cagedChordIdx, cands.length - 1);
     // the chord you're heading into reads brighter than the ones after it,
@@ -999,13 +1004,21 @@
       let letter = '';
       cells.forEach(cell => {
         if (!inWin(cell)) return;
-        const k = cell.string + ':' + cell.fret;
-        if (seen.has(k)) return;
-        seen.add(k);
         drew = true;
+        const k = cell.string + ':' + cell.fret;
+        const already = placed.get(k);
+        if (already){                       // shared note: one dot, two owners
+          if (!already.shapes.includes(tag)) already.shapes.push(tag);
+          // if one of them is the chord you're heading into, the brighter
+          // reading wins — the note is coming up either way
+          if (i === next && already.ghost) already.ghostNext = true;
+          return;
+        }
         const pc = (STRING_TUNING[cell.string] + cell.fret) % 12;
-        markers.push({ string: cell.string, fret: cell.fret, color, label: nameOf(pc),
-                       isRoot: pc === rootPc, shapes: [tag], ghost: true, ghostNext: i === next });
+        const m = { string: cell.string, fret: cell.fret, color, label: nameOf(pc),
+                    isRoot: pc === rootPc, shapes: [tag], ghost: true, ghostNext: i === next };
+        placed.set(k, m);
+        markers.push(m);
       });
       // and its grip traced through, where one sits wholly inside the box
       grips.forEach((g, gi) => {
