@@ -535,14 +535,14 @@
   }
   .caged-legend [data-shape].legend-current{ background: rgba(255,255,255,0.16); }
   /* Chords: "Other chords" draws the rest of the progression behind the one
-     in front, in the same picture Progression paints — same colours, same
-     labels, same anchor-root-stays-lit dimming, same faint grip outlines. */
-  .note-dot.ghost{ opacity: 0.22; }
-  .note-dot.ghost.pos-root{ opacity: 1; }
-  .shape-line.ghost{ opacity: 0.12; }
-  #fretboard.shape-focus .note-dot.ghost,
-  #fretboard.shape-focus .note-dot.ghost.pos-root{ opacity: 0.1; }
-  #fretboard.shape-focus .shape-line.ghost{ opacity: 0.06; }
+     in front, the way Progression looks while it plays — one chord lit and
+     every other chord dimmed evenly, roots included. There's no anchor-root
+     exception here: that's Progression's at-rest reading, where no single
+     chord is in front and each one needs its own anchor to be findable. */
+  .note-dot.ghost{ opacity: 0.07; }
+  .shape-line.ghost{ opacity: 0.04; }
+  #fretboard.shape-focus .note-dot.ghost{ opacity: 0.04; }
+  #fretboard.shape-focus .shape-line.ghost{ opacity: 0.02; }
   .caged-legend .ghost-entry{ opacity: 0.62; }
 
   #cagedChordGroup.locked{ opacity: 0.45; pointer-events: none; }

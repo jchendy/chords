@@ -916,13 +916,6 @@
 
       const color = ROOT_PALETTE[i % ROOT_PALETTE.length];
       const tag = 'ghost' + i;
-      // the anchor root — the root nearest the low E — stays lit while the
-      // rest of the chord recedes, exactly as it does in Progression
-      const rootsHere = cells.filter(inWin)
-        .filter(cell => (STRING_TUNING[cell.string] + cell.fret) % 12 === rootPc);
-      const anchor = rootsHere.length
-        ? rootsHere.reduce((a, b) => (b.string > a.string ? b : a)) : null;
-
       let drew = false;
       cells.forEach(cell => {
         if (!inWin(cell)) return;
@@ -932,8 +925,7 @@
         drew = true;
         const pc = (STRING_TUNING[cell.string] + cell.fret) % 12;
         markers.push({ string: cell.string, fret: cell.fret, color, label: nameOf(pc),
-                       isRoot: pc === rootPc, shapes: [tag], ghost: true,
-                       isLowestRoot: !!anchor && cell.string === anchor.string && cell.fret === anchor.fret });
+                       isRoot: pc === rootPc, shapes: [tag], ghost: true });
       });
       // and its grip traced through, where one sits wholly inside the box
       grips.forEach(g => {
