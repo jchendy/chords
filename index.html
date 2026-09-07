@@ -39,10 +39,19 @@
 
   .app{
     width:100%;
-    max-width: none;
+    max-width: 880px;
+    margin: 0 auto;
     display:flex;
     flex-direction:column;
     gap: 16px;
+  }
+
+  /* on wide screens the inputs and chord display stay a comfortable width;
+     only the fretboard panel is allowed to stretch out */
+  .panel.narrow{
+    align-self: center;
+    width: 100%;
+    max-width: 540px;
   }
 
   /* ---- sections ---- */
@@ -92,16 +101,78 @@
   .setting:first-child{ border-top:none; padding-top: 2px; }
   .setting:last-child{ padding-bottom: 2px; }
 
+  .settings-heading{
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--muted);
+    padding: 16px 0 4px;
+    border-top: 1px solid var(--line);
+  }
+  .settings-heading:first-child{ border-top: none; padding-top: 0; }
+  .settings-heading + .setting{ border-top: none; padding-top: 2px; }
+
+  .tempo-presets .seg-btn{ padding: 7px 10px; font-size: 0.78rem; }
+
   .setting-label{
     font-size: 0.9rem;
     color: var(--ink);
+    display: inline-flex;
+    align-items: center;
   }
 
   label.setting{ cursor:pointer; }
 
+  /* ---- info tooltips (hover on desktop, tap on touch) ---- */
+  .info-dot{
+    -webkit-appearance:none;
+    appearance:none;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width: 16px;
+    height: 16px;
+    margin-left: 6px;
+    padding: 0;
+    flex: none;
+    border-radius: 50%;
+    border: 1px solid var(--muted);
+    background: transparent;
+    color: var(--muted);
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 0.62rem;
+    font-weight: 700;
+    line-height: 1;
+    cursor: help;
+  }
+  .info-dot:hover, .info-dot:focus-visible, .info-dot.active{
+    border-color: var(--accent);
+    color: var(--accent-hi);
+    outline: none;
+  }
+
+  .tooltip-bubble{
+    position: fixed;
+    max-width: min(260px, 80vw);
+    background: #2a2622;
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 8px 11px;
+    font-size: 0.78rem;
+    line-height: 1.4;
+    z-index: 60;
+    box-shadow: 0 8px 22px rgba(0,0,0,0.45);
+    pointer-events: none;
+  }
+  .tooltip-bubble[hidden]{ display:none; }
+
   .setting-control{
     display:flex;
     align-items:center;
+    flex-wrap: wrap;
+    justify-content: flex-end;
     gap: 10px;
     margin-left:auto;
   }
@@ -190,14 +261,45 @@
     cursor:pointer;
   }
 
+  .mini-select{
+    -webkit-appearance:none;
+    appearance:none;
+    font-family: inherit;
+    font-weight: 500;
+    font-size: 0.82rem;
+    color: var(--ink);
+    background-color: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    padding: 6px 24px 6px 9px;
+    cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%239a9284' stroke-width='1.5'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    max-width: 100%;
+  }
+  .mini-select:hover{ border-color: var(--accent); }
+  .mini-select:focus-visible{ outline: 2px solid var(--accent-hi); outline-offset: 2px; }
+  .mini-select option{ background: var(--panel); color: var(--ink); }
+
+  .chord-slots{
+    display:flex;
+    flex-wrap:wrap;
+    gap: 6px;
+    justify-content:flex-end;
+  }
+  .chord-slots .mini-select{ font-size: 0.78rem; padding: 5px 22px 5px 8px; }
+
   /* ---- progression display ---- */
   .display{
+    position: relative;
     text-align:center;
-    padding: 32px 20px;
+    padding: 18px 20px 22px;
   }
 
   .key{
     margin: 0 0 14px;
+    padding: 0 78px;    /* stay clear of the corner play button and tempo presets */
     font-family: 'Fraunces', Georgia, serif;
     font-weight: 500;
     font-style: italic;
@@ -209,20 +311,55 @@
     -webkit-appearance:none;
     appearance:none;
     cursor:pointer;
-    display:inline-block;
-    margin: 0 0 24px;
+    position: absolute;
+    top: 14px;
+    left: 16px;
+    margin: 0;
     font-family: inherit;
     font-weight:600;
-    font-size: 0.82rem;
+    font-size: 0.76rem;
     color: var(--on-accent);
     background: var(--accent);
     border: none;
     border-radius: 7px;
-    padding: 7px 20px;
+    padding: 6px 14px;
     transition: background 0.15s ease;
   }
   .playmini:hover{ background: var(--accent-hi); }
   .playmini:focus-visible{
+    outline: 2px solid var(--accent-hi);
+    outline-offset: 2px;
+  }
+
+  .tempo-mini{
+    position: absolute;
+    top: 14px;
+    right: 16px;
+    display: flex;
+    gap: 4px;
+  }
+  .tempo-mini-btn{
+    -webkit-appearance:none;
+    appearance:none;
+    cursor:pointer;
+    font-family: inherit;
+    font-weight: 600;
+    font-size: 0.66rem;
+    color: var(--ink);
+    background: transparent;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 5px 7px;
+    line-height: 1;
+    transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+  }
+  .tempo-mini-btn:hover{ border-color: var(--accent); }
+  .tempo-mini-btn.active{
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--on-accent);
+  }
+  .tempo-mini-btn:focus-visible{
     outline: 2px solid var(--accent-hi);
     outline-offset: 2px;
   }
@@ -271,7 +408,7 @@
     font-family: 'Inter', system-ui, sans-serif;
     font-weight:600;
     font-style: italic;
-    font-size: 0.46em;
+    font-size: 0.7em;
     line-height:1;
     color: var(--accent);
     letter-spacing: 0.01em;
@@ -297,15 +434,29 @@
   .shape-line{
     fill: none;
     stroke-width: 2;
-    stroke-opacity: 0.5;
+    stroke-opacity: 0.55;
     stroke-linecap: round;
     stroke-linejoin: round;
   }
 
-  .note-dot text{ font: 600 8.5px 'Inter', system-ui, sans-serif; fill: #16211e; }
-  .dot-ring{ stroke: var(--ink); stroke-width: 1.6; }
-  .note-dot.dim circle{ stroke: #5a554c; stroke-width: 1; }
-  .note-dot.dim text{ font-size: 7.5px; font-weight: 500; fill: var(--muted); }
+  .note-dot text{ font-family: 'Inter', system-ui, sans-serif; font-weight: 700; fill: #17131d; }
+  .dot-ring{ stroke: var(--ink); stroke-width: 2.6; }
+
+  /* hovering / tapping a shape name in the legend spotlights that shape */
+  .note-dot, .shape-line{ transition: opacity 0.12s ease; }
+  #fretboard.shape-focus .note-dot{ opacity: 0.15; }
+  #fretboard.shape-focus .note-dot.hot{ opacity: 1; }
+  #fretboard.shape-focus .shape-line{ opacity: 0.08; }
+  #fretboard.shape-focus .shape-line.hot{ opacity: 1; }
+
+  /* Chord positions: "Follow playback" — current chord lit, next chord
+     half-lit, everything else dimmed */
+  #fretboard.pos-follow .note-dot{ opacity: 0.15; }
+  #fretboard.pos-follow .note-dot.pos-next{ opacity: 0.55; }
+  #fretboard.pos-follow .note-dot.pos-current{ opacity: 1; }
+  #fretboard.pos-follow .shape-line{ opacity: 0.08; }
+  #fretboard.pos-follow .shape-line.pos-next{ opacity: 0.4; }
+  #fretboard.pos-follow .shape-line.pos-current{ opacity: 1; }
 
   .caged-legend{
     display:flex;
@@ -319,57 +470,114 @@
   .caged-legend i{ width: 11px; height: 11px; border-radius: 50%; display:inline-block; flex:none; }
   .caged-legend i.ring{ background: transparent; border: 1.6px solid var(--ink); }
   .caged-legend em{ font-style: normal; opacity: 0.7; margin-left: 3px; }
+  .caged-legend [data-shape]{ cursor: pointer; border-radius: 5px; padding: 2px 6px; margin: -2px 0; }
+  .caged-legend [data-shape]:hover,
+  .caged-legend [data-shape]:focus-visible{ background: rgba(255,255,255,0.09); outline: none; }
+
+  #cagedChordGroup.locked{ opacity: 0.45; pointer-events: none; }
+
+  .row-control{ display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-left:auto; justify-content:flex-end; }
+  .inline-check{ display:flex; align-items:center; gap:6px; font-size:0.82rem; color:var(--ink); cursor:pointer; white-space:nowrap; }
+  .inline-check input{ width:18px; height:18px; }
 </style>
 </head>
 <body>
 
 <div class="app">
 
-  <section class="panel">
+  <section class="panel narrow">
     <div class="settings">
       <div class="setting">
-        <span class="setting-label">Mode</span>
-        <div class="segmented" id="modeGroup">
-          <button type="button" class="seg-btn" data-value="major">Major</button>
-          <button type="button" class="seg-btn" data-value="minor">Minor</button>
-          <button type="button" class="seg-btn active" data-value="random">Random</button>
+        <span class="setting-label">Key</span>
+        <div class="row-control">
+          <div class="segmented" id="modeGroup">
+            <button type="button" class="seg-btn" data-value="major">Major</button>
+            <button type="button" class="seg-btn" data-value="minor">Minor</button>
+            <button type="button" class="seg-btn active" data-value="random">Random</button>
+          </div>
+          <select id="keySelect" class="mini-select" aria-label="Key"></select>
         </div>
       </div>
       <div class="setting">
-        <span class="setting-label">Number of chords</span>
-        <div class="stepper">
-          <button type="button" class="step-btn" id="chordCountDown" aria-label="Fewer chords">−</button>
-          <span class="step-value" id="chordCountValue">3</span>
-          <button type="button" class="step-btn" id="chordCountUp" aria-label="More chords">+</button>
+        <span class="setting-label">Chords</span>
+        <div class="row-control">
+          <div class="stepper">
+            <button type="button" class="step-btn" id="chordCountDown" aria-label="Fewer chords">−</button>
+            <span class="step-value" id="chordCountValue">3</span>
+            <button type="button" class="step-btn" id="chordCountUp" aria-label="More chords">+</button>
+          </div>
+          <label class="inline-check">
+            <input type="checkbox" id="seventhToggle">
+            <span>7</span>
+          </label>
+          <div class="chord-slots" id="chordSlots"></div>
         </div>
       </div>
       <label class="setting">
-        <span class="setting-label">Common chords only</span>
+        <span class="setting-label">Common chords only
+          <button type="button" class="info-dot" data-tip="Only use the most common diatonic chords when rolling a Random slot: I, ii, IV, V, vi (or i, iv, v, VI, VII in minor). Turn off to allow any diatonic chord, including the less-used iii and vii°. Manual chord picks always ignore this.">i</button>
+        </span>
         <input type="checkbox" id="commonToggle" checked>
       </label>
     </div>
-    <button id="genBtn" class="primary">New progression</button>
+    <button id="genBtn" class="primary">Re-randomize</button>
   </section>
 
-  <section class="panel display">
-    <p class="key" id="keyReadout">Key of —</p>
+  <section class="panel narrow display">
+    <p class="key" id="keyReadout">—</p>
     <button id="playBtn2" class="playmini" type="button">Play</button>
+    <div class="tempo-mini" id="tempoMini">
+      <button type="button" class="tempo-mini-btn bpm-preset active" data-bpm="60">60</button>
+      <button type="button" class="tempo-mini-btn bpm-preset" data-bpm="90">90</button>
+      <button type="button" class="tempo-mini-btn bpm-preset" data-bpm="120">120</button>
+    </div>
     <div class="chords" id="chords"></div>
     <p class="measure-readout" id="measureReadout"></p>
   </section>
 
   <section class="panel">
     <div class="setting">
-      <span class="setting-label">Fretboard</span>
+      <span class="setting-label">Fretboard
+        <button type="button" class="info-dot" data-tip="Root notes: every root of the progression's chords, colour-coded. CAGED triads: the five movable CAGED shapes for one chosen chord. CAGED pentatonic: that chord's pentatonic scale, boxed and coloured by CAGED shape. CAGED scales: the full 7-note scale for that chord, same colouring. Chord positions: one location per chord in the progression, clustered close together on the neck.">i</button>
+      </span>
       <div class="segmented" id="fretModeGroup">
-        <button type="button" class="seg-btn active" data-value="roots">Root notes</button>
-        <button type="button" class="seg-btn" data-value="caged">CAGED chords</button>
+        <button type="button" class="seg-btn" data-value="roots">Root notes</button>
+        <button type="button" class="seg-btn active" data-value="caged">CAGED triads</button>
         <button type="button" class="seg-btn" data-value="penta">CAGED pentatonic</button>
+        <button type="button" class="seg-btn" data-value="scale">CAGED scales</button>
+        <button type="button" class="seg-btn" data-value="positions">Chord positions</button>
       </div>
     </div>
     <div class="setting" id="cagedChordRow" hidden>
       <span class="setting-label">Chord</span>
-      <div class="segmented" id="cagedChordGroup"></div>
+      <div class="row-control">
+        <div class="segmented" id="cagedChordGroup"></div>
+        <label class="inline-check">
+          <input type="checkbox" id="cagedFollowToggle" checked>
+          <span>Follow playback</span>
+        </label>
+      </div>
+    </div>
+    <div class="setting" id="chordPosRow" hidden>
+      <span class="setting-label">Position
+        <button type="button" class="info-dot" data-tip="Shows one shape per chord in the progression, chosen so they all sit close together on the neck. Next cycles to the next cluster of positions, wrapping back to the lowest. Follow playback highlights the chord currently sounding and dims the others, with the upcoming chord shown half-lit.">i</button>
+      </span>
+      <div class="row-control">
+        <button type="button" class="seg-btn" id="chordPosNext">Next position ▸</button>
+        <label class="inline-check">
+          <input type="checkbox" id="chordPosFollowToggle" checked>
+          <span>Follow playback</span>
+        </label>
+      </div>
+    </div>
+    <div class="setting" id="scaleTheoryRow" hidden>
+      <span class="setting-label">Scale
+        <button type="button" class="info-dot" data-tip="Parallel major/minor: the chord's own scale — a major chord gets the major scale, a minor chord gets the natural minor scale. Key mode: chord-scale theory — the mode of the progression's key rooted on this chord (e.g. a IV chord reads as Lydian).">i</button>
+      </span>
+      <div class="segmented" id="scaleTheoryGroup">
+        <button type="button" class="seg-btn active" data-value="parallel">Parallel major/minor</button>
+        <button type="button" class="seg-btn" data-value="modal">Key mode</button>
+      </div>
     </div>
     <div class="fret-scroll">
       <svg id="fretboard" viewBox="0 0 520 172" role="img" aria-label="Guitar fretboard"></svg>
@@ -377,12 +585,53 @@
     <div class="caged-legend" id="cagedLegend"></div>
   </section>
 
-  <section class="panel">
+  <section class="panel narrow">
     <button id="playBtn" class="primary">Play</button>
     <div class="settings">
+      <div class="settings-heading">Style</div>
+      <div class="setting">
+        <span class="setting-label">Genre</span>
+        <div class="segmented" id="styleGroup">
+          <button type="button" class="seg-btn active" data-value="simple">Simple</button>
+          <button type="button" class="seg-btn" data-value="rock">Rock</button>
+          <button type="button" class="seg-btn" data-value="blues">Blues</button>
+          <button type="button" class="seg-btn" data-value="jazz">Jazz</button>
+          <button type="button" class="seg-btn" data-value="pop">Pop</button>
+          <button type="button" class="seg-btn" data-value="funk">Funk</button>
+        </div>
+      </div>
+      <div class="setting" id="styleVariantRow" hidden>
+        <span class="setting-label">Feel</span>
+        <div class="segmented" id="styleVariantGroup"></div>
+      </div>
+      <div class="setting" id="noteValueRow">
+        <span class="setting-label">Note value</span>
+        <div class="segmented" id="noteValueGroup">
+          <button type="button" class="seg-btn active" data-value="1">Quarter</button>
+          <button type="button" class="seg-btn" data-value="2">Half</button>
+          <button type="button" class="seg-btn" data-value="4">Whole</button>
+        </div>
+      </div>
+      <label class="setting" id="clickRow">
+        <span class="setting-label">Metronome click</span>
+        <input type="checkbox" id="clickToggle" checked>
+      </label>
+      <label class="setting" id="rootOnlyRow">
+        <span class="setting-label">Roots only
+          <button type="button" class="info-dot" data-tip="Play just the root note of each chord instead of the full triad — handy for practicing along without the harmony filling in the answer.">i</button>
+        </span>
+        <input type="checkbox" id="rootOnlyToggle">
+      </label>
+
+      <div class="settings-heading">All styles</div>
       <div class="setting">
         <span class="setting-label">Tempo</span>
         <div class="setting-control">
+          <div class="segmented tempo-presets">
+            <button type="button" class="seg-btn bpm-preset active" data-bpm="60">60</button>
+            <button type="button" class="seg-btn bpm-preset" data-bpm="90">90</button>
+            <button type="button" class="seg-btn bpm-preset" data-bpm="120">120</button>
+          </div>
           <input type="range" id="tempo" min="40" max="200" value="60">
           <span class="setting-value" id="tempoVal">60 BPM</span>
         </div>
@@ -395,30 +644,16 @@
           <button type="button" class="step-btn" id="measuresUp" aria-label="More measures per chord">+</button>
         </div>
       </div>
-      <div class="setting">
-        <span class="setting-label">Note value</span>
-        <div class="segmented" id="noteValueGroup">
-          <button type="button" class="seg-btn active" data-value="1">Quarter</button>
-          <button type="button" class="seg-btn" data-value="2">Half</button>
-          <button type="button" class="seg-btn" data-value="4">Whole</button>
-        </div>
-      </div>
       <label class="setting">
         <span class="setting-label">Count-in (4 beats)</span>
         <input type="checkbox" id="countInToggle" checked>
-      </label>
-      <label class="setting">
-        <span class="setting-label">Metronome click</span>
-        <input type="checkbox" id="clickToggle" checked>
-      </label>
-      <label class="setting">
-        <span class="setting-label">Roots only</span>
-        <input type="checkbox" id="rootOnlyToggle">
       </label>
     </div>
   </section>
 
 </div>
+
+<div class="tooltip-bubble" id="tooltipBubble" role="tooltip" hidden></div>
 
 <script>
   const MAJOR_KEYS = {
@@ -486,79 +721,205 @@
       note,
       third: scale[(i + 2) % 7],
       fifth: scale[(i + 4) % 7],
+      seventh: scale[(i + 6) % 7],
       quality: qualities[i],
       numeral: numerals[i],
       name: note + SUFFIX[qualities[i]],
     }));
   }
 
-  function generateProgression(commonOnly, requestedCount){
-    const mode = modeSetting === 'random'
-      ? (Math.random() < 0.5 ? 'major' : 'minor')
-      : modeSetting;
-    const keys = Object.keys(mode === 'major' ? MAJOR_KEYS : MINOR_KEYS);
-    const tonic = pick(keys);
-    const chords = buildDiatonicChords(mode, tonic);
+  // seventh-chord suffix implied by a diatonic triad + its diatonic 7th
+  // (always the harmonically "correct" one: maj7, dominant 7, m7, or m7b5)
+  function seventhSuffix(chord){
+    const rootPc = SEMITONE[chord.note] % 12;
+    const seventhPc = SEMITONE[chord.seventh] % 12;
+    const interval = (seventhPc - rootPc + 12) % 12;
+    if (chord.quality === 'dim') return 'm7♭5';
+    if (chord.quality === 'min') return 'm7';
+    return interval === 11 ? 'maj7' : '7';
+  }
 
-    if (mode === 'minor' && Math.random() < 0.5){
-      // swap the natural-minor v for the major dominant V (harmonic minor)
-      const five = chords[4];
-      chords[4] = {
-        note: five.note,
-        third: LEADING_TONE[tonic],
-        fifth: five.fifth,
-        quality: 'maj',
-        numeral: 'V',
-        name: five.note,
-      };
-    }
-
-    const commonIndices = mode === 'major' ? MAJOR_COMMON : MINOR_COMMON;
-    const pool = commonOnly ? chords.filter((_, i) => commonIndices.includes(i)) : chords;
-
-    const root = pool[0];                  // always the tonic (I or i)
-    const others = shuffle(pool.slice(1));  // the other diatonic triads in the pool
-    const count = Math.max(1, Math.min(requestedCount, pool.length));
-    const selected = others.slice(0, count - 1);
-    const progression = shuffle([root, ...selected]);
-
-    return { mode, tonic, progression };
+  // the name to display for a chord, honoring the "Seventh chords" toggle
+  function displayName(chord){
+    if (!useSevenths || !chord.seventh) return chord.name;
+    return chord.note + seventhSuffix(chord);
   }
 
   let currentProgression = [];
   let chordCount = 3;
-  let modeSetting = 'random';   // 'major' | 'minor' | 'random'
+  let modeSetting = 'random';           // 'major' | 'minor' | 'random'
+  let keyChoice = null;                 // null = random, else { mode, tonic }
+  let slotChoices = [null, null, null]; // per slot: null = random, else a diatonic degree
+  let currentMode = 'major';
+  let currentTonic = 'C';
+  let currentDiatonic = [];             // the chord choices available for the current key
 
-  function render(){
-    const { mode, tonic, progression } = generateProgression(commonToggle.checked, chordCount);
-    currentProgression = progression;
+  const keySelect = document.getElementById('keySelect');
+  const chordSlotsEl = document.getElementById('chordSlots');
 
-    document.getElementById('keyReadout').textContent =
-      `Key of ${tonic} ${mode === 'major' ? 'major' : 'minor'}`;
+  // chords a manual slot can be set to: the 7 diatonic triads, plus the
+  // harmonic-minor V (degree 7) in minor keys
+  function keyChordChoices(){
+    const base = buildDiatonicChords(currentMode, currentTonic).map((c, i) => ({ ...c, deg: i }));
+    if (currentMode === 'minor'){
+      const five = base[4];
+      base.push({
+        note: five.note, third: LEADING_TONE[currentTonic], fifth: five.fifth, seventh: five.seventh,
+        quality: 'maj', numeral: 'V', name: five.note, deg: 7,
+      });
+    }
+    return base;
+  }
 
+  function randomDegreePool(){
+    const common = currentMode === 'major' ? MAJOR_COMMON : MINOR_COMMON;
+    return commonToggle.checked ? common.slice() : [0, 1, 2, 3, 4, 5, 6];
+  }
+
+  function rollDegree(prevDeg){
+    const pool = randomDegreePool();
+    let d = pick(pool);
+    if (pool.length > 1 && d === prevDeg) d = pick(pool.filter(x => x !== prevDeg));
+    if (currentMode === 'minor' && d === 4 && Math.random() < 0.5) d = 7;  // harmonic V
+    return d;
+  }
+
+  function chordForDegree(deg){
+    const c = currentDiatonic.find(x => x.deg === deg) || currentDiatonic[0];
+    return { ...c, _deg: c.deg };
+  }
+
+  // rebuild the whole progression: pinned slots keep their choice, random slots re-roll
+  function rollProgression(){
+    if (keyChoice){
+      currentMode = keyChoice.mode;
+      currentTonic = keyChoice.tonic;
+    } else {
+      currentMode = modeSetting === 'random' ? (Math.random() < 0.5 ? 'major' : 'minor') : modeSetting;
+      currentTonic = pick(Object.keys(currentMode === 'major' ? MAJOR_KEYS : MINOR_KEYS));
+    }
+    currentDiatonic = keyChordChoices();
+
+    // drop any pin that no longer exists in this key (e.g. the minor-only V)
+    const validDegs = new Set(currentDiatonic.map(c => c.deg));
+    slotChoices = slotChoices.map(s => (s == null || validDegs.has(s)) ? s : null);
+
+    const prog = [];
+    for (let i = 0; i < chordCount; i++){
+      const deg = slotChoices[i] != null ? slotChoices[i]
+        : rollDegree(prog.length ? prog[prog.length - 1]._deg : -1);
+      prog.push(chordForDegree(deg));
+    }
+    // keep fully-random progressions grounded on the tonic
+    if (slotChoices.some(s => s == null) && !prog.some(c => c._deg === 0)){
+      const i = slotChoices.findIndex(s => s == null);
+      prog[i] = chordForDegree(0);
+    }
+    currentProgression = prog;
+  }
+
+  function buildKeySelect(){
+    const grp = (label, obj, mode) =>
+      `<optgroup label="${label}">` +
+      Object.keys(obj).slice().sort().map(t => `<option value="${mode}:${t}">${t} ${mode}</option>`).join('') +
+      `</optgroup>`;
+    // only offer keys that match the current Major/Minor/Random setting
+    let groups = '';
+    if (modeSetting !== 'minor') groups += grp('Major keys', MAJOR_KEYS, 'major');
+    if (modeSetting !== 'major') groups += grp('Minor keys', MINOR_KEYS, 'minor');
+    keySelect.innerHTML = `<option value="random">Random</option>` + groups;
+    keySelect.value = keyChoice ? `${keyChoice.mode}:${keyChoice.tonic}` : 'random';
+  }
+
+  function renderChordSlots(){
+    chordSlotsEl.innerHTML = '';
+    for (let i = 0; i < chordCount; i++){
+      const sel = document.createElement('select');
+      sel.className = 'mini-select';
+      sel.setAttribute('aria-label', `Chord ${i + 1}`);
+      sel.innerHTML = `<option value="random">Random</option>` +
+        currentDiatonic.map(o => `<option value="${o.deg}">${displayName(o)} · ${o.numeral}</option>`).join('');
+      sel.value = slotChoices[i] == null ? 'random' : String(slotChoices[i]);
+      sel.addEventListener('change', () => {
+        slotChoices[i] = sel.value === 'random' ? null : Number(sel.value);
+        currentProgression[i] = chordForDegree(slotChoices[i] != null ? slotChoices[i] : rollDegree(-1));
+        renderAll();
+      });
+      chordSlotsEl.appendChild(sel);
+    }
+  }
+
+  function renderChordDisplay(){
     const chordsEl = document.getElementById('chords');
-    chordsEl.style.setProperty('--n', progression.length);
-    chordsEl.classList.toggle('tight', progression.length === 2);
+    const names = currentProgression.map(displayName);
+    const n = currentProgression.length;
+    // seventh-chord names (e.g. "Bm7♭5") run much longer than triad names
+    // ("Am", "B°") — shrink the font to fit the longest one, not just the count
+    const maxLen = Math.max(1, ...names.map(name => name.length));
+    chordsEl.style.setProperty('--n', Math.max(n, n * maxLen / 3));
+    chordsEl.classList.toggle('tight', currentProgression.length === 2);
     chordsEl.innerHTML = '';
-    progression.forEach((chord, i) => {
+    currentProgression.forEach((chord, i) => {
       const item = document.createElement('div');
       item.className = 'chord';
       item.style.animationDelay = `${i * 70}ms`;
       item.innerHTML = `
-        <span class="chord-name">${chord.name}</span>
+        <span class="chord-name">${names[i]}</span>
         <span class="chord-numeral">${chord.numeral}</span>
       `;
       chordsEl.appendChild(item);
     });
+  }
 
+  // update chord name labels in place (no re-roll, no re-triggering the
+  // entrance animation) — used when a display-only setting like "7" flips
+  function refreshChordNames(){
+    const chordsEl = document.getElementById('chords');
+    const names = currentProgression.map(displayName);
+    const n = currentProgression.length;
+    const maxLen = Math.max(1, ...names.map(name => name.length));
+    chordsEl.style.setProperty('--n', Math.max(n, n * maxLen / 3));
+    [...chordsEl.querySelectorAll('.chord')].forEach((item, i) => {
+      const nameEl = item.querySelector('.chord-name');
+      if (nameEl) nameEl.textContent = names[i];
+    });
+    renderChordSlots();
+    rebuildCagedPicker();
+  }
+
+  // render everything from the current progression WITHOUT re-rolling it
+  function renderAll(){
+    document.getElementById('keyReadout').textContent =
+      currentMode === 'major' ? `${currentTonic} major` : `${currentTonic}m`;
+    renderChordDisplay();
+    renderChordSlots();
     rebuildCagedPicker();
     renderFretboard();
-
-    // keep the playback loop in sync with the new set of chords
     resetPlaybackCursor();
   }
 
+  // re-roll the random slots, then render (New progression, key / mode / count changes)
+  function render(){
+    rollProgression();
+    chordPosIndex = 0;   // start "Chord positions" fresh for a newly-rolled progression
+    renderAll();
+  }
+
   document.getElementById('genBtn').addEventListener('click', render);
+
+  keySelect.addEventListener('change', () => {
+    if (keySelect.value === 'random'){
+      keyChoice = null;
+    } else {
+      const [m, t] = keySelect.value.split(':');
+      keyChoice = { mode: m, tonic: t };
+      modeSetting = m;
+      document.querySelectorAll('#modeGroup .seg-btn')
+        .forEach(b => b.classList.toggle('active', b.dataset.value === m));
+      buildKeySelect();
+    }
+    render();
+  });
 
   // ---------- Playback ----------
 
@@ -574,7 +935,7 @@
   }
 
   function chordFrequencies(chord){
-    // stack root/third/fifth upward in pitch, wrapping octaves as needed
+    // stack root/third/fifth(/seventh) upward in pitch, wrapping octaves as needed
     const rootSemi = SEMITONE[chord.note];
     const thirdSemi = SEMITONE[chord.third];
     const fifthSemi = SEMITONE[chord.fifth];
@@ -582,16 +943,26 @@
     const thirdOctave = ROOT_OCTAVE + (thirdSemi <= rootSemi ? 1 : 0);
     const fifthOctave = thirdOctave + (fifthSemi <= thirdSemi ? 1 : 0);
 
-    return [
+    const freqs = [
       noteFreq(chord.note, ROOT_OCTAVE),
       noteFreq(chord.third, thirdOctave),
       noteFreq(chord.fifth, fifthOctave),
     ];
+
+    if (useSevenths && chord.seventh){
+      const seventhSemi = SEMITONE[chord.seventh];
+      const seventhOctave = fifthOctave + (seventhSemi <= fifthSemi ? 1 : 0);
+      freqs.push(noteFreq(chord.seventh, seventhOctave));
+    }
+
+    return freqs;
   }
 
   let audioCtx = null;
   let masterGain = null;
   let hihatGain = null;
+  let bassGain = null;
+  let drumGain = null;
   let noiseBuffer = null;
 
   function ensureAudio(){
@@ -609,10 +980,19 @@
       // separate percussion chain so the hi-hat's high end isn't
       // swallowed by the piano voice's lowpass filter
       hihatGain = audioCtx.createGain();
-      hihatGain.gain.value = 0.45;
+      hihatGain.gain.value = 0.4;
       hihatGain.connect(audioCtx.destination);
 
-      const bufferSize = Math.floor(audioCtx.sampleRate * 0.2);
+      // bass and kick/snare buses for the genre styles
+      bassGain = audioCtx.createGain();
+      bassGain.gain.value = 0.42;
+      bassGain.connect(audioCtx.destination);
+
+      drumGain = audioCtx.createGain();
+      drumGain.gain.value = 0.55;
+      drumGain.connect(audioCtx.destination);
+
+      const bufferSize = Math.floor(audioCtx.sampleRate * 0.5);
       noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
       const data = noiseBuffer.getChannelData(0);
       for (let i = 0; i < bufferSize; i++){
@@ -653,22 +1033,362 @@
     chordFrequencies(chord).forEach(freq => playNote(freq, time, duration, velocity));
   }
 
-  function playHiHat(time){
+  // ---- extra voices for the genre styles ----
+
+  function pcFreq(pc, octave){
+    return 440 * Math.pow(2, ((octave + 1) * 12 + pc - 69) / 12);
+  }
+  // absolute frequency `off` semitones above the root pitch-class in `octave`
+  function bassFreqAt(rootPc, off, octave){
+    return 440 * Math.pow(2, ((octave + 1) * 12 + rootPc + off - 69) / 12);
+  }
+
+  // triad plus a 7th; `rootless` drops the low root and voices it higher
+  function playChord7(chord, time, duration, velocity, rootless){
+    const r = SEMITONE[chord.note], third = SEMITONE[chord.third], fifth = SEMITONE[chord.fifth];
+    const isDom = chord.numeral === 'V' || chord.numeral === 'VII' || chord.numeral === 'v';
+    const seventh = (r + (isDom || chord.quality === 'min' ? 10 : 11)) % 12;
+    const pcs = rootless ? [third, fifth, seventh, r] : [r, third, fifth, seventh];
+    let octave = rootless ? 4 : 3, prev = -1;
+    pcs.forEach(pc => {
+      if (pc <= prev) octave++;
+      prev = pc;
+      playNote(pcFreq(pc, octave), time, duration, velocity);
+    });
+  }
+
+  function playBass(freq, time, duration, velocity){
+    const osc = audioCtx.createOscillator();
+    osc.type = 'triangle';
+    osc.frequency.value = freq;
+    const lp = audioCtx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.value = 850;
+    const env = audioCtx.createGain();
+    env.gain.setValueAtTime(0.0001, time);
+    env.gain.exponentialRampToValueAtTime(velocity, time + 0.012);
+    env.gain.exponentialRampToValueAtTime(0.0001, time + duration);
+    osc.connect(lp).connect(env).connect(bassGain);
+    osc.start(time);
+    osc.stop(time + duration + 0.05);
+  }
+
+  function playHiHat(time, velocity = 1, decay = 0.06){
     const src = audioCtx.createBufferSource();
     src.buffer = noiseBuffer;
-
     const highpass = audioCtx.createBiquadFilter();
     highpass.type = 'highpass';
     highpass.frequency.value = 8000;
-
     const envelope = audioCtx.createGain();
     envelope.gain.setValueAtTime(0.0001, time);
-    envelope.gain.exponentialRampToValueAtTime(1, time + 0.002);
-    envelope.gain.exponentialRampToValueAtTime(0.0001, time + 0.06);
-
+    envelope.gain.exponentialRampToValueAtTime(velocity, time + 0.002);
+    envelope.gain.exponentialRampToValueAtTime(0.0001, time + decay);
     src.connect(highpass).connect(envelope).connect(hihatGain);
     src.start(time);
-    src.stop(time + 0.08);
+    src.stop(time + decay + 0.03);
+  }
+
+  function playRide(time, velocity = 1){
+    playHiHat(time, velocity * 0.5, 0.3);          // wash
+    const osc = audioCtx.createOscillator();
+    osc.type = 'square';
+    osc.frequency.value = 640;
+    const env = audioCtx.createGain();
+    env.gain.setValueAtTime(0.0001, time);
+    env.gain.exponentialRampToValueAtTime(velocity * 0.1, time + 0.003);
+    env.gain.exponentialRampToValueAtTime(0.0001, time + 0.22);
+    osc.connect(env).connect(hihatGain);
+    osc.start(time);
+    osc.stop(time + 0.24);
+  }
+
+  function playKick(time, velocity = 1){
+    const osc = audioCtx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(150, time);
+    osc.frequency.exponentialRampToValueAtTime(46, time + 0.11);
+    const env = audioCtx.createGain();
+    env.gain.setValueAtTime(0.0001, time);
+    env.gain.exponentialRampToValueAtTime(velocity, time + 0.005);
+    env.gain.exponentialRampToValueAtTime(0.0001, time + 0.3);
+    osc.connect(env).connect(drumGain);
+    osc.start(time);
+    osc.stop(time + 0.32);
+  }
+
+  function playSnare(time, velocity = 1){
+    const src = audioCtx.createBufferSource();
+    src.buffer = noiseBuffer;
+    const bp = audioCtx.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.frequency.value = 1900;
+    bp.Q.value = 0.6;
+    const ng = audioCtx.createGain();
+    ng.gain.setValueAtTime(0.0001, time);
+    ng.gain.exponentialRampToValueAtTime(velocity, time + 0.002);
+    ng.gain.exponentialRampToValueAtTime(0.0001, time + 0.16);
+    src.connect(bp).connect(ng).connect(drumGain);
+    src.start(time);
+    src.stop(time + 0.18);
+
+    const osc = audioCtx.createOscillator();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(195, time);
+    osc.frequency.exponentialRampToValueAtTime(130, time + 0.09);
+    const og = audioCtx.createGain();
+    og.gain.setValueAtTime(0.0001, time);
+    og.gain.exponentialRampToValueAtTime(velocity * 0.45, time + 0.004);
+    og.gain.exponentialRampToValueAtTime(0.0001, time + 0.11);
+    osc.connect(og).connect(drumGain);
+    osc.start(time);
+    osc.stop(time + 0.13);
+  }
+
+  function playStyleVoice(voice, chord, time, duration, velocity){
+    if (voice === 'dom7') return playChord7(chord, time, duration, velocity, false);
+    if (voice === 'jazz') return playChord7(chord, time, duration, velocity, true);
+    return playChord(chord, time, duration, velocity);   // 'triad'
+  }
+
+  // ---- genre rhythm patterns (one bar of 4/4) --------------------------------
+  // grid = subdivisions per bar (16 = sixteenths, 12 = triplet-eighths / shuffle);
+  // drum arrays list slot indices; chord/bass entries are { slot, dur (in slots),
+  // vel } with bass carrying either a semitone `off` from the root or a `walk`
+  // index for the walking-bass line. Each style offers three canonical "feels".
+  const STYLES = {
+    rock: {
+      label: 'Rock',
+      variants: [
+        {
+          label: 'Straight rock',
+          grid: 16,
+          kick:  [0, 8, 10],
+          snare: [4, 12],
+          hat:   [0, 2, 4, 6, 8, 10, 12, 14],
+          voice: 'triad',
+          chord: [0, 2, 4, 6, 8, 10, 12, 14].map(s => ({ slot: s, dur: 1.8, vel: s % 4 === 0 ? 0.95 : 0.6 })),
+          bass:  [0, 4, 8, 12].map((s, i) => ({ slot: s, off: 0, dur: 3.4, vel: [0.95, 0.8, 0.88, 0.8][i] })),
+        },
+        {
+          label: 'Half-time',     // snare only on 3, sustained power chords
+          grid: 16,
+          kick:  [0, 6],
+          snare: [8],
+          hat:   [0, 4, 8, 12],
+          voice: 'triad',
+          chord: [{ slot: 0, dur: 7.5, vel: 0.9 }, { slot: 8, dur: 7.5, vel: 0.85 }],
+          bass:  [{ slot: 0, off: 0, dur: 7.5, vel: 0.95 }, { slot: 8, off: 0, dur: 7.5, vel: 0.85 }],
+        },
+        {
+          label: 'Punk drive',    // 16th-note "1 & a" gallop, skipping the "e" of each beat
+          grid: 16,
+          kick:  [0, 3, 4, 7, 8, 11, 12, 15],       // hits the downbeat and the pickup into the next one
+          snare: [4, 12],
+          hat:   [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],   // constant 16ths
+          voice: 'triad',
+          // gallop strum: 1, &, a of every beat (slots 0,2,3 / 4,6,7 / 8,10,11 / 12,14,15)
+          chord: [0, 2, 3, 4, 6, 7, 8, 10, 11, 12, 14, 15]
+            .map(s => ({ slot: s, dur: 0.9, vel: s % 4 === 0 ? 0.95 : 0.72 })),
+          // bass follows the same gallop, jumping octaves for drive
+          bass: [0, 2, 3, 4, 6, 7, 8, 10, 11, 12, 14, 15]
+            .map((s, i) => ({ slot: s, off: i % 2 === 0 ? 0 : 12, dur: 0.9, vel: 0.88 })),
+        },
+      ],
+    },
+    blues: {
+      label: 'Blues',
+      variants: [
+        {
+          label: 'Shuffle',      // straight-shuffle boogie: 1st & 3rd triplet of each beat
+          grid: 12,
+          kick:  [0, 6],
+          snare: [3, 9],
+          hat:   [0, 2, 3, 5, 6, 8, 9, 11],
+          voice: 'dom7',
+          // walking boogie bass: 1 3 5 6 b7 6 5 3
+          bass: [
+            { slot: 0, off: 0,  dur: 1.7, vel: 0.95 }, { slot: 2,  off: 4, dur: 0.8, vel: 0.8 },
+            { slot: 3, off: 7,  dur: 1.7, vel: 0.9 },  { slot: 5,  off: 9, dur: 0.8, vel: 0.8 },
+            { slot: 6, off: 10, dur: 1.7, vel: 0.9 },  { slot: 8,  off: 9, dur: 0.8, vel: 0.8 },
+            { slot: 9, off: 7,  dur: 1.7, vel: 0.9 },  { slot: 11, off: 4, dur: 0.8, vel: 0.8 },
+          ],
+          // chord on the downbeat, light stabs on the shuffle upbeats
+          chord: [
+            { slot: 0, dur: 3, vel: 0.8 },
+            { slot: 2, dur: 0.9, vel: 0.4 }, { slot: 5, dur: 0.9, vel: 0.4 },
+            { slot: 8, dur: 0.9, vel: 0.4 }, { slot: 11, dur: 0.9, vel: 0.4 },
+          ],
+        },
+        {
+          label: 'Slow blues',   // sparse 12/8 ballad: just the turnaround bass and a held chord
+          grid: 12,
+          kick:  [0, 6],
+          kickVel: 0.55,
+          snare: [9],
+          hat:   [0, 3, 6, 9],
+          voice: 'dom7',
+          bass: [{ slot: 0, off: 0, dur: 5, vel: 0.9 }, { slot: 6, off: 7, dur: 5, vel: 0.8 }],
+          chord: [{ slot: 0, dur: 11, vel: 0.7 }],
+        },
+        {
+          label: 'Train beat',   // busy blues-rock shuffle (Texas / boogie-rock)
+          grid: 12,
+          kick:  [0, 3, 6, 9],
+          snare: [3, 9],
+          hat:   [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+          voice: 'dom7',
+          bass: [
+            { slot: 0, off: 0, dur: 1.6, vel: 0.95 }, { slot: 2, off: 7, dur: 0.8, vel: 0.8 },
+            { slot: 3, off: 0, dur: 1.6, vel: 0.9 },  { slot: 5, off: 7, dur: 0.8, vel: 0.8 },
+            { slot: 6, off: 0, dur: 1.6, vel: 0.95 }, { slot: 8, off: 7, dur: 0.8, vel: 0.8 },
+            { slot: 9, off: 0, dur: 1.6, vel: 0.9 },  { slot: 11, off: 7, dur: 0.8, vel: 0.8 },
+          ],
+          chord: [0, 3, 6, 9].map(s => ({ slot: s, dur: 2.6, vel: 0.6 })),
+        },
+      ],
+    },
+    jazz: {
+      label: 'Jazz',
+      variants: [
+        {
+          label: 'Swing',        // spang-a-lang ride + walking bass + Charleston comping
+          grid: 12,
+          kick:  [0, 6],
+          kickVel: 0.3,
+          snare: [],
+          hat:   [3, 9],                       // foot hi-hat on 2 & 4
+          ride:  [0, 3, 5, 6, 9, 11],          // spang-a-lang
+          voice: 'jazz',
+          bass: [
+            { slot: 0, walk: 0, dur: 2.6, vel: 0.9 },
+            { slot: 3, walk: 1, dur: 2.6, vel: 0.78 },
+            { slot: 6, walk: 2, dur: 2.6, vel: 0.78 },
+            { slot: 9, walk: 3, dur: 2.6, vel: 0.78 },
+          ],
+          chord: [
+            { slot: 0, dur: 1.5, vel: 0.5 }, { slot: 5, dur: 2.2, vel: 0.55 },
+            { slot: 6, dur: 1.5, vel: 0.5 }, { slot: 11, dur: 2.2, vel: 0.55 },
+          ],
+        },
+        {
+          label: 'Ballad',       // slow swing: quarter-note ride, sparse bass, long comps
+          grid: 12,
+          kick:  [0, 6],
+          kickVel: 0.18,
+          snare: [],
+          hat:   [3, 9],
+          ride:  [0, 3, 6, 9],
+          voice: 'jazz',
+          bass: [{ slot: 0, off: 0, dur: 5, vel: 0.75 }, { slot: 6, off: 7, dur: 5, vel: 0.65 }],
+          chord: [{ slot: 0, dur: 5.5, vel: 0.45 }, { slot: 6, dur: 5.5, vel: 0.45 }],
+        },
+        {
+          label: 'Bossa nova',   // straight (unswung) samba-derived bass, syncopated comp
+          grid: 16,
+          kick:  [0, 6, 10],
+          kickVel: 0.45,
+          snareVel: 0.5,
+          snare: [4, 14],
+          hat:   [0, 2, 4, 6, 8, 10, 12, 14],
+          voice: 'jazz',
+          bass: [
+            { slot: 0, off: 0, dur: 5.5, vel: 0.9 },
+            { slot: 6, off: 7, dur: 3.5, vel: 0.7 },
+            { slot: 10, off: 0, dur: 5.5, vel: 0.8 },
+          ],
+          chord: [{ slot: 6, dur: 3, vel: 0.5 }, { slot: 12, dur: 3, vel: 0.5 }],
+        },
+      ],
+    },
+    pop: {
+      label: 'Pop',
+      variants: [
+        {
+          label: 'Four-on-the-floor',
+          grid: 16,
+          kick:  [0, 4, 8, 12],
+          snare: [4, 12],
+          hat:   [0, 2, 4, 6, 8, 10, 12, 14],
+          voice: 'triad',
+          chord: [0, 4, 8, 12].map(s => ({ slot: s, dur: 3.6, vel: 0.8 })),
+          bass:  [0, 4, 8, 12].map(s => ({ slot: s, off: 0, dur: 3.6, vel: 0.85 })),
+        },
+        {
+          label: 'Ballad',
+          grid: 16,
+          kick:  [0, 8],
+          kickVel: 0.6,
+          snare: [4, 12],
+          snareVel: 0.6,
+          hat:   [0, 4, 8, 12],
+          voice: 'triad',
+          chord: [{ slot: 0, dur: 7.5, vel: 0.6 }, { slot: 8, dur: 7.5, vel: 0.55 }],
+          bass:  [{ slot: 0, off: 0, dur: 7.5, vel: 0.75 }, { slot: 8, off: 0, dur: 7.5, vel: 0.7 }],
+        },
+        {
+          label: 'Syncopated',   // contemporary off-beat dance-pop groove
+          grid: 16,
+          kick:  [0, 6, 10],
+          snare: [4, 12],
+          hat:   [0, 2, 4, 6, 8, 10, 12, 14],
+          voice: 'triad',
+          chord: [0, 3, 6, 10, 13].map(s => ({ slot: s, dur: 1.5, vel: 0.72 })),
+          bass:  [0, 6, 10].map(s => ({ slot: s, off: 0, dur: 2.2, vel: 0.85 })),
+        },
+      ],
+    },
+    funk: {
+      label: 'Funk',
+      variants: [
+        {
+          label: 'Classic funk', // hit "the One", syncopated ghost kicks, constant 16th hats
+          grid: 16,
+          kick:  [0, 3, 7, 10],
+          kickVel: 1,
+          snare: [4, 12],
+          hat:   [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+          voice: 'dom7',
+          chord: [2, 6, 9, 14].map(s => ({ slot: s, dur: 2.4, vel: 0.65 })),
+          bass:  [0, 3, 7, 10, 14].map(s => ({ slot: s, off: 0, dur: 1.7, vel: 0.85 })),
+        },
+        {
+          label: '16th-note chop', // constant chord chops, repeating syncopated bass riff
+          grid: 16,
+          kick:  [0, 10],
+          snare: [4, 12],
+          hat:   [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+          voice: 'dom7',
+          chord: Array.from({ length: 16 }, (_, s) => ({ slot: s, dur: 1.3, vel: s % 4 === 0 ? 0.6 : 0.38 })),
+          bass: [
+            { slot: 0, off: 0, dur: 1.7, vel: 0.85 }, { slot: 3, off: 0, dur: 1.7, vel: 0.7 },
+            { slot: 6, off: 7, dur: 1.7, vel: 0.8 },  { slot: 8, off: 0, dur: 1.7, vel: 0.7 },
+            { slot: 11, off: 7, dur: 1.7, vel: 0.8 }, { slot: 14, off: 0, dur: 1.7, vel: 0.7 },
+          ],
+        },
+        {
+          label: 'Disco',
+          grid: 16,
+          kick:  [0, 4, 8, 12],
+          snare: [4, 12],
+          hat:   [0, 2, 4, 6, 8, 10, 12, 14],
+          voice: 'triad',
+          chord: [2, 6, 10, 14].map(s => ({ slot: s, dur: 3, vel: 0.7 })),
+          // octave-jumping disco bass
+          bass: [0, 2, 4, 6, 8, 10, 12, 14].map((s, i) => ({ slot: s, off: i % 2 === 0 ? 0 : 12, dur: 1.85, vel: 0.85 })),
+        },
+      ],
+    },
+  };
+
+  // one note of a walking bass line for `chord`, position 0-3 within the bar
+  function walkBassFreq(chord, nextChord, pos, approachNext){
+    const r = SEMITONE[chord.note] % 12;
+    const isMin = chord.quality === 'min';
+    if (pos === 0) return bassFreqAt(r, 0, 2);                 // root
+    if (pos === 1) return bassFreqAt(r, 7, 2);                 // fifth
+    if (pos === 2) return bassFreqAt(r, isMin ? 15 : 16, 2);   // third, up an octave
+    const targetPc = approachNext ? SEMITONE[nextChord.note] % 12 : r;
+    return bassFreqAt(targetPc, -1, 2);                        // chromatic approach from below
   }
 
   const tempoInput = document.getElementById('tempo');
@@ -676,6 +1396,8 @@
   const playBtn = document.getElementById('playBtn');
   const playBtn2 = document.getElementById('playBtn2');
   const commonToggle = document.getElementById('commonToggle');
+  const seventhToggle = document.getElementById('seventhToggle');
+  let useSevenths = false;   // triads vs seventh chords (root/3rd/5th/7th), naming + playback
   const clickToggle = document.getElementById('clickToggle');
   const countInToggle = document.getElementById('countInToggle');
   const rootOnlyToggle = document.getElementById('rootOnlyToggle');
@@ -686,12 +1408,61 @@
 
   let measuresPerChord = 2;
   let noteBeats = 1;
+  let currentStyle = 'simple';   // 'simple' | a key of STYLES
+  let currentVariant = 0;        // index into STYLES[currentStyle].variants
+
+  const noteValueRow = document.getElementById('noteValueRow');
+  const rootOnlyRow = document.getElementById('rootOnlyRow');
+  const clickRow = document.getElementById('clickRow');
+  const styleVariantRow = document.getElementById('styleVariantRow');
+  const styleVariantGroup = document.getElementById('styleVariantGroup');
+
+  function renderVariantButtons(){
+    styleVariantGroup.innerHTML = '';
+    if (currentStyle === 'simple') return;
+    STYLES[currentStyle].variants.forEach((variant, i) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'seg-btn' + (i === currentVariant ? ' active' : '');
+      b.textContent = variant.label;
+      b.addEventListener('click', () => {
+        currentVariant = i;
+        renderVariantButtons();
+      });
+      styleVariantGroup.appendChild(b);
+    });
+  }
+
+  function updatePlaybackUI(){
+    const simple = currentStyle === 'simple';
+    noteValueRow.hidden = !simple;
+    rootOnlyRow.hidden = !simple;
+    clickRow.hidden = !simple;
+    styleVariantRow.hidden = simple;
+  }
+
+  document.querySelectorAll('#styleGroup .seg-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#styleGroup .seg-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentStyle = btn.dataset.value;
+      currentVariant = 0;
+      renderVariantButtons();
+      updatePlaybackUI();
+    });
+  });
 
   commonToggle.addEventListener('change', render);
+  seventhToggle.addEventListener('change', () => {
+    useSevenths = seventhToggle.checked;
+    refreshChordNames();   // same chords, just relabel/replay them as triads or 7ths
+  });
 
   function setChordCount(n){
     chordCount = Math.max(1, Math.min(7, n));
     chordCountValue.textContent = chordCount;
+    while (slotChoices.length < chordCount) slotChoices.push(null);
+    slotChoices.length = chordCount;
     render();
   }
   document.getElementById('chordCountDown').addEventListener('click', () => {
@@ -723,6 +1494,11 @@
       document.querySelectorAll('#modeGroup .seg-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       modeSetting = btn.dataset.value;
+      // a pinned key that doesn't match the new mode no longer applies
+      if (modeSetting === 'random' || (keyChoice && keyChoice.mode !== modeSetting)){
+        keyChoice = null;
+      }
+      buildKeySelect();
       render();
     });
   });
@@ -750,19 +1526,33 @@
     D: { ref: 3, offs: [ 1,  3,  2,  0, null, null] },
   };
   const CAGED_ORDER = ['C', 'A', 'G', 'E', 'D'];
-  const CAGED_COLORS = { C: '#6fb3a3', A: '#d8a35f', G: '#cf8f8f', E: '#8fa9d6', D: '#a9c98b' };
+  // hues chosen so that boxes adjacent in the C-A-G-E-D cycle (the pairs that
+  // can share a split dot) are always far apart: cyan / amber / rose / blue / lime
+  const CAGED_COLORS = { C: '#2fbccb', A: '#e6a13a', G: '#e069a6', E: '#5f8ce8', D: '#8ec93f' };
 
   // one colour per distinct chord root, assigned in progression order
-  const ROOT_PALETTE = ['#6fb3a3', '#d8a35f', '#c98b8b', '#8fa9d6', '#a9c98b', '#c69dd2', '#7ec8c0'];
+  const ROOT_PALETTE = ['#2fbccb', '#e6a13a', '#e069a6', '#5f8ce8', '#8ec93f', '#b98ce8', '#e6733a'];
 
-  let fretMode = 'roots';        // 'roots' | 'caged'
+  let fretMode = 'caged';        // 'roots' | 'caged' | 'penta' | 'scale' | 'positions'
   let cagedChordIdx = 0;
   let cagedShapesShown = [];
   let rootLegendData = [];
+  let posLegendData = [];
+  let chordPosIndex = 0;         // which clustered position "Chord positions" mode is showing
+  let chordPosFollow = true;     // highlight the currently-playing chord in Chord positions (on by default)
+  let activePosChordIdx = 0;     // index (within the non-dim chords shown) currently highlighted
+  let stuckShape = null;         // shape name pinned by a tap on its legend entry
+  let cagedFollow = true;        // selected CAGED chord tracks the playing chord (on by default)
+  let activeRootPc = null;       // pitch class of the currently-playing chord's root, for Root notes mode
+  let scaleTheory = 'parallel';  // 'parallel' (chord's own major/minor) | 'modal' (key's mode)
 
   const fretModeGroup = document.getElementById('fretModeGroup');
   const cagedChordRow = document.getElementById('cagedChordRow');
   const cagedChordGroup = document.getElementById('cagedChordGroup');
+  const cagedFollowToggle = document.getElementById('cagedFollowToggle');
+  const scaleTheoryRow = document.getElementById('scaleTheoryRow');
+  const chordPosRow = document.getElementById('chordPosRow');
+  const chordPosFollowToggle = document.getElementById('chordPosFollowToggle');
   const cagedLegend = document.getElementById('cagedLegend');
   const fretboardSvg = document.getElementById('fretboard');
 
@@ -776,9 +1566,158 @@
     });
   });
 
+  document.getElementById('chordPosNext').addEventListener('click', () => {
+    chordPosIndex++;
+    renderFretboard();
+  });
+
+  document.querySelectorAll('#scaleTheoryGroup .seg-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#scaleTheoryGroup .seg-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      scaleTheory = btn.dataset.value;
+      renderFretboard();
+    });
+  });
+
   function updateFretUI(){
-    cagedChordRow.hidden = fretMode === 'roots';
+    const singleChordModes = fretMode === 'caged' || fretMode === 'penta' || fretMode === 'scale';
+    cagedChordRow.hidden = !singleChordModes;
+    scaleTheoryRow.hidden = fretMode !== 'scale';
+    chordPosRow.hidden = fretMode !== 'positions';
   }
+
+  function updateCagedLock(){
+    cagedChordGroup.classList.toggle('locked', cagedFollow && isPlaying);
+  }
+
+  // while "follows playback" is on, jump the CAGED chord picker to whatever
+  // chord is currently sounding
+  function followPlayingChord(force){
+    if (!cagedFollow || fretMode === 'roots' || fretMode === 'positions') return;
+    const active = scheduledLog[0];
+    if (!active) return;
+    const chord = currentProgression[active.idx];
+    if (!chord || chord.quality === 'dim') return;   // no CAGED shapes for a diminished chord
+    let ci = 0;
+    for (let k = 0; k < active.idx; k++){
+      if (currentProgression[k] && currentProgression[k].quality !== 'dim') ci++;
+    }
+    if (ci === cagedChordIdx && !force) return;
+    cagedChordIdx = ci;
+    cagedChordGroup.querySelectorAll('.seg-btn').forEach((b, k) => b.classList.toggle('active', k === ci));
+    renderFretboard();
+  }
+
+  cagedFollowToggle.addEventListener('change', () => {
+    cagedFollow = cagedFollowToggle.checked;
+    updateCagedLock();
+    if (cagedFollow) followPlayingChord(true);
+  });
+
+  // ---- Chord positions: "Follow playback" highlights the sounding chord,
+  // half-lights the next one, and dims the rest ----
+  function paintPositionsFollow(){
+    const active = fretMode === 'positions' && chordPosFollow && isPlaying;
+    fretboardSvg.classList.toggle('pos-follow', active);
+    if (!active){
+      fretboardSvg.querySelectorAll('.pos-current, .pos-next')
+        .forEach(el => el.classList.remove('pos-current', 'pos-next'));
+      return;
+    }
+    const total = posLegendData.length;
+    const nextIdx = total ? (activePosChordIdx + 1) % total : -1;
+    const cur = String(activePosChordIdx), next = String(nextIdx);
+    fretboardSvg.querySelectorAll('.note-dot').forEach(g => {
+      const tags = (g.getAttribute('data-shapes') || '').split(',').filter(Boolean);
+      const isCurrent = tags.includes(cur);
+      g.classList.toggle('pos-current', isCurrent);
+      g.classList.toggle('pos-next', !isCurrent && tags.includes(next));
+    });
+    fretboardSvg.querySelectorAll('.shape-line').forEach(l => {
+      const tag = l.getAttribute('data-shape');
+      l.classList.toggle('pos-current', tag === cur);
+      l.classList.toggle('pos-next', tag === next);
+    });
+  }
+
+  // while "follow playback" is on, track which chord in the cluster is sounding
+  function followPositionsChord(active, force){
+    if (fretMode !== 'positions' || !chordPosFollow) return;
+    const chord = currentProgression[active.idx];
+    if (!chord || chord.quality === 'dim') return;   // keep showing the last real chord
+    let ci = 0;
+    for (let k = 0; k < active.idx; k++){
+      if (currentProgression[k] && currentProgression[k].quality !== 'dim') ci++;
+    }
+    if (ci === activePosChordIdx && !force) return;
+    activePosChordIdx = ci;
+    renderFretboard();
+  }
+
+  chordPosFollowToggle.addEventListener('change', () => {
+    chordPosFollow = chordPosFollowToggle.checked;
+    if (chordPosFollow && isPlaying && scheduledLog[0]) followPositionsChord(scheduledLog[0], true);
+    else renderFretboard();
+  });
+
+  // ---- spotlight one CAGED shape (or, in Chord positions, one chord) when
+  // its legend entry is hovered / tapped ----
+  function paintShapeSpotlight(shape){
+    fretboardSvg.classList.toggle('shape-focus', !!shape);
+    if (shape) fretboardSvg.classList.remove('pos-follow');   // manual spotlight always wins
+    fretboardSvg.querySelectorAll('.note-dot').forEach(g => {
+      const list = (g.getAttribute('data-shapes') || '').split(',').filter(Boolean);
+      g.classList.toggle('hot', !!shape && list.includes(shape));
+    });
+    fretboardSvg.querySelectorAll('.shape-line').forEach(l => {
+      l.classList.toggle('hot', !!shape && l.getAttribute('data-shape') === shape);
+    });
+  }
+  function refreshShapeSpotlight(hoverShape){
+    const shape = hoverShape || stuckShape;
+    paintShapeSpotlight(shape);
+    if (!shape) paintPositionsFollow();   // restore the live follow-highlight once released
+  }
+
+  cagedLegend.addEventListener('mouseover', e => {
+    const el = e.target.closest('[data-shape]');
+    if (el) refreshShapeSpotlight(el.dataset.shape);
+  });
+  cagedLegend.addEventListener('mouseout', e => {
+    const el = e.target.closest('[data-shape]');
+    if (!el) return;
+    if (e.relatedTarget && el.contains(e.relatedTarget)) return; // moved within the same entry
+    refreshShapeSpotlight(null);
+  });
+  cagedLegend.addEventListener('focusin', e => {
+    const el = e.target.closest('[data-shape]');
+    if (el) refreshShapeSpotlight(el.dataset.shape);
+  });
+  cagedLegend.addEventListener('focusout', e => {
+    const el = e.target.closest('[data-shape]');
+    if (el) refreshShapeSpotlight(null);
+  });
+  cagedLegend.addEventListener('click', e => {
+    const el = e.target.closest('[data-shape]');
+    if (!el) return;
+    e.stopPropagation();
+    stuckShape = stuckShape === el.dataset.shape ? null : el.dataset.shape;
+    refreshShapeSpotlight(null);
+  });
+  cagedLegend.addEventListener('keydown', e => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    const el = e.target.closest('[data-shape]');
+    if (!el) return;
+    e.preventDefault();
+    stuckShape = stuckShape === el.dataset.shape ? null : el.dataset.shape;
+    refreshShapeSpotlight(null);
+  });
+  // tapping / clicking anywhere else releases a pinned shape
+  document.addEventListener('click', () => {
+    if (stuckShape !== null) stuckShape = null;
+    refreshShapeSpotlight(null);
+  });
 
   function rebuildCagedPicker(){
     const cands = currentProgression.filter(c => c.quality !== 'dim');
@@ -788,7 +1727,7 @@
       const b = document.createElement('button');
       b.type = 'button';
       b.className = 'seg-btn' + (i === cagedChordIdx ? ' active' : '');
-      b.textContent = chord.name;
+      b.textContent = displayName(chord);
       b.addEventListener('click', () => {
         cagedChordIdx = i;
         cagedChordGroup.querySelectorAll('.seg-btn').forEach(x => x.classList.remove('active'));
@@ -820,6 +1759,26 @@
       });
     });
     return out;
+  }
+
+  // find the chord's 7th near a triad placement, on a string the triad shape
+  // doesn't already use (used by "Chord positions" when 7 chords is on)
+  function sevenExtras(placement, seventhPc){
+    const usedStrings = new Set(placement.cells.map(c => c.string));
+    const lo = Math.max(0, placement.fretMin - 4);
+    const hi = Math.min(FRET_COUNT, placement.fretMax + 4);
+    const extras = [];
+    for (let s = 0; s < 6; s++){
+      if (usedStrings.has(s)) continue;
+      let best = null, bestDist = Infinity;
+      for (let f = lo; f <= hi; f++){
+        if ((STRING_TUNING[s] + f) % 12 !== seventhPc) continue;
+        const d = Math.abs(f - placement.meanFret);
+        if (d < bestDist){ bestDist = d; best = f; }
+      }
+      if (best !== null) extras.push({ string: s, fret: best });
+    }
+    return extras;
   }
 
   // pentatonic "box" templates, one per CAGED position: two fret offsets per
@@ -862,8 +1821,113 @@
     return out;
   }
 
+  // full 7-note scale box per CAGED position: each box's pentatonic notes plus
+  // the diatonic passing tones (4 / 7) that sit inside its minor-third gaps
+  function scaleBoxPlacements(rootPc, isMinor, scalePcs){
+    return pentaBoxPlacements(rootPc, isMinor).map(p => {
+      const byString = {};
+      p.cells.forEach(c => { (byString[c.string] = byString[c.string] || []).push(c.fret); });
+      const cells = [];
+      Object.keys(byString).forEach(key => {
+        const s = Number(key);
+        const frets = byString[key].slice().sort((a, b) => a - b);
+        frets.forEach(f => cells.push({ string: s, fret: f }));
+        for (let k = 0; k < frets.length - 1; k++){
+          if (frets[k + 1] - frets[k] === 3){
+            for (let mid = frets[k] + 1; mid < frets[k + 1]; mid++){
+              if (scalePcs.has((STRING_TUNING[s] + mid) % 12)) cells.push({ string: s, fret: mid });
+            }
+          }
+        }
+      });
+      return { name: p.name, anchor: p.anchor, cells };
+    });
+  }
+
   function computeFretData(){
     if (!currentProgression.length) return { markers: [], lines: [] };
+
+    if (fretMode === 'positions'){
+      const chords = currentProgression.filter(c => c.quality !== 'dim');
+      if (!chords.length) return { markers: [], lines: [] };
+
+      // every CAGED placement available to each chord, cheapest-fret first —
+      // the G-shape is only realistically playable in its open-chord form
+      // (barring it up the neck is a stretch few players use), so drop every
+      // G-shape placement except that one
+      const perChordPlacements = chords.map(chord => {
+        const rootPc = SEMITONE[chord.note] % 12;
+        const shapeSet = chord.quality === 'min' ? CAGED_MINOR : CAGED_MAJOR;
+        return cagedPlacements(rootPc, shapeSet)
+          .filter(p => p.name !== 'G' || p.fretMin === 0)
+          .sort((a, b) => a.meanFret - b.meanFret);
+      });
+
+      // "Next" cycles through the first chord's own positions (low to high,
+      // wrapping back to the lowest); every other chord picks whichever of
+      // its own placements sits closest to that same fret, so the whole set
+      // stays clustered together horizontally
+      const refPlacements = perChordPlacements.find(p => p.length) || [];
+      if (!refPlacements.length) return { markers: [], lines: [] };
+      const idx = ((chordPosIndex % refPlacements.length) + refPlacements.length) % refPlacements.length;
+      const targetFret = refPlacements[idx].meanFret;
+
+      const lines = [];
+      const cellMap = new Map();
+      posLegendData = [];
+
+      chords.forEach((chord, i) => {
+        const placements = perChordPlacements[i];
+        if (!placements.length) return;
+        const placement = placements.reduce((best, p) =>
+          Math.abs(p.meanFret - targetFret) < Math.abs(best.meanFret - targetFret) ? p : best);
+        const color = ROOT_PALETTE[i % ROOT_PALETTE.length];
+        const tag = String(i);   // reuses the shape-spotlight mechanism, keyed by chord index
+        posLegendData.push({ name: displayName(chord), numeral: chord.numeral, color, tag });
+
+        const rootPc = SEMITONE[chord.note] % 12;
+        const thirdPc = SEMITONE[chord.third] % 12;
+        const fifthPc = SEMITONE[chord.fifth] % 12;
+        const nameOf = pc =>
+          pc === rootPc ? chord.note : pc === thirdPc ? chord.third :
+          pc === fifthPc ? chord.fifth : chord.seventh;
+
+        if (placement.cells.length > 1){
+          lines.push({ color, shape: tag, cells: placement.cells.map(c => ({ string: c.string, fret: c.fret })) });
+        }
+
+        const cellsToShow = placement.cells.slice();
+        if (useSevenths && chord.seventh){
+          sevenExtras(placement, SEMITONE[chord.seventh] % 12).forEach(e => cellsToShow.push(e));
+        }
+
+        cellsToShow.forEach(c => {
+          const key = c.string + ':' + c.fret;
+          const pc = (STRING_TUNING[c.string] + c.fret) % 12;
+          if (!cellMap.has(key)) cellMap.set(key, { string: c.string, fret: c.fret, contribs: [] });
+          cellMap.get(key).contribs.push({ color, tag, label: nameOf(pc), isRoot: pc === rootPc });
+        });
+      });
+
+      const markers = [...cellMap.values()].map(m => {
+        const isRoot = m.contribs.some(c => c.isRoot);
+        const shapes = [...new Set(m.contribs.map(c => c.tag))];
+        const seenColors = new Set();
+        const uniqueContribs = m.contribs.filter(c => {
+          if (seenColors.has(c.color)) return false;
+          seenColors.add(c.color);
+          return true;
+        });
+        if (uniqueContribs.length === 1){
+          return { string: m.string, fret: m.fret, color: uniqueContribs[0].color, label: uniqueContribs[0].label, isRoot, shapes };
+        }
+        // two different chords share this exact fret — split the dot between them
+        const two = uniqueContribs.slice(0, 2);
+        return { string: m.string, fret: m.fret, split: two.map(c => c.color), label: two[0].label, isRoot, shapes };
+      });
+
+      return { markers, lines };
+    }
 
     if (fretMode === 'penta'){
       const cands = currentProgression.filter(c => c.quality !== 'dim');
@@ -884,7 +1948,7 @@
       // string, following the actual fingering — same as "CAGED chords" mode
       const lines = cagedPlacements(rootPc, isMinor ? CAGED_MINOR : CAGED_MAJOR)
         .filter(p => p.cells.length > 1)
-        .map(p => ({ color: CAGED_COLORS[p.name], cells: p.cells.map(c => ({ string: c.string, fret: c.fret })) }));
+        .map(p => ({ color: CAGED_COLORS[p.name], shape: p.name, cells: p.cells.map(c => ({ string: c.string, fret: c.fret })) }));
 
       // every pentatonic note is coloured by the CAGED box(es) that actually
       // contain it: notes shared by two adjacent boxes get a split dot
@@ -895,7 +1959,8 @@
           const pc = (STRING_TUNING[s] + f) % 12;
           if (!(pc in degByPc)) continue;
           const owners = placements.filter(p => p.cells.some(c => c.string === s && c.fret === f));
-          const base = { string: s, fret: f, label: degByPc[pc], isRoot: pc === rootPc };
+          const ownerNames = [...new Set(owners.map(o => o.name))];
+          const base = { string: s, fret: f, label: degByPc[pc], isRoot: pc === rootPc, shapes: ownerNames };
           if (owners.length >= 2){
             const two = owners.slice()
               .sort((a, b) => Math.abs(f - a.anchor) - Math.abs(f - b.anchor))
@@ -907,7 +1972,76 @@
           } else {
             let best = null, bd = Infinity;
             placements.forEach(p => { const d = Math.abs(f - p.anchor); if (d < bd){ bd = d; best = p; } });
-            markers.push({ ...base, color: best ? CAGED_COLORS[best.name] : '#6b655b' });
+            markers.push({ ...base, shapes: best ? [best.name] : [], color: best ? CAGED_COLORS[best.name] : '#6b655b' });
+          }
+        }
+      }
+      return { markers, lines };
+    }
+
+    if (fretMode === 'scale'){
+      const cands = currentProgression.filter(c => c.quality !== 'dim');
+      const chord = cands[Math.min(cagedChordIdx, cands.length - 1)];
+      if (!chord) return { markers: [], lines: [] };
+      const rootPc = SEMITONE[chord.note] % 12;
+      const isMinor = chord.quality === 'min';
+
+      let degByPc, scalePcs;
+      if (scaleTheory === 'modal'){
+        // chord-scale theory: the mode of the progression's key rooted on
+        // this chord (e.g. the IV chord of a major key reads as Lydian)
+        const parentNotes = currentMode === 'major' ? MAJOR_KEYS[currentTonic] : MINOR_KEYS[currentTonic];
+        const pcs = new Set(parentNotes.map(n => SEMITONE[n] % 12));
+        [chord.note, chord.third, chord.fifth].forEach(n => pcs.add(SEMITONE[n] % 12));
+        const degNames = isMinor
+          ? ['1', '♭2', '2', '♭3', '3', '4', '♭5', '5', '♭6', '6', '♭7', '7']
+          : ['1', '♭2', '2', '♭3', '3', '4', '♯4', '5', '♭6', '6', '♭7', '7'];
+        degByPc = {};
+        pcs.forEach(pc => { degByPc[pc] = degNames[(pc - rootPc + 12) % 12]; });
+        scalePcs = pcs;
+      } else {
+        // parallel scale: the scale matching the chord's own quality, rooted
+        // on the chord — a major chord gets the major (Ionian) scale, a minor
+        // chord the natural minor (Aeolian) scale — independent of the key
+        const scaleDeg = isMinor
+          ? [[0, '1'], [2, '2'], [3, '♭3'], [5, '4'], [7, '5'], [8, '♭6'], [10, '♭7']]
+          : [[0, '1'], [2, '2'], [4, '3'], [5, '4'], [7, '5'], [9, '6'], [11, '7']];
+        degByPc = {};
+        scaleDeg.forEach(([off, d]) => { degByPc[(rootPc + off) % 12] = d; });
+        scalePcs = new Set(Object.keys(degByPc).map(Number));
+      }
+
+      const boxes = scaleBoxPlacements(rootPc, isMinor, scalePcs);
+      const onNeck = b => b.anchor >= 0 && b.anchor <= FRET_COUNT;
+      cagedShapesShown = CAGED_ORDER.filter(n => boxes.some(b => b.name === n && onNeck(b)));
+
+      const lines = cagedPlacements(rootPc, isMinor ? CAGED_MINOR : CAGED_MAJOR)
+        .filter(p => p.cells.length > 1)
+        .map(p => ({ color: CAGED_COLORS[p.name], shape: p.name, cells: p.cells.map(c => ({ string: c.string, fret: c.fret })) }));
+
+      const markers = [];
+      for (let s = 0; s < 6; s++){
+        for (let f = 0; f <= FRET_COUNT; f++){
+          const pc = (STRING_TUNING[s] + f) % 12;
+          if (!scalePcs.has(pc)) continue;
+          // only boxes that genuinely sit on the neck can share a note; a
+          // partial box poking past the nut / 15th fret doesn't create a split
+          const owners = boxes.filter(b => onNeck(b) && b.cells.some(c => c.string === s && c.fret === f));
+          const ownerNames = [...new Set(owners.map(o => o.name))];
+          const base = { string: s, fret: f, label: degByPc[pc],
+            isRoot: pc === rootPc, shapes: ownerNames };
+          if (ownerNames.length >= 2){
+            const two = owners.slice()
+              .sort((a, b) => Math.abs(f - a.anchor) - Math.abs(f - b.anchor))
+              .slice(0, 2)
+              .sort((a, b) => a.anchor - b.anchor);
+            markers.push({ ...base, split: [CAGED_COLORS[two[0].name], CAGED_COLORS[two[1].name]] });
+          } else if (ownerNames.length === 1){
+            markers.push({ ...base, color: CAGED_COLORS[ownerNames[0]] });
+          } else {
+            let best = null, bd = Infinity;
+            boxes.forEach(b => { const d = Math.abs(f - b.anchor); if (d < bd){ bd = d; best = b; } });
+            markers.push({ ...base, shapes: best ? [best.name] : [], color: best ? CAGED_COLORS[best.name] : '#6b655b' });
           }
         }
       }
@@ -930,7 +2064,10 @@
       for (let s = 0; s < 6; s++){
         for (let f = 0; f <= FRET_COUNT; f++){
           const pc = (STRING_TUNING[s] + f) % 12;
-          if (pc in pcName) markers.push({ string: s, fret: f, color: pcColor[pc], label: pcName[pc], isRoot: false });
+          if (pc in pcName){
+            markers.push({ string: s, fret: f, color: pcColor[pc], label: pcName[pc],
+              isRoot: pc === activeRootPc, pc });
+          }
         }
       }
       return { markers, lines: [] };
@@ -971,7 +2108,7 @@
           }
           cells.get(key).contribs.push({ name, meanFret });
         });
-        if (lineCells.length > 1) lines.push({ color: CAGED_COLORS[name], cells: lineCells });
+        if (lineCells.length > 1) lines.push({ color: CAGED_COLORS[name], shape: name, cells: lineCells });
       });
     });
     cagedShapesShown = CAGED_ORDER.filter(n => rendered.has(n));
@@ -980,14 +2117,14 @@
       const label = nameOf((STRING_TUNING[m.string] + m.fret) % 12);
       const names = [...new Set(m.contribs.map(c => c.name))];
       if (names.length === 1){
-        return { string: m.string, fret: m.fret, isRoot: m.isRoot, label,
+        return { string: m.string, fret: m.fret, isRoot: m.isRoot, label, shapes: names,
           color: CAGED_COLORS[names[0]] };
       }
       // shared note: order the two shapes left-to-right by their position on the neck
       const sorted = [...m.contribs].sort((a, b) => a.meanFret - b.meanFret);
       const left = sorted[0].name;
       const right = [...sorted].reverse().find(c => c.name !== left).name;
-      return { string: m.string, fret: m.fret, isRoot: m.isRoot, label,
+      return { string: m.string, fret: m.fret, isRoot: m.isRoot, label, shapes: names,
         split: [CAGED_COLORS[left], CAGED_COLORS[right]] };
     });
     return { markers, lines };
@@ -1000,15 +2137,15 @@
         .join('');
       return;
     }
-    const parts = cagedShapesShown.map(n =>
-      `<span><i style="background:${CAGED_COLORS[n]}"></i>${n} shape</span>`);
-    parts.push(`<span><i class="ring"></i>root</span>`);
-    if (fretMode === 'penta'){
-      parts.push(`<span>split dot = shared by two boxes</span>`);
-      parts.push(`<span>lines trace chord tones</span>`);
-    } else {
-      parts.push(`<span>split dot = shared by two shapes</span>`);
+    if (fretMode === 'positions'){
+      cagedLegend.innerHTML = posLegendData
+        .map(c => `<span data-shape="${c.tag}" tabindex="0" role="button" aria-label="Highlight ${c.name}"><i style="background:${c.color}"></i>${c.name}<em>${c.numeral}</em></span>`)
+        .join('');
+      return;
     }
+    const parts = cagedShapesShown.map(n =>
+      `<span data-shape="${n}" tabindex="0" role="button" aria-label="Highlight ${n} shape"><i style="background:${CAGED_COLORS[n]}"></i>${n} shape</span>`);
+    parts.push(`<span><i class="ring"></i>root</span>`);
     cagedLegend.innerHTML = parts.join('');
   }
 
@@ -1042,12 +2179,15 @@
 
     lines.forEach(ln => {
       const pts = ln.cells.map(c => `${fretX(c.fret)},${stringY(c.string)}`).join(' ');
-      els.push(`<polyline class="shape-line" points="${pts}" stroke="${ln.color}"/>`);
+      els.push(`<polyline class="shape-line" data-shape="${ln.shape || ''}" points="${pts}" stroke="${ln.color}"/>`);
     });
 
     markers.forEach(m => {
-      const cx = fretX(m.fret), cy = stringY(m.string), r = m.dim ? 7 : 8.5;
-      let g = `<g class="note-dot${m.dim ? ' dim' : ''}">`;
+      const cx = fretX(m.fret), cy = stringY(m.string), r = 9.5;
+      const fs = (m.label && m.label.length > 1) ? 10.5 : 13;
+      const shapeAttr = (m.shapes && m.shapes.length) ? ` data-shapes="${m.shapes.join(',')}"` : '';
+      const rootPcAttr = m.pc !== undefined ? ` data-rootpc="${m.pc}"` : '';
+      let g = `<g class="note-dot"${shapeAttr}${rootPcAttr}>`;
       if (m.split){
         // left half = left shape's colour, right half = right shape's colour
         g += `<path d="M${cx},${cy - r} A${r},${r} 0 0 0 ${cx},${cy + r} Z" fill="${m.split[0]}"/>`;
@@ -1056,13 +2196,29 @@
         g += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${m.color}"/>`;
       }
       if (m.isRoot) g += `<circle class="dot-ring" cx="${cx}" cy="${cy}" r="${r}" fill="none"/>`;
-      if (m.label) g += `<text x="${cx}" y="${cy + 3}" text-anchor="middle">${m.label}</text>`;
+      if (m.label) g += `<text x="${cx}" y="${cy + fs * 0.34}" font-size="${fs}" text-anchor="middle">${m.label}</text>`;
       g += '</g>';
       els.push(g);
     });
 
     fretboardSvg.innerHTML = els.join('');
     renderFretLegend();
+
+    if (fretMode === 'roots' && activeRootPc != null){
+      // highlight the root(s) of whichever chord is currently playing
+      fretboardSvg.classList.add('shape-focus');
+      fretboardSvg.querySelectorAll('.note-dot[data-rootpc]').forEach(g => {
+        g.classList.toggle('hot', g.getAttribute('data-rootpc') === String(activeRootPc));
+      });
+    } else if (fretMode === 'positions'){
+      stuckShape = null;
+      fretboardSvg.classList.remove('shape-focus');
+      paintPositionsFollow();
+    } else {
+      // a rebuilt board otherwise drops any active spotlight
+      stuckShape = null;
+      fretboardSvg.classList.remove('shape-focus');
+    }
   }
 
   function getTempo(){ return Number(tempoInput.value); }
@@ -1071,6 +2227,15 @@
 
   tempoInput.addEventListener('input', () => {
     tempoVal.textContent = `${getTempo()} BPM`;
+    document.querySelectorAll('.bpm-preset')
+      .forEach(b => b.classList.toggle('active', Number(b.dataset.bpm) === getTempo()));
+  });
+
+  document.querySelectorAll('.bpm-preset').forEach(btn => {
+    btn.addEventListener('click', () => {
+      tempoInput.value = btn.dataset.bpm;
+      tempoInput.dispatchEvent(new Event('input'));
+    });
   });
 
   let isPlaying = false;
@@ -1092,41 +2257,99 @@
     chordIdx = 0;
     beatInChord = 0;
     scheduledLog = [];
+    activeRootPc = null;
+    activePosChordIdx = 0;
     document.querySelectorAll('.chord').forEach(el => el.classList.remove('dim', 'active'));
     measureReadout.textContent = '';
+  }
+
+  // in Root notes mode, ring + spotlight the root(s) of whichever chord is playing
+  function followRootHighlight(active){
+    if (fretMode !== 'roots') return;
+    const chord = currentProgression[active.idx];
+    if (!chord) return;
+    const rootPc = SEMITONE[chord.note] % 12;
+    if (rootPc === activeRootPc) return;
+    activeRootPc = rootPc;
+    renderFretboard();
   }
 
   const LOOKAHEAD_MS = 25;
   const SCHEDULE_AHEAD_SEC = 0.12;
 
+  function scheduleSimpleBeat(chord, secondsPerBeat, beatInMeasure, isDownbeat){
+    const noteBeats = getNoteBeats();
+    const shouldTrigger = beatInMeasure % noteBeats === 0;
+    if (chord && shouldTrigger){
+      const interval = secondsPerBeat * noteBeats;
+      const duration = Math.min(interval * 2.3, 2.6 * noteBeats);
+      const velocity = isDownbeat ? 1 : 0.62;
+      if (rootOnlyToggle.checked){
+        // boost the lone root so it sits at a similar loudness to a full triad
+        playNote(noteFreq(chord.note, ROOT_OCTAVE), nextNoteTime, duration, velocity * 1.9);
+      } else {
+        playChord(chord, nextNoteTime, duration, velocity);
+      }
+      scheduledLog.push({
+        idx: chordIdx, time: nextNoteTime,
+        measure: Math.floor(beatInChord / 4) + 1,
+        beat: (beatInChord % 4) + 1,
+      });
+    }
+    if (clickToggle.checked) playHiHat(nextNoteTime);
+  }
+
+  function scheduleStyleBeat(style, chord, secondsPerBeat, beatInMeasure){
+    const subPerBeat = style.grid / 4;
+    const slotDur = secondsPerBeat / subPerBeat;
+    const nextChord = currentProgression[(chordIdx + 1) % currentProgression.length];
+    const approachNext = Math.floor(beatInChord / 4) === measuresPerChord - 1;
+    const accentEvery = style.grid / 4;
+
+    for (let k = 0; k < subPerBeat; k++){
+      const slot = beatInMeasure * subPerBeat + k;
+      const t = nextNoteTime + k * slotDur;
+
+      if (style.kick && style.kick.includes(slot)) playKick(t, style.kickVel || 0.9);
+      if (style.snare && style.snare.includes(slot)) playSnare(t, style.snareVel || 0.85);
+      if (style.hat && style.hat.includes(slot)){
+        playHiHat(t, slot % accentEvery === 0 ? 0.55 : 0.32);
+      }
+      if (style.ride && style.ride.includes(slot)) playRide(t, 0.55);
+
+      if (chord){
+        const ce = style.chord && style.chord.find(e => e.slot === slot);
+        if (ce) playStyleVoice(style.voice, chord, t, ce.dur * slotDur, ce.vel);
+
+        const be = style.bass && style.bass.find(e => e.slot === slot);
+        if (be){
+          const freq = 'walk' in be
+            ? walkBassFreq(chord, nextChord, be.walk, approachNext)
+            : bassFreqAt(SEMITONE[chord.note] % 12, be.off, 2);
+          playBass(freq, t, be.dur * slotDur, be.vel);
+        }
+      }
+    }
+
+    if (chord){
+      scheduledLog.push({
+        idx: chordIdx, time: nextNoteTime,
+        measure: Math.floor(beatInChord / 4) + 1,
+        beat: (beatInChord % 4) + 1,
+      });
+    }
+  }
+
   function scheduler(){
     while (nextNoteTime < audioCtx.currentTime + SCHEDULE_AHEAD_SEC){
       const chord = currentProgression[chordIdx];
       const secondsPerBeat = 60 / getTempo();
-      const noteBeats = getNoteBeats();
       const beatInMeasure = beatInChord % 4;
-      const isDownbeat = beatInMeasure === 0;
-      const shouldTrigger = beatInMeasure % noteBeats === 0;
 
-      if (chord && shouldTrigger){
-        const interval = secondsPerBeat * noteBeats;
-        const duration = Math.min(interval * 2.3, 2.6 * noteBeats);
-        const velocity = isDownbeat ? 1 : 0.62;
-        if (rootOnlyToggle.checked){
-          // boost the lone root so it sits at a similar loudness to a full triad
-          playNote(noteFreq(chord.note, ROOT_OCTAVE), nextNoteTime, duration, velocity * 1.9);
-        } else {
-          playChord(chord, nextNoteTime, duration, velocity);
-        }
-        scheduledLog.push({
-          idx: chordIdx, time: nextNoteTime,
-          measure: Math.floor(beatInChord / 4) + 1,
-          beat: (beatInChord % 4) + 1,
-        });
-      }
-
-      if (clickToggle.checked){
-        playHiHat(nextNoteTime);
+      if (currentStyle === 'simple'){
+        scheduleSimpleBeat(chord, secondsPerBeat, beatInMeasure, beatInMeasure === 0);
+      } else {
+        scheduleStyleBeat(STYLES[currentStyle].variants[currentVariant], chord, secondsPerBeat, beatInMeasure);
       }
 
       nextNoteTime += secondsPerBeat;
@@ -1164,6 +2387,9 @@
       });
       measureReadout.textContent =
         `${Math.min(active.measure, measuresPerChord)}.${active.beat}`;
+      if (cagedFollow) followPlayingChord(false);
+      followRootHighlight(active);
+      followPositionsChord(active);
     }
     requestAnimationFrame(syncHighlight);
   }
@@ -1186,19 +2412,82 @@
       scheduler();
       requestAnimationFrame(syncHighlight);
       setPlayLabel('Pause');
+      updateCagedLock();
+      if (fretMode === 'positions') renderFretboard();   // paint the follow-playback tiers from beat one
     } else {
       isPlaying = false;
       clearTimeout(schedulerId);
       document.querySelectorAll('.chord').forEach(el => el.classList.remove('dim', 'active'));
       measureReadout.textContent = '';
       setPlayLabel('Play');
+      updateCagedLock();
+      if (activeRootPc != null){
+        activeRootPc = null;
+        if (fretMode === 'roots') renderFretboard();
+      }
+      if (fretMode === 'positions') renderFretboard();   // drop the follow-playback highlight
     }
   }
 
   playBtn.addEventListener('click', togglePlay);
   playBtn2.addEventListener('click', togglePlay);
 
+  // ---------- Info tooltips (hover/focus on desktop, tap on touch) ----------
+
+  const tooltipBubble = document.getElementById('tooltipBubble');
+  let tooltipStuck = null;   // the info-dot button a tap has pinned open, if any
+
+  function positionTooltip(btn){
+    const r = btn.getBoundingClientRect();
+    const bw = tooltipBubble.offsetWidth, bh = tooltipBubble.offsetHeight;
+    let left = r.left + r.width / 2 - bw / 2;
+    left = Math.max(8, Math.min(left, window.innerWidth - bw - 8));
+    let top = r.bottom + 8;
+    if (top + bh > window.innerHeight - 8) top = r.top - bh - 8;
+    tooltipBubble.style.left = `${left}px`;
+    tooltipBubble.style.top = `${top}px`;
+  }
+  function showTooltip(btn){
+    tooltipBubble.textContent = btn.dataset.tip;
+    tooltipBubble.hidden = false;
+    positionTooltip(btn);
+  }
+  function hideTooltip(){
+    tooltipBubble.hidden = true;
+  }
+
+  document.querySelectorAll('.info-dot').forEach(btn => {
+    btn.setAttribute('aria-label', 'More info');
+    btn.addEventListener('mouseenter', () => { if (!tooltipStuck) showTooltip(btn); });
+    btn.addEventListener('mouseleave', () => { if (!tooltipStuck) hideTooltip(); });
+    btn.addEventListener('focus', () => showTooltip(btn));
+    btn.addEventListener('blur', () => { if (tooltipStuck !== btn) hideTooltip(); });
+    btn.addEventListener('click', e => {
+      e.preventDefault();      // don't let a parent <label> forward the tap to its checkbox
+      e.stopPropagation();
+      if (tooltipStuck === btn){
+        tooltipStuck = null;
+        btn.classList.remove('active');
+        hideTooltip();
+      } else {
+        if (tooltipStuck) tooltipStuck.classList.remove('active');
+        tooltipStuck = btn;
+        btn.classList.add('active');
+        showTooltip(btn);
+      }
+    });
+  });
+  // tapping / clicking anywhere else dismisses a pinned tooltip
+  document.addEventListener('click', () => {
+    if (tooltipStuck){ tooltipStuck.classList.remove('active'); tooltipStuck = null; }
+    hideTooltip();
+  });
+  window.addEventListener('scroll', () => { if (tooltipStuck) positionTooltip(tooltipStuck); }, true);
+  window.addEventListener('resize', () => { if (tooltipStuck) positionTooltip(tooltipStuck); });
+
+  buildKeySelect();
   updateFretUI();
+  updatePlaybackUI();
   render();
 </script>
 
