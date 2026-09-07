@@ -29,12 +29,14 @@ names the tab you're on.
   wherever you land, and switching Major/Minor holds the same degrees in the
   other mode. A progression loaded from a genre example isn't diatonic, so it
   shifts by the same interval instead, spelled the way the new key spells it
-- Preset progressions — the blues (12-bar, quick change, jazz blues, minor
-  blues, 8-bar, slow blues), I–IV–V, I–IV–V–IV, I–V–vi–IV, ii–V–I, the
-  I–VI7–ii–V7 turnaround, Pachelbel's canon, the Andalusian i–VII–VI–V and a
-  few more. They're stored as scale degrees, so a preset lands in whatever
-  key you're in and follows you when you change key, and every chord stays
-  editable afterwards; changing one drops the preset label but keeps the
+- Preset progressions, in one picker that names each the way people do with
+  the numerals beside it — Blues (12-bar, quick change, jazz blues, minor
+  blues, 8-bar, slow blues), Three-chord · I–IV–V, Four-chord pop ·
+  I–V–vi–IV, 50s doo-wop · I–vi–IV–V, Jazz cadence · ii–V–I, Jazz turnaround
+  · I–VI7–ii–V7, Canon, Andalusian · i–VII–VI–V and a few more. They're
+  stored as scale degrees, so a preset lands in whatever key you're in and
+  follows you when you change key, and every chord stays editable
+  afterwards; changing one drops the picker back to "None" but keeps the
   rest. The blues presets force dominant 7ths, which no key's own diatonic
   7ths give you — I7 IV7 V7 in a major key, i7 iv7 V7 in a minor one, the V
   a real dominant either way. A preset that only makes sense in one mode
@@ -79,16 +81,15 @@ names the tab you're on.
   chord names instead, since its chords aren't degrees of anything
 - Info tooltips (ⓘ) on the less-obvious controls — hover on desktop, tap on
   touch, tap elsewhere to dismiss
-- Web Audio playback via icon Play/Pause buttons (both the corner button on
-  the chord display and the main one in the Style panel), with the panel
-  split into a "Style" section (Genre,
-  Feel, and the Simple-only note value / metronome click / roots-only
-  options) and an "All styles" section (tempo — with 60/90/120 BPM presets —
-  measures per chord, and a 4-beat count-in) that always applies. A matching
-  Genre row (Simple / Rock / Blues / Jazz / Pop / Funk only, no Feel or other
-  advanced options) also sits at the bottom of the chord display panel for
-  quick switching, kept in sync with the main Style section. A "Genre"
-  picker chooses the backing:
+- The tab is three panels in the order a session runs: build the
+  progression (key, preset, the per-chord pickers, and what a random roll
+  may use), then the chords with the transport right under them (Play,
+  tempo with 60/90/120 shortcuts, style and feel, the Simple-only note value,
+  and the metronome / roots-only / count-in options), then the fretboard. The
+  one re-roll button sits at the foot of the build panel and says what it
+  will do — "Re-roll 2 random chords" — or goes quiet when every chord is
+  pinned, since then it has nothing to do. A "Style" picker chooses the
+  backing:
   Simple — the plain piano voicing, with note value (quarter / half / whole),
   metronome click and a roots-only mode;
   Rock — driving 8th-note piano chords and a basic kit, with a half-time
@@ -105,9 +106,8 @@ names the tab you're on.
   Every style (except Simple) offers three "Feel" variants — its canonical
   groove plus two common alternatives
 - Live chord highlighting synced to playback, with a measure.beat position
-  readout and a "BPM"-labelled trio of 60/90/120 shortcut buttons in the
-  corner of the key display (the key itself is shown plainly, e.g.
-  "C major" / "C#m")
+  readout under the chords (the key itself is shown plainly above them,
+  e.g. "C major" / "C#m")
 - Fretboard panel (6 strings, 15 frets) with five views, "Roots" and
   "Chord positions" first:
   Roots — every root-note location for the progression (colour-coded,
