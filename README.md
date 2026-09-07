@@ -136,7 +136,16 @@ names the tab you're on.
   e.g. "C major" / "C#m")
 - Fretboard panel (6 strings, 15 frets) with five views, each named in one
   word — the tab is already CAGED practice and the legend already says
-  "C shape", so the prefix was carrying nothing:
+  "C shape", so the prefix was carrying nothing. One **View** toggle above
+  them all decides whether you're looking at the whole neck or at one hand
+  position, and it stays put when you switch view, so following a chord into
+  its scale doesn't throw you back out to the whole neck. In one position a
+  single Position row appears — ◂ ▸ to move the hand, **Hold position** to pin
+  it while the chords change — and each view narrows to its own notes inside
+  that stretch. The views number their positions differently (a pentatonic box
+  isn't the same width as a CAGED grip), so switching view re-picks the
+  nearest one rather than carrying the index across, and the hand stays where
+  it was:
   Roots — every root-note location for the progression (colour-coded,
   legend gives each root's roman numeral; while playing, the currently
   sounding chord's root is ringed and spotlighted);

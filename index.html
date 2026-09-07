@@ -904,6 +904,15 @@
         <button type="button" class="seg-btn" data-value="scale">Scales</button>
       </div>
     </div>
+    <div class="setting" id="viewRow">
+      <span class="setting-label">View
+        <button type="button" class="info-dot" data-tip="Whether you're looking at the whole neck or at one hand position, in whichever view you're in. Across the neck draws everything, everywhere. In one position narrows to one stretch of frets and brings up the Position row to move it around — for Chords that's the whole progression gathered under one hand, and for the others it's that view's notes inside the position. The choice stays put when you switch views, so following a chord into its scale doesn't throw you back out to the whole neck.">i</button>
+      </span>
+      <div class="segmented" id="viewGroup">
+        <button type="button" class="seg-btn active" data-value="neck">Across the neck</button>
+        <button type="button" class="seg-btn" data-value="position">In one position</button>
+      </div>
+    </div>
     <div class="setting" id="displayRow">
       <span class="setting-label">Display
         <button type="button" class="info-dot" data-tip="Frets zooms in on a stretch of the neck — the same drawing over fewer frets, so the dots are bigger and easier to read, especially on a phone. &quot;Fit to box&quot; follows the single box you're practising in. Colour fills each dot by the CAGED shape it belongs to, or by what the note is in the chord — root, 3rd, 5th, 7th — which is the more useful reading when you're playing over changes.">i</button>
@@ -936,14 +945,10 @@
       </div>
     </div>
     <div class="setting" id="cagedViewRow" hidden>
-      <span class="setting-label">Show
-        <button type="button" class="info-dot" data-tip="Two ways of reading the same chords. Across the neck: one chord at a time, its five CAGED shapes everywhere they fall — the view for learning where a chord lives. In one position: the whole progression under one hand, the chord that's sounding lit and the rest of the changes behind it — the view for playing through them without moving. Whole arpeggio opens each shape out into every chord tone within reach of it, with the grip still traced through the middle; it applies to both.">i</button>
+      <span class="setting-label">Shapes
+        <button type="button" class="info-dot" data-tip="Whole arpeggio opens each CAGED shape out into every chord tone within reach of it, with the grip still traced through the middle — so you see the notes around the shape as well as the shape. It applies to both readings.">i</button>
       </span>
       <div class="row-control">
-        <div class="segmented" id="cagedReadingGroup">
-          <button type="button" class="seg-btn active" data-value="neck">Across the neck</button>
-          <button type="button" class="seg-btn" data-value="position">In one position</button>
-        </div>
         <label class="inline-check">
           <input type="checkbox" id="wholeArpeggioToggle">
           <span>Whole arpeggio</span>
@@ -966,10 +971,6 @@
         <button type="button" class="info-dot" data-tip="Which stretch of neck you're working in, and how it gets chosen — ◂ ▸ walk it up and down.">i</button>
       </span>
       <div class="row-control">
-        <label class="inline-check" id="singleBoxCheck">
-          <input type="checkbox" id="singleBoxToggle">
-          <span>Single box</span>
-        </label>
         <div class="segmented" id="boxStep">
           <button type="button" class="seg-btn" id="boxPrev" aria-label="Previous box">◂</button>
           <button type="button" class="seg-btn" id="boxNext" aria-label="Next box">▸</button>

@@ -42,9 +42,11 @@
   let cagedFollow = true;        // selected CAGED chord tracks the playing chord (on by default)
   let activeRootPc = null;       // pitch class of the currently-playing chord's root, for Root notes mode
   let scaleTheory = 'parallel';  // 'parallel' (chord's own major/minor) | 'modal' (key's mode)
-  // pentatonic / scale views: one box at a time, and whether that stretch of
-  // frets stays put when the chord changes
-  let singleBox = false;
+  // Every view reads one of two ways, and the choice is shared: you're either
+  // looking at the whole neck or at one hand position, whichever mode you're
+  // in. Switching mode keeps the reading, so moving from a chord to its scale
+  // doesn't throw you back out to the whole neck.
+  let inPosition = false;
   let holdPosition = false;
   let boxIndex = 0;              // which box, low to high, when showing one
   let heldWindow = null;         // { min, max } of frets kept while holding position
@@ -59,7 +61,6 @@
   // progression under one hand. Everything about choosing a position — the
   // stepper, voice leading, holding — belongs to the second; the first has no
   // position to choose, it shows them all.
-  let cagedReading = 'neck';     // 'neck' | 'position'
   // How the position gets chosen, once you're reading one:
   //   box     — one CAGED box, every chord clipped into it
   //   cluster — each chord at its own best position, near a shared fret
@@ -90,7 +91,7 @@
   // into one box. This is what the old Progression mode drew; it lives inside
   // Chords now, as one of the ways a position gets chosen.
   const clusterMode = () =>
-    fretMode === 'caged' && cagedReading === 'position' && cagedPosMethod !== 'box';
+    fretMode === 'caged' && inPosition && cagedPosMethod !== 'box';
 
   // recolour a finished marker list, keeping everything else about it
   function applyColorBy(markers, chord){
@@ -117,6 +118,11 @@
       btn.classList.add('active');
       fretMode = btn.dataset.value;
       heldWindow = null;
+      // Each view numbers its positions differently — a pentatonic box list
+      // isn't the same length as a list of CAGED grips — so carrying the raw
+      // index across a view change moves the hand for no reason. Re-pick by
+      // where the hand already is, exactly as a chord change does.
+      rebaseBox = true;
       updateFretUI();
       renderFretboard();
     });
@@ -132,7 +138,6 @@
   });
 
   const boxRow = document.getElementById('boxRow');
-  const singleBoxToggle = document.getElementById('singleBoxToggle');
   const holdPositionToggle = document.getElementById('holdPositionToggle');
   const fretRangeSelect = document.getElementById('fretRangeSelect');
   const colorByGroup = document.getElementById('colorByGroup');
@@ -141,8 +146,7 @@
   const cagedViewRow = document.getElementById('cagedViewRow');
   const wholeArpeggioToggle = document.getElementById('wholeArpeggioToggle');
   const cagedPosMethodGroup = document.getElementById('cagedPosMethodGroup');
-  const cagedReadingGroup = document.getElementById('cagedReadingGroup');
-  const singleBoxCheck = document.getElementById('singleBoxCheck');
+  const viewGroup = document.getElementById('viewGroup');
   const cagedPosMethodWrap = document.getElementById('cagedPosMethodWrap');
 
   document.querySelectorAll('#stringSetGroup .seg-btn').forEach(btn => {
@@ -154,33 +158,30 @@
   });
 
   function updateFretUI(){
-    const singleChordModes = ['caged', 'triads3', 'penta', 'scale'].includes(fretMode);
-    cagedChordRow.hidden = !singleChordModes;
+    const chordModes = ['caged', 'triads3', 'penta', 'scale'].includes(fretMode);
+    // Every view but Roots is about one chord, so it picks one. Roots draws
+    // every chord's roots at once and needs no chord — except in one position,
+    // where the chord is what says which position that is.
+    cagedChordRow.hidden = !chordModes && !inPosition;
     scaleTheoryRow.hidden = fretMode !== 'scale';
     stringSetRow.hidden = fretMode !== 'triads3';
     cagedViewRow.hidden = fretMode !== 'caged';
-    // Choosing a position only means something where there is one: the two
-    // scale views when they're down to a single box, and Chords when it's
-    // reading the progression under one hand.
-    const cagedPos = fretMode === 'caged' && cagedReading === 'position';
-    boxRow.hidden = !(cagedPos || ['penta', 'scale'].includes(fretMode));
-    // in Chords the reading picks the box, so there's no checkbox to offer
-    singleBoxCheck.hidden = fretMode === 'caged';
+    // one position, one Position row — the same row whatever the mode
+    boxRow.hidden = !inPosition;
+    // only Chords draws several chords at once, so only Chords has a choice
+    // about how they're gathered
+    const cagedPos = fretMode === 'caged' && inPosition;
     cagedPosMethodWrap.hidden = !cagedPos;
-    // ...and stepping goes quiet when the progression is choosing for you
-    const picksItself = cagedPos ? cagedPosMethod === 'lead' : !singleBox;
-    document.getElementById('boxStep').classList.toggle('locked', picksItself);
-    // holding a position needs there to be one: a single box, not a cluster
+    // stepping goes quiet when the progression is choosing the position itself
+    document.getElementById('boxStep').classList.toggle('locked', cagedPos && cagedPosMethod === 'lead');
+    // and holding one needs there to be a single window to hold, not a cluster
     // of each chord's own placements
-    const holdApplies = cagedPos ? cagedPosMethod === 'box' : singleBox;
+    const holdApplies = cagedPos ? cagedPosMethod === 'box' : true;
     holdPositionToggle.closest('.inline-check').classList.toggle('off', !holdApplies);
-    // Roots is already coloured by root and Progression by chord, so
-    // there's nothing for the interval colouring to say in those
-    // colour already means "which chord" in the position reading, the same as
-    // in Progression, so there's nothing for the interval option to say there
-    const colourIsChord = fretMode === 'caged' && cagedReading === 'position';
-    colorByGroup.hidden = !singleChordModes || colourIsChord;
-    colorByLabel.hidden = !singleChordModes || colourIsChord;
+    // Roots is already coloured by root; and in one position Chords colours by
+    // chord, so there's nothing for the interval option to say in either
+    colorByGroup.hidden = !chordModes || cagedPos;
+    colorByLabel.hidden = !chordModes || cagedPos;
   }
 
   fretRangeSelect.addEventListener('change', () => {
@@ -199,11 +200,12 @@
     heldWindow = null;      // the grips and the arpeggio don't share a window
     renderFretboard();
   });
-  cagedReadingGroup.querySelectorAll('.seg-btn').forEach(btn => {
+  viewGroup.querySelectorAll('.seg-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      cagedReadingGroup.querySelectorAll('.seg-btn').forEach(b => b.classList.toggle('active', b === btn));
-      cagedReading = btn.dataset.value;
+      viewGroup.querySelectorAll('.seg-btn').forEach(b => b.classList.toggle('active', b === btn));
+      inPosition = btn.dataset.value === 'position';
       heldWindow = null;      // the two readings don't share a window
+      rebaseBox = true;       // ...and coming back lands where you left off
       updateFretUI();
       renderFretboard();
     });
@@ -250,12 +252,7 @@
     });
   }
 
-  singleBoxToggle.addEventListener('change', () => {
-    singleBox = singleBoxToggle.checked;
-    heldWindow = null;
-    updateFretUI();
-    renderFretboard();
-  });
+
   holdPositionToggle.addEventListener('change', () => {
     holdPosition = holdPositionToggle.checked;
     heldWindow = null;
@@ -286,7 +283,7 @@
   function applyBoxWindow(markers, lines, boxes, opts = {}){
     shownWindow = null;
     const forcedIndex = opts.index;
-    const single = opts.single === undefined ? singleBox : opts.single;
+    const single = opts.single === undefined ? inPosition : opts.single;
     if (!single || !boxes.length) return { markers, lines };
     const sorted = boxes.slice().sort((a, b) => a.anchor - b.anchor);
     // A box index means different frets for different chords — each chord has
@@ -695,7 +692,8 @@
           ? { ...base, split: [INVERSION_COLOR[invs[0]], INVERSION_COLOR[invs[1]]] }
           : { ...base, color: INVERSION_COLOR[invs[0]] };
       });
-      return { markers: applyColorBy(markers, chord), lines };
+      const shown = applyBoxWindow(markers, lines, gripBoxes(chord));
+      return { markers: applyColorBy(shown.markers, chord), lines: shown.lines };
     }
 
     // The five movable CAGED shapes for one chord. "Whole arpeggio" opens each
@@ -708,7 +706,6 @@
       // One position, or all of them. In one position the whole progression
       // comes with you — that's what the reading is for — and voice leading
       // hands the choice of which position to the progression itself.
-      const inPosition = cagedReading === 'position';
       const cands = host.progression().filter(c => c.quality !== 'dim');
       const curIdx = Math.min(cagedChordIdx, cands.length - 1);
       const curTag = 'c' + curIdx;
@@ -948,7 +945,9 @@
           }
         }
       }
-      return { markers, lines: [] };
+      // in one position, only the roots under that hand
+      const shown = applyBoxWindow(markers, [], gripBoxes(currentChord()));
+      return { markers: shown.markers, lines: shown.lines };
     }
 
     return { markers: [], lines: [] };
@@ -1050,6 +1049,19 @@
     }));
   }
 
+  // The five CAGED grips of a chord, as position windows. Chords, Pentatonic
+  // and Scales each have boxes of their own; Roots and Triads don't, so they
+  // borrow these — which keeps one ladder of five positions across every view
+  // rather than each inventing its own idea of where the hand is.
+  function gripBoxes(chord){
+    if (!chord) return [];
+    const rootPc = SEMITONE[chord.note] % 12;
+    return cagedTriadBoard(rootPc, chord.quality === 'min', chord.note,
+      chord.seventh ? SEMITONE[chord.seventh] % 12 : null).lines.map(l => ({
+        name: l.shape, anchor: Math.min(...l.cells.map(c => c.fret)), cells: l.cells,
+      }));
+  }
+
   // Which box the chord at `curIdx` lands in when the progression picks for
   // you: the first chord takes its lowest, and every chord after it takes
   // whichever of its own boxes sits nearest where the one before it landed.
@@ -1092,9 +1104,10 @@
 
   function renderFretLegend(){
     if (fretMode === 'roots'){
-      cagedLegend.innerHTML = rootLegendData
-        .map(r => `<span><i style="background:${r.color}"></i>${r.name}<em>${r.num}</em></span>`)
-        .join('');
+      const entries = rootLegendData
+        .map(r => `<span><i style="background:${r.color}"></i>${r.name}<em>${r.num}</em></span>`);
+      if (shownWindow) entries.push(`<span><em>position: frets ${shownWindow.min}–${shownWindow.max}</em></span>`);
+      cagedLegend.innerHTML = entries.join('');
       return;
     }
     // each entry says where on the neck that shape sits, so you can find it
@@ -1114,7 +1127,7 @@
     // Chords in one position is Progression's picture, so it gets
     // Progression's legend: one entry per chord, named, numbered, tagged with
     // the CAGED shape it's sitting in, and spotlightable by hovering it.
-    if (fretMode === 'caged' && cagedReading === 'position'){
+    if (fretMode === 'caged' && inPosition){
       const entries = ghostLegendData.map(g =>
         `<span data-shape="${g.tag}" tabindex="0" role="button" aria-label="Highlight ${g.name}"` +
         `${g.current ? ' class="legend-current"' : ''}>` +
@@ -1172,7 +1185,7 @@
       }
     }
     if (fretMode === 'penta' || fretMode === 'scale') parts.push(`<span><i class="passing"></i>passing note</span>`);
-    if (shownWindow) parts.push(`<span><em>box: frets ${shownWindow.min}–${shownWindow.max}</em></span>`);
+    if (shownWindow) parts.push(`<span><em>position: frets ${shownWindow.min}–${shownWindow.max}</em></span>`);
     cagedLegend.innerHTML = parts.join('');
   }
 
