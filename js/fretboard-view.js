@@ -35,6 +35,13 @@
   let cagedFollow = true;        // selected CAGED chord tracks the playing chord (on by default)
   let activeRootPc = null;       // pitch class of the currently-playing chord's root, for Root notes mode
   let scaleTheory = 'parallel';  // 'parallel' (chord's own major/minor) | 'modal' (key's mode)
+  // pentatonic / scale views: one box at a time, and whether that stretch of
+  // frets stays put when the chord changes
+  let singleBox = false;
+  let holdPosition = false;
+  let boxIndex = 0;              // which box, low to high, when showing one
+  let heldWindow = null;         // { min, max } of frets kept while holding position
+  let shownWindow = null;        // what the legend reports
 
   const fretModeGroup = document.getElementById('fretModeGroup');
   const cagedChordRow = document.getElementById('cagedChordRow');
@@ -51,6 +58,7 @@
       fretModeGroup.querySelectorAll('.seg-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       fretMode = btn.dataset.value;
+      heldWindow = null;
       updateFretUI();
       renderFretboard();
     });
@@ -70,11 +78,62 @@
     });
   });
 
+  const boxRow = document.getElementById('boxRow');
+  const singleBoxToggle = document.getElementById('singleBoxToggle');
+  const holdPositionToggle = document.getElementById('holdPositionToggle');
+
   function updateFretUI(){
     const singleChordModes = fretMode === 'caged' || fretMode === 'penta' || fretMode === 'scale';
     cagedChordRow.hidden = !singleChordModes;
     scaleTheoryRow.hidden = fretMode !== 'scale';
     chordPosRow.hidden = fretMode !== 'positions';
+    boxRow.hidden = !(fretMode === 'penta' || fretMode === 'scale');
+    // stepping and holding only mean something once you're looking at one box
+    document.getElementById('boxStep').classList.toggle('locked', !singleBox);
+    holdPositionToggle.closest('.inline-check').classList.toggle('off', !singleBox);
+  }
+
+  singleBoxToggle.addEventListener('change', () => {
+    singleBox = singleBoxToggle.checked;
+    heldWindow = null;
+    updateFretUI();
+    renderFretboard();
+  });
+  holdPositionToggle.addEventListener('change', () => {
+    holdPosition = holdPositionToggle.checked;
+    heldWindow = null;
+    renderFretboard();
+  });
+  document.getElementById('boxPrev').addEventListener('click', () => { boxIndex--; heldWindow = null; renderFretboard(); });
+  document.getElementById('boxNext').addEventListener('click', () => { boxIndex++; heldWindow = null; renderFretboard(); });
+
+  // The pentatonic and scale views draw every box on the neck; with "Single
+  // box" on, cut that down to one — the box at `boxIndex`, low to high — or,
+  // while holding position, to whatever stretch of frets was on screen when
+  // the chord changed, so the new chord's notes appear under the same hand.
+  function applyBoxWindow(markers, lines, boxes){
+    shownWindow = null;
+    if (!singleBox || !boxes.length) return { markers, lines };
+    const sorted = boxes.slice().sort((a, b) => a.anchor - b.anchor);
+    const box = sorted[((boxIndex % sorted.length) + sorted.length) % sorted.length];
+    const frets = box.cells.map(c => c.fret);
+    let win = { min: Math.min(...frets), max: Math.max(...frets) };
+    if (holdPosition){
+      if (!heldWindow) heldWindow = win;
+      win = heldWindow;
+    }
+    shownWindow = win;
+    const inWin = f => f >= win.min && f <= win.max;
+    return {
+      markers: markers.filter(m => inWin(m.fret)),
+      lines: lines.filter(l => l.cells.every(c => inWin(c.fret))),
+    };
+  }
+
+  // the notes of the chord itself, so the scale views can set the rest back
+  function chordTonePcs(chord){
+    return new Set([chord.note, chord.third, chord.fifth, chord.seventh]
+      .filter(Boolean).map(n => SEMITONE[n] % 12));
   }
 
   function updateCagedLock(){
@@ -383,6 +442,7 @@
 
       const placements = pentaBoxPlacements(rootPc, isMinor);
       cagedShapesShown = CAGED_ORDER.filter(n => placements.some(p => p.name === n));
+      const tones = chordTonePcs(chord);
 
       // lines trace each CAGED chord shape (root / 3rd / 5th), one note per
       // string, following the actual fingering — same as "CAGED chords" mode
@@ -400,7 +460,8 @@
           if (!(pc in degByPc)) continue;
           const owners = placements.filter(p => p.cells.some(c => c.string === s && c.fret === f));
           const ownerNames = [...new Set(owners.map(o => o.name))];
-          const base = { string: s, fret: f, label: degByPc[pc], isRoot: pc === rootPc, shapes: ownerNames };
+          const base = { string: s, fret: f, label: degByPc[pc], isRoot: pc === rootPc, shapes: ownerNames,
+            passing: !tones.has(pc) };
           if (owners.length >= 2){
             const two = owners.slice()
               .sort((a, b) => Math.abs(f - a.anchor) - Math.abs(f - b.anchor))
@@ -416,7 +477,8 @@
           }
         }
       }
-      return { markers, lines };
+      const onNeck = placements.filter(p => p.anchor >= 0 && p.anchor <= FRET_COUNT);
+      return applyBoxWindow(markers, lines, onNeck);
     }
 
     if (fretMode === 'scale'){
@@ -442,10 +504,15 @@
       } else {
         // parallel scale: the scale matching the chord's own quality, rooted
         // on the chord — a major chord gets the major (Ionian) scale, a minor
-        // chord the natural minor (Aeolian) scale — independent of the key
+        // chord the natural minor (Aeolian) scale — independent of the key.
+        // A dominant chord gets Mixolydian, so its own ♭7 is in the scale
+        // rather than sitting outside it.
+        const flat7 = chord.seventh && (SEMITONE[chord.seventh] - rootPc + 12) % 12 === 10;
         const scaleDeg = isMinor
           ? [[0, '1'], [2, '2'], [3, '♭3'], [5, '4'], [7, '5'], [8, '♭6'], [10, '♭7']]
-          : [[0, '1'], [2, '2'], [4, '3'], [5, '4'], [7, '5'], [9, '6'], [11, '7']];
+          : flat7
+            ? [[0, '1'], [2, '2'], [4, '3'], [5, '4'], [7, '5'], [9, '6'], [10, '♭7']]
+            : [[0, '1'], [2, '2'], [4, '3'], [5, '4'], [7, '5'], [9, '6'], [11, '7']];
         degByPc = {};
         scaleDeg.forEach(([off, d]) => { degByPc[(rootPc + off) % 12] = d; });
         scalePcs = new Set(Object.keys(degByPc).map(Number));
@@ -454,6 +521,7 @@
       const boxes = scaleBoxPlacements(rootPc, isMinor, scalePcs);
       const onNeck = b => b.anchor >= 0 && b.anchor <= FRET_COUNT;
       cagedShapesShown = CAGED_ORDER.filter(n => boxes.some(b => b.name === n && onNeck(b)));
+      const tones = chordTonePcs(chord);
 
       const lines = cagedPlacements(rootPc, isMinor ? CAGED_MINOR : CAGED_MAJOR)
         .filter(p => p.cells.length > 1)
@@ -469,7 +537,7 @@
           const owners = boxes.filter(b => onNeck(b) && b.cells.some(c => c.string === s && c.fret === f));
           const ownerNames = [...new Set(owners.map(o => o.name))];
           const base = { string: s, fret: f, label: degByPc[pc],
-            isRoot: pc === rootPc, shapes: ownerNames };
+            isRoot: pc === rootPc, shapes: ownerNames, passing: !tones.has(pc) };
           if (ownerNames.length >= 2){
             const two = owners.slice()
               .sort((a, b) => Math.abs(f - a.anchor) - Math.abs(f - b.anchor))
@@ -485,7 +553,7 @@
           }
         }
       }
-      return { markers, lines };
+      return applyBoxWindow(markers, lines, boxes.filter(onNeck));
     }
 
     if (fretMode === 'roots'){
@@ -516,7 +584,9 @@
     const cands = host.progression().filter(c => c.quality !== 'dim');
     const chord = cands[Math.min(cagedChordIdx, cands.length - 1)];
     if (!chord) return { markers: [], lines: [] };
-    const board = cagedTriadBoard(SEMITONE[chord.note] % 12, chord.quality === 'min', chord.note);
+    // a chord carrying a 7th shows its 7th-chord shapes, the 7th as a hollow dot
+    const board = cagedTriadBoard(SEMITONE[chord.note] % 12, chord.quality === 'min', chord.note,
+      chord.seventh ? SEMITONE[chord.seventh] % 12 : null);
     cagedShapesShown = board.shapesShown;
     const { markers, lines } = board;
     return { markers, lines };
@@ -535,9 +605,16 @@
         .join('');
       return;
     }
-    const parts = cagedShapesShown.map(n =>
+    // with one box on screen, only the shapes actually drawn get an entry
+    const drawn = new Set([...fretboardSvg.querySelectorAll('.note-dot[data-shapes]')]
+      .flatMap(g => g.getAttribute('data-shapes').split(',')));
+    const shown = shownWindow ? cagedShapesShown.filter(n => drawn.has(n)) : cagedShapesShown;
+    const parts = shown.map(n =>
       `<span data-shape="${n}" tabindex="0" role="button" aria-label="Highlight ${n} shape"><i style="background:${CAGED_COLORS[n]}"></i>${n} shape</span>`);
     parts.push(`<span><i class="ring"></i>root</span>`);
+    if (fretMode === 'caged') parts.push(`<span><i class="hollow"></i>7th</span>`);
+    if (fretMode === 'penta' || fretMode === 'scale') parts.push(`<span><i class="passing"></i>passing note</span>`);
+    if (shownWindow) parts.push(`<span><em>frets ${shownWindow.min}–${shownWindow.max}</em></span>`);
     cagedLegend.innerHTML = parts.join('');
   }
 

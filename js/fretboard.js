@@ -150,13 +150,17 @@
   // coloured by shape (notes two shapes share get a split dot). This is the
   // data behind the practice tab's "CAGED triads" view; the chord finder draws
   // the same thing, so both stay identical by construction.
-  function cagedTriadBoard(rootPc, isMinor, rootLabel){
+  // Pass `seventhPc` and each shape turns into its 7th-chord voicing (the
+  // same way "Chord positions" does it), with the 7th drawn as a hollow dot.
+  function cagedTriadBoard(rootPc, isMinor, rootLabel, seventhPc = null){
     const thirdPc = (rootPc + (isMinor ? 3 : 4)) % 12;
     const fifthPc = (rootPc + 7) % 12;
+    const seventhLabel = seventhPc == null ? '' : ((seventhPc - rootPc + 12) % 12 === 11 ? '7' : '♭7');
     const nameOf = pc =>
       pc === rootPc ? rootLabel :
       pc === thirdPc ? (isMinor ? '♭3' : '3') :
-      pc === fifthPc ? '5' : '';
+      pc === fifthPc ? '5' :
+      pc === seventhPc ? seventhLabel : '';
     const shapes = isMinor ? CAGED_MINOR : CAGED_MAJOR;
 
     const cells = new Map();
@@ -169,16 +173,16 @@
         const frets = shape.offs.map(o => o === null ? null : r + o);
         if (frets.some(f => f !== null && (f < 0 || f > FRET_COUNT))) return;
         rendered.add(name);
-        const played = frets.filter(f => f !== null);
-        const meanFret = played.reduce((a, b) => a + b, 0) / played.length;
-        const lineCells = [];
-        frets.forEach((f, s) => {
-          if (f === null) return;
-          lineCells.push({ string: s, fret: f });
+        let lineCells = [];
+        frets.forEach((f, s) => { if (f !== null) lineCells.push({ string: s, fret: f }); });
+        if (seventhPc != null) lineCells = seventhCells({ name, cells: lineCells }, rootPc, seventhPc);
+        const meanFret = lineCells.reduce((a, c) => a + c.fret, 0) / lineCells.length;
+        lineCells.forEach(({ string: s, fret: f }) => {
           const key = s + ':' + f;
+          const pc = (STRING_TUNING[s] + f) % 12;
           if (!cells.has(key)){
             cells.set(key, { string: s, fret: f, contribs: [],
-              isRoot: (STRING_TUNING[s] + f) % 12 === rootPc });
+              isRoot: pc === rootPc, hollow: seventhPc != null && pc === seventhPc });
           }
           cells.get(key).contribs.push({ name, meanFret });
         });
@@ -190,14 +194,14 @@
       const label = nameOf((STRING_TUNING[m.string] + m.fret) % 12);
       const names = [...new Set(m.contribs.map(c => c.name))];
       if (names.length === 1){
-        return { string: m.string, fret: m.fret, isRoot: m.isRoot, label, shapes: names,
+        return { string: m.string, fret: m.fret, isRoot: m.isRoot, hollow: m.hollow, label, shapes: names,
           color: CAGED_COLORS[names[0]] };
       }
       // shared note: order the two shapes left-to-right by their position on the neck
       const sorted = [...m.contribs].sort((a, b) => a.meanFret - b.meanFret);
       const left = sorted[0].name;
       const right = [...sorted].reverse().find(c => c.name !== left).name;
-      return { string: m.string, fret: m.fret, isRoot: m.isRoot, label, shapes: names,
+      return { string: m.string, fret: m.fret, isRoot: m.isRoot, hollow: m.hollow, label, shapes: names,
         split: [CAGED_COLORS[left], CAGED_COLORS[right]] };
     });
 

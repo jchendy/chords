@@ -62,9 +62,14 @@
       const labelsAttr = labelEntries.length > 1
         ? ` data-labels="${labelEntries.map(([t, l]) => `${t}:${l}`).join(',')}" data-default-label="${m.label || ''}"`
         : '';
-      const posRootClass = m.isLowestRoot ? ' pos-root' : '';
-      let g = `<g class="note-dot${posRootClass}"${shapeAttr}${rootPcAttr}${rootForAttr}${labelsAttr}>`;
-      if (m.split){
+      // `hollow` marks a note outside the triad (the 7th); `passing` a scale
+      // note that isn't a chord tone, drawn quieter so the chord tones stand out
+      const extraClass = (m.isLowestRoot ? ' pos-root' : '') + (m.hollow ? ' hollow' : '') + (m.passing ? ' passing' : '');
+      let g = `<g class="note-dot${extraClass}"${shapeAttr}${rootPcAttr}${rootForAttr}${labelsAttr}>`;
+      if (m.hollow){
+        const stroke = m.color || (m.split && m.split[0]);
+        g += `<circle cx="${cx}" cy="${cy}" r="${r - 1.2}" fill="var(--panel)" stroke="${stroke}" stroke-width="2.4"/>`;
+      } else if (m.split){
         // left half = left shape's colour, right half = right shape's colour
         g += `<path d="M${cx},${cy - r} A${r},${r} 0 0 0 ${cx},${cy + r} Z" fill="${m.split[0]}"/>`;
         g += `<path d="M${cx},${cy - r} A${r},${r} 0 0 1 ${cx},${cy + r} Z" fill="${m.split[1]}"/>`;
