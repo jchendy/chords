@@ -79,6 +79,10 @@ names the tab you're on.
   bar lengths don't move, and any chord you've set yourself — or that a preset
   pinned — is left alone. A rolled chord is always one the key contains;
   handing a slot back to Random hands its shape back too
+- Click a bar in the chord display to hear that chord on its own, playing or
+  not — for checking a shape against what it's meant to sound like. Each bar
+  is a button, so Enter or the space bar does the same to a focused one
+  (there the space bar means "hear this chord" rather than play/pause)
 - Space bar starts and stops playback (here and in the genre examples), as
   long as you're not typing in a field
 - "Copy link to this progression" writes the key, every chord's degree, bar
@@ -115,7 +119,7 @@ names the tab you're on.
 - Live chord highlighting synced to playback, with a measure.beat position
   readout under the chords (the key itself is shown plainly above them,
   e.g. "C major" / "C#m")
-- Fretboard panel (6 strings, 15 frets) with six views, "Roots" and
+- Fretboard panel (6 strings, 15 frets) with seven views, "Roots" and
   "Chord positions" first:
   Roots — every root-note location for the progression (colour-coded,
   legend gives each root's roman numeral; while playing, the currently
@@ -162,6 +166,15 @@ names the tab you're on.
   arpeggio a method book teaches — the shape you already know, plus the
   notes around it on each string — and it takes the same Box row as the
   scale views, so you can drill one position at a time;
+  Triad inversions — close three-note triads on one set of three adjacent
+  strings (e–B–G, B–G–D, G–D–A or D–A–E), every inversion, all the way up
+  the neck. Each shape is outlined and coloured by which chord tone is
+  underneath — root position, 1st inversion (3rd in the bass), 2nd inversion
+  (5th in the bass) — and hovering an inversion in the legend picks out just
+  those. A voicing qualifies when it plays one of each chord tone, one per
+  string, rising in pitch across the set, inside an octave and a hand span,
+  which is what produces the shapes rhythm players comp with (C major on the
+  top three strings comes out 0-1-0, 5-5-3, 9-8-8, 12-13-12);
   CAGED pentatonic — the chosen chord's major/minor pentatonic, every note
   coloured by the CAGED box it belongs to (seam notes split-coloured), scale
   degrees in the dots, chord-shape outlines through the chord tones. The

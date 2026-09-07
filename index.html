@@ -398,6 +398,12 @@
   }
   .bar.dim{ opacity: 0.3; }
   .bar.active{ border-bottom-color: var(--accent); }
+  /* a bar is a button: click it to hear that chord on its own */
+  .bar{ cursor: pointer; }
+  .bar:hover .chord-name{ color: var(--accent-hi); }
+  .bar:focus-visible{ outline: 2px solid var(--accent-hi); outline-offset: 3px; border-radius: 6px; }
+  .bar.rang .chord-name{ animation: barRang 0.5s ease; }
+  @keyframes barRang{ from{ color: var(--accent-hi); } to{ color: inherit; } }
   /* a bar that carries the chord over from the one before it sits back a little */
   .bar.held .chord-name{ opacity: 0.62; }
   .bar.held .chord-numeral{ opacity: 0.55; }
@@ -427,6 +433,7 @@
   }
   @media (prefers-reduced-motion: reduce){
     .bar{ animation:none; opacity:1; }
+    .bar.rang .chord-name{ animation:none; }
     .diagram-card.rang{ animation:none; }
   }
 
@@ -901,13 +908,14 @@
   <section class="panel">
     <div class="setting">
       <span class="setting-label">Fretboard
-        <button type="button" class="info-dot" data-tip="Roots: every root of the progression's chords, colour-coded. Chord positions: one location per chord, clustered close together on the neck. CAGED triads: the five movable CAGED shapes for one chosen chord. CAGED arpeggios: those same shapes opened out — every chord tone on the neck, boxed by the shape it sits in. CAGED pentatonic: that chord's pentatonic scale, boxed and coloured by CAGED shape. CAGED scales: the full 7-note scale for that chord, same colouring.">i</button>
+        <button type="button" class="info-dot" data-tip="Roots: every root of the progression's chords, colour-coded. Chord positions: one location per chord, clustered close together on the neck. CAGED triads: the five movable CAGED shapes for one chosen chord. CAGED arpeggios: those same shapes opened out — every chord tone on the neck, boxed by the shape it sits in. Triad inversions: close three-string triads on one set of strings, coloured by inversion. CAGED pentatonic: that chord's pentatonic scale, boxed and coloured by CAGED shape. CAGED scales: the full 7-note scale for that chord, same colouring.">i</button>
       </span>
       <div class="segmented" id="fretModeGroup">
         <button type="button" class="seg-btn" data-value="roots">Roots</button>
         <button type="button" class="seg-btn" data-value="positions">Chord positions</button>
         <button type="button" class="seg-btn active" data-value="caged">CAGED triads</button>
         <button type="button" class="seg-btn" data-value="arp">CAGED arpeggios</button>
+        <button type="button" class="seg-btn" data-value="triads3">Triad inversions</button>
         <button type="button" class="seg-btn" data-value="penta">CAGED pentatonic</button>
         <button type="button" class="seg-btn" data-value="scale">CAGED scales</button>
       </div>
@@ -941,6 +949,17 @@
           <input type="checkbox" id="cagedFollowToggle" checked>
           <span>Follow playback</span>
         </label>
+      </div>
+    </div>
+    <div class="setting" id="stringSetRow" hidden>
+      <span class="setting-label">String set
+        <button type="button" class="info-dot" data-tip="Close-voiced triads on three adjacent strings, in every inversion, everywhere they sit on the neck — the shapes rhythm players comp with. Each shape is outlined and coloured by which chord tone is underneath: root position, 1st inversion (3rd in the bass) or 2nd inversion (5th in the bass). Hover a legend entry to pick out one inversion.">i</button>
+      </span>
+      <div class="segmented" id="stringSetGroup">
+        <button type="button" class="seg-btn active" data-value="2">e–B–G</button>
+        <button type="button" class="seg-btn" data-value="3">B–G–D</button>
+        <button type="button" class="seg-btn" data-value="4">G–D–A</button>
+        <button type="button" class="seg-btn" data-value="5">D–A–E</button>
       </div>
     </div>
     <div class="setting" id="boxRow" hidden>
