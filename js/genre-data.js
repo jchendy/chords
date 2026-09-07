@@ -43,10 +43,10 @@
       leads: [
         { name: 'Pentatonic run in E', grid: 8, bars: 2, tone: 'drive',
           notes: [
-            { s: 3, f: 2, at: 0 }, { s: 3, f: 4, at: 1 }, { s: 2, f: 2, at: 2 }, { s: 2, f: 4, at: 3 },
+            { s: 3, f: 2, at: 0 }, { s: 3, f: 5, at: 1 }, { s: 2, f: 2, at: 2 }, { s: 2, f: 4, at: 3 },
             { s: 1, f: 3, at: 4 }, { s: 1, f: 5, at: 5 }, { s: 0, f: 3, at: 6 }, { s: 0, f: 5, at: 7 },
             { s: 0, f: 7, at: 8, dur: 2 }, { s: 0, f: 5, at: 10 }, { s: 1, f: 5, at: 11 },
-            { s: 1, f: 3, at: 12 }, { s: 2, f: 4, at: 13 }, { s: 2, f: 2, at: 14 }, { s: 3, f: 2, at: 15, dur: 2 },
+            { s: 1, f: 3, at: 12 }, { s: 2, f: 4, at: 13 }, { s: 2, f: 2, at: 14 }, { s: 3, f: 2, at: 15 },
           ] },
         { name: 'Chromatic climb', grid: 8, bars: 2, tone: 'drive',
           notes: [
@@ -93,7 +93,7 @@
       blurb: 'Twelve-bar shuffle, boom-chick bass under the chords, clean hollowbody twang.',
       progressions: [
         { name: 'Twelve-bar in A', key: 'A', chords: ['A7', 'A7', 'A7', 'A7', 'D7', 'D7', 'A7', 'A7', 'E7', 'D7', 'A7', 'E7'] },
-        { name: 'Quick-change blues in E', key: 'E', chords: ['E7', 'A7', 'E7', 'E7', 'A7', 'A7', 'E7', 'B7'] },
+        { name: 'Quick-change blues in E', key: 'E', chords: ['E7', 'A7', 'E7', 'E7', 'A7', 'A7', 'E7', 'E7', 'B7', 'A7', 'E7', 'B7'] },
         { name: 'I–vi–IV–V in C', key: 'C', chords: ['C', 'Am', 'F', 'G'] },
       ],
       rhythms: [
@@ -287,7 +287,7 @@
                  D(4, 'all', { dur: 0.3, vel: 0.7 }), U(5, 'all', { dur: 0.25, vel: 0.55 }),
                  D(6, 'all', { dur: 0.5 })],
           drums: null },
-        { name: 'Waltz pompe', grid: 6, voicing: 'barre', tone: 'clean',
+        { name: 'Waltz pompe', grid: 6, beats: 3, voicing: 'barre', tone: 'clean',
           hits: [D(0, 'low', { dur: 0.4 }), D(2, 'high', { dur: 0.4, vel: 0.8 }), D(4, 'high', { dur: 0.4, vel: 0.8 })],
           drums: null },
       ],

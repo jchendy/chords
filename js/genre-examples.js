@@ -35,6 +35,7 @@
   let startTime = 0;            // audio-clock time slot 0 was played at
   let secondsPerSlot = 0;
   let schedulerId = null;
+  let stopTimer = null;         // the end-of-run stop, when not looping
   let nextSlot = 0;             // next slot index still to be scheduled
   const LOOKAHEAD_MS = 25;
   const SCHEDULE_AHEAD = 0.15;
@@ -45,9 +46,10 @@
     return genre.tempo;
   }
 
-  // a slot is a subdivision of a beat: grid 8 = eighths, 16 = sixteenths
+  // a slot is a subdivision of a beat: grid 8 = eighths, 16 = sixteenths —
+  // or, in a waltz, six slots across three beats
   function slotSeconds(){
-    const beatsPerBar = 4;
+    const beatsPerBar = (example && example.beats) || 4;
     const grid = example ? example.grid : 8;
     return (60 / tempo()) * beatsPerBar / grid;
   }
@@ -76,7 +78,7 @@
       nextSlot++;
       if (!loopToggle.checked && nextSlot >= example.totalSlots){
         // let the last notes ring, then stop
-        setTimeout(stop, (startTime + nextSlot * secondsPerSlot - now + 0.6) * 1000);
+        stopTimer = setTimeout(stop, (startTime + nextSlot * secondsPerSlot - now + 0.6) * 1000);
         return;
       }
     }
@@ -105,6 +107,7 @@
     if (!example) return;
     audio.ensureAudio();
     if (audio.ctx().state === 'suspended') audio.ctx().resume();
+    clearTimeout(stopTimer);      // a stop armed by an earlier run mustn't cut this one short
     playing = true;
     secondsPerSlot = slotSeconds();
     startTime = audio.ctx().currentTime + 0.08;
@@ -118,6 +121,7 @@
   function stop(){
     playing = false;
     clearTimeout(schedulerId);
+    clearTimeout(stopTimer);
     playBtn.textContent = 'Play';
     playBtn.classList.remove('playing');
     if (tabSvg){
@@ -159,6 +163,10 @@
   }
 
   function rebuildExample(){
+    // a new pattern can have a different grid or bar count, so a run in
+    // progress starts again rather than carrying on at the old slot rate
+    const wasPlaying = playing;
+    if (wasPlaying) stop();
     const patterns = currentPatterns();
     if (!genre || !patterns.length){ example = null; drawTab(); return; }
     const pattern = patterns[Math.min(patternIdx, patterns.length - 1)];
@@ -168,6 +176,7 @@
     example.tempo = pattern.tempo || genre.tempo;
     tempoOut.textContent = `${example.tempo} BPM`;
     drawTab();
+    if (wasPlaying) play();
   }
 
   function renderPatterns(){

@@ -71,8 +71,16 @@
     if (!dup) return placement.cells;
     const interval = (rootPc - seventhPc + 12) % 12;   // 1 = major 7th, 2 = flat 7th
     const newFret = dup.fret - (interval === 1 ? 1 : 2);
-    if (newFret < 0) return placement.cells;   // shape's too low on the neck to flatten — skip the 7th
-    return placement.cells.map(c => c === dup ? { string: c.string, fret: newFret } : c);
+    if (newFret >= 0) return placement.cells.map(c => c === dup ? { string: c.string, fret: newFret } : c);
+    // Too close to the nut to flatten the root — the open C7 is the case: the
+    // dropped root would land below fret 0. Players raise the 5th instead
+    // (x-3-2-3-1-0), so do that: the 5th plus a minor 3rd is the flat 7th, a
+    // major 3rd the major 7th.
+    const fifthPc = (rootPc + 7) % 12;
+    const fifth = placement.cells.find(c => (STRING_TUNING[c.string] + c.fret) % 12 === fifthPc);
+    const raised = fifth ? fifth.fret + (interval === 1 ? 4 : 3) : -1;
+    if (!fifth || raised > FRET_COUNT) return placement.cells;
+    return placement.cells.map(c => c === fifth ? { string: c.string, fret: raised } : c);
   }
 
   // pentatonic "box" templates, one per CAGED position: two fret offsets per

@@ -18,6 +18,7 @@
   const labelModeGroup = document.getElementById('labelModeGroup');
   let labelMode = 'fingers';        // 'fingers' | 'degrees'
   const MAX_VOICINGS = 16;          // enough for the whole neck plus a few alternatives
+  const EXTRA_VOICINGS = 6;         // room for grips the containment rule would otherwise hide
 
   // Work out a left-hand fingering for a voicing, or null when there isn't a
   // playable one. Fingers run 1 (index) to 4 (pinky); open and muted strings
@@ -158,6 +159,8 @@
     const shellPcs = shell ? new Set(shell.map(iv => (rootPc + iv) % 12)) : null;
     const threeNoteOnly = !!opts.threeNoteOnly && !shell;
     const isMinorTriad = formula.intervals.includes(3);
+    // the chord's own 5th — flat for a diminished chord, sharp for augmented
+    const fifthPc = (rootPc + ([6, 7, 8].find(iv => formula.intervals.includes(iv)) || 7)) % 12;
     const essentialPcs = new Set(formula.essential.map(iv => (rootPc + iv) % 12));
     const allowedPcs = shellPcs || new Set(formula.intervals.map(iv => (rootPc + iv) % 12));
     const seen = new Set();
@@ -196,7 +199,8 @@
             for (const pc of essentialPcs) if (!playedPcs.has(pc)) return;
           }
           const frettedOnly = played.map(p => p.fret).filter(f => f > 0);
-          const span = frettedOnly.length ? Math.max(...frettedOnly) - Math.min(...frettedOnly) : 0;
+          const maxFret = frettedOnly.length ? Math.max(...frettedOnly) : 0;
+          const span = frettedOnly.length ? maxFret - Math.min(...frettedOnly) : 0;
           if (span > 3) return;
 
           let cells = played.map(p => ({ string: p.string, fret: p.fret }));
@@ -228,7 +232,7 @@
             - span * 1.5                                         // ...but keep the stretch small
             - fingering.fingerCount * 0.75                        // ...and the grip simple
             + (bassPc === rootPc ? 8 : 0)                         // root in the bass = the everyday voicing
-            + (allPcs.has((rootPc + 7) % 12) ? 1 : 0)             // a 5th in there fills it out
+            + (allPcs.has(fifthPc) ? 1 : 0)                       // a 5th in there fills it out
             + openCount * 0.25                                    // open strings are free and ring out
             - innerMutes;                                         // skipping a string mid-chord is fiddly
           const startFret = frettedOnly.length ? Math.min(...frettedOnly) : 0;
@@ -236,8 +240,34 @@
           // merely happens to sit in the same place
           const match = cagedShapeMatch(cells, rootPc, isMinorTriad);
           const shapeBonus = match ? (match.exact ? 6 : 1) : 0;
-          results.push({ cells, fingering, score: score + shapeBonus, startFret, key,
-                         caged: match ? match.name : null });
+          // open strings with fretted strings either side of them, once the
+          // hand has moved up the neck — a specialty voicing, not an everyday one
+          const strung = new Set(playedStrings);
+          const innerOpens = maxFret >= 4 ? cells.filter(c => c.fret === 0
+            && [...strung].some(s => s < c.string) && [...strung].some(s => s > c.string)).length : 0;
+          // How the list is ordered once chosen. The score above decides which
+          // shapes make the cut; this decides which reads first at a position,
+          // and there the everyday grip should win: extra strings past four
+          // count for little, a barre costs, and open strings buried inside a
+          // shape up the neck cost more.
+          // how much the fingers zigzag from string to string: x-3-5-3-5-0
+          // spans the same two frets as x-3-2-3-1-0 but is far more awkward
+          const frettedCells = cells.filter(c => c.fret > 0).sort((a, b) => a.string - b.string);
+          let zigzag = 0;
+          for (let k = 1; k < frettedCells.length; k++) zigzag += Math.abs(frettedCells[k].fret - frettedCells[k - 1].fret);
+          const rank = score + shapeBonus
+            - Math.max(0, cells.length - 4) * 2
+            - fingering.barres.length
+            - innerOpens * 2
+            - zigzag * 0.5
+            - maxFret * 0.1;                 // all else equal, the hand nearer the nut
+          results.push({ cells, fingering, score: score + shapeBonus, rank, startFret, key,
+                         caged: match ? match.name : null,
+                         rootInBass: bassPc === rootPc, innerMutes, innerOpens, openCount,
+                         bassString: bass.string,
+                         // the power-chord layout: root on the bottom string, the 5th right above it
+                         powerShape: cells.length >= 2 && cells[cells.length - 2].string === bass.string - 1
+                           && (STRING_TUNING[bass.string - 1] + cells[cells.length - 2].fret) % 12 === fifthPc });
           return;
         }
         for (const opt of options[i]){ combo[i] = opt; rec(i + 1); }
@@ -249,28 +279,70 @@
     // than the easy open-position shapes taking every slot. A shape that's just
     // a thinner copy of one already picked is skipped.
     results.sort((a, b) => b.score - a.score || a.startFret - b.startFret);
-    const isSubsetOf = (a, b) => {
-      const cellsOf = new Set(b.cells.map(c => `${c.string}:${c.fret}`));
-      return a.cells.every(c => cellsOf.has(`${c.string}:${c.fret}`));
+    const cellKeys = r => new Set(r.cells.map(c => `${c.string}:${c.fret}`));
+    const isSubsetOf = (a, b) => { const inB = cellKeys(b); return a.cells.every(c => inB.has(`${c.string}:${c.fret}`)); };
+    // `a` is a thinner copy of `b` when it's the same grip minus some strings
+    // — but only if what it leaves out is open strings. Dropping a *fretted*
+    // note changes the hand: the three-string power chord and the four-string
+    // Fmaj7 are their own grips, not cut-down versions of the six-string ones
+    // that happen to contain them.
+    const isThinnerCopyOf = (a, b) => {
+      if (!isSubsetOf(a, b)) return false;
+      const inA = cellKeys(a);
+      return b.cells.every(c => inA.has(`${c.string}:${c.fret}`) || c.fret === 0);
     };
-    // The best grip at every position gets a place, so the list covers the
-    // whole neck; the leftover room goes to the strongest runners-up, since a
-    // position often has both a full barre shape and a compact grip worth
-    // knowing. A shape that's just a thinner copy of one already picked is out.
-    // Shells are already a short, focused list — no need to thin them out by
-    // position the way the full voicing list is.
+
+    // Pass one: the best grip at every position gets a place, so the list
+    // covers the whole neck; the leftover room goes to the strongest
+    // runners-up, since a position often has both a full barre shape and a
+    // compact grip worth knowing. Anything contained in a shape already picked
+    // is left out here. Shells are already a short, focused list — no need to
+    // thin them out by position the way the full voicing list is.
     const perPosition = shell ? Infinity : 2;
-    const best = [], runnersUp = [], taken = new Map();
+    const best = [], runnersUp = [], passedOver = [], taken = new Map();
     for (const r of results){
       const count = taken.get(r.startFret) || 0;
-      if (count >= perPosition) continue;
+      const swallowed = [...best, ...runnersUp].some(c => isSubsetOf(r, c) || isSubsetOf(c, r));
+      if (swallowed || count >= perPosition){ passedOver.push(r); continue; }
       const pool = count === 0 ? best : runnersUp;
-      if ([...best, ...runnersUp].some(c => isSubsetOf(r, c) || isSubsetOf(c, r))) continue;
       taken.set(r.startFret, count + 1);
       pool.push(r);
     }
-    return best.concat(runnersUp.slice(0, Math.max(0, MAX_VOICINGS - best.length)))
-      .sort((a, b) => a.startFret - b.startFret || b.score - a.score);
+    const chosen = best.concat(runnersUp.slice(0, Math.max(0, MAX_VOICINGS - best.length)));
+
+    // Pass two: the rules above are too eager. Containment throws away the
+    // four-string Fmaj7 and the three-string power chord because a bigger
+    // shape happens to contain them, and two slots per fret isn't enough at
+    // the nut, where an A9 has a dozen variants. Let a few compact grips back
+    // in, as long as they're grips in their own right: root underneath, no
+    // string skipped or left open in the middle, and not merely a picked
+    // shape with open strings left off. A power chord is exempt from that
+    // last test — its cut-down form *is* the grip.
+    const isPower = formula.name === '5';
+    if (!shell){
+      const extras = [];
+      // compact ones first — those are what the rules above hide
+      passedOver.sort((a, b) => a.cells.length - b.cells.length || b.rank - a.rank);
+      for (const r of passedOver){
+        if (extras.length >= EXTRA_VOICINGS) break;
+        if (!r.rootInBass || r.innerMutes || r.innerOpens || r.cells.length > 5) continue;
+        const all = chosen.concat(extras);
+        if (!isPower && all.some(c => isThinnerCopyOf(r, c) || isThinnerCopyOf(c, r))) continue;
+        extras.push(r);
+      }
+      chosen.push(...extras);
+    }
+
+    // Walk up the neck, everyday grip first within each position. Everything
+    // within reach of the nut counts as one position — otherwise a shape
+    // that happens to be all open strings sorts ahead of the real open chord.
+    // A power chord is all about its bottom: fewest strings, root and 5th on
+    // the two lowest of them, as low as they go, fretted rather than open.
+    const position = r => r.startFret <= 3 ? 0 : r.startFret;
+    return chosen.sort((a, b) => position(a) - position(b)
+      || (isPower && (a.cells.length - b.cells.length || b.powerShape - a.powerShape
+                      || b.bassString - a.bassString || a.openCount - b.openCount))
+      || b.rank - a.rank);
   }
 
   // What to call an interval above the root, in the context of this chord —

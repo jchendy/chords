@@ -7,11 +7,11 @@
 
   const {
     MAJOR_KEYS, MINOR_KEYS, MAJOR_COMMON, MINOR_COMMON, LEADING_TONE, SEMITONE,
-    pick, buildDiatonicChords, displayName, chordFromName, NOTE_NAMES_SHARP, SUFFIX,
+    pick, buildDiatonicChords, displayName, chordFromName, parseChordName, NOTE_NAMES_SHARP, SUFFIX,
   } = GT.theory;
   const audio = GT.audio;
   const {
-    ensureAudio, noteFreq, chordFrequencies, bassFreqAt, walkBassFreq, STYLES,
+    ensureAudio, noteFreq, chordFrequencies, bassFreqAt, walkBassFreq, STYLES, ROOT_OCTAVE,
     playNote, playChord, playBass, playHiHat, playRide, playKick, playSnare, playStyleVoice,
   } = GT.audio;
   const view = GT.fretboardView;
@@ -206,7 +206,30 @@
   let presetIdx = null;      // which preset is showing, if any
   let variantIdx = 0;
 
+  // Put the tab in a key: the state, the diatonic chord list, and the
+  // Major/Minor buttons and key picker that show it. Doesn't touch the
+  // progression — callers rebuild or transpose that themselves.
+  function setKey(mode, tonic){
+    currentMode = mode;
+    currentTonic = tonic;
+    currentDiatonic = keyChordChoices();
+    modeSetting = mode;
+    keyChoice = { mode, tonic };
+    document.querySelectorAll('#modeGroup .seg-btn')
+      .forEach(b => b.classList.toggle('active', b.dataset.value === mode));
+    buildKeySelect();
+  }
+
+  // the same tonic in the other mode when that key exists, else any key there
+  function tonicIn(mode, tonic){
+    const keys = mode === 'major' ? MAJOR_KEYS : MINOR_KEYS;
+    return keys[tonic] ? tonic : pick(Object.keys(keys));
+  }
+
   function applyPreset(preset, variant){
+    // a preset written for one mode takes the key there first
+    const mode = variant.mode || preset.mode;
+    if (mode && mode !== currentMode) setKey(mode, tonicIn(mode, currentTonic));
     const chords = variant.chords.slice(0, MAX_CHORDS);
     setSlotCount(chords.length);
     // pinning each slot to its degree is what keeps the shape put — and what
@@ -400,14 +423,6 @@
     });
   }
 
-  // update chord name labels in place (no re-roll, no re-triggering the
-  // entrance animation) — used when a display-only setting like "7" flips
-  function refreshChordNames(){
-    renderChordDisplay();
-    renderChordSlots();
-    view.rebuildChordPicker();
-  }
-
   // render everything from the current progression WITHOUT re-rolling it
   function renderAll(){
     document.getElementById('keyReadout').textContent =
@@ -553,7 +568,6 @@
   });
 
   commonToggle.addEventListener('change', render);
-  // only governs what a fresh roll produces; chords on screen keep their own
   // Swaps triads for sevenths in place: the roots, the degrees, the bar
   // lengths and any chord you've set yourself all stay exactly as they are.
   randomSeventhsToggle.addEventListener('change', () => {
@@ -613,8 +627,7 @@
       // Same progression, other mode: hold the tonic if that key exists in the
       // new mode, so I–V–vi–IV in C major becomes i–v–VI–IV in C minor rather
       // than something unrelated.
-      const keys = modeSetting === 'major' ? MAJOR_KEYS : MINOR_KEYS;
-      const tonic = keys[currentTonic] ? currentTonic : pick(Object.keys(keys));
+      const tonic = tonicIn(modeSetting, currentTonic);
       keyChoice = { mode: modeSetting, tonic };
       buildKeySelect();
       transposeToKey(modeSetting, tonic);
@@ -841,36 +854,26 @@
     });
     const kept = runs.slice(0, MAX_CHORDS);
 
-    // the progression's own key decides the roman numerals; without one, read
-    // the first chord as the tonic
+    // The progression's own key decides the roman numerals; without one, read
+    // the first chord as the tonic. Nothing says which mode it's in, so read
+    // that off the chord sitting on the tonic — a minor one means a minor
+    // key, and its VI and VII are then written plainly, not as ♭VI and ♭VII.
     const tonicPc = key !== undefined && SEMITONE[key] !== undefined
       ? SEMITONE[key]
       : (SEMITONE[(chordFromName(kept[0].name) || {}).note] || 0);
-    const built = kept.map(r => chordFromName(r.name, tonicPc)).filter(Boolean);
+    const tonicChord = kept.map(r => parseChordName(r.name)).find(p => p && p.rootPc % 12 === tonicPc % 12);
+    const mode = tonicChord && tonicChord.formula.intervals.includes(3) ? 'minor' : 'major';
+    const built = kept.map(r => chordFromName(r.name, tonicPc, mode)).filter(Boolean);
     if (!built.length) return;
 
     setSlotCount(built.length);
     // Move to the key it came in, so changing key from here shifts by the right
     // interval rather than from whatever was last generated — and so the chord
-    // pickers rate its chords against the right scale. Nothing says which mode
-    // it's in, so read that off the chord sitting on the tonic.
+    // pickers rate its chords against the right scale.
     if (key && SEMITONE[key] !== undefined){
-      const tonicChord = built.find(c => SEMITONE[c.note] % 12 === SEMITONE[key] % 12);
-      const mode = tonicChord && tonicChord.quality === 'min' ? 'minor' : 'major';
       const table = mode === 'major' ? MAJOR_KEYS : MINOR_KEYS;
-      if (table[key]){
-        currentTonic = key;
-        currentMode = mode;
-        currentDiatonic = keyChordChoices();
-        document.querySelectorAll('#modeGroup .seg-btn').forEach(b =>
-          b.classList.toggle('active', b.dataset.value === mode));
-        modeSetting = mode;
-        buildKeySelect();
-        keyChoice = { mode, tonic: key };
-        keySelect.value = `${mode}:${key}`;
-      } else {
-        currentTonic = key;
-      }
+      if (table[key]) setKey(mode, key);
+      else currentTonic = key;
     }
     currentProgression = built;
     slotChoices = built.map(() => null);

@@ -7,9 +7,10 @@
 (function(){
   'use strict';
   const GT = window.GT;
-  const { parseChordName, identifyChords } = GT.theory;
-  const { STRING_TUNING } = GT.fretboard;
+  const { parseChordName, identifyChords, chordFromName, seventhSuffix, NOTE_NAMES_SHARP } = GT.theory;
+  const { STRING_TUNING, FRET_COUNT, seventhCells, cagedPlacements, CAGED_MAJOR } = GT.fretboard;
   const { findChordVoicings } = GT.chordFinder;
+  const { voiceChord, midiFor } = GT.genres;
 
   const CHORDS = ["C", "A", "G", "E", "D", "Cm", "Am", "Gm", "Em", "Dm", "Ab", "Gb", "C#", "A9", "E9", "C7", "D7", "Cm7", "CM7"];
 
@@ -394,6 +395,133 @@
     });
   }
 
+  // ---- 3. the everyday grips a method book teaches come back, and first ----
+  // (low E → high e, as above). The baseline keeps old shapes from vanishing;
+  // this keeps the textbook ones from being buried under oddities.
+  const CANON = {
+    'C': 'x-3-2-0-1-0', 'G': '3-2-0-0-0-3', 'D': 'x-x-0-2-3-2', 'E': '0-2-2-1-0-0', 'A': 'x-0-2-2-2-0',
+    'F': '1-3-3-2-1-1', 'Bb': 'x-1-3-3-3-1', 'B': 'x-2-4-4-4-2', 'Bm': 'x-2-4-4-3-2', 'F#m': '2-4-4-2-2-2',
+    'Am': 'x-0-2-2-1-0', 'Em': '0-2-2-0-0-0', 'Dm': 'x-x-0-2-3-1',
+    'A7': 'x-0-2-0-2-0', 'B7': 'x-2-1-2-0-2', 'C7': 'x-3-2-3-1-0', 'D7': 'x-x-0-2-1-2', 'E7': '0-2-0-1-0-0', 'G7': '3-2-0-0-0-1',
+    'Am7': 'x-0-2-0-1-0', 'Dm7': 'x-x-0-2-1-1', 'Em7': '0-2-0-0-0-0', 'Amaj7': 'x-0-2-1-2-0', 'Cmaj7': 'x-3-2-0-0-0',
+    'Dsus2': 'x-x-0-2-3-0', 'G6': '3-2-0-0-0-0', 'Am6': 'x-0-2-2-1-2', 'Caug': 'x-3-2-1-1-0',
+    'E5': '0-2-2-x-x-x', 'A5': 'x-0-2-2-x-x', 'D5': 'x-x-0-2-3-x', 'G5': '3-5-5-x-x-x',
+  };
+  // present, though another everyday grip may reasonably read first
+  const CANON_PRESENT = {
+    'Fmaj7': 'x-x-3-2-1-0', 'Dsus4': 'x-x-0-2-3-3', 'Asus2': 'x-0-2-2-0-0', 'Esus4': '0-2-2-2-0-0',
+    'Cadd9': 'x-3-2-0-3-0', 'A9': 'x-0-2-4-2-3', 'E9': 'x-7-6-7-7-7', 'C9': 'x-3-2-3-3-3', 'D9': 'x-5-4-5-5-5',
+    'Bdim': 'x-2-3-4-3-x', 'Bm7b5': 'x-2-3-2-3-x', 'Bdim7': 'x-2-3-1-3-x', 'Eaug': '0-3-2-1-1-0',
+    'F#m7': '2-4-2-2-2-2', 'Gm7': '3-5-3-3-3-3', 'Bbmaj7': 'x-1-3-2-3-1', 'C#m7': 'x-4-6-4-5-4', 'Eb7': 'x-6-8-6-8-6',
+  };
+  function testCanonicalGrips(t){
+    const shown = name => {
+      const p = parseChordName(name);
+      return p ? findChordVoicings(p.rootPc, p.formula).map(v => grip(v.cells)) : [];
+    };
+    Object.entries(CANON).forEach(([name, canon]) => {
+      const grips = shown(name);
+      t.equal(grips[0], canon, `${name}: ${canon} reads first`);
+    });
+    Object.entries(CANON_PRESENT).forEach(([name, canon]) => {
+      const grips = shown(name);
+      t.ok(grips.includes(canon), `${name}: ${canon} is shown` + (grips.includes(canon) ? '' : ` (got ${grips.slice(0, 4).join(' ')} …)`));
+    });
+  }
+
+  // ---- 4. naming: what the app writes, it can read back ----
+  function testTheory(t){
+    const parses = (name, formula, root) => {
+      const p = parseChordName(name);
+      t.equal(p && p.formula.name + '@' + p.rootName, formula + '@' + root, `"${name}" parses as ${root} ${formula || 'major'}`);
+    };
+    parses('CM7', 'maj7', 'C');
+    parses('Cm7', 'm7', 'C');
+    parses('CmM7', 'm(maj7)', 'C');
+    parses('B°', 'dim', 'B');
+    parses('B°7', 'dim7', 'B');
+    parses('Bø', 'm7♭5', 'B');
+    parses('F#dim7', 'dim7', 'F#');
+    parses('Bbmaj9', 'maj9', 'Bb');
+    parses('e7b9', '7♭9', 'E');
+    parses('Cadd9', 'add9', 'C');
+    parses('A5', '5', 'A');
+    t.equal(parseChordName('H7'), null, '"H7" is rejected');
+    t.equal(parseChordName('Cxyz'), null, '"Cxyz" is rejected');
+
+    const am6 = chordFromName('Am6');
+    t.equal(am6 && am6.seventh, null, 'Am6 comes through as a triad, not an m7');
+    const cm7 = chordFromName('Cm7');
+    t.equal(cm7 && cm7.seventh, 'A#', 'Cm7 keeps its flat 7th');
+    // the numeral a loaded chord gets depends on the mode of its key
+    t.equal(chordFromName('F', 9, 'minor').numeral, 'VI', 'F in A minor is VI');
+    t.equal(chordFromName('G', 9, 'minor').numeral, 'VII', 'G in A minor is VII');
+    t.equal(chordFromName('F', 9, 'major').numeral, '♭VI', 'F in A major is ♭VI');
+    t.equal(chordFromName('E7', 9, 'minor').numeral, 'V', 'E7 in A minor is V');
+    t.equal(chordFromName('G#dim', 9, 'minor').numeral, '♯vii°', 'G#dim in A minor is ♯vii°');
+    t.equal(seventhSuffix({ note: 'B', quality: 'dim', seventh: 'G#' }), 'dim7', 'B + dim + G# is a dim7');
+    t.equal(seventhSuffix({ note: 'B', quality: 'dim', seventh: 'A' }), 'm7♭5', 'B + dim + A is an m7♭5');
+
+    const names = pcs => identifyChords(pcs).map(m => NOTE_NAMES_SHARP[m.rootPc] + m.formula.name);
+    t.equal(names([0, 4, 7])[0], 'C', 'C E G reads as C first');
+    t.ok(names([0, 3, 7, 10]).includes('Cm7'), 'C D# G A# includes Cm7');
+    t.ok(names([0, 4, 7, 9]).includes('Am7') && names([0, 4, 7, 9]).includes('C6'), 'C E G A reads as both C6 and Am7');
+
+    // the open C7 in "Chord positions": the dropped root would fall below the
+    // nut, so the 5th is raised instead
+    const cShape = cagedPlacements(0, CAGED_MAJOR).find(p => p.name === 'C' && p.fretMin === 0);
+    t.equal(grip(seventhCells(cShape, 0, 10)), 'x-3-2-3-1-0', 'open C-shape C7 raises the 5th to the flat 7th');
+    t.equal(grip(seventhCells(cShape, 0, 11)), 'x-3-2-0-0-0', 'open C-shape Cmaj7 flattens the doubled root');
+  }
+
+  // ---- 5. the genre library and the presets are well-formed ----
+  function testData(t){
+    GT.genreData.forEach(g => {
+      const tag = `[${g.name}]`;
+      const issues = [];
+      g.progressions.forEach(p => {
+        if (!p.key) issues.push(`"${p.name}" has no key`);
+        p.chords.forEach(c => { if (!parseChordName(c)) issues.push(`"${p.name}": "${c}" doesn't parse`); });
+        if (/twelve|12|quick.change/i.test(p.name) && p.chords.length !== 12)
+          issues.push(`"${p.name}" is a twelve-bar form with ${p.chords.length} bars`);
+        const m = p.name.match(/in ([A-G][b#]?)/);
+        if (m && m[1] !== p.key) issues.push(`"${p.name}" names ${m[1]} but its key is ${p.key}`);
+      });
+      g.rhythms.forEach(r => {
+        if (![6, 8, 12, 16].includes(r.grid)) issues.push(`rhythm "${r.name}" has grid ${r.grid}`);
+        if (r.grid === 6 && r.beats !== 3) issues.push(`rhythm "${r.name}" is six to the bar but doesn't say it's in 3`);
+        r.hits.forEach(h => { if (h.at < 0 || h.at >= r.grid) issues.push(`rhythm "${r.name}" hits slot ${h.at} of ${r.grid}`); });
+        if (r.drums) Object.entries(r.drums).forEach(([k, arr]) =>
+          (arr || []).forEach(at => { if (at >= r.grid) issues.push(`rhythm "${r.name}" ${k} at ${at} of ${r.grid}`); }));
+        g.progressions.forEach(p => p.chords.forEach(c => {
+          const v = voiceChord(c, r.voicing);
+          if (!v) issues.push(`"${c}" can't be voiced as ${r.voicing} for "${r.name}"`);
+        }));
+      });
+      g.leads.forEach(l => {
+        const total = l.bars * l.grid;
+        const pcs = new Set();
+        l.notes.forEach(n => {
+          if (n.at + (n.dur || 1) > total) issues.push(`lead "${l.name}" runs past its ${l.bars} bars`);
+          if (n.f < 0 || n.f > FRET_COUNT) issues.push(`lead "${l.name}" uses fret ${n.f}`);
+          pcs.add(midiFor(n.s, n.f) % 12);
+        });
+        if (/pentatonic/i.test(l.name) && pcs.size > 5) issues.push(`lead "${l.name}" says pentatonic but uses ${pcs.size} notes`);
+      });
+      t.equal(issues.join('; '), '', `${tag} data is well-formed`);
+    });
+
+    GT.progressionPresets.forEach(p => p.variants.forEach(v => {
+      const label = p.name + (v.name ? ' / ' + v.name : '');
+      const bars = v.chords.reduce((a, c) => a + c.bars, 0);
+      const badDeg = v.chords.filter(c => c.deg < 0 || c.deg > 7);
+      // degree 7 (the harmonic-minor V) only exists in a minor key
+      const usesMinorV = v.chords.some(c => c.deg === 7) && (v.mode || p.mode) !== 'minor';
+      t.ok(!badDeg.length && !usesMinorV && bars > 0 && bars <= 16, `preset ${label}: ${bars} bars, degrees in range`);
+      if (/blues/i.test(p.name) && !/8-bar/.test(v.name)) t.equal(bars, 12, `preset ${label} is twelve bars`);
+    }));
+  }
+
   // ---- a very small test runner ----
   function run(){
     const results = [];
@@ -407,6 +535,9 @@
     const suites = [
       ['Chord finder keeps its known shapes', testBaselineShapesSurvive],
       ['Chord finder output is identifiable in reverse', testFinderOutputIsIdentifiable],
+      ['Chord finder shows the everyday grips', testCanonicalGrips],
+      ['Theory: naming and identification', testTheory],
+      ['Genre library and presets are well-formed', testData],
     ];
     const out = [];
     suites.forEach(([title, fn]) => {

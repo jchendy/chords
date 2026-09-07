@@ -4,7 +4,7 @@
   'use strict';
   const GT = (window.GT = window.GT || {});
 
-  const { SEMITONE, shuffle } = GT.theory;
+  const { SEMITONE } = GT.theory;
 
   const ROOT_OCTAVE = 3;
 
@@ -50,6 +50,18 @@
   function ensureAudio(){
     if(!audioCtx){
       audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+      // Every bus meets at one limiter, so a kick, a bass note and a full
+      // chord landing on the same beat can't add up past what the output
+      // can carry. Gentle enough to be inaudible until it's needed.
+      const limiter = audioCtx.createDynamicsCompressor();
+      limiter.threshold.value = -10;
+      limiter.knee.value = 12;
+      limiter.ratio.value = 6;
+      limiter.attack.value = 0.003;
+      limiter.release.value = 0.12;
+      limiter.connect(audioCtx.destination);
+
       masterGain = audioCtx.createGain();
       masterGain.gain.value = 0.3;
       const tone = audioCtx.createBiquadFilter();
@@ -57,29 +69,29 @@
       tone.frequency.value = 4800;
       tone.Q.value = 0.7;
       masterGain.connect(tone);
-      tone.connect(audioCtx.destination);
+      tone.connect(limiter);
 
       // separate percussion chain so the hi-hat's high end isn't
       // swallowed by the piano voice's lowpass filter
       hihatGain = audioCtx.createGain();
       hihatGain.gain.value = 0.4;
-      hihatGain.connect(audioCtx.destination);
+      hihatGain.connect(limiter);
 
       // bass and kick/snare buses for the genre styles
       bassGain = audioCtx.createGain();
       bassGain.gain.value = 0.42;
-      bassGain.connect(audioCtx.destination);
+      bassGain.connect(limiter);
 
       drumGain = audioCtx.createGain();
       drumGain.gain.value = 0.55;
-      drumGain.connect(audioCtx.destination);
+      drumGain.connect(limiter);
 
       pianoWave = pianoWaveFor(audioCtx);
 
       // the guitar in the genre examples gets its own bus
       guitarGain = audioCtx.createGain();
       guitarGain.gain.value = 0.5;
-      guitarGain.connect(audioCtx.destination);
+      guitarGain.connect(limiter);
 
       // a soft-clipping curve — the overdrive the punk and metal tones run through
       driveCurve = new Float32Array(1024);
@@ -160,11 +172,16 @@
     return 440 * Math.pow(2, ((octave + 1) * 12 + rootPc + off - 69) / 12);
   }
 
-  // triad plus a 7th; `rootless` drops the low root and voices it higher
+  // Triad plus a 7th; `rootless` drops the low root and voices it higher.
+  // A chord that carries its own 7th — one the practice tab's shape picker
+  // set — is played as written. A plain triad still gets the style's 7th,
+  // since that's the style's sound: a blues comps in dominants.
   function playChord7(chord, time, duration, velocity, rootless){
     const r = SEMITONE[chord.note], third = SEMITONE[chord.third], fifth = SEMITONE[chord.fifth];
     const isDom = chord.numeral === 'V' || chord.numeral === 'VII' || chord.numeral === 'v';
-    const seventh = (r + (isDom || chord.quality === 'min' ? 10 : 11)) % 12;
+    const seventh = chord.seventh
+      ? SEMITONE[chord.seventh] % 12
+      : (r + (isDom || chord.quality !== 'maj' ? 10 : 11)) % 12;
     const pcs = rootless ? [third, fifth, seventh, r] : [r, third, fifth, seventh];
     let octave = rootless ? 4 : 3, prev = -1;
     pcs.forEach(pc => {
@@ -552,7 +569,7 @@
   // one note of a walking bass line for `chord`, position 0-3 within the bar
   function walkBassFreq(chord, nextChord, pos, approachNext){
     const r = SEMITONE[chord.note] % 12;
-    const isMin = chord.quality === 'min';
+    const isMin = chord.quality !== 'maj';                     // minor and diminished both have a flat 3rd
     if (pos === 0) return bassFreqAt(r, 0, 2);                 // root
     if (pos === 1) return bassFreqAt(r, 7, 2);                 // fifth
     if (pos === 2) return bassFreqAt(r, isMin ? 15 : 16, 2);   // third, up an octave
@@ -563,7 +580,7 @@
   GT.audio = {
     ctx: () => audioCtx,               // live handle; null until ensureAudio() runs
     pianoWaveFor, PIANO_PARTIALS,      // exposed so the tests can render a note offline
-    ensureAudio, noteFreq, chordFrequencies, pcFreq, bassFreqAt, walkBassFreq,
+    ensureAudio, noteFreq, chordFrequencies, pcFreq, bassFreqAt, walkBassFreq, ROOT_OCTAVE,
     playNote, playChord, playChord7, playBass, playGuitar,
     playHiHat, playRide, playKick, playSnare, playStyleVoice,
     STYLES,

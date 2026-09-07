@@ -160,9 +160,11 @@
     // own) is the "major" shorthand, so CM7 is a major 7th while Cm7 is a minor
     // one. Spell it out before folding the rest of the suffix to lower case.
     return s.trim()
+      .replace(/^mM(?=\d)/, 'mmaj')
       .replace(/^M(?=\d|$)/, 'maj')
       .toLowerCase().replace(/\s+/g, '')
-      .replace(/♭/g, 'b').replace(/♯/g, '#').replace(/δ/g, 'maj');
+      .replace(/♭/g, 'b').replace(/♯/g, '#').replace(/δ/g, 'maj')
+      .replace(/°/g, 'dim');       // the app writes diminished chords this way itself
   }
 
   // parse a typed chord name like "G#9" or "Dm7b5" into { rootPc, rootName, formula }
@@ -196,13 +198,22 @@
   }
 
   // Roman numeral for a chord sitting some interval above a tonic — used when a
-  // progression arrives as bare chord names with no key attached.
+  // progression arrives as bare chord names. Which notes are "in the key" and
+  // so get a plain numeral depends on the mode: in A minor, F and G are VI and
+  // VII; in A major they'd be \u266dVI and \u266dVII.
   const DEGREE_NUMERALS = {
-    0: 'I', 1: '\u266dII', 2: 'II', 3: '\u266dIII', 4: 'III', 5: 'IV',
-    6: '\u266fIV', 7: 'V', 8: '\u266dVI', 9: 'VI', 10: '\u266dVII', 11: 'VII',
+    major: {
+      0: 'I', 1: '\u266dII', 2: 'II', 3: '\u266dIII', 4: 'III', 5: 'IV',
+      6: '\u266fIV', 7: 'V', 8: '\u266dVI', 9: 'VI', 10: '\u266dVII', 11: 'VII',
+    },
+    minor: {
+      0: 'I', 1: '\u266dII', 2: 'II', 3: 'III', 4: '\u266fIII', 5: 'IV',
+      6: '\u266fIV', 7: 'V', 8: 'VI', 9: '\u266fVI', 10: 'VII', 11: '\u266fVII',
+    },
   };
-  function numeralFor(rootPc, tonicPc, quality){
-    const numeral = DEGREE_NUMERALS[((rootPc - tonicPc) % 12 + 12) % 12] || '';
+  function numeralFor(rootPc, tonicPc, quality, mode){
+    const table = DEGREE_NUMERALS[mode === 'minor' ? 'minor' : 'major'];
+    const numeral = table[((rootPc - tonicPc) % 12 + 12) % 12] || '';
     if (quality === 'maj') return numeral;
     return numeral.toLowerCase() + (quality === 'dim' ? '\u00b0' : '');
   }
@@ -212,7 +223,7 @@
   // richer chords come through as the nearest triad-and-7th: a 9th keeps its
   // dominant 7th, a 6th or diminished 7th drops to its triad, and a power
   // chord (no 3rd at all) is read as major.
-  function chordFromName(name, tonicPc){
+  function chordFromName(name, tonicPc, mode){
     const parsed = parseChordName(name);
     if (!parsed) return null;
     const ivs = parsed.formula.intervals;
@@ -230,7 +241,7 @@
       seventh: seventhIv === undefined ? null : at(seventhIv),
       quality,
       name: parsed.rootName + SUFFIX[quality],
-      numeral: numeralFor(parsed.rootPc, tonicPc === undefined ? parsed.rootPc : tonicPc, quality),
+      numeral: numeralFor(parsed.rootPc, tonicPc === undefined ? parsed.rootPc : tonicPc, quality, mode),
     };
   }
 

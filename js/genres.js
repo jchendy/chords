@@ -164,7 +164,7 @@
         bar++;
       }
     });
-    return { notes, drums, grid, bars, totalSlots: bar * grid };
+    return { notes, drums, grid, bars, totalSlots: bar * grid, beats: rhythm.beats || 4 };
   }
 
   // A lead line is already written as notes; it just needs its tone filled in.
@@ -176,7 +176,7 @@
     }));
     const bars = [];
     for (let b = 0; b < lead.bars; b++) bars.push({ chord: '', startSlot: b * lead.grid });
-    return { notes, drums: [], grid: lead.grid, bars, totalSlots: lead.bars * lead.grid };
+    return { notes, drums: [], grid: lead.grid, bars, totalSlots: lead.bars * lead.grid, beats: lead.beats || 4 };
   }
 
   GT.genres = {
