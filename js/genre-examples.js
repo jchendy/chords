@@ -211,13 +211,16 @@
 
   function renderGenres(){
     genreGroup.innerHTML = '';
-    // grouped by family, so related styles sit together
+    // grouped by family, so related styles sit together, loud to quiet
+    const FAMILY_ORDER = ['Punk', 'Rock', 'Metal', 'Roots rock', 'Blues', 'Groove', 'Jazz', 'Latin'];
     const families = [];
     GT.genreData.forEach(g => {
       let f = families.find(x => x.name === g.family);
       if (!f) families.push(f = { name: g.family, genres: [] });
       f.genres.push(g);
     });
+    const rank = f => { const i = FAMILY_ORDER.indexOf(f.name); return i === -1 ? FAMILY_ORDER.length : i; };
+    families.sort((a, b) => rank(a) - rank(b));
     families.forEach(f => {
       const wrap = document.createElement('div');
       wrap.className = 'genre-family';

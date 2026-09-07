@@ -43,6 +43,19 @@
     ninth5:  { ref: 4, offs: [null, 0, 0, -1, 0, null] },        // the funk 9th grip
     m6_5:    { ref: 4, offs: [2, 1, 2, 2, 0, null] },            // m6, the gypsy-jazz staple
     dim7_5:  { ref: 4, offs: [null, 1, -1, 1, 0, null] },        // diminished 7th
+    // the other three CAGED forms, for styles that live in open position —
+    // these only fit low on the neck, which is exactly where they're wanted
+    gShape:  { ref: 5, offs: [0, -3, -3, -3, -1, 0] },           // open G
+    cShape:  { ref: 4, offs: [-3, -2, -3, -1, 0, null] },        // open C
+    dShape:  { ref: 3, offs: [2, 3, 2, 0, null, null] },         // open D
+    dmShape: { ref: 3, offs: [1, 3, 2, 0, null, null] },         // open Dm
+    g7Shape: { ref: 5, offs: [-2, -3, -3, -3, -1, 0] },          // open G7
+    c7Shape: { ref: 4, offs: [-3, -2, 0, -1, 0, null] },         // open C7
+    d7Shape: { ref: 3, offs: [2, 1, 2, 0, null, null] },         // open D7
+    b7Shape: { ref: 4, offs: [0, -2, 0, -1, 0, null] },          // open B7 (x-2-1-2-0-2)
+    // root and octave only — the pop-punk "octave chord"
+    octave6: { ref: 5, offs: [null, null, null, 2, null, 0] },
+    octave5: { ref: 4, offs: [null, null, 2, null, 0, null] },
   };
 
   // which grip a chord quality wants, with the root on the 6th or 5th string
@@ -55,6 +68,13 @@
               m7: ['shellm6', 'shellm5'], maj7: ['shellM6', 'shellM5'],
               '9': ['ninth5', 'ninth5'], m6: ['m6_5', 'm6_5'], 'm7♭5': ['shellm6', 'shellm5'],
               dim7: ['dim7_5', 'dim7_5'] },
+    // open position: every grip that could fit, and the lowest one wins — so
+    // G is the open G, C the open C, B7 the open B7, and F a barre at the 1st
+    open:   { '': ['barre6', 'barre5', 'gShape', 'cShape', 'dShape'],
+              m: ['min6', 'min5', 'dmShape'], 5: ['power6', 'power5'],
+              7: ['dom6', 'dom5', 'b7Shape', 'g7Shape', 'c7Shape', 'd7Shape'],
+              m7: ['m7_6', 'm7_5'], maj7: ['maj7_6', 'maj7_5'], 9: ['ninth5', 'ninth5'] },
+    octave: { '': ['octave6', 'octave5'], m: ['octave6', 'octave5'], 5: ['octave6', 'octave5'] },
   };
 
   // Put a grip on the neck: pick whichever root string keeps it low and in
@@ -77,6 +97,18 @@
     return { cells, rootString: tpl.ref, rootFret: r };
   }
 
+  // Where the 5th sits in a grip, other than on the root string — the note an
+  // alternating bass goes to. The lowest-pitched one, as a thumb would.
+  function withFifth(placed, rootPc){
+    if (!placed) return placed;
+    const fifthPc = (rootPc + 7) % 12;
+    const c = placed.cells
+      .filter(c => c.string !== placed.rootString && (STRING_TUNING[c.string] + c.fret) % 12 === fifthPc)
+      .sort((a, b) => b.string - a.string)[0];
+    placed.fifthString = c ? c.string : null;
+    return placed;
+  }
+
   // Voice one chord of a progression in the style the rhythm asks for.
   function voiceChord(chordName, style){
     const parsed = parseChordName(chordName);
@@ -84,14 +116,25 @@
     const table = STYLE_TABLE[style] || STYLE_TABLE.barre;
     const options = table[parsed.formula.name] || STYLE_TABLE.barre[parsed.formula.name]
       || STYLE_TABLE.barre[''];
+    if (style === 'open'){
+      // whichever grip keeps the hand nearest the nut
+      let best = null;
+      for (const name of options){
+        const placed = placeVoicing(parsed.rootPc, name);
+        if (!placed) continue;
+        placed.maxFret = Math.max(...placed.cells.map(c => c.fret));
+        if (!best || placed.maxFret < best.maxFret) best = placed;
+      }
+      return withFifth(best, parsed.rootPc);
+    }
     for (const name of options){
       // a grip that lands above the 9th fret is usually the wrong octave here
       const placed = placeVoicing(parsed.rootPc, name);
-      if (placed && placed.rootFret <= 9) return placed;
+      if (placed && placed.rootFret <= 9) return withFifth(placed, parsed.rootPc);
     }
     for (const name of options){
       const placed = placeVoicing(parsed.rootPc, name);
-      if (placed) return placed;
+      if (placed) return withFifth(placed, parsed.rootPc);
     }
     return null;
   }
@@ -103,13 +146,15 @@
     high: s => s <= 2,
     mid:  s => s >= 1 && s <= 3,
     bass: null,        // handled separately: the root string only
+    alt:  null,        // ...and the 5th, for a boom-chick bass that alternates
   };
 
-  function stringsFor(part, cells, rootString){
-    if (part === 'bass'){
+  function stringsFor(part, cells, rootString, fifthString){
+    if (part === 'bass' || (part === 'alt' && fifthString == null)){
       const root = cells.filter(c => c.string === rootString);
       return root.length ? root : cells.slice(-1);
     }
+    if (part === 'alt') return cells.filter(c => c.string === fifthString);
     const test = PARTS[part] || PARTS.all;
     const picked = cells.filter(c => test(c.string));
     return picked.length ? picked : cells;
@@ -140,7 +185,7 @@
         bars.push({ chord: chordName, startSlot: bar * grid });
         if (voiced){
           rhythm.hits.forEach(hit => {
-            const picked = stringsFor(hit.part || 'all', voiced.cells, voiced.rootString);
+            const picked = stringsFor(hit.part || 'all', voiced.cells, voiced.rootString, voiced.fifthString);
             const dur = hit.dur || (hit.mute ? 0.4 : 1);
             picked.forEach((cell, k) => {
               notes.push({

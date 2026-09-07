@@ -4,8 +4,10 @@
 //
 // Rhythm patterns are written on a grid of slots per bar (8 = eighth notes,
 // 16 = sixteenths). A hit says which slot it lands on, which part of the chord
-// the pick catches (`all`, `low`, `high`, `mid`, `bass`), whether it's palm
-// muted, and whether it's an upstroke.
+// the pick catches (`all`, `low`, `high`, `mid`, `bass`, or `alt` for the 5th
+// an alternating bass moves to), whether it's palm muted, and whether it's
+// an upstroke. A rhythm's `voicing` says which grips to use: `power`,
+// `barre`, `shell`, `octave`, or `open` for the lowest grip that fits.
 //
 // Lead lines are written as notes: s = string (0 = high e ... 5 = low E),
 // f = fret, at = slot, dur = length in slots.
@@ -186,10 +188,10 @@
         { name: 'I–IV vamp in E', key: 'E', chords: ['E7', 'A7', 'E7', 'E7'] },
       ],
       rhythms: [
-        { name: 'Alternating thumb', grid: 8, voicing: 'barre', tone: 'clean',
-          hits: [D(0, 'bass'), D(2, 'high', { dur: 0.5 }), D(4, 'bass', { vel: 0.8 }), D(6, 'high', { dur: 0.5 })],
+        { name: 'Alternating thumb', grid: 8, voicing: 'open', tone: 'clean',
+          hits: [D(0, 'bass'), D(2, 'high', { dur: 0.5 }), D(4, 'alt', { vel: 0.8 }), D(6, 'high', { dur: 0.5 })],
           drums: null },
-        { name: 'Triplet shuffle', grid: 12, voicing: 'barre', tone: 'clean',
+        { name: 'Triplet shuffle', grid: 12, voicing: 'open', tone: 'clean',
           hits: [D(0, 'low'), D(2, 'high', { dur: 0.4, vel: 0.7 }), D(3, 'low'), D(5, 'high', { dur: 0.4, vel: 0.7 }),
                  D(6, 'low'), D(8, 'high', { dur: 0.4, vel: 0.7 }), D(9, 'low'), D(11, 'high', { dur: 0.4, vel: 0.7 })],
           drums: null },
@@ -258,11 +260,13 @@
       ],
       leads: [
         { name: 'ii–V–I line in C', grid: 8, bars: 2, tone: 'clean',
+          // Dm7 arpeggio with a chromatic C♯ pushing back up to D, then a
+          // scale down the G7 that slips through E♭ to land on C
           notes: [
-            { s: 4, f: 5, at: 0 }, { s: 3, f: 3, at: 1 }, { s: 3, f: 7, at: 2 }, { s: 2, f: 5, at: 3 },
-            { s: 2, f: 7, at: 4 }, { s: 1, f: 6, at: 5 }, { s: 1, f: 5, at: 6 }, { s: 2, f: 7, at: 7 },
-            { s: 2, f: 5, at: 8 }, { s: 2, f: 4, at: 9 }, { s: 3, f: 5, at: 10 }, { s: 3, f: 7, at: 11 },
-            { s: 3, f: 5, at: 12 }, { s: 4, f: 7, at: 13 }, { s: 4, f: 3, at: 14, dur: 2 },
+            { s: 0, f: 5, at: 0 }, { s: 1, f: 6, at: 1 }, { s: 1, f: 5, at: 2 }, { s: 1, f: 3, at: 3 },
+            { s: 1, f: 2, at: 4 }, { s: 1, f: 3, at: 5 }, { s: 1, f: 6, at: 6 }, { s: 0, f: 5, at: 7 },
+            { s: 0, f: 7, at: 8 }, { s: 0, f: 5, at: 9 }, { s: 0, f: 3, at: 10 }, { s: 1, f: 6, at: 11 },
+            { s: 1, f: 5, at: 12 }, { s: 1, f: 4, at: 13 }, { s: 1, f: 3, at: 14 }, { s: 1, f: 1, at: 15 },
           ] },
         { name: 'Enclosure phrase', grid: 8, bars: 2, tone: 'clean',
           notes: [
@@ -425,11 +429,11 @@
         { name: 'Twelve-bar in G', key: 'G', chords: ['G', 'G', 'G', 'G', 'C', 'C', 'G', 'G', 'D', 'C', 'G', 'D'] },
       ],
       rhythms: [
-        { name: 'Boom-chick two-beat', grid: 8, voicing: 'barre', tone: 'clean',
-          hits: [D(0, 'bass'), D(2, 'high', { dur: 0.4 }), D(4, 'bass', { vel: 0.85 }), D(6, 'high', { dur: 0.4 })],
+        { name: 'Boom-chick two-beat', grid: 8, voicing: 'open', tone: 'clean',
+          hits: [D(0, 'bass'), D(2, 'high', { dur: 0.4 }), D(4, 'alt', { vel: 0.85 }), D(6, 'high', { dur: 0.4 })],
           drums: { kick: [0, 4], snare: [2, 6], hat: [0, 2, 4, 6] } },
-        { name: 'Train beat strum', grid: 16, voicing: 'barre', tone: 'clean',
-          hits: [D(0, 'bass'), D(4, 'high', { dur: 0.4 }), D(8, 'bass', { vel: 0.85 }), D(12, 'high', { dur: 0.4 }),
+        { name: 'Train beat strum', grid: 16, voicing: 'open', tone: 'clean',
+          hits: [D(0, 'bass'), D(4, 'high', { dur: 0.4 }), D(8, 'alt', { vel: 0.85 }), D(12, 'high', { dur: 0.4 }),
                  U(6, 'high', { dur: 0.3, vel: 0.6 }), U(14, 'high', { dur: 0.3, vel: 0.6 })],
           drums: { kick: [0, 8], snare: [4, 12], hat: beats16.filter(a => a % 2 === 0) } },
       ],
@@ -441,6 +445,258 @@
             { s: 1, f: 3, at: 4 }, { s: 2, f: 0, at: 5 }, { s: 3, f: 2, at: 6 }, { s: 3, f: 0, at: 7 },
             { s: 4, f: 2, at: 8, dur: 2 }, { s: 3, f: 0, at: 10 }, { s: 3, f: 2, at: 11 },
             { s: 2, f: 0, at: 12 }, { s: 2, f: 2, at: 13 }, { s: 1, f: 3, at: 14, dur: 2 },
+          ] },
+      ],
+    },
+    {
+      id: 'bluegrass', name: 'Bluegrass', family: 'Roots rock', tempo: 150,
+      blurb: 'Flat-picked open chords, the bass alternating root and fifth, and the G run to end a line.',
+      progressions: [
+        { name: 'I–IV–V in G', key: 'G', chords: ['G', 'C', 'D', 'G'] },
+        { name: 'I–V in G', key: 'G', chords: ['G', 'G', 'D', 'D'] },
+        { name: 'I–IV–I–V in C', key: 'C', chords: ['C', 'F', 'C', 'G'] },
+      ],
+      rhythms: [
+        { name: 'Boom-chick, alternating bass', grid: 8, voicing: 'open', tone: 'clean',
+          hits: [D(0, 'bass'), D(2, 'high', { dur: 0.4 }), D(4, 'alt', { vel: 0.85 }), D(6, 'high', { dur: 0.4 })],
+          drums: null },
+        { name: 'Strum with upstrokes', grid: 8, voicing: 'open', tone: 'clean',
+          hits: [D(0, 'bass'), D(2, 'high', { dur: 0.4 }), U(3, 'high', { dur: 0.3, vel: 0.6 }),
+                 D(4, 'alt', { vel: 0.85 }), D(6, 'high', { dur: 0.4 }), U(7, 'high', { dur: 0.3, vel: 0.6 })],
+          drums: null },
+        { name: 'Waltz', grid: 6, beats: 3, voicing: 'open', tone: 'clean',
+          hits: [D(0, 'bass'), D(2, 'high', { dur: 0.5 }), D(4, 'high', { dur: 0.5, vel: 0.8 })],
+          drums: null },
+      ],
+      leads: [
+        { name: 'The G run', grid: 8, bars: 2, tone: 'clean',
+          // G A B♭ B D G — the lick every bluegrass guitarist ends a line with
+          notes: [
+            { s: 5, f: 3, at: 0 }, { s: 4, f: 0, at: 1 }, { s: 4, f: 1, at: 2 }, { s: 4, f: 2, at: 3 },
+            { s: 3, f: 0, at: 4 }, { s: 2, f: 0, at: 5, dur: 3 },
+            { s: 5, f: 3, at: 8 }, { s: 4, f: 0, at: 9 }, { s: 4, f: 1, at: 10 }, { s: 4, f: 2, at: 11 },
+            { s: 3, f: 0, at: 12 }, { s: 3, f: 2, at: 13 }, { s: 2, f: 0, at: 14, dur: 2 },
+          ] },
+      ],
+    },
+    // ------------------------------------------------------------ more punk
+    {
+      id: 'pop-punk', name: 'Pop punk', family: 'Punk', tempo: 175,
+      blurb: 'Bright major keys, power chords under the verse, octave melodies riding on top.',
+      progressions: [
+        { name: 'I–V–vi–IV in D', key: 'D', chords: ['D5', 'A5', 'B5', 'G5'] },
+        { name: 'I–IV–V in G', key: 'G', chords: ['G5', 'C5', 'D5', 'D5'] },
+        { name: 'vi–IV–I–V in C', key: 'C', chords: ['A5', 'F5', 'C5', 'G5'] },
+      ],
+      rhythms: [
+        { name: 'Driving eighths', grid: 8, voicing: 'power', tone: 'drive',
+          hits: beats8.map(at => D(at, 'low', { vel: at % 2 ? 0.8 : 1 })),
+          drums: { kick: [0, 3, 4, 6], snare: [2, 6], hat: beats8 } },
+        { name: 'Octave chords', grid: 8, voicing: 'octave', tone: 'drive',
+          hits: beats8.map(at => D(at, 'all', { vel: at % 2 ? 0.8 : 1 })),
+          drums: { kick: [0, 4], snare: [2, 6], hat: beats8 } },
+        { name: 'Muted verse, open chorus', grid: 16, voicing: 'power', tone: 'drive',
+          hits: [0, 2, 4, 6].map(at => D(at, 'low', { mute: true, vel: 0.8 }))
+            .concat([D(8, 'all'), D(10, 'all', { vel: 0.8 }), D(12, 'all'), D(14, 'all', { vel: 0.8 })]),
+          drums: { kick: [0, 3, 8, 11], snare: [4, 12], hat: [0, 2, 4, 6, 8, 10, 12, 14] } },
+      ],
+      leads: [
+        { name: 'Octave melody in D', grid: 8, bars: 2, tone: 'drive',
+          notes: [
+            { s: 3, f: 5, at: 0, dur: 2 }, { s: 3, f: 7, at: 2, dur: 2 }, { s: 2, f: 6, at: 4, dur: 2 }, { s: 2, f: 4, at: 6, dur: 2 },
+            { s: 3, f: 7, at: 8, dur: 2 }, { s: 2, f: 4, at: 10 }, { s: 2, f: 6, at: 11 },
+            { s: 2, f: 7, at: 12, dur: 2 }, { s: 3, f: 7, at: 14, dur: 2 },
+          ] },
+      ],
+    },
+    {
+      id: 'hardcore', name: 'Hardcore punk', family: 'Punk', tempo: 210,
+      blurb: 'Faster and uglier: D-beat drums, chromatic power-chord riffs, a breakdown to close.',
+      progressions: [
+        { name: 'I–♭III–IV in E', key: 'E', chords: ['E5', 'G5', 'A5', 'A5'] },
+        { name: 'I–IV–V–♭VII in A', key: 'A', chords: ['A5', 'D5', 'E5', 'G5'] },
+        { name: 'I–♭II in E', key: 'E', chords: ['E5', 'F5', 'E5', 'F5'] },
+      ],
+      rhythms: [
+        { name: 'D-beat', grid: 8, voicing: 'power', tone: 'drive',
+          hits: beats8.map(at => D(at, 'low', { vel: at % 2 ? 0.8 : 1 })),
+          drums: { kick: [0, 3, 4, 7], snare: [2, 6], hat: beats8 } },
+        { name: 'Thrash beat', grid: 16, voicing: 'power', tone: 'drive',
+          hits: beats16.map(at => D(at, 'low', { mute: at % 4 !== 0, vel: at % 4 ? 0.7 : 1 })),
+          drums: { kick: [0, 2, 4, 6, 8, 10, 12, 14], snare: [2, 6, 10, 14], hat: [0, 4, 8, 12] } },
+        { name: 'Breakdown', grid: 8, voicing: 'power', tone: 'drive',
+          hits: [D(0, 'low', { dur: 1.5 }), D(3, 'low', { mute: true, vel: 0.8 }), D(4, 'low', { dur: 1.5 }),
+                 D(6, 'low', { mute: true, vel: 0.8 }), D(7, 'low', { mute: true, vel: 0.8 })],
+          drums: { kick: [0, 3, 6, 7], snare: [4], hat: [0, 2, 4, 6] } },
+      ],
+      leads: [
+        { name: 'Chromatic riff in E', grid: 8, bars: 2, tone: 'drive',
+          notes: [
+            { s: 5, f: 0, at: 0 }, { s: 5, f: 0, at: 1 }, { s: 5, f: 3, at: 2 }, { s: 5, f: 4, at: 3 },
+            { s: 5, f: 5, at: 4 }, { s: 5, f: 0, at: 5 }, { s: 5, f: 6, at: 6 }, { s: 5, f: 5, at: 7 },
+            { s: 5, f: 0, at: 8 }, { s: 5, f: 0, at: 9 }, { s: 5, f: 3, at: 10 }, { s: 5, f: 4, at: 11 },
+            { s: 5, f: 5, at: 12 }, { s: 5, f: 4, at: 13 }, { s: 5, f: 3, at: 14, dur: 2 },
+          ] },
+      ],
+    },
+    // ------------------------------------------------------------------ rock
+    {
+      id: 'hard-rock', name: 'Hard rock', family: 'Rock', tempo: 132,
+      blurb: 'Big open chords and pentatonic riffs, the whole band leaning on the backbeat.',
+      progressions: [
+        { name: 'I–♭VII–IV in A', key: 'A', chords: ['A5', 'G5', 'D5', 'A5'] },
+        { name: 'I–IV–♭VII–IV in E', key: 'E', chords: ['E5', 'A5', 'D5', 'A5'] },
+        { name: 'i–♭VI–♭VII in A minor', key: 'A', chords: ['Am', 'F', 'G', 'G'] },
+      ],
+      rhythms: [
+        { name: 'Straight-eighth chug', grid: 8, voicing: 'power', tone: 'drive',
+          hits: beats8.map(at => D(at, 'low', { mute: at % 4 !== 0, vel: at % 4 ? 0.7 : 1 })),
+          drums: { kick: [0, 4, 5], snare: [2, 6], hat: beats8 } },
+        { name: 'Open-chord stomp', grid: 8, voicing: 'barre', tone: 'drive',
+          hits: [D(0, 'all', { dur: 1.8 }), D(2, 'all', { dur: 0.5, vel: 0.75 }), D(4, 'all', { dur: 1.8 }), D(7, 'all', { dur: 0.5, vel: 0.75 })],
+          drums: { kick: [0, 4, 5], snare: [2, 6], hat: [0, 2, 4, 6] } },
+        { name: 'Shuffle riff', grid: 12, voicing: 'power', tone: 'drive',
+          hits: [0, 2, 3, 5, 6, 8, 9, 11].map(at => D(at, 'low', { mute: at % 3 !== 0, vel: at % 3 ? 0.7 : 1 })),
+          drums: { kick: [0, 6, 8], snare: [3, 9], hat: [0, 2, 3, 5, 6, 8, 9, 11] } },
+      ],
+      leads: [
+        { name: 'A minor pentatonic riff', grid: 8, bars: 2, tone: 'drive',
+          notes: [
+            { s: 4, f: 5, at: 0 }, { s: 4, f: 7, at: 1 }, { s: 3, f: 5, at: 2 }, { s: 3, f: 7, at: 3 },
+            { s: 2, f: 5, at: 4 }, { s: 2, f: 7, at: 5 }, { s: 1, f: 5, at: 6 }, { s: 1, f: 8, at: 7 },
+            { s: 0, f: 5, at: 8, dur: 2 }, { s: 1, f: 8, at: 10 }, { s: 1, f: 5, at: 11 },
+            { s: 2, f: 7, at: 12 }, { s: 2, f: 5, at: 13 }, { s: 3, f: 7, at: 14 }, { s: 4, f: 5, at: 15 },
+          ] },
+      ],
+    },
+    {
+      id: 'grunge', name: 'Grunge', family: 'Rock', tempo: 112,
+      blurb: 'Quiet, then loud: clean arpeggios in the verse, fuzzed-out power chords in the chorus.',
+      progressions: [
+        { name: 'I–♭VI–♭III–♭VII in E', key: 'E', chords: ['E5', 'C5', 'G5', 'D5'] },
+        { name: 'I–♭VII–IV in A', key: 'A', chords: ['A5', 'G5', 'D5', 'D5'] },
+        { name: 'Verse in E minor', key: 'E', chords: ['Em', 'G', 'D', 'C'] },
+      ],
+      rhythms: [
+        { name: 'Loud chorus', grid: 8, voicing: 'power', tone: 'drive',
+          hits: beats8.map(at => D(at, 'all', { vel: at % 2 ? 0.8 : 1, dur: 1.2 })),
+          drums: { kick: [0, 3, 4], snare: [2, 6], hat: beats8 } },
+        { name: 'Clean verse arpeggio', grid: 8, voicing: 'open', tone: 'clean',
+          hits: [D(0, 'bass'), D(1, 'mid', { dur: 2 }), D(2, 'high', { dur: 2 }), D(3, 'mid', { dur: 2 }),
+                 D(4, 'alt'), D(5, 'mid', { dur: 2 }), D(6, 'high', { dur: 2 }), D(7, 'mid', { dur: 2 })],
+          drums: { kick: [0, 4], snare: [2, 6], hat: [0, 2, 4, 6] } },
+        { name: 'Half-time chug', grid: 8, voicing: 'power', tone: 'drive',
+          hits: [D(0, 'low', { dur: 1.5 }), D(2, 'low', { mute: true, vel: 0.7 }), D(3, 'low', { mute: true, vel: 0.7 }),
+                 D(4, 'low', { dur: 1.5 }), D(6, 'low', { mute: true, vel: 0.7 }), D(7, 'low', { mute: true, vel: 0.7 })],
+          drums: { kick: [0, 3], snare: [4], hat: beats8 } },
+      ],
+      leads: [
+        { name: 'E minor pentatonic at the twelfth', grid: 8, bars: 2, tone: 'drive',
+          notes: [
+            { s: 0, f: 12, at: 0 }, { s: 0, f: 15, at: 1 }, { s: 1, f: 12, at: 2 }, { s: 1, f: 15, at: 3 },
+            { s: 2, f: 12, at: 4 }, { s: 2, f: 14, at: 5 }, { s: 3, f: 12, at: 6 }, { s: 3, f: 14, at: 7 },
+            { s: 2, f: 12, at: 8, dur: 2 }, { s: 1, f: 15, at: 10 }, { s: 1, f: 12, at: 11 },
+            { s: 0, f: 15, at: 12 }, { s: 0, f: 12, at: 13, dur: 3 },
+          ] },
+      ],
+    },
+    {
+      id: 'blues-rock', name: 'Blues rock', family: 'Blues', tempo: 120,
+      blurb: 'The twelve-bar with the amp turned up: boogie riffs, stop-time hits, pentatonic runs.',
+      progressions: [
+        { name: 'Twelve-bar in E', key: 'E', chords: ['E5', 'E5', 'E5', 'E5', 'A5', 'A5', 'E5', 'E5', 'B5', 'A5', 'E5', 'B5'] },
+        { name: 'I–♭VII–IV in A', key: 'A', chords: ['A', 'G', 'D', 'A'] },
+      ],
+      rhythms: [
+        { name: 'Boogie shuffle', grid: 12, voicing: 'power', tone: 'drive',
+          hits: [0, 2, 3, 5, 6, 8, 9, 11].map(at => D(at, 'low', { vel: at % 3 === 0 ? 1 : 0.7, dur: 0.6 })),
+          drums: { kick: [0, 6], snare: [3, 9], hat: [0, 2, 3, 5, 6, 8, 9, 11] } },
+        { name: 'Riff eighths', grid: 8, voicing: 'power', tone: 'drive',
+          hits: [D(0, 'low'), D(2, 'low', { vel: 0.8 }), D(3, 'low', { mute: true, vel: 0.6 }),
+                 D(4, 'low'), D(6, 'low', { vel: 0.8 }), D(7, 'low', { mute: true, vel: 0.6 })],
+          drums: { kick: [0, 3, 4], snare: [2, 6], hat: beats8 } },
+        { name: 'Stop-time', grid: 8, voicing: 'barre', tone: 'drive',
+          hits: [D(0, 'all', { dur: 1.5 }), D(3, 'all', { dur: 0.5, vel: 0.85 })],
+          drums: { kick: [0, 3], snare: [3], hat: [0, 3] } },
+      ],
+      leads: [
+        { name: 'Blues scale run in A', grid: 8, bars: 2, tone: 'drive',
+          // A C D E♭ E G, up through box one and back down
+          notes: [
+            { s: 4, f: 5, at: 0 }, { s: 4, f: 6, at: 1 }, { s: 4, f: 7, at: 2 }, { s: 3, f: 5, at: 3 },
+            { s: 3, f: 7, at: 4 }, { s: 2, f: 5, at: 5 }, { s: 2, f: 7, at: 6 }, { s: 1, f: 5, at: 7 },
+            { s: 1, f: 8, at: 8, dur: 2 }, { s: 1, f: 5, at: 10 }, { s: 2, f: 7, at: 11 },
+            { s: 2, f: 5, at: 12 }, { s: 3, f: 7, at: 13 }, { s: 4, f: 7, at: 14 }, { s: 4, f: 5, at: 15 },
+          ] },
+      ],
+    },
+    // ----------------------------------------------------------------- soul
+    {
+      id: 'soul', name: 'Soul', family: 'Groove', tempo: 118,
+      blurb: 'Motown and Stax: clean chords chanking on two and four, sixths sliding around the melody.',
+      progressions: [
+        { name: 'I–vi–IV–V in C', key: 'C', chords: ['CM7', 'Am7', 'FM7', 'G7'] },
+        { name: 'ii–V–I–vi in F', key: 'F', chords: ['Gm7', 'C7', 'FM7', 'Dm7'] },
+        { name: 'I–IV vamp in E', key: 'E', chords: ['E9', 'A9', 'E9', 'A9'] },
+      ],
+      rhythms: [
+        { name: 'Chank on two and four', grid: 8, voicing: 'barre', tone: 'clean',
+          hits: [D(2, 'high', { dur: 0.4 }), D(6, 'high', { dur: 0.4 })],
+          drums: { kick: [0, 4, 5], snare: [2, 6], hat: beats8 } },
+        { name: 'Motown eighths', grid: 8, voicing: 'barre', tone: 'clean',
+          hits: beats8.map(at => (at % 2 ? U : D)(at, 'high', { dur: 0.45, vel: at % 2 ? 0.6 : 0.85 })),
+          drums: { kick: [0, 2, 4, 6], snare: [2, 6], hat: beats8 } },
+        { name: 'Sixteenth push', grid: 16, voicing: 'barre', tone: 'clean',
+          hits: [D(0, 'all', { dur: 0.6 }), U(3, 'high', { dur: 0.4, vel: 0.7 }), D(6, 'high', { dur: 0.5 }),
+                 D(8, 'all', { dur: 0.6 }), U(11, 'high', { dur: 0.4, vel: 0.7 }), D(14, 'high', { dur: 0.5 })],
+          drums: { kick: [0, 6, 8, 10], snare: [4, 12], hat: [0, 2, 4, 6, 8, 10, 12, 14] } },
+      ],
+      leads: [
+        { name: 'Sixths in C', grid: 8, bars: 2, tone: 'clean',
+          // major and minor sixths on the e and G strings, walking up the scale
+          notes: [
+            { s: 0, f: 0, at: 0, dur: 2 }, { s: 2, f: 0, at: 0, dur: 2 },
+            { s: 0, f: 1, at: 2, dur: 2 }, { s: 2, f: 2, at: 2, dur: 2 },
+            { s: 0, f: 3, at: 4, dur: 2 }, { s: 2, f: 4, at: 4, dur: 2 },
+            { s: 0, f: 5, at: 6, dur: 2 }, { s: 2, f: 5, at: 6, dur: 2 },
+            { s: 0, f: 7, at: 8, dur: 2 }, { s: 2, f: 7, at: 8, dur: 2 },
+            { s: 0, f: 8, at: 10, dur: 2 }, { s: 2, f: 9, at: 10, dur: 2 },
+            { s: 0, f: 7, at: 12 }, { s: 2, f: 7, at: 12 }, { s: 0, f: 5, at: 13 }, { s: 2, f: 5, at: 13 },
+            { s: 0, f: 3, at: 14, dur: 2 }, { s: 2, f: 4, at: 14, dur: 2 },
+          ] },
+      ],
+    },
+    // ------------------------------------------------------------- flamenco
+    {
+      id: 'flamenco', name: 'Flamenco', family: 'Latin', tempo: 140,
+      blurb: 'Phrygian colour, the Andalusian cadence, rasgueado strums and a thumb driving the bass.',
+      progressions: [
+        { name: 'Andalusian in A minor', key: 'A', chords: ['Am', 'G', 'F', 'E'] },
+        { name: 'Por medio in E', key: 'E', chords: ['E', 'F', 'E', 'F'] },
+        { name: 'Farruca in A minor', key: 'A', chords: ['Am', 'E7', 'Am', 'E7'] },
+      ],
+      rhythms: [
+        { name: 'Rasgueado', grid: 16, voicing: 'open', tone: 'clean',
+          hits: [D(0, 'all', { dur: 0.5 }), U(1, 'all', { dur: 0.3, vel: 0.5 }), D(2, 'all', { dur: 0.3, vel: 0.7 }), U(3, 'all', { dur: 0.3, vel: 0.5 }),
+                 D(4, 'all', { dur: 0.5 }), D(8, 'all', { dur: 0.5 }), U(9, 'all', { dur: 0.3, vel: 0.5 }), D(10, 'all', { dur: 0.3, vel: 0.7 }),
+                 U(11, 'all', { dur: 0.3, vel: 0.5 }), D(12, 'all', { dur: 0.5 }), D(14, 'all', { dur: 0.4, vel: 0.8 })],
+          drums: null },
+        { name: 'Thumb and strum', grid: 8, voicing: 'open', tone: 'clean',
+          hits: [D(0, 'bass'), D(1, 'high', { dur: 0.5, vel: 0.7 }), D(2, 'high', { dur: 0.5 }),
+                 D(4, 'bass'), D(5, 'high', { dur: 0.5, vel: 0.7 }), D(6, 'all', { dur: 0.7 })],
+          drums: null },
+        { name: 'Rumba', grid: 16, voicing: 'open', tone: 'clean',
+          hits: [D(0, 'bass'), D(3, 'high', { dur: 0.5 }), D(4, 'high', { mute: true, vel: 0.6 }), D(6, 'all', { dur: 0.6 }),
+                 D(8, 'bass'), D(11, 'high', { dur: 0.5 }), D(12, 'high', { mute: true, vel: 0.6 }), D(14, 'all', { dur: 0.6 })],
+          drums: null },
+      ],
+      leads: [
+        { name: 'Phrygian run in E', grid: 8, bars: 2, tone: 'clean',
+          notes: [
+            { s: 5, f: 0, at: 0 }, { s: 5, f: 1, at: 1 }, { s: 5, f: 3, at: 2 }, { s: 4, f: 0, at: 3 },
+            { s: 4, f: 2, at: 4 }, { s: 4, f: 3, at: 5 }, { s: 3, f: 0, at: 6 }, { s: 3, f: 2, at: 7 },
+            { s: 3, f: 3, at: 8 }, { s: 3, f: 2, at: 9 }, { s: 3, f: 0, at: 10 }, { s: 4, f: 3, at: 11 },
+            { s: 4, f: 2, at: 12 }, { s: 4, f: 0, at: 13 }, { s: 5, f: 1, at: 14 }, { s: 5, f: 0, at: 15 },
           ] },
       ],
     },

@@ -46,6 +46,28 @@
   let pianoWave = null;
   let guitarGain = null;
   let driveCurve = null;
+  let driveIn = null;           // the shared overdrive stage's input
+  let reverb = null;
+  let reverbSends = {};         // per-voice send gains into the reverb
+
+  // A room for the convolver: stereo noise dying away over `seconds`, its
+  // top end rolling off as it goes, so the tail darkens the way a real one
+  // does. Generated once; no sample to download.
+  function roomImpulse(ctx, seconds){
+    const rate = ctx.sampleRate, n = Math.floor(rate * seconds);
+    const buf = ctx.createBuffer(2, n, rate);
+    for (let ch = 0; ch < 2; ch++){
+      const d = buf.getChannelData(ch);
+      let lp = 0;
+      for (let i = 0; i < n; i++){
+        const t = i / n;
+        const white = Math.random() * 2 - 1;
+        lp += (white - lp) * (0.6 - 0.45 * t);   // a one-pole lowpass that closes over the tail
+        d[i] = lp * Math.pow(1 - t, 2.2) * (i < 200 ? i / 200 : 1);
+      }
+    }
+    return buf;
+  }
 
   function ensureAudio(){
     if(!audioCtx){
@@ -99,6 +121,39 @@
         const x = (i / 1023) * 2 - 1;
         driveCurve[i] = Math.tanh(x * 3.2);
       }
+      // One overdrive stage shared by every 'drive' note, so the strings of a
+      // chord add up *before* they clip — that intermodulation is where a
+      // power chord's crunch comes from; clipping each string on its own
+      // never gets there. Pre-gain sets how hard the stage is driven; the
+      // filter after it takes the fizz off the top.
+      driveIn = audioCtx.createGain();
+      driveIn.gain.value = 2.2;
+      const driveShaper = audioCtx.createWaveShaper();
+      driveShaper.curve = driveCurve;
+      driveShaper.oversample = '4x';
+      const driveTone = audioCtx.createBiquadFilter();
+      driveTone.type = 'lowpass';
+      driveTone.frequency.value = 4200;
+      driveTone.Q.value = 0.8;
+      const driveOut = audioCtx.createGain();
+      driveOut.gain.value = 0.55;
+      driveIn.connect(driveShaper).connect(driveTone).connect(driveOut).connect(guitarGain);
+
+      // a shared reverb, with a send from each voice at its own level: a
+      // clean guitar sits in it, an overdriven one only touches it, and the
+      // palm-muted chug stays dry
+      reverb = audioCtx.createConvolver();
+      reverb.buffer = roomImpulse(audioCtx, 1.8);
+      const reverbOut = audioCtx.createGain();
+      reverbOut.gain.value = 0.5;
+      reverb.connect(reverbOut).connect(limiter);
+      reverbSends = {};
+      [['piano', 0.14], ['clean', 0.32], ['drive', 0.14], ['muted', 0.05], ['drums', 0.08]].forEach(([name, level]) => {
+        const g = audioCtx.createGain();
+        g.gain.value = level;
+        g.connect(reverb);
+        reverbSends[name] = g;
+      });
 
       const bufferSize = Math.floor(audioCtx.sampleRate * 0.5);
       noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
@@ -126,7 +181,10 @@
   function playNote(freq, time, duration, velocity){
     // A struck string doesn't fade evenly: it drops fast at first, then rings
     // on quietly. Two ramps give that shape instead of one straight decay.
-    const peak = 0.425 * velocity;      // halved: the two oscillators below sum
+    // High notes are played a little quieter and low ones a little fuller,
+    // the way a piano's own strings balance across the keyboard.
+    const balance = Math.min(1.25, Math.max(0.55, Math.pow(261.6 / freq, 0.3)));
+    const peak = 0.425 * velocity * balance;   // halved: the two oscillators below sum
     const knee = Math.min(0.18, duration * 0.4);
     const envelope = audioCtx.createGain();
     envelope.gain.setValueAtTime(0.0001, time);
@@ -145,6 +203,7 @@
       Math.max(500, open * 0.32), time + Math.min(0.7, duration));
     tone.connect(envelope);
     envelope.connect(masterGain);
+    envelope.connect(reverbSends.piano);
 
     // two copies a few cents apart, for the shimmer of real strings per note
     [-3, 3].forEach(detune => {
@@ -156,6 +215,22 @@
       osc.start(time);
       osc.stop(time + duration + 0.05);
     });
+
+    // the hammer: a few milliseconds of filtered noise on the front of the
+    // note, which is most of what makes a piano sound struck rather than bowed
+    const hammer = audioCtx.createBufferSource();
+    hammer.buffer = noiseBuffer;
+    const knock = audioCtx.createBiquadFilter();
+    knock.type = 'bandpass';
+    knock.frequency.value = Math.min(6000, freq * 6);
+    knock.Q.value = 1.2;
+    const knockGain = audioCtx.createGain();
+    knockGain.gain.setValueAtTime(0.0001, time);
+    knockGain.gain.exponentialRampToValueAtTime(0.09 * velocity, time + 0.002);
+    knockGain.gain.exponentialRampToValueAtTime(0.0001, time + 0.014);
+    hammer.connect(knock).connect(knockGain).connect(masterGain);
+    hammer.start(time);
+    hammer.stop(time + 0.02);
   }
 
   function playChord(chord, time, duration, velocity){
@@ -262,6 +337,7 @@
     ng.gain.exponentialRampToValueAtTime(velocity, time + 0.002);
     ng.gain.exponentialRampToValueAtTime(0.0001, time + 0.16);
     src.connect(bp).connect(ng).connect(drumGain);
+    ng.connect(reverbSends.drums);
     src.start(time);
     src.stop(time + 0.18);
 
@@ -286,7 +362,8 @@
 
   // A plucked-string voice for the genre examples. Sawtooth pairs give the
   // reedy edge of a wound string; the tone decides how bright it is, how long
-  // it rings, and whether it goes through the overdrive.
+  // it rings, whether it goes through the shared overdrive, and how much of
+  // it reaches the reverb.
   //   clean  — hollowbody/ringing, for rockabilly, jazz, surf
   //   muted  — palm-muted chug, short and thumpy
   //   drive  — overdriven and sustaining, for punk and metal
@@ -313,23 +390,18 @@
     filter.frequency.setValueAtTime(open, time);
     filter.frequency.exponentialRampToValueAtTime(Math.max(400, open * spec.close), time + ring);
 
-    let head = filter;
-    if (spec.drive){
-      const shaper = audioCtx.createWaveShaper();
-      shaper.curve = driveCurve;
-      shaper.oversample = '2x';
-      shaper.connect(filter);
-      head = shaper;
-    }
     filter.connect(env);
-    env.connect(guitarGain);
+    // the overdriven tone goes through the shared stage, where the other
+    // strings of the chord are waiting to be clipped together with it
+    env.connect(spec.drive ? driveIn : guitarGain);
+    env.connect(reverbSends[tone] || reverbSends.clean);
 
     [-4, 4].forEach(detune => {
       const osc = audioCtx.createOscillator();
       osc.type = 'sawtooth';
       osc.frequency.value = freq;
       osc.detune.value = detune;
-      osc.connect(head);
+      osc.connect(filter);
       osc.start(time);
       osc.stop(time + ring + 0.05);
     });
