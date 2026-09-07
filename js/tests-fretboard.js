@@ -411,6 +411,51 @@
     });
   }
 
+  // Three ways of putting a progression in one position — One box, Cluster,
+  // Voice leading — differ in where the shapes land and in nothing else. They
+  // used to differ in how they were drawn too: Cluster and Voice leading were
+  // still running the old Progression renderer, with its own dimming, its own
+  // split dots and no fret readout, so the same three shapes looked like two
+  // different pictures depending on which button was lit.
+  function testPositionMethodsRenderAlike(t){
+    const readings = [];
+    let bad = '';
+    [['Am', 'Dm', 'E'], ['C', 'Am', 'F', 'G'], ['Bm7', 'E7', 'A']].forEach(names => {
+      loadProgression(names);
+      setMode('caged');
+      setView('position');
+      [false, true].forEach(arp => {
+        const cb = q('#wholeArpeggioToggle');
+        if (cb.checked !== arp) cb.click();
+        for (let p = 0; p < 3; p++){
+          if (p) stepPosition();
+          ['box', 'cluster', 'lead'].forEach(method => {
+            setMethod(method);
+            const where = `${names.join('-')} arp=${arp} position ${p} ${method}`;
+            const legend = [...q('#cagedLegend').querySelectorAll('span')]
+              .map(s => s.textContent.trim());
+            const fail =
+              svg.classList.contains('positions-mode') ? 'draws through the old Progression renderer'
+              : svg.querySelectorAll('.pos-root, .ringed').length ? "uses Progression's emphasis"
+              : svg.querySelectorAll('.note-dot path').length ? 'splits shared dots in two'
+              : !svg.querySelectorAll('.note-dot:not(.ghost)').length ? 'lights no chord at all'
+              : names.length > 1 && !svg.querySelectorAll('.note-dot.ghost').length
+                ? 'shows the rest of the progression at full strength'
+              : q('#cagedLegend').querySelectorAll('.legend-current').length !== 1
+                ? 'names no single chord as the one in front'
+              : !legend.some(x => x.startsWith('position: frets')) ? 'has no fret readout'
+              : legend.length - 1 < new Set(names).size ? 'leaves a chord out of the legend'
+              : '';
+            if (fail && !bad) bad = `${where} ${fail}`;
+            readings.push(where);
+          });
+        }
+      });
+    });
+    t.ok(!bad, `Every way of choosing a position draws the same picture `
+      + `(${readings.length} readings)` + (bad ? ` — ${bad}` : ''));
+  }
+
   GT.fretboardSuites = [
     ['Fretboard: chords are drawn as shapes you can hold', testGripsAreGrips],
     ['Fretboard: whole arpeggio opens the shapes out', testArpeggioReallyOpensOut],
@@ -421,5 +466,6 @@
     ['Fretboard: the hand stays put while a progression plays', testPositionHoldsStillWhilePlaying],
     ['Fretboard: a chord previewed is the chord you get', testPreviewMatchesArrival],
     ['Fretboard: one position narrows the neck', testPositionNarrows],
+    ['Fretboard: every position method draws alike', testPositionMethodsRenderAlike],
   ];
 })();

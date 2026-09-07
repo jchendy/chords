@@ -491,7 +491,6 @@
   .note-dot.passing circle, .note-dot.passing path{ opacity: 0.38; }
   .note-dot.passing text{ opacity: 0.6; }
   .dot-ring{ stroke: var(--ink); stroke-width: 2.6; }
-  .note-dot.suppress-ring .dot-ring{ opacity: 0; }
 
   /* hovering / tapping a shape name in the legend spotlights that shape */
   .note-dot, .shape-line{ transition: opacity 0.12s ease; }
@@ -499,24 +498,6 @@
   #fretboard.shape-focus .note-dot.hot{ opacity: 1; }
   #fretboard.shape-focus .shape-line{ opacity: 0.08; }
   #fretboard.shape-focus .shape-line.hot{ opacity: 1; }
-
-  /* Progression: with the whole cluster shown at once (not following
-     playback), dim every note except each chord's lowest root */
-  #fretboard.positions-mode:not(.shape-focus):not(.pos-follow) .note-dot{ opacity: 0.22; }
-  #fretboard.positions-mode:not(.shape-focus):not(.pos-follow) .note-dot.pos-root{ opacity: 1; }
-  /* with every chord tone shown, the notes two chords share are the point of
-     the picture, so they stay lit alongside each chord's anchor root */
-  #fretboard.positions-mode:not(.shape-focus):not(.pos-follow) .note-dot.ringed{ opacity: 1; }
-  #fretboard.positions-mode:not(.shape-focus):not(.pos-follow) .shape-line{ opacity: 0.12; }
-
-  /* Progression: "Follow playback" — current chord lit, next chord
-     slightly dimmed, everything else dimmed much further */
-  #fretboard.pos-follow .note-dot{ opacity: 0.07; }
-  #fretboard.pos-follow .note-dot.pos-next{ opacity: 0.4; }
-  #fretboard.pos-follow .note-dot.pos-current{ opacity: 1; }
-  #fretboard.pos-follow .shape-line{ opacity: 0.04; }
-  #fretboard.pos-follow .shape-line.pos-next{ opacity: 0.3; }
-  #fretboard.pos-follow .shape-line.pos-current{ opacity: 1; }
 
   .caged-legend{
     display:flex;

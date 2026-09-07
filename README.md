@@ -184,9 +184,7 @@ names the tab you're on.
   hover it, and the chord in front marked. Across the neck only one chord is
   drawn, so colour is free to say which of its five shapes a note is in
   instead, and the interval colouring stays available there.
-  Whole arpeggio applies to both — in one position it also rings every note two
-  chords share, which is what your fingers keep as the chord changes; a ii–V–I
-  is mostly shared notes, which is the point. Everything about *choosing* a
+  Whole arpeggio applies to both. Everything about *choosing* a
   position belongs to the second reading, since the first has no position to
   choose — it shows them all. Three ways of putting the progression in one
   place: **One box** clips every chord into a single CAGED box, so nothing
@@ -196,7 +194,10 @@ names the tab you're on.
   realistically playable elsewhere); **Voice leading** gives each chord
   whichever of its own shapes sits nearest where the last one landed, so the
   hand walks through the changes rather than jumping back down the neck. ◂ ▸
-  step the box or cycle to the next cluster;
+  step the box or cycle to the next cluster. The three differ in where the
+  shapes land and in nothing else: all of them draw the chord in front lit, the
+  one you're heading into next behind it, the rest faint, and read out the
+  frets the position covers.
   Triads — in one position these behave as Chords does: the chord in front
   lit, the rest of the progression's triads behind it in their own colours,
   and the legend naming each chord with the inversion it's sitting in.

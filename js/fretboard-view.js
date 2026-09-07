@@ -36,7 +36,6 @@
   let cagedChordIdx = 0;
   let cagedShapesShown = [];
   let rootLegendData = [];
-  let posLegendData = [];
   let chordPosIndex = 0;         // which cluster of the chords' own positions is showing
   let stuckShape = null;         // shape name pinned by a tap on its legend entry
   let cagedFollow = true;        // selected CAGED chord tracks the playing chord (on by default)
@@ -417,60 +416,10 @@
     if (textEl) textEl.textContent = g.getAttribute('data-default-label') || textEl.textContent;
   }
 
-  // ---- Progression: "Follow playback" highlights the sounding chord,
-  // half-lights the next one, and dims the rest ----
-  function paintPositionsFollow(){
-    const active = clusterMode() && cagedFollow && host.isPlaying();
-    fretboardSvg.classList.toggle('pos-follow', active);
-    if (!active){
-      fretboardSvg.querySelectorAll('.pos-current, .pos-next, .suppress-ring')
-        .forEach(el => el.classList.remove('pos-current', 'pos-next', 'suppress-ring'));
-      fretboardSvg.querySelectorAll('.note-dot[data-labels]').forEach(resetDotLabel);
-      fretboardSvg.querySelectorAll('.note-dot[data-colors]').forEach(resetDotColor);
-      cagedLegend.querySelectorAll('.legend-current').forEach(el => el.classList.remove('legend-current'));
-      return;
-    }
-    // one chord in front everywhere now, so the tiers read off the same index
-    // the chord picker uses rather than a second one of their own
-    const cands = host.progression().filter(c => c.quality !== 'dim');
-    if (!cands.length) return;
-    const ids = chordIdentity(cands);
-    const at = i => (ids.get(displayName(cands[i])) || {}).tag;
-    const curIdx = Math.min(cagedChordIdx, cands.length - 1);
-    const cur = at(curIdx), next = at((curIdx + 1) % cands.length);
-    fretboardSvg.querySelectorAll('.note-dot').forEach(g => {
-      const tags = (g.getAttribute('data-shapes') || '').split(',').filter(Boolean);
-      const isCurrent = tags.includes(cur);
-      const isNext = !isCurrent && tags.includes(next);
-      g.classList.toggle('pos-current', isCurrent);
-      g.classList.toggle('pos-next', isNext);
-      // a note that's only a root for some *other* chord shouldn't wear the
-      // root ring while it's lit up as part of the current chord's shape
-      const rootFor = (g.getAttribute('data-rootfor') || '').split(',').filter(Boolean);
-      g.classList.toggle('suppress-ring', isCurrent && rootFor.length > 0 && !rootFor.includes(cur));
-      // and it should read as whichever degree it is *for* the chord that's
-      // actually lighting it up right now, not whichever chord happened to
-      // render its label first
-      if (isCurrent){ setDotLabel(g, cur); setDotColor(g, cur); }
-      else if (isNext){ setDotLabel(g, next); setDotColor(g, next); }
-      else { resetDotLabel(g); resetDotColor(g); }
-    });
-    fretboardSvg.querySelectorAll('.shape-line').forEach(l => {
-      const tag = l.getAttribute('data-shape');
-      l.classList.toggle('pos-current', tag === cur);
-      l.classList.toggle('pos-next', tag === next);
-    });
-    cagedLegend.querySelectorAll('[data-shape]').forEach(el => {
-      el.classList.toggle('legend-current', el.getAttribute('data-shape') === cur);
-    });
-  }
-
-
   // ---- spotlight one CAGED shape (or, in Progression, one chord) when
   // its legend entry is hovered / tapped ----
   function paintShapeSpotlight(shape){
     fretboardSvg.classList.toggle('shape-focus', !!shape);
-    if (shape) fretboardSvg.classList.remove('pos-follow');   // manual spotlight always wins
     fretboardSvg.querySelectorAll('.note-dot').forEach(g => {
       const list = (g.getAttribute('data-shapes') || '').split(',').filter(Boolean);
       const isHot = !!shape && list.includes(shape);
@@ -499,10 +448,7 @@
     const shape = hoverShape || stuckShape;
     paintShapeSpotlight(shape);
     // put back whatever the view was highlighting on its own once released
-    if (!shape){
-      paintPositionsFollow();
-      paintRootSpotlight();
-    }
+    if (!shape) paintRootSpotlight();
   }
 
   cagedLegend.addEventListener('mouseover', e => {
@@ -603,102 +549,73 @@
       // the next the way a hand does instead of all crowding one position.
       let aimFret = targetFret;
 
-      const lines = [];
-      const cellMap = new Map();
       const ids = chordIdentity(chords);
-      posLegendData = [];
+      const curIdx = Math.min(cagedChordIdx, chords.length - 1);
+      const curName = displayName(chords[curIdx]);
+      // the chord you're heading into reads brighter than the ones after it —
+      // the same three tiers One box uses
+      const nextName = chords.length > 1
+        ? displayName(chords[(curIdx + 1) % chords.length]) : null;
 
+      // Each chord's own placement, chosen the way this method chooses: the
+      // whole progression measured against one fret, or — with voice leading —
+      // each chord against wherever the one before it landed. Keyed by which
+      // chord this is, not which slot: a twelve-bar blues has one C7, however
+      // many bars it fills.
+      const chosen = new Map();
       chords.forEach((chord, i) => {
         const placements = perChordPlacements[i];
         if (!placements.length) return;
         const placement = placements.reduce((best, p) =>
           Math.abs(p.meanFret - aimFret) < Math.abs(best.meanFret - aimFret) ? p : best);
         if (cagedPosMethod === 'lead') aimFret = placement.meanFret;
-        // keyed by which chord this is, not which slot: a twelve-bar blues
-        // has one C7, however many bars it fills
-        const { tag, color } = ids.get(displayName(chord));
-        if (!posLegendData.some(e => e.tag === tag)){
-          posLegendData.push({ name: displayName(chord), numeral: chord.numeral, color, tag,
-                               shapeLetter: placement.name });
-        }
+        const name = displayName(chord);
+        if (!chosen.has(name)) chosen.set(name, { chord, placement });
+      });
+      if (!chosen.has(curName)) return { markers: [], lines: [] };
 
+      // The chord in front goes down first, so a note two chords share is
+      // drawn in its colour and the chord behind adds itself to that dot.
+      const order = [curName, ...[...chosen.keys()].filter(n => n !== curName)];
+      const markers = [], lines = [], placed = new Map();
+      ghostLegendData = [];
+      order.forEach(name => {
+        const { chord, placement } = chosen.get(name);
+        const { tag, color } = ids.get(name);
+        const ghost = name !== curName;
+        const isNext = name === nextName;
         const rootPc = SEMITONE[chord.note] % 12;
-        const thirdPc = SEMITONE[chord.third] % 12;
-        const fifthPc = SEMITONE[chord.fifth] % 12;
-        const nameOf = pc =>
-          pc === rootPc ? chord.note : pc === thirdPc ? degreeLabel(chord, 'third') :
-          pc === fifthPc ? degreeLabel(chord, 'fifth') : degreeLabel(chord, 'seventh');
-
-        const tonePcs = new Set([chord.note, chord.third, chord.fifth, chord.seventh]
-          .filter(Boolean).map(n => SEMITONE[n] % 12));
         // the grip itself — the CAGED shape, or its 7th-chord voicing
         const gripCells = chord.seventh
           ? seventhCells(placement, rootPc, SEMITONE[chord.seventh] % 12)
           : placement.cells.slice();
-        // Traced through, so each chord in the cluster reads as a shape a hand
-        // makes rather than as loose dots — and so that, with "All chord tones"
-        // on, you can still see where the grip sits inside its arpeggio.
-        if (gripCells.length > 1){
-          lines.push({ color, shape: tag, cells: gripCells.map(c => ({ string: c.string, fret: c.fret })) });
-        }
-
-        // The grip, or — with "All chord tones" on — every chord tone a hand
-        // sitting on that grip can reach. That turns the cluster of shapes
-        // into a map of the progression: each chord's arpeggio in its own
-        // position, and you can see which notes carry over to the next chord.
-        const cellsToShow = wholeArpeggio
+        // The grip, or — with "Whole arpeggio" on — every chord tone a hand
+        // sitting on that grip can reach, the grip still traced through the
+        // middle so you can see the shape inside its arpeggio.
+        const tonePcs = new Set([chord.note, chord.third, chord.fifth, chord.seventh]
+          .filter(Boolean).map(n => SEMITONE[n] % 12));
+        const cells = wholeArpeggio
           ? arpeggioCells(placement.fretMin, Math.max(placement.fretMax, placement.fretMin + 3), tonePcs)
           : gripCells;
-
-        // the "lowest root" is the root-note cell closest to the low E string
-        // (highest string index) — the one a player would actually anchor on
-        const rootCells = cellsToShow.filter(c => (STRING_TUNING[c.string] + c.fret) % 12 === rootPc);
-        const lowestRootCell = rootCells.length
-          ? rootCells.reduce((a, b) => (b.string > a.string ? b : a))
-          : null;
-
-        cellsToShow.forEach(c => {
-          const key = c.string + ':' + c.fret;
-          const pc = (STRING_TUNING[c.string] + c.fret) % 12;
-          if (!cellMap.has(key)) cellMap.set(key, { string: c.string, fret: c.fret, contribs: [] });
-          const isLowestRoot = !!lowestRootCell && c.string === lowestRootCell.string && c.fret === lowestRootCell.fret;
-          cellMap.get(key).contribs.push({ color, tag, label: nameOf(pc), isRoot: pc === rootPc, isLowestRoot });
-        });
-      });
-
-      const markers = [...cellMap.values()].map(m => {
-        const isRoot = m.contribs.some(c => c.isRoot);
-        const isLowestRoot = m.contribs.some(c => c.isLowestRoot);
-        // which chord(s) this cell is actually a root note *for* — used to
-        // suppress the root ring, while following playback, on a note that
-        // only happens to sit on some *other* chord's root
-        const rootShapes = [...new Set(m.contribs.filter(c => c.isRoot).map(c => c.tag))];
-        const shapes = [...new Set(m.contribs.map(c => c.tag))];
-        // this cell's label depends on which chord it's being read as (root
-        // for one chord, some other degree for another) — keep every
-        // chord's own label so the fretboard can show the right one once a
-        // specific chord is spotlighted or currently playing
-        const labelsByTag = {};
-        m.contribs.forEach(c => { if (!(c.tag in labelsByTag)) labelsByTag[c.tag] = c.label; });
-        const seenColors = new Set();
-        const uniqueContribs = m.contribs.filter(c => {
-          if (seenColors.has(c.color)) return false;
-          seenColors.add(c.color);
-          return true;
-        });
-        // Showing every chord tone, the ring means "two chords share this
-        // note" — the thing you're looking for — and the roots are already
-        // named by their label, so it isn't needed for them as well.
-        const ringed = wholeArpeggio && shapes.length > 1;
-        const ring = wholeArpeggio ? { isRoot: false, ringed } : { isRoot };
-        if (uniqueContribs.length === 1){
-          return { string: m.string, fret: m.fret, color: uniqueContribs[0].color, label: uniqueContribs[0].label, ...ring, isLowestRoot, shapes, rootShapes, labelsByTag };
+        placeShape({ chord, cells, tag, color, ghost, isNext, placed, markers });
+        if (gripCells.length > 1){
+          const line = { color, shape: tag, cells: gripCells.map(c => ({ string: c.string, fret: c.fret })) };
+          if (ghost) Object.assign(line, { ghost: true, ghostNext: isNext, letter: placement.name });
+          lines.push(line);
         }
-        // two different chords share this exact fret — split the dot between them
-        const two = uniqueContribs.slice(0, 2);
-        return { string: m.string, fret: m.fret, split: two.map(c => c.color), label: two[0].label, ...ring, isLowestRoot, shapes, rootShapes, labelsByTag };
+        ghostLegendData.push({ name, numeral: chord.numeral, color, tag, order: tag,
+                               shapeLetter: placement.name, current: !ghost });
       });
-
+      ghostLegendData.sort((a, b) => Number(a.order.slice(1)) - Number(b.order.slice(1)));
+      // These shapes sit where they're playable rather than inside one box, so
+      // the readout covers what's actually drawn.
+      const frets = markers.map(m => m.fret);
+      if (frets.length) shownWindow = { min: Math.min(...frets), max: Math.max(...frets) };
+      shownBoxName = chosen.get(curName).placement.name;
+      shownBoxCells = null;
+      // where the hand is, so switching to One box keeps it rather than
+      // jumping back to whatever box was last measured
+      positionAnchor = chosen.get(curName).placement.meanFret;
       return { markers, lines };
     }
 
@@ -820,9 +737,6 @@
         return { ...rest, color: curColor, shapes: [curTag] };
       };
       const boxOpts = { single: inPosition };
-      if (inPosition && cagedPosMethod === 'lead'){
-        boxOpts.index = voiceLedBoxIndex(cands, Math.min(cagedChordIdx, cands.length - 1));
-      }
       const rootPc = SEMITONE[chord.note] % 12;
       const isMinor = chord.quality === 'min';
       const seventhPc = chord.seventh ? SEMITONE[chord.seventh] % 12 : null;
@@ -1092,6 +1006,48 @@
   // only where the chord you're on isn't already using the fret, so it reads as
   // background rather than as competing with the shape.
   let ghostLegendData = [];
+  // One chord's shape on the board. The chord in front, the one you're heading
+  // into next and the ones after it differ only in the tier they're drawn at,
+  // so every chord in every position reading goes through here — that's what
+  // makes a cluster look like a box rather than like the old Progression map.
+  // `placed` maps a cell to the marker already drawn there, whoever drew it: a
+  // cell two chords share is drawn once, by whichever got there first, and the
+  // second chord adds its tag and colour to that dot rather than being dropped.
+  // Otherwise spotlighting the second chord would light an incomplete version
+  // of it, missing exactly the notes it holds in common with the first.
+  function placeShape({ chord, cells, tag, color, ghost, isNext, placed, markers }){
+    const rootPc = SEMITONE[chord.note] % 12;
+    const thirdPc = SEMITONE[chord.third] % 12;
+    const fifthPc = SEMITONE[chord.fifth] % 12;
+    // the root by name, every other note by the degree it is in this chord
+    const nameOf = pc =>
+      pc === rootPc ? chord.note : pc === thirdPc ? degreeLabel(chord, 'third') :
+      pc === fifthPc ? degreeLabel(chord, 'fifth') : degreeLabel(chord, 'seventh');
+    let drew = false;
+    cells.forEach(cell => {
+      drew = true;
+      const k = cell.string + ':' + cell.fret;
+      const already = placed.get(k);
+      if (already){                       // shared note: one dot, two owners
+        if (!already.shapes.includes(tag)) already.shapes.push(tag);
+        already.colorsByTag = already.colorsByTag
+          || { [already.shapes[0]]: already.color };
+        already.colorsByTag[tag] = color;
+        // if one of them is the chord you're heading into, the brighter
+        // reading wins — the note is coming up either way
+        if (isNext && already.ghost) already.ghostNext = true;
+        return;
+      }
+      const pc = (STRING_TUNING[cell.string] + cell.fret) % 12;
+      const m = { string: cell.string, fret: cell.fret, color, label: nameOf(pc),
+                  isRoot: pc === rootPc, shapes: [tag] };
+      if (ghost){ m.ghost = true; m.ghostNext = isNext; }
+      placed.set(k, m);
+      markers.push(m);
+    });
+    return drew;
+  }
+
   // `placed` maps a cell to the marker already drawn there, whoever drew it.
   // A cell two chords share gets drawn once, in the front chord's colour, but
   // it belongs to both — so the second chord adds its tag to the marker that's
@@ -1121,17 +1077,6 @@
       const name = displayName(c);
       if (done.has(name)) return;    // the one in front, or a chord already drawn
       done.add(name);
-      const rootPc = SEMITONE[c.note] % 12;
-      const thirdPc = SEMITONE[c.third] % 12;
-      const fifthPc = SEMITONE[c.fifth] % 12;
-      const isMinor = c.quality === 'min';
-      const sevPc = c.seventh ? SEMITONE[c.seventh] % 12 : null;
-      // labelled the way Progression labels them: the root by name, every
-      // other note by the degree it is in that chord
-      const nameOf = pc =>
-        pc === rootPc ? c.note : pc === thirdPc ? degreeLabel(c, 'third') :
-        pc === fifthPc ? degreeLabel(c, 'fifth') : degreeLabel(c, 'seventh');
-
       const shapes = shapesOf(c);
       const gripNames = shapes.map(g => g.name);
       const grips = shapes.map(g => g.cells);
@@ -1158,29 +1103,9 @@
 
       const { tag, color } = ids.get(name);
       const isNext = name === nextName;
-      let drew = false;
       let letter = '';
-      cells.forEach(cell => {
-        if (!nearest && !inWin(cell)) return;
-        drew = true;
-        const k = cell.string + ':' + cell.fret;
-        const already = placed.get(k);
-        if (already){                       // shared note: one dot, two owners
-          if (!already.shapes.includes(tag)) already.shapes.push(tag);
-          already.colorsByTag = already.colorsByTag
-            || { [already.shapes[0]]: already.color };
-          already.colorsByTag[tag] = color;
-          // if one of them is the chord you're heading into, the brighter
-          // reading wins — the note is coming up either way
-          if (isNext && already.ghost) already.ghostNext = true;
-          return;
-        }
-        const pc = (STRING_TUNING[cell.string] + cell.fret) % 12;
-        const m = { string: cell.string, fret: cell.fret, color, label: nameOf(pc),
-                    isRoot: pc === rootPc, shapes: [tag], ghost: true, ghostNext: isNext };
-        placed.set(k, m);
-        markers.push(m);
-      });
+      const drew = placeShape({ chord: c, cells: nearest ? cells : cells.filter(inWin),
+                                tag, color, ghost: true, isNext, placed, markers });
       // and its grip traced through, where one sits wholly inside the box
       grips.forEach((g, gi) => {
         const shown = nearest ? g === bestGrip : g.every(inWin);
@@ -1196,22 +1121,6 @@
     return { markers, lines };
   }
 
-  // The boxes a chord offers in whichever reading Chords is in — its five
-  // grips, or the arpeggio boxes those grips open out into.
-  function cagedBoxesFor(chord){
-    const rootPc = SEMITONE[chord.note] % 12;
-    const isMinor = chord.quality === 'min';
-    const seventhPc = chord.seventh ? SEMITONE[chord.seventh] % 12 : null;
-    if (wholeArpeggio){
-      const tonePcs = new Set([chord.note, chord.third, chord.fifth, chord.seventh]
-        .filter(Boolean).map(n => SEMITONE[n] % 12));
-      return cagedArpeggioBoxes(rootPc, isMinor, tonePcs);
-    }
-    return cagedTriadBoard(rootPc, isMinor, chord.note, seventhPc).lines.map(l => ({
-      name: l.shape, anchor: Math.min(...l.cells.map(c => c.fret)), cells: l.cells,
-    }));
-  }
-
   // The five CAGED grips of a chord, as position windows. Chords, Pentatonic
   // and Scales each have boxes of their own; Roots and Triads don't, so they
   // borrow these — which keeps one ladder of five positions across every view
@@ -1223,28 +1132,6 @@
       chord.seventh ? SEMITONE[chord.seventh] % 12 : null).lines.map(l => ({
         name: l.shape, anchor: Math.min(...l.cells.map(c => c.fret)), cells: l.cells,
       }));
-  }
-
-  // Which box the chord at `curIdx` lands in when the progression picks for
-  // you: the first chord takes its lowest, and every chord after it takes
-  // whichever of its own boxes sits nearest where the one before it landed.
-  // That's Progression's voice leading, read one chord at a time — the hand
-  // walks through the changes instead of jumping back down the neck.
-  function voiceLedBoxIndex(cands, curIdx){
-    let prevMid = null, chosen = 0;
-    for (let i = 0; i <= curIdx; i++){
-      const boxes = cagedBoxesFor(cands[i]).slice().sort((a, b) => a.anchor - b.anchor);
-      if (!boxes.length) continue;
-      // The first chord takes whichever box the arrows are on, and every
-      // chord after it follows the one before — so stepping moves the whole
-      // walk up or down the neck rather than doing nothing.
-      const k = prevMid == null
-        ? ((boxIndex % boxes.length) + boxes.length) % boxes.length
-        : boxes.indexOf(nearestShape(boxes, prevMid));
-      prevMid = midOf(boxes[k]);
-      chosen = k;
-    }
-    return chosen;
   }
 
   // A chord is identified by what it is, not by where it sits: a twelve-bar
@@ -1295,13 +1182,6 @@
       if (!runs || !runs.length) return '';
       return `<em class="range">${runs.map(r => `${r.min}–${r.max}`).join(' · ')}</em>`;
     };
-    if (clusterMode()){
-      const entries = posLegendData
-        .map(c => `<span data-shape="${c.tag}" tabindex="0" role="button" aria-label="Highlight ${c.name}"><i style="background:${c.color}"></i>${c.name}<em>${c.numeral}</em><small class="pos-shape-tag">${c.shapeLetter}</small>${range(c.tag)}</span>`);
-      if (wholeArpeggio) entries.push(`<span><i class="ring"></i>shared with another chord</span>`);
-      cagedLegend.innerHTML = entries.join('');
-      return;
-    }
     // Chords in one position is Progression's picture, so it gets
     // Progression's legend: one entry per chord, named, numbered, tagged with
     // the CAGED shape it's sitting in, and spotlightable by hovering it.
@@ -1379,15 +1259,10 @@
     fretboardSvg.style.minWidth = geo.minWidth + 'px';
     fretboardSvg.innerHTML = geo.buildSVG(markers, lines);
     renderFretLegend();
-    fretboardSvg.classList.toggle('positions-mode', clusterMode());
 
     if (fretMode === 'roots'){
       stuckShape = null;
       paintRootSpotlight();
-    } else if (clusterMode()){
-      stuckShape = null;
-      fretboardSvg.classList.remove('shape-focus');
-      paintPositionsFollow();
     } else {
       // a rebuilt board otherwise drops any active spotlight
       stuckShape = null;
@@ -1418,7 +1293,6 @@
 
   function onPlaybackStarted(){
     updateCagedLock();
-    if (clusterMode()) renderFretboard();   // paint the follow tiers from beat one
   }
 
   function onPlaybackStopped(){
@@ -1427,7 +1301,6 @@
       activeRootPc = null;
       if (fretMode === 'roots') renderFretboard();
     }
-    if (clusterMode()) renderFretboard();   // drop the follow highlight
   }
 
   GT.fretboardView = {

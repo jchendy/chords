@@ -79,7 +79,6 @@
         const fs = (m.label && m.label.length > 1) ? 10.5 : 13;
         const shapeAttr = (m.shapes && m.shapes.length) ? ` data-shapes="${m.shapes.join(',')}"` : '';
         const rootPcAttr = m.pc !== undefined ? ` data-rootpc="${m.pc}"` : '';
-        const rootForAttr = (m.rootShapes && m.rootShapes.length) ? ` data-rootfor="${m.rootShapes.join(',')}"` : '';
         // a cell shared by two chords reads as a different degree for each —
         // keep every chord's own label so spotlighting/following one can
         // show the right one instead of whichever happened to render first
@@ -95,10 +94,9 @@
           ? ` data-colors="${Object.entries(m.colorsByTag).map(([t, c]) => `${t}:${c}`).join(',')}"` +
             ` data-default-color="${fills.join(',')}"`
           : '';
-        const extraClass = (m.isLowestRoot ? ' pos-root' : '') + (m.hollow ? ' hollow' : '')
-          + (m.passing ? ' passing' : '') + (m.ringed ? ' ringed' : '')
+        const extraClass = (m.hollow ? ' hollow' : '') + (m.passing ? ' passing' : '')
           + (m.ghost ? ' ghost' : '') + (m.ghostNext ? ' ghost-next' : '');
-        let g = `<g class="note-dot${extraClass}"${shapeAttr}${rootPcAttr}${rootForAttr}${labelsAttr}${colorsAttr}>`;
+        let g = `<g class="note-dot${extraClass}"${shapeAttr}${rootPcAttr}${labelsAttr}${colorsAttr}>`;
         if (m.hollow){
           const stroke = m.color || (m.split && m.split[0]);
           g += `<circle cx="${cx}" cy="${cy}" r="${r - 1.2}" fill="var(--panel)" stroke="${stroke}" stroke-width="2.4"/>`;
@@ -109,8 +107,7 @@
         } else {
           g += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${m.color}"/>`;
         }
-        // `ringed` is the progression map's mark for a note two chords share
-        if (m.isRoot || m.ringed) g += `<circle class="dot-ring" cx="${cx}" cy="${cy}" r="${r}" fill="none"/>`;
+        if (m.isRoot) g += `<circle class="dot-ring" cx="${cx}" cy="${cy}" r="${r}" fill="none"/>`;
         if (m.label) g += `<text x="${cx}" y="${cy + fs * 0.34}" font-size="${fs}" text-anchor="middle">${m.label}</text>`;
         g += '</g>';
         els.push(g);
