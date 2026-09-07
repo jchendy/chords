@@ -102,12 +102,13 @@ names the tab you're on.
   use), then everything you touch while it plays (Play, tempo with 60/90/120
   shortcuts, style and feel, the Simple-only note value, the metronome /
   roots-only / count-in options, and the share link), and then the chord
-  chart itself. The chart closes that panel and the neck opens the next one,
-  so the two things you read while playing sit against each other rather than
-  with the controls between them. Play sits in the transport list and also
-  floats bottom-right, clear of the page, so it's never somewhere you have to
-  scroll back to; both are the same control and show the same state. A "Style"
-  picker chooses the backing:
+  chart itself. The tab reads top to bottom as chart, then fretboard, then the
+  key and chord settings, then the playback settings — the two things you read
+  while playing sit against each other at the top, and everything you set once
+  and leave sits below them. Play and a second copy of the 60/90/120 tempo
+  shortcuts float together bottom-right, clear of the page, so the transport is
+  never somewhere you have to scroll back to; both copies are the same controls
+  and stay in step. A "Style" picker chooses the backing:
   Simple — the plain piano voicing, with note value (quarter / half / whole),
   metronome click and a roots-only mode;
   Rock — driving 8th-note piano chords and a basic kit, with a half-time
@@ -182,7 +183,12 @@ names the tab you're on.
   the same three tiers of brightness: the chord in front lit, the chord you're
   heading into next half-lit, the rest dimmed much further — roots included,
   with no chord's root singled out. Only the frets the chord in front isn't
-  already using are drawn, so it stays behind rather than competing;
+  already using are drawn, so it stays behind rather than competing.
+  **Voice leading** hands the choice of shape to the progression instead of
+  you: the first chord takes its lowest, and each one after it takes whichever
+  of its own shapes sits nearest where the last one landed, so the hand walks
+  through the changes rather than jumping back down the neck — Progression's
+  voice leading, read one chord at a time;
   Triads — close three-note triads on one set of three adjacent
   strings (e–B–G, B–G–D, G–D–A or D–A–E), every inversion, all the way up
   the neck, each legend entry also naming the CAGED grip its shapes are cut
