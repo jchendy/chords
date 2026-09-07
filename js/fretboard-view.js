@@ -308,6 +308,15 @@
     const box = sorted[((want % sorted.length) + sorted.length) % sorted.length];
     const frets = box.cells.map(c => c.fret);
     let win = { min: Math.min(...frets), max: Math.max(...frets) };
+    // A three-string triad spans two or three frets, which is tighter than a
+    // hand and would let almost nothing else into the position. Open the
+    // window out to a hand's reach around it, so the other chords' shapes in
+    // that position can be seen alongside it.
+    if (opts.minSpan && win.max - win.min + 1 < opts.minSpan){
+      const grow = opts.minSpan - (win.max - win.min + 1);
+      win = { min: Math.max(0, win.min - Math.floor(grow / 2)),
+              max: Math.min(FRET_COUNT, win.max + Math.ceil(grow / 2)) };
+    }
     if (holdPosition){
       if (!heldWindow) heldWindow = win;
       win = heldWindow;
@@ -703,7 +712,23 @@
           ? { ...base, split: [INVERSION_COLOR[invs[0]], INVERSION_COLOR[invs[1]]] }
           : { ...base, color: INVERSION_COLOR[invs[0]] };
       });
-      const shown = applyBoxWindow(markers, lines, gripBoxes(chord));
+      // Triads has shapes of its own, so those are its positions — borrowing
+      // the CAGED grips could land you on a stretch of neck holding no triad
+      // for the very chord you picked. Stepping now walks this chord's own
+      // shapes up the neck, and each stop is one you can actually play.
+      const triadBoxes = triads.map(t => ({
+        name: invOf(t.bassPc), anchor: t.startFret,
+        cells: t.cells.slice().sort((a, b) => a.string - b.string),
+      }));
+      const shown = applyBoxWindow(markers, lines, triadBoxes, { minSpan: 4 });
+      // applyBoxWindow keeps a line only when all three of its notes are in
+      // the window, but filters the dots one at a time — so a triad reaching
+      // one fret past the box came through as a two-note fragment, a shape
+      // nobody can play. Keep only the notes of the triads that survived.
+      if (shownWindow){
+        const kept = new Set(shown.lines.flatMap(l => l.cells.map(c => c.string + ':' + c.fret)));
+        shown.markers = shown.markers.filter(m => kept.has(m.string + ':' + m.fret));
+      }
       if (!inPosition) return { markers: applyColorBy(shown.markers, chord), lines: shown.lines };
 
       // In one position the other chords' triads come too, exactly as they do
@@ -712,9 +737,7 @@
       const cands = host.progression().filter(c => c.quality !== 'dim');
       const curIdx = Math.min(cagedChordIdx, cands.length - 1);
       const { tag: curTag, color: curColor } = idOf(cands, curIdx);
-      // which inversions this chord's own shapes are, for its legend tag
-      const invsHere = [...new Set(shown.lines.map(l => l.shape))];
-      shownBoxName = INVERSIONS.filter(i => invsHere.includes(i.tag)).map(i => i.tag).join(' ');
+      // the box is one triad, so its name is the inversion — that's the tag
       const lit = shown.markers.map(m => {
         const { split, ...rest } = m;
         return { ...rest, color: curColor, shapes: [curTag] };
@@ -1047,9 +1070,10 @@
       const grips = shapes.map(g => g.cells);
       // one shape per chord, the one most of which is under this hand — a
       // union of all five clipped to the window is not a shape anyone plays
-      const fit = shapes.map(g => g.cells.filter(inWin).length);
-      const bestGrip = fit.some(n => n > 0)
-        ? grips[fit.indexOf(Math.max(...fit))] : [];
+      // whole shapes only — half a grip clipped by the box edge is not
+      // something you can put your hand on
+      const whole = shapes.filter(g => g.cells.every(inWin));
+      const bestGrip = whole.length ? whole[0].cells : [];
       // whatever the view in front is showing, the ghosts show the same of:
       // the grips, or every chord tone
       const cells = useGrips
