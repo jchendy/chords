@@ -763,23 +763,39 @@
      panel but left-aligned inside the centred display — everything you touch
      is above the chart, so the chart itself ends the panel and sits against
      the fretboard below it. */
-  /* Play floats clear of the page: the chart and the neck are what you scroll
-     between while practising, and the transport shouldn't be somewhere you
-     have to scroll back to. It lives inside the practice tab's markup, so it
-     disappears with that tab rather than needing its own visibility rule. */
-  .display .play-float{
+  /* Play and the tempo shortcuts float clear of the page: the chart and the
+     neck are what you scroll between while practising, and the transport
+     shouldn't be somewhere you have to scroll back to. The cluster lives
+     inside the practice tab's markup, so it disappears with that tab rather
+     than needing its own visibility rule. */
+  .floating-transport{
     position: fixed;
     z-index: 40;
     right: 20px;
     bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+  }
+  .floating-bpm{
+    gap: 4px;
+    padding: 4px;
+    border-radius: 999px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+  }
+  .floating-bpm .seg-btn{ border-color: transparent; border-radius: 999px; }
+  .play-float{
     width: auto;
     gap: 8px;
     padding: 13px 22px;
     border-radius: 999px;
     box-shadow: 0 6px 20px rgba(0,0,0,0.5);
   }
-  /* room under the last panel so the button never sits on top of it */
-  #page-caged .app{ padding-bottom: 76px; }
+  /* room under the last panel so the cluster never sits on top of it */
+  #page-caged .app{ padding-bottom: 128px; }
   .transport{ text-align: left; margin-top: 14px; }
   .transport .setting:first-child{ border-top: 1px solid var(--line); padding-top: 13px; }
   /* the chart, with its key line, closes the panel */
@@ -841,133 +857,15 @@
 <div class="tab-page" id="page-caged">
 <div class="app">
 
-  <!-- Building the progression: touched once, then you play for a while -->
-  <section class="panel narrow">
-    <div class="settings">
-      <div class="setting">
-        <span class="setting-label">Key
-          <button type="button" class="info-dot" data-tip="Any of the 24 keys. Changing key moves the progression you have rather than rolling a new one — each chord keeps its degree, so a I–V–vi–IV in C major becomes i–v–VI–iv in C minor. The dice picks a key for you, and moves the progression there the same way.">i</button>
-        </span>
-        <div class="row-control">
-          <select id="keySelect" class="mini-select" aria-label="Key"></select>
-          <button type="button" class="seg-btn dice-btn" id="randomKeyBtn" aria-label="Random key" title="Random key">⚄</button>
-        </div>
-      </div>
-      <div class="setting">
-        <span class="setting-label">Preset
-          <button type="button" class="info-dot" data-tip="Common progressions written as scale degrees, so they land in whatever key you're in and follow you when you change key. Every chord stays editable afterwards — change one and it's yours, not the preset's.">i</button>
-        </span>
-        <div class="row-control"><select id="presetSelect" class="mini-select" aria-label="Preset progression"></select></div>
-      </div>
-      <div class="setting" id="presetVariantRow" hidden>
-        <span class="setting-label">Variant</span>
-        <div class="row-control"><div class="segmented" id="presetVariantGroup"></div></div>
-      </div>
-      <div class="setting">
-        <span class="setting-label">Chords
-          <button type="button" class="info-dot" data-tip="One row per chord: which scale degree it is, how many measures it lasts, and whether it's a plain triad or a seventh. Every picker always names a real chord — the dice rolls them all at once, and − / + change how many there are. Picking &quot;7&quot; on a minor or diminished degree raises its 3rd, giving you a secondary dominant.">i</button>
-        </span>
-        <div class="row-control">
-          <div class="stepper">
-            <button type="button" class="step-btn" id="chordCountDown" aria-label="Fewer chords">−</button>
-            <span class="step-value" id="chordCountValue">3</span>
-            <button type="button" class="step-btn" id="chordCountUp" aria-label="More chords">+</button>
-          </div>
-          <button type="button" class="seg-btn dice-btn" id="genBtn" aria-label="Randomize all chords" title="Randomize all chords">⚄</button>
-        </div>
-      </div>
-      <!-- one chord per row, with the columns named once at the top -->
-      <div class="chord-table">
-        <div class="chord-row chord-head" aria-hidden="true">
-          <span class="chord-num"></span>
-          <span>Chord</span>
-          <span>Bars</span>
-          <span>Quality</span>
-        </div>
-        <div id="chordSlots"></div>
-      </div>
-      <div class="settings-heading">When randomizing</div>
-      <label class="setting">
-        <span class="setting-label">Use 7ths
-          <button type="button" class="info-dot" data-tip="Every chord whose quality you haven't set yourself takes the seventh its scale degree implies (maj7, dominant 7, m7 or m7♭5) instead of a plain triad. It swaps triads for sevenths where they stand — no root, degree or bar length moves — and leaves any chord you've set by hand alone.">i</button>
-        </span>
-        <input type="checkbox" id="randomSeventhsToggle">
-      </label>
-      <label class="setting">
-        <span class="setting-label">Common chords only
-          <button type="button" class="info-dot" data-tip="Limit the dice to the most common diatonic chords: I, ii, IV, V, vi (or i, iv, v, VI, VII in minor). Turn off to let it reach any diatonic chord, including the less-used iii and vii°. Picking a chord by hand always ignores this.">i</button>
-        </span>
-        <input type="checkbox" id="commonToggle" checked>
-      </label>
-    </div>
-  </section>
-
-  <!-- The chords and everything you touch while they play -->
+  <!-- The chart on its own at the top: the thing you read while you play,
+       with the neck directly under it and every setting below the two. -->
   <section class="panel narrow display">
-    <button id="playBtn" class="primary play-btn play-float" type="button" aria-label="Play"></button>
-    <button id="playBtnInline" class="primary play-btn" type="button" aria-label="Play"></button>
-    <div class="settings transport">
-      <div class="setting">
-        <span class="setting-label">Tempo</span>
-        <div class="setting-control">
-          <div class="segmented tempo-presets">
-            <button type="button" class="seg-btn bpm-preset active" data-bpm="60">60</button>
-            <button type="button" class="seg-btn bpm-preset" data-bpm="90">90</button>
-            <button type="button" class="seg-btn bpm-preset" data-bpm="120">120</button>
-          </div>
-          <input type="range" id="tempo" min="40" max="200" value="60" aria-label="Tempo">
-          <span class="setting-value" id="tempoVal">60 BPM</span>
-        </div>
-      </div>
-      <div class="setting">
-        <span class="setting-label">Style</span>
-        <div class="segmented" id="styleGroup">
-          <button type="button" class="seg-btn genre-btn active" data-value="simple">Simple</button>
-          <button type="button" class="seg-btn genre-btn" data-value="rock">Rock</button>
-          <button type="button" class="seg-btn genre-btn" data-value="blues">Blues</button>
-          <button type="button" class="seg-btn genre-btn" data-value="jazz">Jazz</button>
-          <button type="button" class="seg-btn genre-btn" data-value="pop">Pop</button>
-          <button type="button" class="seg-btn genre-btn" data-value="funk">Funk</button>
-        </div>
-      </div>
-      <div class="setting" id="styleVariantRow" hidden>
-        <span class="setting-label">Feel</span>
-        <div class="segmented" id="styleVariantGroup"></div>
-      </div>
-      <div class="setting" id="noteValueRow">
-        <span class="setting-label">Note value</span>
-        <div class="segmented" id="noteValueGroup">
-          <button type="button" class="seg-btn active" data-value="1">Quarter</button>
-          <button type="button" class="seg-btn" data-value="2">Half</button>
-          <button type="button" class="seg-btn" data-value="4">Whole</button>
-        </div>
-      </div>
-      <div class="setting">
-        <span class="setting-label">Options</span>
-        <div class="row-control options-row">
-          <label class="inline-check" id="clickRow"><input type="checkbox" id="clickToggle" checked> Metronome</label>
-          <label class="inline-check" id="rootOnlyRow"><input type="checkbox" id="rootOnlyToggle"> Roots only
-            <button type="button" class="info-dot" data-tip="Play just the root note of each chord instead of the full triad — handy for practicing along without the harmony filling in the answer.">i</button>
-          </label>
-          <label class="inline-check"><input type="checkbox" id="countInToggle" checked> Count-in</label>
-        </div>
-      </div>
-    </div>
-    <div class="share-row">
-      <button type="button" class="link-btn" id="shareBtn">Copy link to this progression</button>
-      <input type="text" class="text-input share-out" id="shareOut" readonly aria-label="Link to this progression" hidden>
-    </div>
-    <!-- The chart sits last in this panel so it lands directly above the
-         fretboard, and the two can be read together while you play. -->
     <p class="key" id="keyReadout">—</p>
     <div class="chords" id="chords"></div>
     <p class="measure-readout" id="measureReadout"></p>
   </section>
 
   <section class="panel">
-    <!-- The neck comes first so it lands directly under the chord chart in the
-         panel above; its controls follow, the way the transport sits above the
-         chart rather than between the two things you're reading. -->
     <div class="fret-scroll">
       <svg id="fretboard" viewBox="0 0 520 156" role="img" aria-label="Guitar fretboard"></svg>
     </div>
@@ -1024,6 +922,11 @@
         <label class="inline-check">
           <input type="checkbox" id="wholeArpeggioToggle">
           <span>Whole arpeggio</span>
+        </label>
+        <label class="inline-check">
+          <input type="checkbox" id="cagedVoiceLeadToggle">
+          <span>Voice leading</span>
+          <button type="button" class="info-dot" data-tip="Lets the progression choose which shape you're shown instead of you stepping to it: the first chord takes its lowest, and each one after it takes whichever of its own shapes sits nearest where the last one landed. The hand then walks through the changes rather than jumping back down the neck — the same thing Progression's Voice leading does, read one chord at a time.">i</button>
         </label>
         <label class="inline-check">
           <input type="checkbox" id="ghostOthersToggle">
@@ -1094,6 +997,134 @@
       </div>
     </div>
   </section>
+
+  <!-- Building the progression: touched once, then you play for a while -->
+  <section class="panel narrow">
+    <div class="settings">
+      <div class="setting">
+        <span class="setting-label">Key
+          <button type="button" class="info-dot" data-tip="Any of the 24 keys. Changing key moves the progression you have rather than rolling a new one — each chord keeps its degree, so a I–V–vi–IV in C major becomes i–v–VI–iv in C minor. The dice picks a key for you, and moves the progression there the same way.">i</button>
+        </span>
+        <div class="row-control">
+          <select id="keySelect" class="mini-select" aria-label="Key"></select>
+          <button type="button" class="seg-btn dice-btn" id="randomKeyBtn" aria-label="Random key" title="Random key">⚄</button>
+        </div>
+      </div>
+      <div class="setting">
+        <span class="setting-label">Preset
+          <button type="button" class="info-dot" data-tip="Common progressions written as scale degrees, so they land in whatever key you're in and follow you when you change key. Every chord stays editable afterwards — change one and it's yours, not the preset's.">i</button>
+        </span>
+        <div class="row-control"><select id="presetSelect" class="mini-select" aria-label="Preset progression"></select></div>
+      </div>
+      <div class="setting" id="presetVariantRow" hidden>
+        <span class="setting-label">Variant</span>
+        <div class="row-control"><div class="segmented" id="presetVariantGroup"></div></div>
+      </div>
+      <div class="setting">
+        <span class="setting-label">Chords
+          <button type="button" class="info-dot" data-tip="One row per chord: which scale degree it is, how many measures it lasts, and whether it's a plain triad or a seventh. Every picker always names a real chord — the dice rolls them all at once, and − / + change how many there are. Picking &quot;7&quot; on a minor or diminished degree raises its 3rd, giving you a secondary dominant.">i</button>
+        </span>
+        <div class="row-control">
+          <div class="stepper">
+            <button type="button" class="step-btn" id="chordCountDown" aria-label="Fewer chords">−</button>
+            <span class="step-value" id="chordCountValue">3</span>
+            <button type="button" class="step-btn" id="chordCountUp" aria-label="More chords">+</button>
+          </div>
+          <button type="button" class="seg-btn dice-btn" id="genBtn" aria-label="Randomize all chords" title="Randomize all chords">⚄</button>
+        </div>
+      </div>
+      <!-- one chord per row, with the columns named once at the top -->
+      <div class="chord-table">
+        <div class="chord-row chord-head" aria-hidden="true">
+          <span class="chord-num"></span>
+          <span>Chord</span>
+          <span>Bars</span>
+          <span>Quality</span>
+        </div>
+        <div id="chordSlots"></div>
+      </div>
+      <div class="settings-heading">When randomizing</div>
+      <label class="setting">
+        <span class="setting-label">Use 7ths
+          <button type="button" class="info-dot" data-tip="Every chord whose quality you haven't set yourself takes the seventh its scale degree implies (maj7, dominant 7, m7 or m7♭5) instead of a plain triad. It swaps triads for sevenths where they stand — no root, degree or bar length moves — and leaves any chord you've set by hand alone.">i</button>
+        </span>
+        <input type="checkbox" id="randomSeventhsToggle">
+      </label>
+      <label class="setting">
+        <span class="setting-label">Common chords only
+          <button type="button" class="info-dot" data-tip="Limit the dice to the most common diatonic chords: I, ii, IV, V, vi (or i, iv, v, VI, VII in minor). Turn off to let it reach any diatonic chord, including the less-used iii and vii°. Picking a chord by hand always ignores this.">i</button>
+        </span>
+        <input type="checkbox" id="commonToggle" checked>
+      </label>
+    </div>
+  </section>
+
+  <!-- Playback settings: set once and left alone, so they sit below the
+       two things you actually read. Play and the tempo shortcuts float. -->
+  <section class="panel narrow display">
+    <button id="playBtnInline" class="primary play-btn" type="button" aria-label="Play"></button>
+    <div class="settings transport">
+      <div class="setting">
+        <span class="setting-label">Tempo</span>
+        <div class="setting-control">
+          <div class="segmented tempo-presets">
+            <button type="button" class="seg-btn bpm-preset active" data-bpm="60">60</button>
+            <button type="button" class="seg-btn bpm-preset" data-bpm="90">90</button>
+            <button type="button" class="seg-btn bpm-preset" data-bpm="120">120</button>
+          </div>
+          <input type="range" id="tempo" min="40" max="200" value="60" aria-label="Tempo">
+          <span class="setting-value" id="tempoVal">60 BPM</span>
+        </div>
+      </div>
+      <div class="setting">
+        <span class="setting-label">Style</span>
+        <div class="segmented" id="styleGroup">
+          <button type="button" class="seg-btn genre-btn active" data-value="simple">Simple</button>
+          <button type="button" class="seg-btn genre-btn" data-value="rock">Rock</button>
+          <button type="button" class="seg-btn genre-btn" data-value="blues">Blues</button>
+          <button type="button" class="seg-btn genre-btn" data-value="jazz">Jazz</button>
+          <button type="button" class="seg-btn genre-btn" data-value="pop">Pop</button>
+          <button type="button" class="seg-btn genre-btn" data-value="funk">Funk</button>
+        </div>
+      </div>
+      <div class="setting" id="styleVariantRow" hidden>
+        <span class="setting-label">Feel</span>
+        <div class="segmented" id="styleVariantGroup"></div>
+      </div>
+      <div class="setting" id="noteValueRow">
+        <span class="setting-label">Note value</span>
+        <div class="segmented" id="noteValueGroup">
+          <button type="button" class="seg-btn active" data-value="1">Quarter</button>
+          <button type="button" class="seg-btn" data-value="2">Half</button>
+          <button type="button" class="seg-btn" data-value="4">Whole</button>
+        </div>
+      </div>
+      <div class="setting">
+        <span class="setting-label">Options</span>
+        <div class="row-control options-row">
+          <label class="inline-check" id="clickRow"><input type="checkbox" id="clickToggle" checked> Metronome</label>
+          <label class="inline-check" id="rootOnlyRow"><input type="checkbox" id="rootOnlyToggle"> Roots only
+            <button type="button" class="info-dot" data-tip="Play just the root note of each chord instead of the full triad — handy for practicing along without the harmony filling in the answer.">i</button>
+          </label>
+          <label class="inline-check"><input type="checkbox" id="countInToggle" checked> Count-in</label>
+        </div>
+      </div>
+    </div>
+    <div class="share-row">
+      <button type="button" class="link-btn" id="shareBtn">Copy link to this progression</button>
+      <input type="text" class="text-input share-out" id="shareOut" readonly aria-label="Link to this progression" hidden>
+    </div>
+  </section>
+
+  <!-- Floats over the page; inside the practice tab, so it goes with it -->
+  <div class="floating-transport">
+    <div class="segmented tempo-presets floating-bpm" aria-label="Tempo shortcuts">
+      <button type="button" class="seg-btn bpm-preset active" data-bpm="60">60</button>
+      <button type="button" class="seg-btn bpm-preset" data-bpm="90">90</button>
+      <button type="button" class="seg-btn bpm-preset" data-bpm="120">120</button>
+    </div>
+    <button id="playBtn" class="primary play-btn play-float" type="button" aria-label="Play"></button>
+  </div>
 
 </div>
 </div>

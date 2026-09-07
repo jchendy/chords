@@ -59,6 +59,7 @@
   let allTones = false;          // Progression: each chord's whole arpeggio, not just its grip
   let wholeArpeggio = false;     // Chords: the shapes opened out into the whole arpeggio
   let ghostOthers = false;       // Chords: the progression's other chords, ghosted in
+  let cagedVoiceLead = false;    // Chords: let the progression choose the box, not you
   let stringSetLow = 2;          // Triads: lowest string of the set (2 = e-B-G)
   let shapeRanges = {};          // per shape: the frets it spans, for the legend
 
@@ -138,6 +139,7 @@
   const cagedViewRow = document.getElementById('cagedViewRow');
   const wholeArpeggioToggle = document.getElementById('wholeArpeggioToggle');
   const ghostOthersToggle = document.getElementById('ghostOthersToggle');
+  const cagedVoiceLeadToggle = document.getElementById('cagedVoiceLeadToggle');
 
   document.querySelectorAll('#stringSetGroup .seg-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -156,8 +158,10 @@
     cagedViewRow.hidden = fretMode !== 'caged';
     boxRow.hidden = !['caged', 'penta', 'scale'].includes(fretMode);
     // stepping and holding only mean something once you're looking at one box
-    document.getElementById('boxStep').classList.toggle('locked', !singleBox);
-    holdPositionToggle.closest('.inline-check').classList.toggle('off', !singleBox);
+    const ledHere = fretMode === 'caged' && cagedVoiceLead;
+    document.getElementById('boxStep').classList.toggle('locked', !singleBox || ledHere);
+    singleBoxToggle.closest('.inline-check').classList.toggle('off', ledHere);
+    holdPositionToggle.closest('.inline-check').classList.toggle('off', !singleBox && !ledHere);
     // Roots is already coloured by root and Progression by chord, so
     // there's nothing for the interval colouring to say in those
     colorByGroup.hidden = !singleChordModes;
@@ -190,6 +194,12 @@
   });
   ghostOthersToggle.addEventListener('change', () => {
     ghostOthers = ghostOthersToggle.checked;
+    renderFretboard();
+  });
+  cagedVoiceLeadToggle.addEventListener('change', () => {
+    cagedVoiceLead = cagedVoiceLeadToggle.checked;
+    heldWindow = null;
+    updateFretUI();       // it picks the box for you, so the stepper goes quiet
     renderFretboard();
   });
 
@@ -248,16 +258,17 @@
     return (Math.min(...frets) + Math.max(...frets)) / 2;
   };
 
-  function applyBoxWindow(markers, lines, boxes){
+  function applyBoxWindow(markers, lines, boxes, forcedIndex){
     shownWindow = null;
-    if (!singleBox || !boxes.length) return { markers, lines };
+    const single = singleBox || forcedIndex != null;
+    if (!single || !boxes.length) return { markers, lines };
     const sorted = boxes.slice().sort((a, b) => a.anchor - b.anchor);
     // A box index means different frets for different chords — each chord has
     // its own list of boxes — so carrying the index across a chord change
     // makes the neck jump. Re-pick by position instead: the new chord's box
     // nearest where the hand already was, which is also the one the previous
     // chord's "up next" ghost was previewing.
-    if (rebaseBox && lastShownWindow){
+    if (forcedIndex == null && rebaseBox && lastShownWindow){
       const want = (lastShownWindow.min + lastShownWindow.max) / 2;
       let best = 0, bd = Infinity;
       sorted.forEach((b, k) => {
@@ -267,7 +278,8 @@
       boxIndex = best;
     }
     rebaseBox = false;
-    const box = sorted[((boxIndex % sorted.length) + sorted.length) % sorted.length];
+    const want = forcedIndex == null ? boxIndex : forcedIndex;
+    const box = sorted[((want % sorted.length) + sorted.length) % sorted.length];
     const frets = box.cells.map(c => c.fret);
     let win = { min: Math.min(...frets), max: Math.max(...frets) };
     if (holdPosition){
@@ -682,6 +694,10 @@
     if (fretMode === 'caged'){
       const chord = currentChord();
       if (!chord) return { markers: [], lines: [] };
+      // with voice leading on, the progression chooses the box rather than you
+      const cands = host.progression().filter(c => c.quality !== 'dim');
+      const led = cagedVoiceLead
+        ? voiceLedBoxIndex(cands, Math.min(cagedChordIdx, cands.length - 1)) : null;
       const rootPc = SEMITONE[chord.note] % 12;
       const isMinor = chord.quality === 'min';
       const seventhPc = chord.seventh ? SEMITONE[chord.seventh] % 12 : null;
@@ -698,7 +714,7 @@
         const grips = board.lines.map(l => ({
           name: l.shape, anchor: Math.min(...l.cells.map(c => c.fret)), cells: l.cells,
         }));
-        const one = applyBoxWindow(board.markers, board.lines, grips);
+        const one = applyBoxWindow(board.markers, board.lines, grips, led);
         const lit = applyColorBy(one.markers, chord);
         const ghosts = ghostOthers
           ? ghostMarkers(shownWindow, new Set(lit.map(m => m.string + ':' + m.fret)), true)
@@ -739,7 +755,7 @@
           }
         }
       }
-      const shown = applyBoxWindow(markers, lines, boxes);
+      const shown = applyBoxWindow(markers, lines, boxes, led);
       const lit = applyColorBy(shown.markers, chord);
       const ghosts = ghostOthers
         ? ghostMarkers(shownWindow, new Set(lit.map(m => m.string + ':' + m.fret)), false)
@@ -966,6 +982,46 @@
       if (drew) ghostLegendData.push({ name: displayName(c), numeral: c.numeral, color });
     });
     return { markers, lines };
+  }
+
+  // The boxes a chord offers in whichever reading Chords is in — its five
+  // grips, or the arpeggio boxes those grips open out into.
+  function cagedBoxesFor(chord){
+    const rootPc = SEMITONE[chord.note] % 12;
+    const isMinor = chord.quality === 'min';
+    const seventhPc = chord.seventh ? SEMITONE[chord.seventh] % 12 : null;
+    if (wholeArpeggio){
+      const tonePcs = new Set([chord.note, chord.third, chord.fifth, chord.seventh]
+        .filter(Boolean).map(n => SEMITONE[n] % 12));
+      return cagedArpeggioBoxes(rootPc, isMinor, tonePcs);
+    }
+    return cagedTriadBoard(rootPc, isMinor, chord.note, seventhPc).lines.map(l => ({
+      name: l.shape, anchor: Math.min(...l.cells.map(c => c.fret)), cells: l.cells,
+    }));
+  }
+
+  // Which box the chord at `curIdx` lands in when the progression picks for
+  // you: the first chord takes its lowest, and every chord after it takes
+  // whichever of its own boxes sits nearest where the one before it landed.
+  // That's Progression's voice leading, read one chord at a time — the hand
+  // walks through the changes instead of jumping back down the neck.
+  function voiceLedBoxIndex(cands, curIdx){
+    let prevMid = null, chosen = 0;
+    for (let i = 0; i <= curIdx; i++){
+      const boxes = cagedBoxesFor(cands[i]).slice().sort((a, b) => a.anchor - b.anchor);
+      if (!boxes.length) continue;
+      let k = 0;
+      if (prevMid != null){
+        let bd = Infinity;
+        boxes.forEach((b, j) => {
+          const d = Math.abs(midOf(b) - prevMid);
+          if (d < bd){ bd = d; k = j; }
+        });
+      }
+      prevMid = midOf(boxes[k]);
+      chosen = k;
+    }
+    return chosen;
   }
 
   // the chord the single-chord views are showing
