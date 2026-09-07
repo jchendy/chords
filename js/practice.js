@@ -200,7 +200,7 @@
   }
 
   // ---- ready-made progressions -------------------------------------------
-  const presetGroup = document.getElementById('presetGroup');
+  const presetSelect = document.getElementById('presetSelect');
   const presetVariantRow = document.getElementById('presetVariantRow');
   const presetVariantGroup = document.getElementById('presetVariantGroup');
   let presetIdx = null;      // which preset is showing, if any
@@ -268,30 +268,41 @@
     });
   }
 
-  function renderPresets(){
-    presetGroup.innerHTML = '';
-    GT.progressionPresets.forEach((preset, i) => {
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.className = 'seg-btn' + (i === presetIdx ? ' active' : '');
-      b.textContent = preset.name;
-      b.addEventListener('click', () => {
-        presetIdx = i;
-        variantIdx = 0;
-        renderPresets();
-        renderPresetVariants();
-        applyPreset(preset, preset.variants[0]);
-      });
-      presetGroup.appendChild(b);
-    });
+  // One picker, each entry named the way people name it, with the numerals
+  // beside it — twelve buttons of roman numerals all looked the same.
+  function buildPresetSelect(){
+    presetSelect.innerHTML = `<option value="">None</option>` +
+      GT.progressionPresets.map((p, i) =>
+        `<option value="${i}">${p.name}${p.numerals ? ' · ' + p.numerals : ''}</option>`).join('');
+    presetSelect.value = presetIdx == null ? '' : String(presetIdx);
   }
+
+  presetSelect.addEventListener('change', () => {
+    if (presetSelect.value === ''){ clearPreset(); return; }
+    presetIdx = Number(presetSelect.value);
+    variantIdx = 0;
+    renderPresetVariants();
+    applyPreset(GT.progressionPresets[presetIdx], GT.progressionPresets[presetIdx].variants[0]);
+  });
 
   // once you've changed something by hand it isn't that preset any more
   function clearPreset(){
     if (presetIdx == null) return;
     presetIdx = null;
-    renderPresets();
+    presetSelect.value = '';
     renderPresetVariants();
+  }
+
+  // The re-roll button says what it will do, and does nothing when every
+  // chord is pinned — it used to be the biggest thing on the page while
+  // being the one action that throws work away.
+  const genBtn = document.getElementById('genBtn');
+  function updateRerollButton(){
+    const n = slotChoices.filter(s => s == null).length;
+    genBtn.disabled = n === 0;
+    genBtn.textContent = n === 0 ? 'All chords pinned'
+      : n === chordCount ? 'Re-roll all chords'
+      : `Re-roll ${n} random chord${n === 1 ? '' : 's'}`;
   }
 
   // Which degree of the current key a slot is sitting on. Chords generated
@@ -429,6 +440,7 @@
       loadedLabel || (currentMode === 'major' ? `${currentTonic} major` : `${currentTonic}m`);
     renderChordDisplay();
     renderChordSlots();
+    updateRerollButton();
     view.rebuildChordPicker();
     view.render();
     resetPlaybackCursor();
@@ -443,7 +455,7 @@
     renderAll();
   }
 
-  document.getElementById('genBtn').addEventListener('click', render);
+  genBtn.addEventListener('click', render);
 
   keySelect.addEventListener('change', () => {
     if (keySelect.value === 'random'){
@@ -511,7 +523,6 @@
   const tempoInput = document.getElementById('tempo');
   const tempoVal = document.getElementById('tempoVal');
   const playBtn = document.getElementById('playBtn');
-  const playBtn2 = document.getElementById('playBtn2');
   const commonToggle = document.getElementById('commonToggle');
   const randomSeventhsToggle = document.getElementById('randomSeventhsToggle');
   const clickToggle = document.getElementById('clickToggle');
@@ -669,10 +680,8 @@
 
   function setPlayLabel(text){
     const icon = text === 'Pause' ? ICON_PAUSE : ICON_PLAY;
-    playBtn.innerHTML = icon;
+    playBtn.innerHTML = `${icon}<span>${text}</span>`;
     playBtn.setAttribute('aria-label', text);
-    playBtn2.innerHTML = icon;
-    playBtn2.setAttribute('aria-label', text);
   }
 
   function resetPlaybackCursor(){
@@ -836,7 +845,6 @@
   }
 
   playBtn.addEventListener('click', togglePlay);
-  playBtn2.addEventListener('click', togglePlay);
   // space bar starts and stops, unless you're typing somewhere
   document.addEventListener('keydown', e => {
     if (e.code !== 'Space' || e.repeat) return;
@@ -990,7 +998,7 @@
         activeChord: () => scheduledLog[0],
       });
       buildKeySelect();
-      renderPresets();
+      buildPresetSelect();
       updatePlaybackUI();
       setPlayLabel('Play');
       // a shared link opens on its progression; otherwise roll one

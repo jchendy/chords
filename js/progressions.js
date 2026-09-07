@@ -25,9 +25,11 @@
   // takes whatever seventh the key's own scale puts on that degree
   const dia = (deg, bars) => ({ deg, bars: bars || 1, dia: true });
 
+  // `name` is what the picker shows; `numerals` spells the progression out
+  // beside it. Where a progression has a name people use, it gets it.
   GT.progressionPresets = [
     {
-      name: 'Blues',
+      name: 'Blues', numerals: 'I7–IV7–V7',
       variants: [
         { name: '12-bar',
           // I / I / I / I | IV / IV / I / I | V / IV / I / V
@@ -50,24 +52,25 @@
           chords: [d(0,4,1), d(3,2,1), d(0,2,1), dom7(4,2), d(0,2,1)] },
       ],
     },
-    { name: 'I–IV–V', chords: [d(0,2), d(3,2), d(4,2)] },
-    { name: 'I–IV–V–IV', chords: [d(0), d(3), d(4), d(3)] },
-    { name: 'I–V–vi–IV', chords: [d(0), d(4), d(5), d(3)] },
-    { name: 'vi–IV–I–V', chords: [d(5), d(3), d(0), d(4)] },
-    { name: 'I–vi–IV–V', chords: [d(0), d(5), d(3), d(4)] },
-    { name: 'I–vi–ii–V', chords: [d(0), d(5), d(1), d(4)] },
-    { name: 'ii–V–I', chords: [dia(1), dom7(4), dia(0,2)] },
+    { name: 'Three-chord', numerals: 'I–IV–V', chords: [d(0,2), d(3,2), d(4,2)] },
+    { name: 'Rock vamp', numerals: 'I–IV–V–IV', chords: [d(0), d(3), d(4), d(3)] },
+    { name: 'Four-chord pop', numerals: 'I–V–vi–IV', chords: [d(0), d(4), d(5), d(3)] },
+    { name: 'Four-chord, minor start', numerals: 'vi–IV–I–V', chords: [d(5), d(3), d(0), d(4)] },
+    { name: '50s doo-wop', numerals: 'I–vi–IV–V', chords: [d(0), d(5), d(3), d(4)] },
+    { name: 'Turnaround', numerals: 'I–vi–ii–V', chords: [d(0), d(5), d(1), d(4)] },
+    { name: 'Jazz cadence', numerals: 'ii–V–I', chords: [dia(1), dom7(4), dia(0,2)] },
     // the jazz turnaround: the vi made a dominant to pull into the ii
-    { name: 'I–VI7–ii–V7', chords: [dia(0), dom7(5), dia(1), dom7(4)] },
-    { name: 'I–IV–vi–V', chords: [d(0), d(3), d(5), d(4)] },
+    { name: 'Jazz turnaround', numerals: 'I–VI7–ii–V7', chords: [dia(0), dom7(5), dia(1), dom7(4)] },
+    { name: 'Pop, IV before vi', numerals: 'I–IV–vi–V', chords: [d(0), d(3), d(5), d(4)] },
     // Pachelbel's canon: I V vi iii IV I IV V
-    { name: 'Canon', chords: [d(0), d(4), d(5), d(2), d(3), d(0), d(3), d(4)] },
+    { name: 'Canon', numerals: 'I–V–vi–iii–IV–I–IV–V', chords: [d(0), d(4), d(5), d(2), d(3), d(0), d(3), d(4)] },
     // the Andalusian cadence, with the major V a minor key borrows for it
-    { name: 'i–VII–VI–V', mode: 'minor', chords: [d(0), d(6), d(5), d(7)] },
+    { name: 'Andalusian', numerals: 'i–VII–VI–V', mode: 'minor', chords: [d(0), d(6), d(5), d(7)] },
   ];
 
   // every preset presented the same way, whether or not it has variants
   GT.progressionPresets.forEach(p => {
     if (!p.variants) p.variants = [{ name: '', chords: p.chords }];
+    if (!p.numerals) p.numerals = '';
   });
 })();
