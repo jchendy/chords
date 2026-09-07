@@ -35,6 +35,12 @@
   let fretMode = 'caged';        // 'roots' | 'caged' | 'penta' | 'scale' | 'positions'
   let cagedChordIdx = 0;
   let cagedShapesShown = [];
+  // Which of the five CAGED shapes Chords is working on. Three to start with:
+  // A, E and D are the shapes most players learn first and the ones that fall
+  // under the hand without a stretch, so the view opens on something you can
+  // actually practise rather than on all five at once.
+  const enabledShapes = new Set(['A', 'E', 'D']);
+  const shapeOn = name => enabledShapes.has(name);
   let rootLegendData = [];
   let chordPosIndex = 0;         // which cluster of the chords' own positions is showing
   let stuckShape = null;         // shape name pinned by a tap on its legend entry
@@ -157,6 +163,7 @@
   const stringSetRow = document.getElementById('stringSetRow');
   const cagedViewRow = document.getElementById('cagedViewRow');
   const wholeArpeggioToggle = document.getElementById('wholeArpeggioToggle');
+  const cagedShapeGroup = document.getElementById('cagedShapeGroup');
   const cagedPosMethodGroup = document.getElementById('cagedPosMethodGroup');
   const viewGroup = document.getElementById('viewGroup');
   const cagedPosMethodWrap = document.getElementById('cagedPosMethodWrap');
@@ -168,6 +175,49 @@
       renderFretboard();
     });
   });
+
+  // One box gathers the whole progression into a single stretch of neck. It can
+  // only do that while the shapes left on are spread finely enough to meet
+  // somewhere: measured on Am-Dm-E, all five shapes or the A-E-D it opens on
+  // need four frets to hold one shape of every chord — a hand — and A plus E
+  // need five. Take it down to a single shape and the answer is ten to twelve,
+  // which is most of the neck and not a position at all. Past a hand's reach
+  // the option stops meaning anything, so it greys out and Cluster takes over:
+  // Cluster is already the reading that lets each chord sit where it really
+  // falls instead of insisting they share a box.
+  const HAND_SPAN = 6;        // index finger to little finger, generously
+
+  // the narrowest window holding one allowed shape from every chord
+  function positionSpan(){
+    const cands = host && host.progression
+      ? host.progression().filter(c => c.quality !== 'dim') : [];
+    if (!cands.length) return 0;
+    const per = cands.map(shapesForPosition);
+    if (per.some(boxes => !boxes.length)) return Infinity;
+    let best = Infinity;
+    for (let f = 0; f <= FRET_COUNT; f++){
+      let lo = f, hi = f;
+      per.forEach(boxes => {
+        const frets = nearestShape(boxes, f).cells.map(c => c.fret);
+        lo = Math.min(lo, ...frets);
+        hi = Math.max(hi, ...frets);
+      });
+      best = Math.min(best, hi - lo + 1);
+    }
+    return best;
+  }
+
+  function oneBoxPossible(){
+    return enabledShapes.size > 0 && positionSpan() <= HAND_SPAN;
+  }
+
+  // the shapes a chord can sit in, in whichever reading Chords is showing
+  function shapesForPosition(chord){
+    if (!wholeArpeggio) return gripBoxes(chord);
+    const rootPc = SEMITONE[chord.note] % 12;
+    return cagedArpeggioBoxes(rootPc, chord.quality === 'min', chordTonePcs(chord))
+      .filter(b => shapeOn(b.name));
+  }
 
   function updateFretUI(){
     const chordModes = ['caged', 'triads3', 'penta', 'scale'].includes(fretMode);
@@ -184,6 +234,16 @@
     // about how they're gathered
     const cagedPos = fretMode === 'caged' && inPosition;
     cagedPosMethodWrap.hidden = !cagedPos;
+    const boxBtn = cagedPosMethodGroup.querySelector('[data-value="box"]');
+    const canBox = oneBoxPossible();
+    boxBtn.disabled = !canBox;
+    boxBtn.title = canBox ? ''
+      : 'Too few CAGED shapes left to hold the whole progression under one hand';
+    if (!canBox && cagedPosMethod === 'box'){
+      cagedPosMethod = 'cluster';
+      cagedPosMethodGroup.querySelectorAll('.seg-btn')
+        .forEach(b => b.classList.toggle('active', b.dataset.value === 'cluster'));
+    }
     // Roots is already coloured by root; and in one position Chords colours by
     // chord, so there's nothing for the interval option to say in either
     const colourIsChord = inPosition && ['caged', 'triads3'].includes(fretMode);
@@ -215,6 +275,27 @@
       renderFretboard();
     });
   });
+  // Independent toggles, not a picker: you're choosing a set to work on, so
+  // several are on at once and any of them can come off. The last one can't —
+  // an empty set draws an empty neck, which is a state with nothing to say and
+  // no control on screen that obviously undoes it.
+  cagedShapeGroup.querySelectorAll('.seg-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const name = btn.dataset.value;
+      if (enabledShapes.has(name)){
+        if (enabledShapes.size === 1) return;
+        enabledShapes.delete(name);
+      } else {
+        enabledShapes.add(name);
+      }
+      btn.classList.toggle('active', enabledShapes.has(name));
+      // the box the hand was in may not exist any more
+      rebaseBox = true;
+      updateFretUI();
+      renderFretboard();
+    });
+  });
+
   cagedPosMethodGroup.querySelectorAll('.seg-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       cagedPosMethodGroup.querySelectorAll('.seg-btn').forEach(b => b.classList.toggle('active', b === btn));
@@ -611,7 +692,7 @@
         const rootPc = SEMITONE[chord.note] % 12;
         const shapeSet = chord.quality === 'min' ? CAGED_MINOR : CAGED_MAJOR;
         return cagedPlacements(rootPc, shapeSet)
-          .filter(p => p.name !== 'G' || p.fretMin === 0)
+          .filter(p => shapeOn(p.name) && (p.name !== 'G' || p.fretMin === 0))
           .sort((a, b) => a.meanFret - b.meanFret);
       });
 
@@ -818,7 +899,7 @@
       // The grips, and the outlines tracing them. A chord carrying a 7th gets
       // its 7th-chord voicings, so what's traced is a shape you'd actually
       // finger rather than the plain triad underneath it.
-      const board = cagedTriadBoard(rootPc, isMinor, chord.note, seventhPc);
+      const board = cagedTriadBoard(rootPc, isMinor, chord.note, seventhPc, enabledShapes);
       board.markers = withTagColors(board.markers, n => CAGED_COLORS[n]);
       if (!wholeArpeggio){
         cagedShapesShown = board.shapesShown;
@@ -858,7 +939,7 @@
       if (chord.seventh) degByPc[SEMITONE[chord.seventh] % 12] = degreeLabel(chord, 'seventh');
       const tonePcs = new Set(Object.keys(degByPc).map(Number));
 
-      const boxes = cagedArpeggioBoxes(rootPc, isMinor, tonePcs);
+      const boxes = cagedArpeggioBoxes(rootPc, isMinor, tonePcs).filter(b => shapeOn(b.name));
       cagedShapesShown = CAGED_ORDER.filter(n => boxes.some(b => b.name === n));
       const lines = board.lines;
 
@@ -1125,7 +1206,7 @@
     if (!chord) return [];
     const rootPc = SEMITONE[chord.note] % 12;
     return cagedTriadBoard(rootPc, chord.quality === 'min', chord.note,
-      chord.seventh ? SEMITONE[chord.seventh] % 12 : null).lines.map(l => ({
+      chord.seventh ? SEMITONE[chord.seventh] % 12 : null, enabledShapes).lines.map(l => ({
         name: l.shape, anchor: Math.min(...l.cells.map(c => c.fret)), cells: l.cells,
       }));
   }

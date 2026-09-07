@@ -283,6 +283,10 @@
     transition: background 0.12s ease, border-color 0.12s ease;
   }
   .seg-btn:hover{ border-color: var(--accent); }
+  /* an option the current settings make impossible, rather than one you simply
+     haven't picked — it stays legible enough to read as a choice you could get
+     back by turning a shape on again */
+  .seg-btn:disabled{ opacity: 0.38; cursor: default; }
   .seg-btn.active{
     background: var(--accent);
     border-color: var(--accent);
@@ -987,9 +991,16 @@
     </div>
     <div class="setting" id="cagedViewRow" hidden>
       <span class="setting-label">Shapes
-        <button type="button" class="info-dot" data-tip="Whole arpeggio opens each CAGED shape out into every chord tone within reach of it, with the grip still traced through the middle — so you see the notes around the shape as well as the shape. It applies to both readings.">i</button>
+        <button type="button" class="info-dot" data-tip="Which of the five CAGED shapes to work on — switch off the ones you're not drilling and they leave the neck, the legend and the positions the arrows walk through. It opens on A, E and D, the three that fall under the hand without a stretch. Whole arpeggio opens each shape you have on out into every chord tone within reach of it, with the grip still traced through the middle, so you see the notes around the shape as well as the shape. Both apply to both readings.">i</button>
       </span>
       <div class="row-control">
+        <span class="segmented" id="cagedShapeGroup" aria-label="Which CAGED shapes to show">
+          <button type="button" class="seg-btn" data-value="C">C</button>
+          <button type="button" class="seg-btn active" data-value="A">A</button>
+          <button type="button" class="seg-btn" data-value="G">G</button>
+          <button type="button" class="seg-btn active" data-value="E">E</button>
+          <button type="button" class="seg-btn active" data-value="D">D</button>
+        </span>
         <label class="inline-check">
           <input type="checkbox" id="wholeArpeggioToggle">
           <span>Whole arpeggio</span>

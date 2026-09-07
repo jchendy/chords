@@ -202,6 +202,16 @@ names the tab you're on.
   shapes land and in nothing else: all of them draw the chord in front lit, the
   one you're heading into next behind it, the rest faint, and read out the
   frets the position covers.
+  **Shapes** picks which of the five you're working on — switch the rest off
+  and they leave the neck, the outlines, the legend and the positions the
+  arrows walk through. It opens on A, E and D, the three that fall under the
+  hand without a stretch, and the last one standing can't be switched off.
+  One box needs the shapes left on to be able to meet somewhere: on Am–Dm–E,
+  all five or A–E–D hold one shape of every chord inside four frets, A and E
+  need five, but a single shape needs ten to twelve — most of the neck, and not
+  a position at all. Past a hand's reach the option greys out, and if it was
+  the one selected, Cluster takes over, since Cluster is already the reading
+  that lets each chord sit where it really falls.
   Triads — in one position these behave as Chords does: the chord in front
   lit, the rest of the progression's triads behind it in their own colours,
   and the legend naming each chord with the inversion it's sitting in.

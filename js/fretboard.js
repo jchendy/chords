@@ -220,7 +220,12 @@
   // the same thing, so both stay identical by construction.
   // Pass `seventhPc` and each shape turns into its 7th-chord voicing (the
   // same way the position reading does it), with the 7th drawn as a hollow dot.
-  function cagedTriadBoard(rootPc, isMinor, rootLabel, seventhPc = null){
+  // `allowed` narrows it to a set of shape letters — the practice tab lets you
+  // work on a few of the five at a time. Filtering here rather than afterwards
+  // is what keeps a note two shapes share honest: with one of them switched
+  // off it's a plain dot in the other's colour, not a split still half-painted
+  // by a shape that isn't on the neck.
+  function cagedTriadBoard(rootPc, isMinor, rootLabel, seventhPc = null, allowed = null){
     const thirdPc = (rootPc + (isMinor ? 3 : 4)) % 12;
     const fifthPc = (rootPc + 7) % 12;
     const seventhLabel = seventhPc == null ? '' : ((seventhPc - rootPc + 12) % 12 === 11 ? '7' : '♭7');
@@ -235,6 +240,7 @@
     const rendered = new Set();
     const lines = [];
     CAGED_ORDER.forEach(name => {
+      if (allowed && !allowed.has(name)) return;
       const shape = shapes[name];
       const r0 = ((rootPc - STRING_TUNING[shape.ref]) % 12 + 12) % 12;
       [r0, r0 + 12].forEach(r => {

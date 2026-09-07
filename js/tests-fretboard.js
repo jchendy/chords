@@ -30,6 +30,7 @@
     fretModeGroup: ['roots', 'caged', 'triads3', 'penta', 'scale'],
     viewGroup: ['neck', 'position'],
     cagedPosMethodGroup: ['box', 'cluster', 'lead'],
+    cagedShapeGroup: ['C', 'A', 'G', 'E', 'D'],
     colorByGroup: ['shape', 'interval'],
     scaleTheoryGroup: ['parallel', 'modal'],
     stringSetGroup: ['2', '3', '4', '5'],
@@ -63,13 +64,21 @@
     label.appendChild(box);
     root.appendChild(label);
   });
+  // Which buttons start lit has to match the real page, because the view reads
+  // its own state from JavaScript and only writes the classes back: a fixture
+  // that disagreed would make a test toggling a control do the opposite of
+  // what it meant. Every group is a picker whose first option is the default —
+  // except the shapes, which are independent toggles opening on A, E and D.
+  const SEG_ACTIVE = { cagedShapeGroup: ['A', 'E', 'D'] };
   Object.entries(SEG).forEach(([id, values]) => {
     const group = document.createElement('div');
     group.id = id;
     group.className = 'segmented';
+    const lit = SEG_ACTIVE[id];
     values.forEach((v, i) => {
       const b = document.createElement('button');
-      b.className = 'seg-btn' + (i === 0 ? ' active' : '');
+      const on = lit ? lit.includes(v) : i === 0;
+      b.className = 'seg-btn' + (on ? ' active' : '');
       b.dataset.value = v;
       group.appendChild(b);
     });
@@ -97,6 +106,17 @@
   const setMethod = m => click(`#cagedPosMethodGroup [data-value="${m}"]`);
   const setStringSet = s => click(`#stringSetGroup [data-value="${s}"]`);
   const stepPosition = () => click('#boxNext');
+  const shapesOn = () => [...q('#cagedShapeGroup').querySelectorAll('.seg-btn')]
+    .filter(b => b.classList.contains('active')).map(b => b.dataset.value);
+  // Switch the wanted ones on before switching the rest off: the view refuses
+  // to turn off the last shape standing, so a set that emptied on the way past
+  // would keep whichever shape happened to be last rather than the one asked
+  // for.
+  const setShapes = want => {
+    want.forEach(n => { if (!shapesOn().includes(n)) click(`#cagedShapeGroup [data-value="${n}"]`); });
+    shapesOn().filter(n => !want.includes(n))
+      .forEach(n => click(`#cagedShapeGroup [data-value="${n}"]`));
+  };
 
   let started = false;
   function start(){
@@ -525,6 +545,68 @@
       + (bad.length ? ` — ${bad[0]}` : ''));
   }
 
+  // A shape switched off leaves the view entirely — no dot claims it, no
+  // outline traces it, no legend entry names it, and the arrows don't stop on
+  // it. Filtering at the source is what makes that true of a note two shapes
+  // share: with one of them off it's a plain dot in the other's colour rather
+  // than a split still half-painted by a shape that isn't there.
+  function testDisabledShapesLeaveTheView(t){
+    const bad = [];
+    loadProgression(['Am7', 'Dm7', 'E7']);
+    setMode('caged');
+    [['A', 'E', 'D'], ['C', 'G'], ['E'], ['C', 'A', 'G', 'E', 'D']].forEach(on => {
+      setShapes(on);
+      [false, true].forEach(arp => {
+        const cb = q('#wholeArpeggioToggle');
+        if (cb.checked !== arp) cb.click();
+        setView('neck');
+        const where = `${on.join('')} arp=${arp}`;
+        const drawn = new Set([...svg.querySelectorAll('.note-dot')]
+          .flatMap(g => (g.getAttribute('data-shapes') || '').split(',').filter(Boolean)));
+        const traced = new Set([...svg.querySelectorAll('.shape-line')]
+          .map(l => l.getAttribute('data-shape')));
+        const named = new Set(legendTags());
+        [...drawn].filter(n => !on.includes(n)).forEach(n => bad.push(`${where}: ${n} still on the neck`));
+        [...traced].filter(n => !on.includes(n)).forEach(n => bad.push(`${where}: ${n} still traced`));
+        [...named].filter(n => !on.includes(n)).forEach(n => bad.push(`${where}: ${n} still in the legend`));
+        if (!drawn.size) bad.push(`${where}: nothing drawn at all`);
+      });
+    });
+    setShapes(['A', 'E', 'D']);
+    t.ok(!bad.length, `A shape switched off leaves the neck, the outlines and the legend`
+      + (bad.length ? ` — ${bad[0]}` : ''));
+  }
+
+  // One box only means something while the shapes left on can meet inside a
+  // hand's reach. When they can't the option has to go — and go for good, not
+  // just visually: an unusable reading left selected would quietly stop
+  // windowing at all and call the whole neck one box.
+  function testOneBoxGoesWhenItCannotHold(t){
+    const bad = [];
+    loadProgression(['Am7', 'Dm7', 'E7']);
+    setMode('caged');
+    setView('position');
+    const boxBtn = () => q('#cagedPosMethodGroup [data-value="box"]');
+    const method = () => {
+      const on = [...q('#cagedPosMethodGroup').querySelectorAll('.seg-btn')]
+        .find(b => b.classList.contains('active'));
+      return on ? on.dataset.value : null;
+    };
+    // wide enough sets keep it; a single shape spans most of the neck
+    setShapes(['C', 'A', 'G', 'E', 'D']);
+    if (boxBtn().disabled) bad.push('all five shapes: One box was refused');
+    setMethod('box');
+    if (method() !== 'box') bad.push('all five shapes: One box would not select');
+    setShapes(['A']);
+    if (!boxBtn().disabled) bad.push('one shape: One box was still offered');
+    if (method() === 'box') bad.push('one shape: One box stayed selected once it became impossible');
+    // and it comes back when the shapes do
+    setShapes(['A', 'E', 'D']);
+    if (boxBtn().disabled) bad.push('A-E-D: One box did not come back');
+    t.ok(!bad.length, 'One box is offered exactly while a hand could hold the progression'
+      + (bad.length ? ` — ${bad[0]}` : ''));
+  }
+
   GT.fretboardSuites = [
     ['Fretboard: chords are drawn as shapes you can hold', testGripsAreGrips],
     ['Fretboard: whole arpeggio opens the shapes out', testArpeggioReallyOpensOut],
@@ -538,5 +620,7 @@
     ['Fretboard: every position method draws alike', testPositionMethodsRenderAlike],
     ['Fretboard: every box named is a box you can reach', testEveryBoxNamedCanBeReached],
     ['Fretboard: every colour comes from a box the note is in', testEveryColourComesFromItsBox],
+    ['Fretboard: a shape switched off leaves the view', testDisabledShapesLeaveTheView],
+    ['Fretboard: One box goes when it cannot hold the progression', testOneBoxGoesWhenItCannotHold],
   ];
 })();
