@@ -489,7 +489,7 @@
   #fretboard.shape-focus .shape-line{ opacity: 0.08; }
   #fretboard.shape-focus .shape-line.hot{ opacity: 1; }
 
-  /* Chord positions: with the whole cluster shown at once (not following
+  /* Progression: with the whole cluster shown at once (not following
      playback), dim every note except each chord's lowest root */
   #fretboard.positions-mode:not(.shape-focus):not(.pos-follow) .note-dot{ opacity: 0.22; }
   #fretboard.positions-mode:not(.shape-focus):not(.pos-follow) .note-dot.pos-root{ opacity: 1; }
@@ -498,7 +498,7 @@
   #fretboard.positions-mode:not(.shape-focus):not(.pos-follow) .note-dot.ringed{ opacity: 1; }
   #fretboard.positions-mode:not(.shape-focus):not(.pos-follow) .shape-line{ opacity: 0.12; }
 
-  /* Chord positions: "Follow playback" — current chord lit, next chord
+  /* Progression: "Follow playback" — current chord lit, next chord
      slightly dimmed, everything else dimmed much further */
   #fretboard.pos-follow .note-dot{ opacity: 0.07; }
   #fretboard.pos-follow .note-dot.pos-next{ opacity: 0.4; }
@@ -534,6 +534,10 @@
     line-height: 1.4;
   }
   .caged-legend [data-shape].legend-current{ background: rgba(255,255,255,0.16); }
+  /* the other chords of the progression, sitting behind the one in front */
+  .note-dot.ghost{ opacity: 0.3; }
+  #fretboard.shape-focus .note-dot.ghost{ opacity: 0.12; }
+  .caged-legend .ghost-entry{ opacity: 0.62; }
 
   #cagedChordGroup.locked{ opacity: 0.45; pointer-events: none; }
   #boxStep .seg-btn{ padding: 7px 12px; }
@@ -755,7 +759,7 @@
      between while practising, and the transport shouldn't be somewhere you
      have to scroll back to. It lives inside the practice tab's markup, so it
      disappears with that tab rather than needing its own visibility rule. */
-  .display .play-btn{
+  .display .play-float{
     position: fixed;
     z-index: 40;
     right: 20px;
@@ -892,7 +896,8 @@
 
   <!-- The chords and everything you touch while they play -->
   <section class="panel narrow display">
-    <button id="playBtn" class="primary play-btn" type="button" aria-label="Play"></button>
+    <button id="playBtn" class="primary play-btn play-float" type="button" aria-label="Play"></button>
+    <button id="playBtnInline" class="primary play-btn" type="button" aria-label="Play"></button>
     <div class="settings transport">
       <div class="setting">
         <span class="setting-label">Tempo</span>
@@ -961,15 +966,15 @@
     <div class="caged-legend" id="cagedLegend"></div>
     <div class="setting">
       <span class="setting-label">Fretboard
-        <button type="button" class="info-dot" data-tip="Roots: every root of the progression's chords, colour-coded. Chord positions: one location per chord, clustered close together on the neck. CAGED chords: the five movable CAGED shapes for one chosen chord — with &quot;Whole arpeggio&quot; on, those same shapes opened out into every chord tone on the neck, boxed by the shape it sits in. Triad inversions: close three-string triads on one set of strings, coloured by inversion. CAGED pentatonic: that chord's pentatonic scale, boxed and coloured by CAGED shape. CAGED scales: the full 7-note scale for that chord, same colouring.">i</button>
+        <button type="button" class="info-dot" data-tip="Every view but Roots and Progression shows one chord at a time, picked below. Roots: every root of the progression's chords, colour-coded. Progression: one grip per chord, clustered close together so the whole progression sits under one hand. Chords: the five movable CAGED shapes for the chosen chord — with &quot;Whole arpeggio&quot; on, those same shapes opened out into every chord tone on the neck. Triads: close three-string triads on one set of strings, coloured by inversion and named by the CAGED grip they're cut from. Pentatonic: that chord's pentatonic scale, boxed and coloured by CAGED shape. Scales: the full 7-note scale for that chord, same colouring.">i</button>
       </span>
       <div class="segmented" id="fretModeGroup">
         <button type="button" class="seg-btn" data-value="roots">Roots</button>
-        <button type="button" class="seg-btn" data-value="positions">Chord positions</button>
-        <button type="button" class="seg-btn active" data-value="caged">CAGED chords</button>
-        <button type="button" class="seg-btn" data-value="triads3">Triad inversions</button>
-        <button type="button" class="seg-btn" data-value="penta">CAGED pentatonic</button>
-        <button type="button" class="seg-btn" data-value="scale">CAGED scales</button>
+        <button type="button" class="seg-btn" data-value="positions">Progression</button>
+        <button type="button" class="seg-btn active" data-value="caged">Chords</button>
+        <button type="button" class="seg-btn" data-value="triads3">Triads</button>
+        <button type="button" class="seg-btn" data-value="penta">Pentatonic</button>
+        <button type="button" class="seg-btn" data-value="scale">Scales</button>
       </div>
     </div>
     <div class="setting" id="displayRow">
@@ -1011,6 +1016,11 @@
         <label class="inline-check">
           <input type="checkbox" id="wholeArpeggioToggle">
           <span>Whole arpeggio</span>
+        </label>
+        <label class="inline-check">
+          <input type="checkbox" id="ghostOthersToggle">
+          <span>Other chords</span>
+          <button type="button" class="info-dot" data-tip="Draws the progression's other chords faintly into the box you're practising in, each in its own colour, so you can see where the changes fall without moving your hand. Only the frets the chord in front isn't already using are drawn, so it stays background. Needs &quot;Single box&quot; on, since it fills one position.">i</button>
         </label>
       </div>
     </div>

@@ -490,7 +490,7 @@
     t.ok(names([0, 3, 7, 10]).includes('Cm7'), 'C D# G A# includes Cm7');
     t.ok(names([0, 4, 7, 9]).includes('Am7') && names([0, 4, 7, 9]).includes('C6'), 'C E G A reads as both C6 and Am7');
 
-    // the open C7 in "Chord positions": the dropped root would fall below the
+    // the open C7 in Progression: the dropped root would fall below the
     // nut, so the 5th is raised instead
     const cShape = cagedPlacements(0, CAGED_MAJOR).find(p => p.name === 'C' && p.fretMin === 0);
     t.equal(grip(seventhCells(cShape, 0, 10)), 'x-3-2-3-1-0', 'open C-shape C7 raises the 5th to the flat 7th');

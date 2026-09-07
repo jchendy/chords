@@ -104,8 +104,9 @@ names the tab you're on.
   roots-only / count-in options, and the share link), and then the chord
   chart itself. The chart closes that panel and the neck opens the next one,
   so the two things you read while playing sit against each other rather than
-  with the controls between them. Play floats bottom-right, clear of the page,
-  so the transport is never somewhere you have to scroll back to. A "Style"
+  with the controls between them. Play sits in the transport list and also
+  floats bottom-right, clear of the page, so it's never somewhere you have to
+  scroll back to; both are the same control and show the same state. A "Style"
   picker chooses the backing:
   Simple — the plain piano voicing, with note value (quarter / half / whole),
   metronome click and a roots-only mode;
@@ -125,17 +126,18 @@ names the tab you're on.
 - Live chord highlighting synced to playback, with a measure.beat position
   readout under the chords (the key itself is shown plainly above them,
   e.g. "C major" / "C#m")
-- Fretboard panel (6 strings, 15 frets) with six views, "Roots" and
-  "Chord positions" first:
+- Fretboard panel (6 strings, 15 frets) with six views, each named in one
+  word — the tab is already CAGED practice and the legend already says
+  "C shape", so the prefix was carrying nothing:
   Roots — every root-note location for the progression (colour-coded,
   legend gives each root's roman numeral; while playing, the currently
   sounding chord's root is ringed and spotlighted);
-  Chord positions — one shape per chord in the progression, colour-coded by
+  Progression — one shape per chord, colour-coded by
   chord, chosen so every shape sits close together on the neck (shared notes
   split-coloured, no shape outlines since several overlapping shapes made
   them confusing here, and hovering/tapping a chord name in the legend —
   which also names each chord's CAGED shape letter — spotlights it, same as
-  CAGED chords); every note is labelled by scale degree except the root,
+  Chords); every note is labelled by scale degree except the root,
   which keeps its note name; with the whole cluster shown at rest, every
   note is dimmed except each chord's lowest root, so the anchor notes stand
   out; the barred
@@ -160,11 +162,11 @@ names the tab you're on.
   lightly dims the next chord, and dims the rest much further; a lit note
   only wears the root ring when it's actually the sounding chord's own root,
   not just a note it happens to share with another chord's root;
-  CAGED chords — the five chord shapes for the chosen chord, outlined and
+  Chords — the five CAGED shapes for the chosen chord, outlined and
   colour-coded, every note labelled by scale degree except the root (which
   keeps its note name), shared notes split-coloured; a chord carrying a 7th
   shows its 7th-chord shapes, the 7th drawn as a hollow dot, so this view
-  and "Chord positions" agree. **Whole arpeggio** opens those same five
+  and Progression agree. **Whole arpeggio** opens those same five
   shapes out: every chord tone on the neck, each one coloured by the CAGED
   box it sits in (seam notes split-coloured), labelled by degree, with the
   grip itself still traced through the middle of its box. That's the CAGED
@@ -172,8 +174,12 @@ names the tab you're on.
   around it on each string. The outlines are the same grips either way, so the
   toggle changes how much you see rather than what you're looking at, and the
   Box row works in both: with the grips alone each grip is its own box, so
-  "Single box" walks the neck one CAGED shape at a time;
-  Triad inversions — close three-note triads on one set of three adjacent
+  "Single box" walks the neck one CAGED shape at a time. **Other chords**
+  draws the progression's remaining chords faintly into the box you're
+  practising in, each in its own colour and only on the frets the chord in
+  front isn't already using, so you can see where the changes fall without
+  moving your hand;
+  Triads — close three-note triads on one set of three adjacent
   strings (e–B–G, B–G–D, G–D–A or D–A–E), every inversion, all the way up
   the neck, each legend entry also naming the CAGED grip its shapes are cut
   from so a triad reads as somewhere you already know. Each shape is outlined
@@ -184,12 +190,12 @@ names the tab you're on.
   string, rising in pitch across the set, inside an octave and a hand span,
   which is what produces the shapes rhythm players comp with (C major on the
   top three strings comes out 0-1-0, 5-5-3, 9-8-8, 12-13-12);
-  CAGED pentatonic — the chosen chord's major/minor pentatonic, every note
+  Pentatonic — the chosen chord's major/minor pentatonic, every note
   coloured by the CAGED box it belongs to (seam notes split-coloured), scale
   degrees in the dots, chord-shape outlines through the chord tones. The
   chord's own notes (1, 3, 5 and its 7th) are drawn at full strength and
   the rest of the scale sits back, so the notes to land on read at a glance;
-  CAGED scales — with a toggle between two theories: Parallel (the scale
+  Scales — with a toggle between two theories: Parallel (the scale
   matching the chosen chord's own quality — major chord → major scale, a
   dominant chord → Mixolydian so its ♭7 is in the scale, minor chord →
   natural minor) and Key mode (chord-scale theory — the progression key's
@@ -212,7 +218,7 @@ names the tab you're on.
   scale tone. The roles come from the chord itself, so a ♭5 reads as that
   chord's 5th while a ♭6 in the scale around it reads as a scale tone. The
   shape outlines stay shape-coloured either way; colouring by interval has
-  nothing to add to Roots (already coloured by root) or Chord positions
+  nothing to add to Roots (already coloured by root) or Progression
   (coloured by chord), so the control is hidden there
 - The legend says where each shape sits — "C shape 6–10" — and, for a shape
   that appears twice on a 15-fret neck, both places ("D shape 0–2 · 12–14").

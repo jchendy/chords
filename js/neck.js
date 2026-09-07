@@ -89,7 +89,8 @@
         // `hollow` marks a note outside the triad (the 7th); `passing` a scale
         // note that isn't a chord tone, drawn quieter so the chord tones stand out
         const extraClass = (m.isLowestRoot ? ' pos-root' : '') + (m.hollow ? ' hollow' : '')
-          + (m.passing ? ' passing' : '') + (m.ringed ? ' ringed' : '');
+          + (m.passing ? ' passing' : '') + (m.ringed ? ' ringed' : '')
+          + (m.ghost ? ' ghost' : '');
         let g = `<g class="note-dot${extraClass}"${shapeAttr}${rootPcAttr}${rootForAttr}${labelsAttr}>`;
         if (m.hollow){
           const stroke = m.color || (m.split && m.split[0]);

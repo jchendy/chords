@@ -613,7 +613,10 @@
 
   const tempoInput = document.getElementById('tempo');
   const tempoVal = document.getElementById('tempoVal');
-  const playBtn = document.getElementById('playBtn');
+  // Two of them: one floating clear of the page so it's always in reach, one
+  // in the transport list where the rest of the playback controls are. They
+  // are the same control, so they carry the same label and state.
+  const playBtns = [...document.querySelectorAll('.play-btn')];
   const commonToggle = document.getElementById('commonToggle');
   const randomSeventhsToggle = document.getElementById('randomSeventhsToggle');
   const clickToggle = document.getElementById('clickToggle');
@@ -758,8 +761,10 @@
 
   function setPlayLabel(text){
     const icon = text === 'Pause' ? ICON_PAUSE : ICON_PLAY;
-    playBtn.innerHTML = `${icon}<span>${text}</span>`;
-    playBtn.setAttribute('aria-label', text);
+    playBtns.forEach(b => {
+      b.innerHTML = `${icon}<span>${text}</span>`;
+      b.setAttribute('aria-label', text);
+    });
   }
 
   function resetPlaybackCursor(){
@@ -922,7 +927,7 @@
     }
   }
 
-  playBtn.addEventListener('click', togglePlay);
+  playBtns.forEach(b => b.addEventListener('click', togglePlay));
   // space bar starts and stops, unless you're typing somewhere
   document.addEventListener('keydown', e => {
     if (e.code !== 'Space' || e.repeat) return;
