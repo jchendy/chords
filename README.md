@@ -424,6 +424,17 @@ fall back to the style's implied seventh for a plain triad. Notes are
 scheduled against the audio clock by a 25 ms lookahead loop, so timing
 doesn't drift when the main thread is busy.
 
+Two things keep a practice session alive on a phone propped up on a music
+stand. The screen is held awake while something is playing — and only while
+it's playing, since a lock left on would keep the screen lit for as long as
+the tab is open. The browser takes the lock back whenever the tab is hidden,
+so returning to it asks for a new one. And the page declares itself as
+`playback` audio, which is what lets an iPhone with the ringer switch on
+silent play out loud, the same as a music app would; without it you set the
+phone down, work through a progression and hear nothing, with no clue why.
+Both are asked for behind a feature check and both are allowed to fail — a
+browser without them is a browser where the problem didn't arise.
+
 ## Code layout
 
 `index.html` is markup and styles only; the JavaScript lives in `js/`, split

@@ -968,6 +968,7 @@
       scheduler();
       requestAnimationFrame(syncHighlight);
       setPlayLabel('Pause');
+      audio.keepAwake(true);      // a phone on a music stand shouldn't sleep mid-progression
       view.onPlaybackStarted();
     } else {
       isPlaying = false;
@@ -975,6 +976,7 @@
       document.querySelectorAll('#chords .bar').forEach(el => el.classList.remove('dim', 'active'));
       measureReadout.textContent = '';
       setPlayLabel('Play');
+      audio.keepAwake(false);
       view.onPlaybackStopped();
     }
   }

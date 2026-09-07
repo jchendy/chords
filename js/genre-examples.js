@@ -116,6 +116,7 @@
     requestAnimationFrame(followPlayhead);
     playBtn.textContent = 'Stop';
     playBtn.classList.add('playing');
+    audio.keepAwake(true);
   }
 
   function stop(){
@@ -124,6 +125,7 @@
     clearTimeout(stopTimer);
     playBtn.textContent = 'Play';
     playBtn.classList.remove('playing');
+    audio.keepAwake(false);
     if (tabSvg){
       const head = tabSvg.querySelector('.tab-playhead');
       if (head) head.hidden = true;

@@ -69,8 +69,56 @@
     return buf;
   }
 
+  // An iPhone with the ringer switch on silent mutes web audio, which is the
+  // wrong call for a practice tool: you set the phone down, work through a
+  // progression, and hear nothing with no clue why. Safari lets a page say
+  // what kind of audio it is, and "playback" is the category that means
+  // "media the user asked for" — it plays through the silent switch, the same
+  // as a music app. Safari 16.4 and up; everywhere else this isn't defined
+  // and the ringer switch was never in the way to begin with.
+  function claimPlaybackAudio(){
+    try {
+      if (navigator.audioSession) navigator.audioSession.type = 'playback';
+    } catch (e) { /* nothing to fall back to, and nothing broken by trying */ }
+  }
+
+  // A phone propped on a music stand dims and sleeps a minute into a
+  // progression, which is exactly when you're least able to reach for it.
+  // Hold the screen awake while something is playing and let go the moment it
+  // stops — a lock left on would keep the screen lit for as long as the tab is
+  // open, and it's the user's battery.
+  let wakeLock = null;
+  let wantWake = false;
+
+  async function acquireWakeLock(){
+    if (!wantWake || wakeLock || !navigator.wakeLock || document.hidden) return;
+    try {
+      wakeLock = await navigator.wakeLock.request('screen');
+      // the browser drops the lock itself when the tab goes away and says so
+      // here, so the next visibilitychange knows there's one to ask for again
+      wakeLock.addEventListener('release', () => { wakeLock = null; });
+    } catch (e) {
+      wakeLock = null;      // refused — battery saver, or the browser has no such thing
+    }
+  }
+
+  function keepAwake(on){
+    wantWake = on;
+    if (on){ acquireWakeLock(); return; }
+    const held = wakeLock;
+    wakeLock = null;
+    if (held) held.release().catch(() => {});
+  }
+
+  // Hiding the tab releases the lock, and a released sentinel can't be reused,
+  // so coming back has to ask for a new one.
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) acquireWakeLock();
+  });
+
   function ensureAudio(){
     if(!audioCtx){
+      claimPlaybackAudio();
       audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
       // Every bus meets at one limiter, so a kick, a bass note and a full
@@ -652,7 +700,7 @@
   GT.audio = {
     ctx: () => audioCtx,               // live handle; null until ensureAudio() runs
     pianoWaveFor, PIANO_PARTIALS,      // exposed so the tests can render a note offline
-    ensureAudio, noteFreq, chordFrequencies, pcFreq, bassFreqAt, walkBassFreq, ROOT_OCTAVE,
+    ensureAudio, keepAwake, noteFreq, chordFrequencies, pcFreq, bassFreqAt, walkBassFreq, ROOT_OCTAVE,
     playNote, playChord, playChord7, playBass, playGuitar,
     playHiHat, playRide, playKick, playSnare, playStyleVoice,
     STYLES,
