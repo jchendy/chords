@@ -172,7 +172,13 @@ names the tab you're on.
   through, and the same three tiers of brightness (the chord in front lit, the
   one you're heading into next half-lit, the rest dimmed much further, roots
   included). Only the frets the chord in front isn't already using are drawn,
-  so the rest stays behind rather than competing. Colour there means which
+  so the rest stays behind rather than competing. A chord shows whichever of
+  its own shapes sits nearest the position, not only one lying wholly inside
+  it — a CAGED grip is four frets wide and a box at the nut can be three, so
+  the stricter reading would simply drop the chord. And the shape you see for
+  a chord sitting behind is the shape you get when you switch to it: both come
+  from one list of that chord's shapes and one function picking from it, in
+  every view, rather than from two pieces of code that have to agree. Colour there means which
   chord a note belongs to, so the legend reads the same way: one entry per chord with its name, numeral, the CAGED shape
   it's sitting in and the frets it spans, each spotlighting its chord when you
   hover it, and the chord in front marked. Across the neck only one chord is
