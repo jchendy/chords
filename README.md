@@ -175,10 +175,12 @@ names the tab you're on.
   toggle changes how much you see rather than what you're looking at, and the
   Box row works in both: with the grips alone each grip is its own box, so
   "Single box" walks the neck one CAGED shape at a time. **Other chords**
-  draws the progression's remaining chords faintly into the box you're
-  practising in, each in its own colour and only on the frets the chord in
-  front isn't already using, so you can see where the changes fall without
-  moving your hand;
+  draws the progression's remaining chords into the box you're practising in,
+  so you can see where the changes fall without moving your hand — the same
+  picture Progression paints, and drawn identically: each chord in its own
+  colour, labelled by degree, its anchor root staying lit while the rest
+  recedes, its grip traced faintly through. Only the frets the chord in front
+  isn't already using are drawn, so it stays behind rather than competing;
   Triads — close three-note triads on one set of three adjacent
   strings (e–B–G, B–G–D, G–D–A or D–A–E), every inversion, all the way up
   the neck, each legend entry also naming the CAGED grip its shapes are cut

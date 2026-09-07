@@ -676,8 +676,9 @@
         const one = applyBoxWindow(board.markers, board.lines, grips);
         const lit = applyColorBy(one.markers, chord);
         const ghosts = ghostOthers
-          ? ghostMarkers(shownWindow, new Set(lit.map(m => m.string + ':' + m.fret)), true) : [];
-        return { markers: [...ghosts, ...lit], lines: one.lines };
+          ? ghostMarkers(shownWindow, new Set(lit.map(m => m.string + ':' + m.fret)), true)
+          : { markers: [], lines: [] };
+        return { markers: [...ghosts.markers, ...lit], lines: [...ghosts.lines, ...one.lines] };
       }
 
       const degByPc = { [rootPc]: chord.note };
@@ -716,8 +717,9 @@
       const shown = applyBoxWindow(markers, lines, boxes);
       const lit = applyColorBy(shown.markers, chord);
       const ghosts = ghostOthers
-        ? ghostMarkers(shownWindow, new Set(lit.map(m => m.string + ':' + m.fret)), false) : [];
-      return { markers: [...ghosts, ...lit], lines: shown.lines };
+        ? ghostMarkers(shownWindow, new Set(lit.map(m => m.string + ':' + m.fret)), false)
+        : { markers: [], lines: [] };
+      return { markers: [...ghosts.markers, ...lit], lines: [...ghosts.lines, ...shown.lines] };
     }
 
     if (fretMode === 'penta'){
@@ -885,37 +887,64 @@
   let ghostLegendData = [];
   function ghostMarkers(win, taken, useGrips){
     ghostLegendData = [];
-    if (!win) return [];
+    if (!win) return { markers: [], lines: [] };
     const cands = host.progression().filter(c => c.quality !== 'dim');
-    const out = [];
+    const markers = [], lines = [];
     const seen = new Set(taken);
+    const inWin = c => c.fret >= win.min && c.fret <= win.max;
     cands.forEach((c, i) => {
       if (i === Math.min(cagedChordIdx, cands.length - 1)) return;   // that's the one in front
       const rootPc = SEMITONE[c.note] % 12;
+      const thirdPc = SEMITONE[c.third] % 12;
+      const fifthPc = SEMITONE[c.fifth] % 12;
       const isMinor = c.quality === 'min';
       const sevPc = c.seventh ? SEMITONE[c.seventh] % 12 : null;
+      // labelled the way Progression labels them: the root by name, every
+      // other note by the degree it is in that chord
+      const nameOf = pc =>
+        pc === rootPc ? c.note : pc === thirdPc ? degreeLabel(c, 'third') :
+        pc === fifthPc ? degreeLabel(c, 'fifth') : degreeLabel(c, 'seventh');
+
+      const grips = cagedPlacements(rootPc, isMinor ? CAGED_MINOR : CAGED_MAJOR)
+        .map(p => (sevPc == null ? p.cells : seventhCells(p, rootPc, sevPc)));
       // whatever the view in front is showing, the ghosts show the same of:
       // the grips, or every chord tone
       const cells = useGrips
-        ? cagedPlacements(rootPc, isMinor ? CAGED_MINOR : CAGED_MAJOR)
-            .flatMap(p => sevPc == null ? p.cells : seventhCells(p, rootPc, sevPc))
+        ? grips.flat()
         : arpeggioCells(win.min, win.max,
             new Set([c.note, c.third, c.fifth, c.seventh].filter(Boolean).map(n => SEMITONE[n] % 12)));
+
       const color = ROOT_PALETTE[i % ROOT_PALETTE.length];
+      const tag = 'ghost' + i;
+      // the anchor root — the root nearest the low E — stays lit while the
+      // rest of the chord recedes, exactly as it does in Progression
+      const rootsHere = cells.filter(inWin)
+        .filter(cell => (STRING_TUNING[cell.string] + cell.fret) % 12 === rootPc);
+      const anchor = rootsHere.length
+        ? rootsHere.reduce((a, b) => (b.string > a.string ? b : a)) : null;
+
       let drew = false;
       cells.forEach(cell => {
-        if (cell.fret < win.min || cell.fret > win.max) return;
+        if (!inWin(cell)) return;
         const k = cell.string + ':' + cell.fret;
         if (seen.has(k)) return;
         seen.add(k);
         drew = true;
-        // no label: where the note sits is the information, and the legend
-        // says whose it is — degrees on top of degrees would only be noise
-        out.push({ string: cell.string, fret: cell.fret, color, ghost: true });
+        const pc = (STRING_TUNING[cell.string] + cell.fret) % 12;
+        markers.push({ string: cell.string, fret: cell.fret, color, label: nameOf(pc),
+                       isRoot: pc === rootPc, shapes: [tag], ghost: true,
+                       isLowestRoot: !!anchor && cell.string === anchor.string && cell.fret === anchor.fret });
       });
-      if (drew) ghostLegendData.push({ name: displayName(c), color });
+      // and its grip traced through, where one sits wholly inside the box
+      grips.forEach(g => {
+        if (g.length > 1 && g.every(inWin)){
+          lines.push({ color, shape: tag, ghost: true,
+                       cells: g.map(cell => ({ string: cell.string, fret: cell.fret })) });
+        }
+      });
+      if (drew) ghostLegendData.push({ name: displayName(c), numeral: c.numeral, color });
     });
-    return out;
+    return { markers, lines };
   }
 
   // the chord the single-chord views are showing
@@ -980,6 +1009,10 @@
       cagedShapesShown.filter(n => drawn.has(n)).forEach(n =>
         parts.push(`<span data-shape="${n}" tabindex="0" role="button" aria-label="Highlight ${n} shape"><i style="background:${CAGED_COLORS[n]}"></i>${n} shape${range(n)}</span>`));
     }
+    // the other chords sit with the rest of the colour key, named the way
+    // Progression names them, since they're drawn the same
+    ghostLegendData.forEach(g =>
+      parts.push(`<span class="ghost-entry"><i style="background:${g.color}"></i>${g.name}<em>${g.numeral}</em></span>`));
     // colouring by interval, the swatches already name the root and the 7th —
     // saying it twice reads as two different things
     if (colorBy !== 'interval'){
@@ -991,8 +1024,6 @@
         parts.push(`<span><i class="hollow"></i>7th</span>`);
       }
     }
-    ghostLegendData.forEach(g =>
-      parts.push(`<span class="ghost-entry"><i style="background:${g.color}"></i>${g.name}</span>`));
     if (fretMode === 'penta' || fretMode === 'scale') parts.push(`<span><i class="passing"></i>passing note</span>`);
     if (shownWindow) parts.push(`<span><em>box: frets ${shownWindow.min}–${shownWindow.max}</em></span>`);
     cagedLegend.innerHTML = parts.join('');
