@@ -71,6 +71,13 @@
 <script src="js/genre-data.js"></script>
 <script src="js/tests-fretboard.js"></script>
 <script src="js/fretboard-view.js"></script>
+<!-- and the same again for the practice tab: audio and tabs are what it
+     destructures at load, tests-practice.js builds its controls, and its own
+     suites run last because init() hands the fretboard view a new host. -->
+<script src="js/audio.js"></script>
+<script src="js/tabs.js"></script>
+<script src="js/tests-practice.js"></script>
+<script src="js/practice.js"></script>
 <script src="js/tests.js"></script>
 
 </body>

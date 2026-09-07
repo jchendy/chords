@@ -633,7 +633,7 @@
       ['Theory: naming and identification', testTheory],
       ['Theory: one answer for what degree a note is', testDegreeNamesAgree],
       ['Genre library and presets are well-formed', testData],
-    ].concat(GT.fretboardSuites || []);   // added by js/tests-fretboard.js, if it loaded
+    ].concat(GT.fretboardSuites || []).concat(GT.practiceSuites || []);   // added by js/tests-fretboard.js, if it loaded
     const out = [];
     suites.forEach(([title, fn]) => {
       const from = results.length;
