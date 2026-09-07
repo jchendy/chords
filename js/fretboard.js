@@ -83,6 +83,36 @@
     return placement.cells.map(c => c === fifth ? { string: c.string, fret: raised } : c);
   }
 
+  // Every chord tone within one stretch of frets — the arpeggio a hand
+  // sitting there can reach. `tonePcs` is the chord's pitch classes.
+  function arpeggioCells(fretMin, fretMax, tonePcs){
+    const lo = Math.max(0, fretMin), hi = Math.min(FRET_COUNT, fretMax);
+    const cells = [];
+    for (let s = 0; s < 6; s++){
+      for (let f = lo; f <= hi; f++){
+        if (tonePcs.has((STRING_TUNING[s] + f) % 12)) cells.push({ string: s, fret: f });
+      }
+    }
+    return cells;
+  }
+
+  // The five CAGED arpeggio boxes for a chord: each chord shape's own
+  // position, opened out to a hand span and filled with every chord tone
+  // inside it. This is the CAGED arpeggio every method book teaches — the
+  // chord shape you already know, plus the notes around it on each string.
+  function cagedArpeggioBoxes(rootPc, isMinor, tonePcs, span = 4){
+    return cagedPlacements(rootPc, isMinor ? CAGED_MINOR : CAGED_MAJOR).map(p => {
+      const width = Math.max(span, p.fretMax - p.fretMin + 1);
+      let lo = p.fretMin, hi = lo + width - 1;
+      if (hi > FRET_COUNT){ hi = FRET_COUNT; lo = Math.max(0, hi - width + 1); }
+      return {
+        name: p.name, anchor: p.fretMin, meanFret: p.meanFret,
+        cells: arpeggioCells(lo, hi, tonePcs),
+        window: { min: lo, max: hi },
+      };
+    }).filter(b => b.cells.length);
+  }
+
   // pentatonic "box" templates, one per CAGED position: two fret offsets per
   // string (index 0 = high e ... 5 = low E) relative to the box's anchor fret
   // on the low-E string. `a` is that anchor for a root pitch-class of 0.
@@ -235,7 +265,8 @@
   GT.fretboard = {
     STRING_TUNING, STRING_LABELS, FRET_COUNT,
     CAGED_MAJOR, CAGED_MINOR, CAGED_ORDER, CAGED_COLORS, ROOT_PALETTE,
-    cagedPlacements, seventhCells, pentaBoxPlacements, scaleBoxPlacements,
+    cagedPlacements, seventhCells, arpeggioCells, cagedArpeggioBoxes,
+    pentaBoxPlacements, scaleBoxPlacements,
     cagedTriadBoard, identifyCagedShape, cagedShapeMatch,
   };
 })();

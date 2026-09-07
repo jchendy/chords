@@ -9,8 +9,8 @@
   const {
     STRING_TUNING, STRING_LABELS, FRET_COUNT,
     CAGED_MAJOR, CAGED_MINOR, CAGED_ORDER, CAGED_COLORS, ROOT_PALETTE,
-    cagedPlacements, seventhCells, pentaBoxPlacements, scaleBoxPlacements,
-    cagedTriadBoard,
+    cagedPlacements, seventhCells, arpeggioCells, cagedArpeggioBoxes,
+    pentaBoxPlacements, scaleBoxPlacements, cagedTriadBoard,
   } = GT.fretboard;
 
   // Everything the view needs to know about the practice tab's state arrives
@@ -45,6 +45,7 @@
   let fretRange = 'all';         // 'all' | 'fit' | 'from-to' — how much neck to draw
   let colorBy = 'shape';         // 'shape' (which CAGED box) | 'interval' (what the note is)
   let voiceLead = false;         // Chord positions: follow the previous shape, not one fret
+  let allTones = false;          // Chord positions: each chord's whole arpeggio, not just its grip
   let shapeRanges = {};          // per shape: the frets it spans, for the legend
 
   // What each note *is* in the chord it's being read against. Colouring by
@@ -118,13 +119,14 @@
   const colorByGroup = document.getElementById('colorByGroup');
   const colorByLabel = document.getElementById('colorByLabel');
   const voiceLeadToggle = document.getElementById('voiceLeadToggle');
+  const allTonesToggle = document.getElementById('allTonesToggle');
 
   function updateFretUI(){
-    const singleChordModes = fretMode === 'caged' || fretMode === 'penta' || fretMode === 'scale';
+    const singleChordModes = ['caged', 'arp', 'penta', 'scale'].includes(fretMode);
     cagedChordRow.hidden = !singleChordModes;
     scaleTheoryRow.hidden = fretMode !== 'scale';
     chordPosRow.hidden = fretMode !== 'positions';
-    boxRow.hidden = !(fretMode === 'penta' || fretMode === 'scale');
+    boxRow.hidden = !['arp', 'penta', 'scale'].includes(fretMode);
     // stepping and holding only mean something once you're looking at one box
     document.getElementById('boxStep').classList.toggle('locked', !singleBox);
     holdPositionToggle.closest('.inline-check').classList.toggle('off', !singleBox);
@@ -147,6 +149,10 @@
   });
   voiceLeadToggle.addEventListener('change', () => {
     voiceLead = voiceLeadToggle.checked;
+    renderFretboard();
+  });
+  allTonesToggle.addEventListener('change', () => {
+    allTones = allTonesToggle.checked;
     renderFretboard();
   });
 
@@ -471,9 +477,17 @@
           pc === rootPc ? chord.note : pc === thirdPc ? degreeLabel(chord, 'third') :
           pc === fifthPc ? degreeLabel(chord, 'fifth') : degreeLabel(chord, 'seventh');
 
-        const cellsToShow = chord.seventh
-          ? seventhCells(placement, rootPc, SEMITONE[chord.seventh] % 12)
-          : placement.cells.slice();
+        // The grip, or — with "All chord tones" on — every chord tone a hand
+        // sitting on that grip can reach. That turns the cluster of shapes
+        // into a map of the progression: each chord's arpeggio in its own
+        // position, and you can see which notes carry over to the next chord.
+        const tonePcs = new Set([chord.note, chord.third, chord.fifth, chord.seventh]
+          .filter(Boolean).map(n => SEMITONE[n] % 12));
+        const cellsToShow = allTones
+          ? arpeggioCells(placement.fretMin, Math.max(placement.fretMax, placement.fretMin + 3), tonePcs)
+          : chord.seventh
+            ? seventhCells(placement, rootPc, SEMITONE[chord.seventh] % 12)
+            : placement.cells.slice();
 
         // the "lowest root" is the root-note cell closest to the low E string
         // (highest string index) — the one a player would actually anchor on
@@ -511,15 +525,69 @@
           seenColors.add(c.color);
           return true;
         });
+        // Showing every chord tone, the ring means "two chords share this
+        // note" — the thing you're looking for — and the roots are already
+        // named by their label, so it isn't needed for them as well.
+        const ringed = allTones && shapes.length > 1;
+        const ring = allTones ? { isRoot: false, ringed } : { isRoot };
         if (uniqueContribs.length === 1){
-          return { string: m.string, fret: m.fret, color: uniqueContribs[0].color, label: uniqueContribs[0].label, isRoot, isLowestRoot, shapes, rootShapes, labelsByTag };
+          return { string: m.string, fret: m.fret, color: uniqueContribs[0].color, label: uniqueContribs[0].label, ...ring, isLowestRoot, shapes, rootShapes, labelsByTag };
         }
         // two different chords share this exact fret — split the dot between them
         const two = uniqueContribs.slice(0, 2);
-        return { string: m.string, fret: m.fret, split: two.map(c => c.color), label: two[0].label, isRoot, isLowestRoot, shapes, rootShapes, labelsByTag };
+        return { string: m.string, fret: m.fret, split: two.map(c => c.color), label: two[0].label, ...ring, isLowestRoot, shapes, rootShapes, labelsByTag };
       });
 
       return { markers, lines };
+    }
+
+    // Every chord tone across the neck, grouped into the five CAGED boxes —
+    // the chord shape you already know, opened out into the arpeggio around
+    // it, with the shape itself still traced through the middle.
+    if (fretMode === 'arp'){
+      const chord = currentChord();
+      if (!chord) return { markers: [], lines: [] };
+      const rootPc = SEMITONE[chord.note] % 12;
+      const isMinor = chord.quality === 'min';
+
+      const degByPc = { [rootPc]: '1' };
+      degByPc[SEMITONE[chord.third] % 12] = degreeLabel(chord, 'third');
+      degByPc[SEMITONE[chord.fifth] % 12] = degreeLabel(chord, 'fifth');
+      if (chord.seventh) degByPc[SEMITONE[chord.seventh] % 12] = degreeLabel(chord, 'seventh');
+      const tonePcs = new Set(Object.keys(degByPc).map(Number));
+
+      const boxes = cagedArpeggioBoxes(rootPc, isMinor, tonePcs);
+      cagedShapesShown = CAGED_ORDER.filter(n => boxes.some(b => b.name === n));
+
+      const lines = cagedPlacements(rootPc, isMinor ? CAGED_MINOR : CAGED_MAJOR)
+        .filter(p => p.cells.length > 1)
+        .map(p => ({ color: CAGED_COLORS[p.name], shape: p.name, cells: p.cells.map(c => ({ string: c.string, fret: c.fret })) }));
+
+      const markers = [];
+      for (let s = 0; s < 6; s++){
+        for (let f = 0; f <= FRET_COUNT; f++){
+          const pc = (STRING_TUNING[s] + f) % 12;
+          if (!tonePcs.has(pc)) continue;
+          const owners = boxes.filter(b => b.cells.some(c => c.string === s && c.fret === f));
+          const ownerNames = [...new Set(owners.map(o => o.name))];
+          const base = { string: s, fret: f, label: degByPc[pc], isRoot: pc === rootPc, shapes: ownerNames };
+          if (ownerNames.length >= 2){
+            const two = owners.slice()
+              .sort((a, b) => Math.abs(f - a.anchor) - Math.abs(f - b.anchor))
+              .slice(0, 2)
+              .sort((a, b) => a.anchor - b.anchor);
+            markers.push({ ...base, split: [CAGED_COLORS[two[0].name], CAGED_COLORS[two[1].name]] });
+          } else if (ownerNames.length === 1){
+            markers.push({ ...base, color: CAGED_COLORS[ownerNames[0]] });
+          } else {
+            let best = null, bd = Infinity;
+            boxes.forEach(b => { const d = Math.abs(f - b.anchor); if (d < bd){ bd = d; best = b; } });
+            markers.push({ ...base, shapes: best ? [best.name] : [], color: best ? CAGED_COLORS[best.name] : '#6b655b' });
+          }
+        }
+      }
+      const shown = applyBoxWindow(markers, lines, boxes);
+      return { markers: applyColorBy(shown.markers, chord), lines: shown.lines };
     }
 
     if (fretMode === 'penta'){
@@ -709,9 +777,10 @@
       return `<em class="range">${runs.map(r => `${r.min}–${r.max}`).join(' · ')}</em>`;
     };
     if (fretMode === 'positions'){
-      cagedLegend.innerHTML = posLegendData
-        .map(c => `<span data-shape="${c.tag}" tabindex="0" role="button" aria-label="Highlight ${c.name}"><i style="background:${c.color}"></i>${c.name}<em>${c.numeral}</em><small class="pos-shape-tag">${c.shapeLetter}</small>${range(c.tag)}</span>`)
-        .join('');
+      const entries = posLegendData
+        .map(c => `<span data-shape="${c.tag}" tabindex="0" role="button" aria-label="Highlight ${c.name}"><i style="background:${c.color}"></i>${c.name}<em>${c.numeral}</em><small class="pos-shape-tag">${c.shapeLetter}</small>${range(c.tag)}</span>`);
+      if (allTones) entries.push(`<span><i class="ring"></i>shared with another chord</span>`);
+      cagedLegend.innerHTML = entries.join('');
       return;
     }
     const parts = [];

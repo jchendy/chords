@@ -87,7 +87,8 @@
           : '';
         // `hollow` marks a note outside the triad (the 7th); `passing` a scale
         // note that isn't a chord tone, drawn quieter so the chord tones stand out
-        const extraClass = (m.isLowestRoot ? ' pos-root' : '') + (m.hollow ? ' hollow' : '') + (m.passing ? ' passing' : '');
+        const extraClass = (m.isLowestRoot ? ' pos-root' : '') + (m.hollow ? ' hollow' : '')
+          + (m.passing ? ' passing' : '') + (m.ringed ? ' ringed' : '');
         let g = `<g class="note-dot${extraClass}"${shapeAttr}${rootPcAttr}${rootForAttr}${labelsAttr}>`;
         if (m.hollow){
           const stroke = m.color || (m.split && m.split[0]);
@@ -99,7 +100,8 @@
         } else {
           g += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${m.color}"/>`;
         }
-        if (m.isRoot) g += `<circle class="dot-ring" cx="${cx}" cy="${cy}" r="${r}" fill="none"/>`;
+        // `ringed` is the progression map's mark for a note two chords share
+        if (m.isRoot || m.ringed) g += `<circle class="dot-ring" cx="${cx}" cy="${cy}" r="${r}" fill="none"/>`;
         if (m.label) g += `<text x="${cx}" y="${cy + fs * 0.34}" font-size="${fs}" text-anchor="middle">${m.label}</text>`;
         g += '</g>';
         els.push(g);
