@@ -402,6 +402,24 @@
     return markers;
   }
 
+  // A nearest shape can sit a fret or two outside the box it was measured
+  // against, so the position readout covers what's actually on the neck rather
+  // than the window it started from.
+  function windowCovering(markers){
+    if (!shownWindow || !markers.length) return;
+    const frets = markers.map(m => m.fret);
+    shownWindow = { min: Math.min(shownWindow.min, ...frets), max: Math.max(shownWindow.max, ...frets) };
+  }
+
+  // The five CAGED grips traced through, whatever else a view is drawing on top
+  // of them — the shape you already know, under the scale or the arpeggio.
+  function gripOutlines(rootPc, isMinor){
+    return cagedPlacements(rootPc, isMinor ? CAGED_MINOR : CAGED_MAJOR)
+      .filter(p => p.cells.length > 1)
+      .map(p => ({ color: CAGED_COLORS[p.name], shape: p.name,
+                   cells: p.cells.map(c => ({ string: c.string, fret: c.fret })) }));
+  }
+
   // the notes of the chord itself, so the scale views can set the rest back
   function chordTonePcs(chord){
     return new Set([chord.note, chord.third, chord.fifth, chord.seventh]
@@ -764,12 +782,7 @@
         new Map(lit.map(m => [m.string + ':' + m.fret, m])), true, triadShapes, true);
       noteCurrentChord(cands, curIdx, curTag, curColor);
       const all = [...ghosts.markers, ...lit];
-      // a nearest shape can sit a fret or two outside the box, so the readout
-      // covers what's drawn rather than the box it was measured from
-      if (shownWindow && all.length){
-        const fs = all.map(m => m.fret);
-        shownWindow = { min: Math.min(shownWindow.min, ...fs), max: Math.max(shownWindow.max, ...fs) };
-      }
+      windowCovering(all);
       return { markers: all, lines: [...ghosts.lines, ...litLines] };
     }
 
@@ -807,24 +820,12 @@
       // finger rather than the plain triad underneath it.
       const board = cagedTriadBoard(rootPc, isMinor, chord.note, seventhPc);
       board.markers = withTagColors(board.markers, n => CAGED_COLORS[n]);
-      // The one list of a chord's shapes in this view. The position picks a box
-      // from it for the chord in front, and a chord behind picks the one
-      // nearest the same anchor — so the shape you're shown for a chord is the
-      // shape you get when you switch to it, by construction rather than by
-      // two pieces of code agreeing.
-      const chordShapes = c => {
-        const rp = SEMITONE[c.note] % 12;
-        const sp = c.seventh ? SEMITONE[c.seventh] % 12 : null;
-        return cagedTriadBoard(rp, c.quality === 'min', c.note, sp).lines.map(l => ({
-          name: l.shape, anchor: Math.min(...l.cells.map(x => x.fret)), cells: l.cells,
-        }));
-      };
       if (!wholeArpeggio){
         cagedShapesShown = board.shapesShown;
         // Each grip is its own box, so "Single box" walks the neck one CAGED
         // shape at a time here just as it walks one arpeggio box at a time
         // with the shapes opened out.
-        const grips = chordShapes(chord);
+        const grips = gripBoxes(chord);
         const one = applyBoxWindow(board.markers, board.lines, grips, boxOpts);
         // cagedTriadBoard draws all five shapes at once, so clipping that to a
         // window leaves fragments of the neighbouring ones — notes that belong
@@ -842,17 +843,12 @@
         // the edge — an open Dm is 0-3 against a window of 0-2.
         const ghosts = inPosition
           ? ghostMarkers(shownWindow, new Map(lit.map(m => [m.string + ':' + m.fret, m])), true,
-                         chordShapes, true)
+                         gripBoxes, true)
           : { markers: [], lines: [] };
         if (!inPosition) return { markers: lit, lines: litLines };
         noteCurrentChord(cands, curIdx, curTag, curColor);
         const all = [...ghosts.markers, ...lit];
-        // a nearest shape can sit a fret or two outside the box, so the
-        // readout covers what's drawn rather than the box it was measured from
-        if (shownWindow && all.length){
-          const fs = all.map(m => m.fret);
-          shownWindow = { min: Math.min(shownWindow.min, ...fs), max: Math.max(shownWindow.max, ...fs) };
-        }
+        windowCovering(all);
         return { markers: all, lines: [...ghosts.lines, ...litLines] };
       }
 
@@ -874,7 +870,7 @@
         ? shown.lines.map(l => ({ ...l, color: curColor, shape: curTag })) : shown.lines;
       const ghosts = inPosition
         ? ghostMarkers(shownWindow, new Map(lit.map(m => [m.string + ':' + m.fret, m])), false,
-                       chordShapes)
+                       gripBoxes)
         : { markers: [], lines: [] };
       if (inPosition) noteCurrentChord(cands, curIdx, curTag, curColor);
       return { markers: [...ghosts.markers, ...lit], lines: [...ghosts.lines, ...litLines] };
@@ -903,9 +899,7 @@
 
       // lines trace each CAGED chord shape (root / 3rd / 5th), one note per
       // string, following the actual fingering — same as Chords mode
-      const lines = cagedPlacements(rootPc, isMinor ? CAGED_MINOR : CAGED_MAJOR)
-        .filter(p => p.cells.length > 1)
-        .map(p => ({ color: CAGED_COLORS[p.name], shape: p.name, cells: p.cells.map(c => ({ string: c.string, fret: c.fret })) }));
+      const lines = gripOutlines(rootPc, isMinor);
 
       // every pentatonic note is coloured by the CAGED box(es) that actually
       // contain it: notes shared by two adjacent boxes get a split dot
@@ -959,9 +953,7 @@
       cagedShapesShown = CAGED_ORDER.filter(n => boxes.some(b => b.name === n));
       const tones = chordTonePcs(chord);
 
-      const lines = cagedPlacements(rootPc, isMinor ? CAGED_MINOR : CAGED_MAJOR)
-        .filter(p => p.cells.length > 1)
-        .map(p => ({ color: CAGED_COLORS[p.name], shape: p.name, cells: p.cells.map(c => ({ string: c.string, fret: c.fret })) }));
+      const lines = gripOutlines(rootPc, isMinor);
 
       const markers = boxColouredNotes(boxes, {
         labelOf: pc => degByPc[pc], rootPc, passingOf: pc => !tones.has(pc),
@@ -1120,10 +1112,15 @@
     return { markers, lines };
   }
 
-  // The five CAGED grips of a chord, as position windows. Chords, Pentatonic
-  // and Scales each have boxes of their own; Roots and Triads don't, so they
-  // borrow these — which keeps one ladder of five positions across every view
-  // rather than each inventing its own idea of where the hand is.
+  // The five CAGED grips of a chord, as position windows — one ladder of five
+  // positions for the whole app rather than each view inventing its own idea of
+  // where the hand is. Roots and Triads have no boxes of their own and borrow
+  // these outright. Chords uses them as its shape list in the grips reading:
+  // the position picks the chord in front's box from here and a chord behind
+  // picks the one nearest the same anchor, so the shape you're shown for a
+  // chord is the shape you get when you switch to it, by construction. It kept
+  // its own copy of this function until the two were noticed to be the same,
+  // which is the arrangement that produced B24 in the first place.
   function gripBoxes(chord){
     if (!chord) return [];
     const rootPc = SEMITONE[chord.note] % 12;
