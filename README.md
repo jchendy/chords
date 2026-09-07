@@ -21,27 +21,34 @@ names the tab you're on.
 
 ## Features
 
-- Major / Minor / Random mode toggle, with an occasional harmonic-minor
-  dominant (V) substitution in minor
-- Manual key selection (any of the 24 keys, or Random). Changing key
-  transposes what's already there rather than rolling something new: each
-  chord keeps its scale degree, so a I–V–vi–IV in A becomes the I–V–vi–IV of
-  wherever you land, and switching Major/Minor holds the same degrees in the
-  other mode. A progression loaded from a genre example isn't diatonic, so it
-  shifts by the same interval instead, spelled the way the new key spells it
+- One key picker: all 24 keys, major and minor side by side, or "Random key"
+  for a fresh one (either mode) on every roll. In minor, the V is
+  occasionally the harmonic-minor dominant. Changing key transposes what's
+  already there rather than rolling something new: each chord keeps its scale
+  degree, so a I–V–vi–IV in A becomes the I–V–vi–IV of wherever you land, and
+  picking C minor from C major turns it into i–v–VI–iv. A progression loaded
+  from a genre example isn't diatonic, so it shifts by the same interval
+  instead, spelled the way the new key spells it
 - Preset progressions, in one picker that names each the way people do with
-  the numerals beside it — Blues (12-bar, quick change, jazz blues, minor
-  blues, 8-bar, slow blues), Three-chord · I–IV–V, Four-chord pop ·
-  I–V–vi–IV, 50s doo-wop · I–vi–IV–V, Jazz cadence · ii–V–I, Jazz turnaround
-  · I–VI7–ii–V7, Canon, Andalusian · i–VII–VI–V and a few more. They're
+  the numerals beside it, and that follows the key's mode. In a major key:
+  Blues (12-bar, quick change, jazz blues, 8-bar, slow blues), Three-chord ·
+  I–IV–V, Four-chord pop · I–V–vi–IV, 50s doo-wop · I–vi–IV–V, Jazz cadence
+  · ii–V–I, Jazz turnaround · I–VI7–ii–V7, Canon and a few more. In a minor
+  key: Blues (with the minor blues variant), Minor three-chord · i–iv–V,
+  Minor four-chord · i–VI–III–VII, Minor pop · i–VI–VII, Minor rock ·
+  i–VII–VI–VII, Jazz cadence · ii°–V–i, Andalusian · i–VII–VI–V. They're
   stored as scale degrees, so a preset lands in whatever key you're in and
   follows you when you change key, and every chord stays editable
   afterwards; changing one drops the picker back to "None" but keeps the
   rest. The blues presets force dominant 7ths, which no key's own diatonic
   7ths give you — I7 IV7 V7 in a major key, i7 iv7 V7 in a minor one, the V
-  a real dominant either way. A preset that only makes sense in one mode
-  (the minor blues, the Andalusian cadence with its major V) moves the key
-  there when you pick it, keeping the tonic
+  a real dominant either way. Change the key to the other mode and the
+  picker's list changes with it, and a preset that lives in both modes keeps
+  its meaning — a blues is I7 IV7 V7 in major and i7 iv7 V7 in minor, a
+  ii–V–I is Dm7 G7 Cmaj7 in C major and Dm7♭5 G7 Cm7 in C minor — because
+  those sevenths are stored relative to the key rather than frozen when the
+  preset landed. A preset that isn't in the new list simply stops being "the
+  preset" while its chords stay, transposed
 - Per-slot chord selection — pin any chord in the progression to a specific
   diatonic degree (or leave it Random); "New progression" only re-rolls the
   slots left on Random. The presets sit above these, so you can drop a shape

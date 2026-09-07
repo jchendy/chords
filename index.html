@@ -769,13 +769,10 @@
   <section class="panel narrow">
     <div class="settings">
       <div class="setting">
-        <span class="setting-label">Key</span>
+        <span class="setting-label">Key
+          <button type="button" class="info-dot" data-tip="Any of the 24 keys, or a fresh random one on every roll. Changing key moves the progression you have rather than rolling a new one — each chord keeps its degree, so a I–V–vi–IV in C major becomes i–v–VI–iv in C minor.">i</button>
+        </span>
         <div class="row-control">
-          <div class="segmented" id="modeGroup">
-            <button type="button" class="seg-btn" data-value="major">Major</button>
-            <button type="button" class="seg-btn" data-value="minor">Minor</button>
-            <button type="button" class="seg-btn active" data-value="random">Random</button>
-          </div>
           <select id="keySelect" class="mini-select" aria-label="Key"></select>
         </div>
       </div>
