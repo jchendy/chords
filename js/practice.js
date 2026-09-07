@@ -7,7 +7,7 @@
 
   const {
     MAJOR_KEYS, MINOR_KEYS, MAJOR_COMMON, MINOR_COMMON, LEADING_TONE, SEMITONE,
-    pick, buildDiatonicChords, displayName,
+    pick, buildDiatonicChords, displayName, chordFromName, NOTE_NAMES_SHARP,
   } = GT.theory;
   const audio = GT.audio;
   const {
@@ -18,9 +18,12 @@
 
   let currentProgression = [];
   let chordCount = 3;
+  const MAX_CHORDS = 12;        // enough to hold a twelve-bar blues once repeats are merged
   let modeSetting = 'random';           // 'major' | 'minor' | 'random'
   let keyChoice = null;                 // null = random, else { mode, tonic }
   let slotChoices = [null, null, null]; // per slot: null = random, else a diatonic degree
+  let slotMeasures = [];                // per slot: how many measures that chord lasts
+  let loadedLabel = null;               // set when a progression came in from elsewhere
   let currentMode = 'major';
   let currentTonic = 'C';
   let currentDiatonic = [];             // the chord choices available for the current key
@@ -55,9 +58,26 @@
     return d;
   }
 
-  function chordForDegree(deg){
+  // `opts.dom` flattens the 7th, so a degree reads as a dominant while keeping
+  // the triad the key gives it — that's what makes a blues in a minor key come
+  // out minor. `opts.maj` also raises the 3rd, for a genuine secondary
+  // dominant like the VI7 in a jazz blues.
+  function chordForDegree(deg, opts){
     const c = currentDiatonic.find(x => x.deg === deg) || currentDiatonic[0];
-    return { ...c, _deg: c.deg };
+    const chord = { ...c, _deg: c.deg };
+    const at = semis => NOTE_NAMES_SHARP[((SEMITONE[chord.note] + semis) % 12 + 12) % 12];
+    if (opts && opts.maj){
+      chord.third = at(4);
+      chord.quality = 'maj';
+      chord.name = chord.note;
+      chord.numeral = chord.numeral.replace('°', '').toUpperCase();
+      chord._maj = true;
+    }
+    if (opts && opts.dom){
+      chord.seventh = at(10);
+      chord._dom = true;
+    }
+    return chord;
   }
 
   // rebuild the whole progression: pinned slots keep their choice, random slots re-roll
@@ -102,22 +122,137 @@
     keySelect.value = keyChoice ? `${keyChoice.mode}:${keyChoice.tonic}` : 'random';
   }
 
+  // ---- ready-made progressions -------------------------------------------
+  const presetGroup = document.getElementById('presetGroup');
+  const presetVariantRow = document.getElementById('presetVariantRow');
+  const presetVariantGroup = document.getElementById('presetVariantGroup');
+  let presetIdx = null;      // which preset is showing, if any
+  let variantIdx = 0;
+
+  function applyPreset(preset, variant){
+    const chords = variant.chords.slice(0, MAX_CHORDS);
+    setSlotCount(chords.length);
+    // pinning each slot to its degree is what keeps the shape put — and what
+    // leaves every chord editable from its own picker afterwards
+    slotChoices = chords.map(c => c.deg);
+    slotMeasures = chords.map(c => c.bars);
+    currentProgression = chords.map(c => chordForDegree(c.deg, c));
+    loadedLabel = null;
+    if (chords.some(c => c.dom) && !useSevenths){
+      useSevenths = true;
+      seventhToggle.checked = true;
+    }
+    renderAll();
+  }
+
+  function renderPresetVariants(){
+    const preset = presetIdx == null ? null : GT.progressionPresets[presetIdx];
+    const many = preset && preset.variants.length > 1;
+    presetVariantRow.hidden = !many;
+    if (!many) return;
+    presetVariantGroup.innerHTML = '';
+    preset.variants.forEach((v, i) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'seg-btn' + (i === variantIdx ? ' active' : '');
+      b.textContent = v.name;
+      b.addEventListener('click', () => {
+        variantIdx = i;
+        renderPresetVariants();
+        applyPreset(preset, preset.variants[i]);
+      });
+      presetVariantGroup.appendChild(b);
+    });
+  }
+
+  function renderPresets(){
+    presetGroup.innerHTML = '';
+    GT.progressionPresets.forEach((preset, i) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'seg-btn' + (i === presetIdx ? ' active' : '');
+      b.textContent = preset.name;
+      b.addEventListener('click', () => {
+        presetIdx = i;
+        variantIdx = 0;
+        renderPresets();
+        renderPresetVariants();
+        applyPreset(preset, preset.variants[0]);
+      });
+      presetGroup.appendChild(b);
+    });
+  }
+
+  // once you've changed something by hand it isn't that preset any more
+  function clearPreset(){
+    if (presetIdx == null) return;
+    presetIdx = null;
+    renderPresets();
+    renderPresetVariants();
+  }
+
   function renderChordSlots(){
     chordSlotsEl.innerHTML = '';
     for (let i = 0; i < chordCount; i++){
+      const slot = document.createElement('span');
+      slot.className = 'chord-slot';
+
       const sel = document.createElement('select');
-      sel.className = 'mini-select';
+      sel.className = 'mini-select chord-degree';
       sel.setAttribute('aria-label', `Chord ${i + 1}`);
       sel.innerHTML = `<option value="random">Random</option>` +
         currentDiatonic.map(o => `<option value="${o.deg}">${displayName(o, useSevenths)} · ${o.numeral}</option>`).join('');
       sel.value = slotChoices[i] == null ? 'random' : String(slotChoices[i]);
+      // a preset can make a degree dominant, which the key's own diatonic
+      // chord list doesn't know about — label that option with what's actually
+      // sounding so the picker doesn't contradict the display
+      const current = currentProgression[i];
+      if (current && (current._dom || current._maj)){
+        const opt = [...sel.options].find(o => o.value === String(current._deg));
+        if (opt) opt.textContent = `${displayName(current, useSevenths)} · ${current.numeral}`;
+      }
       sel.addEventListener('change', () => {
         slotChoices[i] = sel.value === 'random' ? null : Number(sel.value);
         currentProgression[i] = chordForDegree(slotChoices[i] != null ? slotChoices[i] : rollDegree(-1));
+        loadedLabel = null;
+        clearPreset();
         renderAll();
       });
-      chordSlotsEl.appendChild(sel);
+      slot.appendChild(sel);
+
+      // how long this particular chord lasts, so a progression can hold one
+      // chord for four bars and the next for one
+      const bars = document.createElement('select');
+      bars.className = 'mini-select bars-select';
+      bars.setAttribute('aria-label', `Measures for chord ${i + 1}`);
+      bars.title = 'Measures on this chord';
+      bars.innerHTML = [1, 2, 3, 4, 6, 8]
+        .map(n => `<option value="${n}">\u00d7${n}</option>`).join('');
+      bars.value = String(measuresFor(i));
+      bars.addEventListener('change', () => {
+        slotMeasures[i] = Number(bars.value) || DEFAULT_MEASURES;
+        clearPreset();      // once the bar lengths change it isn't that preset any more
+        refreshBarLabels();
+        resetPlaybackCursor();
+      });
+      slot.appendChild(bars);
+
+      chordSlotsEl.appendChild(slot);
     }
+  }
+
+  function barsLabel(i){
+    const n = measuresFor(i);
+    return n === 1 ? '1 bar' : `${n} bars`;
+  }
+
+  // update the bar counts in place, so changing one doesn't replay the
+  // chord display's entrance animation
+  function refreshBarLabels(){
+    document.querySelectorAll('#chords .chord').forEach((item, i) => {
+      const el = item.querySelector('.chord-bars');
+      if (el) el.textContent = barsLabel(i);
+    });
   }
 
   function renderChordDisplay(){
@@ -137,6 +272,7 @@
       item.innerHTML = `
         <span class="chord-name">${names[i]}</span>
         <span class="chord-numeral">${chord.numeral}</span>
+        <span class="chord-bars">${barsLabel(i)}</span>
       `;
       chordsEl.appendChild(item);
     });
@@ -161,7 +297,7 @@
   // render everything from the current progression WITHOUT re-rolling it
   function renderAll(){
     document.getElementById('keyReadout').textContent =
-      currentMode === 'major' ? `${currentTonic} major` : `${currentTonic}m`;
+      loadedLabel || (currentMode === 'major' ? `${currentTonic} major` : `${currentTonic}m`);
     renderChordDisplay();
     renderChordSlots();
     view.rebuildChordPicker();
@@ -171,6 +307,8 @@
 
   // re-roll the random slots, then render (New progression, key / mode / count changes)
   function render(){
+    loadedLabel = null;
+    clearPreset();
     rollProgression();
     view.resetPosition();   // a newly-rolled progression starts at the lowest cluster
     renderAll();
@@ -181,16 +319,65 @@
   keySelect.addEventListener('change', () => {
     if (keySelect.value === 'random'){
       keyChoice = null;
-    } else {
-      const [m, t] = keySelect.value.split(':');
-      keyChoice = { mode: m, tonic: t };
-      modeSetting = m;
-      document.querySelectorAll('#modeGroup .seg-btn')
-        .forEach(b => b.classList.toggle('active', b.dataset.value === m));
-      buildKeySelect();
+      render();
+      return;
     }
-    render();
+    const [m, t] = keySelect.value.split(':');
+    const known = (m === 'major' && MAJOR_KEYS[t]) || (m === 'minor' && MINOR_KEYS[t]);
+    if (!known){          // the option list changed under us — fall back to random
+      keyChoice = null;
+      buildKeySelect();
+      render();
+      return;
+    }
+    keyChoice = { mode: m, tonic: t };
+    modeSetting = m;
+    document.querySelectorAll('#modeGroup .seg-btn')
+      .forEach(b => b.classList.toggle('active', b.dataset.value === m));
+    buildKeySelect();
+    transposeToKey(m, t);
   });
+
+  // Move the progression to another key rather than rolling a new one: each
+  // chord keeps its scale degree, so a I–V–vi–IV in A becomes the I–V–vi–IV of
+  // wherever you land. Chords that aren't degrees of the old key — a
+  // progression loaded from a genre example — are shifted by the same interval.
+  function transposeToKey(mode, tonic){
+    const shift = ((SEMITONE[tonic] - SEMITONE[currentTonic]) % 12 + 12) % 12;
+    currentMode = mode;
+    currentTonic = tonic;
+    currentDiatonic = keyChordChoices();
+    const validDegs = new Set(currentDiatonic.map(c => c.deg));
+
+    currentProgression = currentProgression.map(chord =>
+      (chord._deg != null && validDegs.has(chord._deg))
+        ? chordForDegree(chord._deg, { dom: chord._dom, maj: chord._maj })
+        : transposeChord(chord, shift));
+
+    // a pin that has no chord in the new key falls back to random
+    slotChoices = slotChoices.map(s => (s == null || validDegs.has(s)) ? s : null);
+    loadedLabel = null;      // it's no longer the key that progression came in
+    renderAll();
+  }
+
+  // spell a note the way the current key does, so moving to Eb gives Bb, not A#
+  function noteNameInKey(pc){
+    const scale = (currentMode === 'major' ? MAJOR_KEYS : MINOR_KEYS)[currentTonic] || [];
+    return scale.find(n => SEMITONE[n] % 12 === pc) || NOTE_NAMES_SHARP[pc];
+  }
+
+  function transposeChord(chord, shift){
+    const move = note => note == null ? null
+      : noteNameInKey(((SEMITONE[note] + shift) % 12 + 12) % 12);
+    const note = move(chord.note);
+    return Object.assign({}, chord, {
+      note,
+      third: move(chord.third),
+      fifth: move(chord.fifth),
+      seventh: move(chord.seventh),
+      name: note + (chord.name || '').slice((chord.note || '').length),
+    });
+  }
 
   const tempoInput = document.getElementById('tempo');
   const tempoVal = document.getElementById('tempoVal');
@@ -205,9 +392,8 @@
   const measureReadout = document.getElementById('measureReadout');
 
   const chordCountValue = document.getElementById('chordCountValue');
-  const measuresValue = document.getElementById('measuresValue');
 
-  let measuresPerChord = 2;
+  const DEFAULT_MEASURES = 2;   // what a freshly rolled chord lasts
   let noteBeats = 1;
   let currentStyle = 'simple';   // 'simple' | a key of STYLES
   let currentVariant = 0;        // index into STYLES[currentStyle].variants
@@ -259,11 +445,19 @@
     refreshChordNames();   // same chords, just relabel/replay them as triads or 7ths
   });
 
-  function setChordCount(n){
-    chordCount = Math.max(1, Math.min(7, n));
+  // resize the per-slot arrays to match; kept separate from setChordCount so a
+  // loaded progression can set its own length without re-rolling itself away
+  function setSlotCount(n){
+    chordCount = Math.max(1, Math.min(MAX_CHORDS, n));
     chordCountValue.textContent = chordCount;
     while (slotChoices.length < chordCount) slotChoices.push(null);
     slotChoices.length = chordCount;
+    while (slotMeasures.length < chordCount) slotMeasures.push(DEFAULT_MEASURES);
+    slotMeasures.length = chordCount;
+  }
+
+  function setChordCount(n){
+    setSlotCount(n);
     render();
   }
   document.getElementById('chordCountDown').addEventListener('click', () => {
@@ -271,16 +465,10 @@
     setChordCount(chordCount - 1);
   });
   document.getElementById('chordCountUp').addEventListener('click', () => {
-    if (chordCount >= 7) return;
+    if (chordCount >= MAX_CHORDS) return;
     setChordCount(chordCount + 1);
   });
 
-  function setMeasures(n){
-    measuresPerChord = Math.max(1, Math.min(8, n));
-    measuresValue.textContent = measuresPerChord;
-  }
-  document.getElementById('measuresDown').addEventListener('click', () => setMeasures(measuresPerChord - 1));
-  document.getElementById('measuresUp').addEventListener('click', () => setMeasures(measuresPerChord + 1));
 
   document.querySelectorAll('#noteValueGroup .seg-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -295,17 +483,28 @@
       document.querySelectorAll('#modeGroup .seg-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       modeSetting = btn.dataset.value;
-      // a pinned key that doesn't match the new mode no longer applies
-      if (modeSetting === 'random' || (keyChoice && keyChoice.mode !== modeSetting)){
+      if (modeSetting === 'random'){
         keyChoice = null;
+        buildKeySelect();
+        render();
+        return;
       }
+      // Same progression, other mode: hold the tonic if that key exists in the
+      // new mode, so I–V–vi–IV in C major becomes i–v–VI–IV in C minor rather
+      // than something unrelated.
+      const keys = modeSetting === 'major' ? MAJOR_KEYS : MINOR_KEYS;
+      const tonic = keys[currentTonic] ? currentTonic : pick(Object.keys(keys));
+      keyChoice = { mode: modeSetting, tonic };
       buildKeySelect();
-      render();
+      transposeToKey(modeSetting, tonic);
     });
   });
 
   function getTempo(){ return Number(tempoInput.value); }
-  function getBeatsPerChord(){ return measuresPerChord * 4; } // assumes 4/4 time
+  // how many measures a given chord in the progression lasts, and the beats
+  // that works out to (4/4 throughout)
+  function measuresFor(i){ return slotMeasures[i] || DEFAULT_MEASURES; }
+  function beatsForChord(i){ return measuresFor(i) * 4; }
   function getNoteBeats(){ return noteBeats; } // 1 = quarter, 2 = half, 4 = whole
 
   tempoInput.addEventListener('input', () => {
@@ -381,7 +580,7 @@
     const subPerBeat = style.grid / 4;
     const slotDur = secondsPerBeat / subPerBeat;
     const nextChord = currentProgression[(chordIdx + 1) % currentProgression.length];
-    const approachNext = Math.floor(beatInChord / 4) === measuresPerChord - 1;
+    const approachNext = Math.floor(beatInChord / 4) === measuresFor(chordIdx) - 1;
     const accentEvery = style.grid / 4;
 
     for (let k = 0; k < subPerBeat; k++){
@@ -432,7 +631,7 @@
 
       nextNoteTime += secondsPerBeat;
       beatInChord++;
-      if (beatInChord >= getBeatsPerChord()){
+      if (beatInChord >= beatsForChord(chordIdx)){
         beatInChord = 0;
         chordIdx = (chordIdx + 1) % currentProgression.length;
       }
@@ -464,11 +663,13 @@
         el.classList.toggle('dim', !isActive);
       });
       measureReadout.textContent =
-        `${Math.min(active.measure, measuresPerChord)}.${active.beat}`;
+        `${Math.min(active.measure, measuresFor(active.idx))}.${active.beat}`;
       view.followChord(active);
     }
     requestAnimationFrame(syncHighlight);
   }
+
+  function stopPlayback(){ if (isPlaying) togglePlay(); }
 
   function togglePlay(){
     ensureAudio();
@@ -502,9 +703,55 @@
   playBtn.addEventListener('click', togglePlay);
   playBtn2.addEventListener('click', togglePlay);
 
+  // Take a progression from somewhere else in the app — a genre example, say —
+  // and set the practice tab up to play it. Runs of the same chord collapse
+  // into one chord held for that many measures, which is how a twelve-bar
+  // blues fits into seven slots.
+  function loadProgression({ chords, label, tempo, key }){
+    if (!chords || !chords.length) return;
+    stopPlayback();
+
+    const runs = [];
+    chords.forEach(name => {
+      const last = runs[runs.length - 1];
+      if (last && last.name === name) last.bars++;
+      else runs.push({ name, bars: 1 });
+    });
+    const kept = runs.slice(0, MAX_CHORDS);
+
+    // the progression's own key decides the roman numerals; without one, read
+    // the first chord as the tonic
+    const tonicPc = key !== undefined && SEMITONE[key] !== undefined
+      ? SEMITONE[key]
+      : (SEMITONE[(chordFromName(kept[0].name) || {}).note] || 0);
+    const built = kept.map(r => chordFromName(r.name, tonicPc)).filter(Boolean);
+    if (!built.length) return;
+
+    setSlotCount(built.length);
+    // remember the key it came in, so changing key from here shifts by the
+    // right interval rather than from whatever was last generated
+    if (key && SEMITONE[key] !== undefined) currentTonic = key;
+    currentProgression = built;
+    slotChoices = built.map(() => null);
+    slotMeasures = kept.slice(0, built.length).map(r => r.bars);
+    loadedLabel = label || null;
+
+    // a progression written with 7th chords should sound like one
+    if (built.some(c => c.seventh) && !useSevenths){
+      useSevenths = true;
+      seventhToggle.checked = true;
+    }
+    if (tempo){
+      tempoInput.value = tempo;
+      tempoInput.dispatchEvent(new Event('input'));
+    }
+    renderAll();
+  }
+
   GT.practice = {
     // leaving the tab shouldn't leave a progression playing behind you
     stop(){ if (isPlaying) togglePlay(); },
+    loadProgression,
     init(){
       view.init({
         progression: () => currentProgression,
@@ -515,6 +762,7 @@
         activeChord: () => scheduledLog[0],
       });
       buildKeySelect();
+      renderPresets();
       updatePlaybackUI();
       setPlayLabel('Play');
       render();

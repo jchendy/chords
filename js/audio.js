@@ -43,6 +43,9 @@
   let bassGain = null;
   let drumGain = null;
   let noiseBuffer = null;
+  let pianoWave = null;
+  let guitarGain = null;
+  let driveCurve = null;
 
   function ensureAudio(){
     if(!audioCtx){
@@ -51,7 +54,7 @@
       masterGain.gain.value = 0.3;
       const tone = audioCtx.createBiquadFilter();
       tone.type = 'lowpass';
-      tone.frequency.value = 3200;
+      tone.frequency.value = 4800;
       tone.Q.value = 0.7;
       masterGain.connect(tone);
       tone.connect(audioCtx.destination);
@@ -71,6 +74,20 @@
       drumGain.gain.value = 0.55;
       drumGain.connect(audioCtx.destination);
 
+      pianoWave = pianoWaveFor(audioCtx);
+
+      // the guitar in the genre examples gets its own bus
+      guitarGain = audioCtx.createGain();
+      guitarGain.gain.value = 0.5;
+      guitarGain.connect(audioCtx.destination);
+
+      // a soft-clipping curve — the overdrive the punk and metal tones run through
+      driveCurve = new Float32Array(1024);
+      for (let i = 0; i < 1024; i++){
+        const x = (i / 1023) * 2 - 1;
+        driveCurve[i] = Math.tanh(x * 3.2);
+      }
+
       const bufferSize = Math.floor(audioCtx.sampleRate * 0.5);
       noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
       const data = noiseBuffer.getChannelData(0);
@@ -81,28 +98,49 @@
   }
 
   // simple additive "piano" tone: a handful of decaying harmonics
-  const HARMONICS = [
-    { mult: 1, gain: 0.50 },
-    { mult: 2, gain: 0.28 },
-    { mult: 3, gain: 0.13 },
-    { mult: 4, gain: 0.06 },
-    { mult: 5, gain: 0.03 },
-  ];
+  // The piano's harmonic series, as a single wave the oscillator can play
+  // directly — one oscillator does what a stack of five sines used to.
+  // imag[n] is the level of the nth harmonic; index 0 is DC and stays silent.
+  const PIANO_PARTIALS = [0, 0.50, 0.28, 0.13, 0.06, 0.03];
+
+  function pianoWaveFor(ctx){
+    const imag = new Float32Array(PIANO_PARTIALS);
+    const real = new Float32Array(imag.length);
+    // keep the partial levels literal — normalising would rescale the wave and
+    // make every note noticeably louder than the rest of the mix expects
+    return ctx.createPeriodicWave(real, imag, { disableNormalization: true });
+  }
 
   function playNote(freq, time, duration, velocity){
+    // A struck string doesn't fade evenly: it drops fast at first, then rings
+    // on quietly. Two ramps give that shape instead of one straight decay.
+    const peak = 0.425 * velocity;      // halved: the two oscillators below sum
+    const knee = Math.min(0.18, duration * 0.4);
     const envelope = audioCtx.createGain();
     envelope.gain.setValueAtTime(0.0001, time);
-    envelope.gain.exponentialRampToValueAtTime(0.85 * velocity, time + 0.006);
+    envelope.gain.exponentialRampToValueAtTime(peak, time + 0.006);
+    envelope.gain.exponentialRampToValueAtTime(peak * 0.34, time + knee);
     envelope.gain.exponentialRampToValueAtTime(0.0001, time + duration);
+
+    // Bright on the attack, mellowing as it rings — and harder notes open the
+    // filter further, the way playing harder brings out the upper partials.
+    const tone = audioCtx.createBiquadFilter();
+    tone.type = 'lowpass';
+    tone.Q.value = 0.6;
+    const open = Math.min(11000, freq * 7 + 2200 * velocity);
+    tone.frequency.setValueAtTime(open, time);
+    tone.frequency.exponentialRampToValueAtTime(
+      Math.max(500, open * 0.32), time + Math.min(0.7, duration));
+    tone.connect(envelope);
     envelope.connect(masterGain);
 
-    HARMONICS.forEach(h => {
+    // two copies a few cents apart, for the shimmer of real strings per note
+    [-3, 3].forEach(detune => {
       const osc = audioCtx.createOscillator();
-      osc.type = 'sine';
-      osc.frequency.value = freq * h.mult;
-      const hGain = audioCtx.createGain();
-      hGain.gain.value = h.gain;
-      osc.connect(hGain).connect(envelope);
+      osc.setPeriodicWave(pianoWave);
+      osc.frequency.value = freq;
+      osc.detune.value = detune;
+      osc.connect(tone);
       osc.start(time);
       osc.stop(time + duration + 0.05);
     });
@@ -227,6 +265,57 @@
     if (voice === 'dom7') return playChord7(chord, time, duration, velocity, false);
     if (voice === 'jazz') return playChord7(chord, time, duration, velocity, true);
     return playChord(chord, time, duration, velocity, useSevenths);   // 'triad'
+  }
+
+  // A plucked-string voice for the genre examples. Sawtooth pairs give the
+  // reedy edge of a wound string; the tone decides how bright it is, how long
+  // it rings, and whether it goes through the overdrive.
+  //   clean  — hollowbody/ringing, for rockabilly, jazz, surf
+  //   muted  — palm-muted chug, short and thumpy
+  //   drive  — overdriven and sustaining, for punk and metal
+  const GUITAR_TONES = {
+    clean: { cutoff: 3400, close: 0.5, ring: 1,    level: 0.30, drive: false },
+    muted: { cutoff: 1100, close: 0.3, ring: 0.16, level: 0.34, drive: false },
+    drive: { cutoff: 2600, close: 0.6, ring: 1,    level: 0.20, drive: true },
+  };
+
+  function playGuitar(freq, time, duration, velocity = 1, tone = 'clean'){
+    const spec = GUITAR_TONES[tone] || GUITAR_TONES.clean;
+    const ring = Math.min(duration, duration * spec.ring + 0.02);
+
+    const env = audioCtx.createGain();
+    env.gain.setValueAtTime(0.0001, time);
+    env.gain.exponentialRampToValueAtTime(spec.level * velocity, time + 0.004);
+    env.gain.exponentialRampToValueAtTime(spec.level * velocity * 0.4, time + ring * 0.35);
+    env.gain.exponentialRampToValueAtTime(0.0001, time + ring);
+
+    const filter = audioCtx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.Q.value = 1.1;
+    const open = Math.min(9000, spec.cutoff + freq * 2);
+    filter.frequency.setValueAtTime(open, time);
+    filter.frequency.exponentialRampToValueAtTime(Math.max(400, open * spec.close), time + ring);
+
+    let head = filter;
+    if (spec.drive){
+      const shaper = audioCtx.createWaveShaper();
+      shaper.curve = driveCurve;
+      shaper.oversample = '2x';
+      shaper.connect(filter);
+      head = shaper;
+    }
+    filter.connect(env);
+    env.connect(guitarGain);
+
+    [-4, 4].forEach(detune => {
+      const osc = audioCtx.createOscillator();
+      osc.type = 'sawtooth';
+      osc.frequency.value = freq;
+      osc.detune.value = detune;
+      osc.connect(head);
+      osc.start(time);
+      osc.stop(time + ring + 0.05);
+    });
   }
 
   // ---- genre rhythm patterns (one bar of 4/4) --------------------------------
@@ -473,8 +562,9 @@
 
   GT.audio = {
     ctx: () => audioCtx,               // live handle; null until ensureAudio() runs
+    pianoWaveFor, PIANO_PARTIALS,      // exposed so the tests can render a note offline
     ensureAudio, noteFreq, chordFrequencies, pcFreq, bassFreqAt, walkBassFreq,
-    playNote, playChord, playChord7, playBass,
+    playNote, playChord, playChord7, playBass, playGuitar,
     playHiHat, playRide, playKick, playSnare, playStyleVoice,
     STYLES,
   };

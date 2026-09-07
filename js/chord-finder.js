@@ -13,6 +13,8 @@
   const cagedOverviewEl = document.getElementById('chordFinderCaged');
   const triadOnlyRow = document.getElementById('triadOnlyRow');
   const triadOnlyToggle = document.getElementById('triadOnlyToggle');
+  const shellOnlyRow = document.getElementById('shellOnlyRow');
+  const shellOnlyToggle = document.getElementById('shellOnlyToggle');
   const labelModeGroup = document.getElementById('labelModeGroup');
   let labelMode = 'fingers';        // 'fingers' | 'degrees'
   const MAX_VOICINGS = 16;          // enough for the whole neck plus a few alternatives
@@ -131,13 +133,33 @@
     };
   }
 
+  // A shell voicing is the chord stripped to what actually names it: the root,
+  // the note that makes it major/minor (or the sus note standing in for it),
+  // and the 7th. The plain 5th is dropped — it carries no information — but an
+  // altered one (\u266d5 / \u266f5) stays, since without it a m7\u266d5 is just a m7.
+  function shellIntervals(formula){
+    const ivs = formula.intervals;
+    const quality = [3, 4].find(i => ivs.includes(i));
+    const sus = [2, 5].find(i => ivs.includes(i));
+    const seventh = [10, 11, 9].find(i => ivs.includes(i));
+    const alteredFifth = ivs.includes(7) ? undefined : [6, 8].find(i => ivs.includes(i));
+    const core = [0];
+    if (quality !== undefined) core.push(quality);
+    else if (sus !== undefined) core.push(sus);
+    if (alteredFifth !== undefined) core.push(alteredFifth);
+    if (seventh !== undefined) core.push(seventh);
+    return core.length > 1 ? core : null;      // a power chord has nothing to strip
+  }
+
   // every reasonably-common way to play this chord within a 4-fret span,
   // scored by how playable/idiomatic the shape is
   function findChordVoicings(rootPc, formula, opts = {}){
-    const threeNoteOnly = !!opts.threeNoteOnly;
+    const shell = opts.shellOnly ? shellIntervals(formula) : null;
+    const shellPcs = shell ? new Set(shell.map(iv => (rootPc + iv) % 12)) : null;
+    const threeNoteOnly = !!opts.threeNoteOnly && !shell;
     const isMinorTriad = formula.intervals.includes(3);
     const essentialPcs = new Set(formula.essential.map(iv => (rootPc + iv) % 12));
-    const allowedPcs = new Set(formula.intervals.map(iv => (rootPc + iv) % 12));
+    const allowedPcs = shellPcs || new Set(formula.intervals.map(iv => (rootPc + iv) % 12));
     const seen = new Set();
     const results = [];
 
@@ -159,10 +181,20 @@
         if (i === 6){
           const played = [];
           for (let s = 0; s < 6; s++) if (combo[s]) played.push({ string: s, fret: combo[s].fret, pc: combo[s].pc });
-          if (played.length < 3) return;
+          if (played.length < (shell ? shell.length : 3)) return;
           if (threeNoteOnly && played.length !== 3) return;
           const playedPcs = new Set(played.map(p => p.pc));
-          for (const pc of essentialPcs) if (!playedPcs.has(pc)) return;
+          if (shell){
+            // Exactly the shell tones, one note each, with the root underneath
+            // on the 6th or 5th string — that bass-note-plus-guide-tones grip
+            // is what "shell voicing" means in practice.
+            if (played.length !== shell.length) return;
+            for (const pc of shellPcs) if (!playedPcs.has(pc)) return;
+            const low = played.reduce((a, b) => (b.string > a.string ? b : a));
+            if (low.pc !== rootPc || low.string < 4) return;
+          } else {
+            for (const pc of essentialPcs) if (!playedPcs.has(pc)) return;
+          }
           const frettedOnly = played.map(p => p.fret).filter(f => f > 0);
           const span = frettedOnly.length ? Math.max(...frettedOnly) - Math.min(...frettedOnly) : 0;
           if (span > 3) return;
@@ -225,10 +257,13 @@
     // whole neck; the leftover room goes to the strongest runners-up, since a
     // position often has both a full barre shape and a compact grip worth
     // knowing. A shape that's just a thinner copy of one already picked is out.
+    // Shells are already a short, focused list — no need to thin them out by
+    // position the way the full voicing list is.
+    const perPosition = shell ? Infinity : 2;
     const best = [], runnersUp = [], taken = new Map();
     for (const r of results){
       const count = taken.get(r.startFret) || 0;
-      if (count >= 2) continue;
+      if (count >= perPosition) continue;
       const pool = count === 0 ? best : runnersUp;
       if ([...best, ...runnersUp].some(c => isSubsetOf(r, c) || isSubsetOf(c, r))) continue;
       taken.set(r.startFret, count + 1);
@@ -347,6 +382,7 @@
       chordFinderResults.innerHTML = '';
       cagedOverviewEl.innerHTML = '';
       triadOnlyRow.hidden = true;
+      shellOnlyRow.hidden = true;
       return;
     }
     const parsed = parseChordName(raw);
@@ -355,21 +391,28 @@
       chordFinderResults.innerHTML = '';
       cagedOverviewEl.innerHTML = '';
       triadOnlyRow.hidden = true;
+      shellOnlyRow.hidden = true;
       return;
     }
     chordFinderError.textContent = '';
 
     const isTriad = parsed.formula.intervals.length === 3;
     const isPlainTriad = parsed.formula.name === '' || parsed.formula.name === 'm';
-    triadOnlyRow.hidden = !isTriad;
-    cagedOverviewEl.innerHTML = isPlainTriad ? buildCagedOverview(parsed) : '';
+    const hasShell = !!shellIntervals(parsed.formula);
+    shellOnlyRow.hidden = !hasShell;
+    const shellOnly = hasShell && shellOnlyToggle.checked;
+    // shells are already pared to the bone, so the triad filter has nothing to do
+    triadOnlyRow.hidden = !isTriad || shellOnly;
+    cagedOverviewEl.innerHTML = (isPlainTriad && !shellOnly) ? buildCagedOverview(parsed) : '';
 
     const voicings = findChordVoicings(parsed.rootPc, parsed.formula, {
       threeNoteOnly: isTriad && triadOnlyToggle.checked,
+      shellOnly,
     });
     const chordLabel = parsed.rootName + parsed.formula.name;
     if (!voicings.length){
-      chordFinderResults.innerHTML = `<p class="diagram-empty">No playable shape found for ${chordLabel} within a comfortable stretch.</p>`;
+      const what = shellOnly ? `shell voicing for ${chordLabel}` : `shape for ${chordLabel}`;
+      chordFinderResults.innerHTML = `<p class="diagram-empty">No playable ${what} within a comfortable stretch.</p>`;
       return;
     }
     chordFinderResults.innerHTML = voicings.map(v => `
@@ -384,6 +427,7 @@
     init(){
       chordFinderInput.addEventListener('input', runChordFinder);
       triadOnlyToggle.addEventListener('change', runChordFinder);
+      shellOnlyToggle.addEventListener('change', runChordFinder);
       labelModeGroup.querySelectorAll('.seg-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           labelModeGroup.querySelectorAll('.seg-btn').forEach(b => b.classList.toggle('active', b === btn));
@@ -393,6 +437,6 @@
       });
     },
     // exposed for reuse and for checking shapes outside the UI
-    computeFingering, findChordVoicings, buildDiagramSVG,
+    computeFingering, findChordVoicings, buildDiagramSVG, shellIntervals,
   };
 })();

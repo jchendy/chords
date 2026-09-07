@@ -155,7 +155,12 @@
   CHORD_FORMULAS.forEach(f => f.aliases.forEach(a => { CHORD_ALIAS_MAP[a] = f; }));
 
   function normalizeSuffix(s){
-    return s.trim().toLowerCase().replace(/\s+/g, '')
+    // Case matters in exactly one place: a capital M before a number (or on its
+    // own) is the "major" shorthand, so CM7 is a major 7th while Cm7 is a minor
+    // one. Spell it out before folding the rest of the suffix to lower case.
+    return s.trim()
+      .replace(/^M(?=\d|$)/, 'maj')
+      .toLowerCase().replace(/\s+/g, '')
       .replace(/♭/g, 'b').replace(/♯/g, '#').replace(/δ/g, 'maj');
   }
 
@@ -189,10 +194,49 @@
     return matches;
   }
 
+  // Roman numeral for a chord sitting some interval above a tonic — used when a
+  // progression arrives as bare chord names with no key attached.
+  const DEGREE_NUMERALS = {
+    0: 'I', 1: '\u266dII', 2: 'II', 3: '\u266dIII', 4: 'III', 5: 'IV',
+    6: '\u266fIV', 7: 'V', 8: '\u266dVI', 9: 'VI', 10: '\u266dVII', 11: 'VII',
+  };
+  function numeralFor(rootPc, tonicPc, quality){
+    const numeral = DEGREE_NUMERALS[((rootPc - tonicPc) % 12 + 12) % 12] || '';
+    if (quality === 'maj') return numeral;
+    return numeral.toLowerCase() + (quality === 'dim' ? '\u00b0' : '');
+  }
+
+  // Build the chord object the rest of the app works with from a written name
+  // like "A7" or "Dm7". The app's model is a triad plus an optional 7th, so
+  // richer chords come through as the nearest triad-and-7th: a 9th keeps its
+  // dominant 7th, a 6th or diminished 7th drops to its triad, and a power
+  // chord (no 3rd at all) is read as major.
+  function chordFromName(name, tonicPc){
+    const parsed = parseChordName(name);
+    if (!parsed) return null;
+    const ivs = parsed.formula.intervals;
+    const thirdIv = [3, 4].find(i => ivs.includes(i));
+    const fifthIv = [6, 7, 8].find(i => ivs.includes(i));
+    // only a real 7th counts — the app's model is "triad plus 7th", so a 6th
+    // chord comes through as its plain triad rather than being mislabelled
+    const seventhIv = [10, 11].find(i => ivs.includes(i));
+    const quality = thirdIv === 3 ? (fifthIv === 6 ? 'dim' : 'min') : 'maj';
+    const at = iv => NOTE_NAMES_SHARP[(parsed.rootPc + iv) % 12];
+    return {
+      note: parsed.rootName,
+      third: at(thirdIv === undefined ? 4 : thirdIv),
+      fifth: at(fifthIv === undefined ? 7 : fifthIv),
+      seventh: seventhIv === undefined ? null : at(seventhIv),
+      quality,
+      name: parsed.rootName + SUFFIX[quality],
+      numeral: numeralFor(parsed.rootPc, tonicPc === undefined ? parsed.rootPc : tonicPc, quality),
+    };
+  }
+
   GT.theory = {
     MAJOR_KEYS, MINOR_KEYS, MAJOR_QUALITY, MAJOR_NUMERALS, MINOR_QUALITY, MINOR_NUMERALS,
     SUFFIX, LEADING_TONE, MAJOR_COMMON, MINOR_COMMON, SEMITONE, NOTE_NAMES_SHARP, CHORD_FORMULAS,
     pick, shuffle, buildDiatonicChords, seventhSuffix, displayName, degreeLabel,
-    parseChordName, identifyChords,
+    parseChordName, identifyChords, chordFromName, numeralFor,
   };
 })();
