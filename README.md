@@ -189,7 +189,10 @@ names the tab you're on.
   whichever of its own shapes sits nearest where the last one landed, so the
   hand walks through the changes rather than jumping back down the neck. ◂ ▸
   step the box or cycle to the next cluster;
-  Triads — close three-note triads on one set of three adjacent
+  Triads — in one position these behave as Chords does: the chord in front
+  lit, the rest of the progression's triads behind it in their own colours,
+  and the legend naming each chord with the inversion it's sitting in.
+  Across the neck they're close three-note triads on one set of three adjacent
   strings (e–B–G, B–G–D, G–D–A or D–A–E), every inversion, all the way up
   the neck, each legend entry also naming the CAGED grip its shapes are cut
   from so a triad reads as somewhere you already know. Each shape is outlined

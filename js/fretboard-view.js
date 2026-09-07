@@ -52,6 +52,7 @@
   let heldWindow = null;         // { min, max } of frets kept while holding position
   let shownWindow = null;        // what the legend reports
   let shownBoxName = '';         // ...and which CAGED shape that box is
+  let shownBoxCells = null;      // ...and the cells that shape actually plays
   let lastShownWindow = null;    // ...and what it was before the chord changed
   let rebaseBox = false;         // re-pick the box by position rather than by index
   let fretRange = 'all';         // 'all' | 'fit' | 'from-to' — how much neck to draw
@@ -180,8 +181,9 @@
     holdPositionToggle.closest('.inline-check').classList.toggle('off', !holdApplies);
     // Roots is already coloured by root; and in one position Chords colours by
     // chord, so there's nothing for the interval option to say in either
-    colorByGroup.hidden = !chordModes || cagedPos;
-    colorByLabel.hidden = !chordModes || cagedPos;
+    const colourIsChord = inPosition && ['caged', 'triads3'].includes(fretMode);
+    colorByGroup.hidden = !chordModes || colourIsChord;
+    colorByLabel.hidden = !chordModes || colourIsChord;
   }
 
   fretRangeSelect.addEventListener('change', () => {
@@ -282,6 +284,7 @@
   // from which way it's reading); `opts.index` overrides the stepper.
   function applyBoxWindow(markers, lines, boxes, opts = {}){
     shownWindow = null;
+    shownBoxCells = null;
     const forcedIndex = opts.index;
     const single = opts.single === undefined ? inPosition : opts.single;
     if (!single || !boxes.length) return { markers, lines };
@@ -311,6 +314,7 @@
     }
     shownWindow = win;
     shownBoxName = box.name || '';
+    shownBoxCells = new Set(box.cells.map(c => c.string + ':' + c.fret));
     lastShownWindow = win;
     const inWin = f => f >= win.min && f <= win.max;
     return {
@@ -389,10 +393,12 @@
     }
     // one chord in front everywhere now, so the tiers read off the same index
     // the chord picker uses rather than a second one of their own
-    const total = posLegendData.length;
-    const curIdx = Math.min(cagedChordIdx, Math.max(0, total - 1));
-    const nextIdx = total ? (curIdx + 1) % total : -1;
-    const cur = String(curIdx), next = String(nextIdx);
+    const cands = host.progression().filter(c => c.quality !== 'dim');
+    if (!cands.length) return;
+    const ids = chordIdentity(cands);
+    const at = i => (ids.get(displayName(cands[i])) || {}).tag;
+    const curIdx = Math.min(cagedChordIdx, cands.length - 1);
+    const cur = at(curIdx), next = at((curIdx + 1) % cands.length);
     fretboardSvg.querySelectorAll('.note-dot').forEach(g => {
       const tags = (g.getAttribute('data-shapes') || '').split(',').filter(Boolean);
       const isCurrent = tags.includes(cur);
@@ -560,6 +566,7 @@
 
       const lines = [];
       const cellMap = new Map();
+      const ids = chordIdentity(chords);
       posLegendData = [];
 
       chords.forEach((chord, i) => {
@@ -568,9 +575,13 @@
         const placement = placements.reduce((best, p) =>
           Math.abs(p.meanFret - aimFret) < Math.abs(best.meanFret - aimFret) ? p : best);
         if (cagedPosMethod === 'lead') aimFret = placement.meanFret;
-        const color = ROOT_PALETTE[i % ROOT_PALETTE.length];
-        const tag = String(i);   // reuses the shape-spotlight mechanism, keyed by chord index
-        posLegendData.push({ name: displayName(chord), numeral: chord.numeral, color, tag, shapeLetter: placement.name });
+        // keyed by which chord this is, not which slot: a twelve-bar blues
+        // has one C7, however many bars it fills
+        const { tag, color } = ids.get(displayName(chord));
+        if (!posLegendData.some(e => e.tag === tag)){
+          posLegendData.push({ name: displayName(chord), numeral: chord.numeral, color, tag,
+                               shapeLetter: placement.name });
+        }
 
         const rootPc = SEMITONE[chord.note] % 12;
         const thirdPc = SEMITONE[chord.third] % 12;
@@ -693,7 +704,35 @@
           : { ...base, color: INVERSION_COLOR[invs[0]] };
       });
       const shown = applyBoxWindow(markers, lines, gripBoxes(chord));
-      return { markers: applyColorBy(shown.markers, chord), lines: shown.lines };
+      if (!inPosition) return { markers: applyColorBy(shown.markers, chord), lines: shown.lines };
+
+      // In one position the other chords' triads come too, exactly as they do
+      // in Chords: colour says which chord, the inversion moves to the legend
+      // tag, and the rest of the progression sits behind in its own colours.
+      const cands = host.progression().filter(c => c.quality !== 'dim');
+      const curIdx = Math.min(cagedChordIdx, cands.length - 1);
+      const { tag: curTag, color: curColor } = idOf(cands, curIdx);
+      // which inversions this chord's own shapes are, for its legend tag
+      const invsHere = [...new Set(shown.lines.map(l => l.shape))];
+      shownBoxName = INVERSIONS.filter(i => invsHere.includes(i.tag)).map(i => i.tag).join(' ');
+      const lit = shown.markers.map(m => {
+        const { split, ...rest } = m;
+        return { ...rest, color: curColor, shapes: [curTag] };
+      });
+      const litLines = shown.lines.map(l => ({ ...l, color: curColor, shape: curTag }));
+      const triadShapes = c => {
+        const rp = SEMITONE[c.note] % 12;
+        const tones = new Set([rp, SEMITONE[c.third] % 12, SEMITONE[c.fifth] % 12]);
+        return stringSetTriads(stringSetLow, tones).map(t => {
+          const bass = t.bassPc;
+          const inv = bass === rp ? 'root' : bass === SEMITONE[c.third] % 12 ? '1st' : '2nd';
+          return { name: inv, cells: t.cells.slice().sort((a, b) => a.string - b.string) };
+        });
+      };
+      const ghosts = ghostMarkers(shownWindow,
+        new Map(lit.map(m => [m.string + ':' + m.fret, m])), true, triadShapes);
+      noteCurrentChord(cands, curIdx, curTag, curColor);
+      return { markers: [...ghosts.markers, ...lit], lines: [...ghosts.lines, ...litLines] };
     }
 
     // The five movable CAGED shapes for one chord. "Whole arpeggio" opens each
@@ -708,8 +747,7 @@
       // hands the choice of which position to the progression itself.
       const cands = host.progression().filter(c => c.quality !== 'dim');
       const curIdx = Math.min(cagedChordIdx, cands.length - 1);
-      const curTag = 'c' + curIdx;
-      const curColor = ROOT_PALETTE[curIdx % ROOT_PALETTE.length];
+      const { tag: curTag, color: curColor } = idOf(cands, curIdx);
       // In one position several chords share the neck, so colour says which
       // chord a note belongs to and the legend names its shape — the same
       // scheme Progression uses. Across the neck only one chord is drawn, so
@@ -739,7 +777,14 @@
           name: l.shape, anchor: Math.min(...l.cells.map(c => c.fret)), cells: l.cells,
         }));
         const one = applyBoxWindow(board.markers, board.lines, grips, boxOpts);
-        const lit = inPosition ? one.markers.map(asChord) : applyColorBy(one.markers, chord);
+        // cagedTriadBoard draws all five shapes at once, so clipping that to a
+        // window leaves fragments of the neighbouring ones — notes that belong
+        // to no shape you're holding, which read as stray arpeggio notes. In
+        // one position, keep only the cells of the shape the box actually is.
+        const boxOnly = inPosition && shownBoxCells
+          ? one.markers.filter(m => shownBoxCells.has(m.string + ':' + m.fret))
+          : one.markers;
+        const lit = inPosition ? boxOnly.map(asChord) : applyColorBy(boxOnly, chord);
         const litLines = inPosition
           ? one.lines.map(l => ({ ...l, color: curColor, shape: curTag })) : one.lines;
         const ghosts = inPosition
@@ -964,18 +1009,24 @@
   // already there rather than being dropped. Otherwise spotlighting that chord
   // would light an incomplete version of it, missing exactly the notes it
   // holds in common with the chord in front.
-  function ghostMarkers(win, placed, useGrips){
+  function ghostMarkers(win, placed, useGrips, shapesOf){
     ghostLegendData = [];
     if (!win) return { markers: [], lines: [] };
     const cands = host.progression().filter(c => c.quality !== 'dim');
     const markers = [], lines = [];
     const inWin = c => c.fret >= win.min && c.fret <= win.max;
+    const ids = chordIdentity(cands);
     const cur = Math.min(cagedChordIdx, cands.length - 1);
+    const curName = displayName(cands[cur]);
     // the chord you're heading into reads brighter than the ones after it,
     // the same three tiers Progression uses while it plays
     const next = cands.length > 1 ? (cur + 1) % cands.length : -1;
+    const nextName = next === -1 ? null : displayName(cands[next]);
+    const done = new Set([curName]);
     cands.forEach((c, i) => {
-      if (i === cur) return;                                        // that's the one in front
+      const name = displayName(c);
+      if (done.has(name)) return;    // the one in front, or a chord already drawn
+      done.add(name);
       const rootPc = SEMITONE[c.note] % 12;
       const thirdPc = SEMITONE[c.third] % 12;
       const fifthPc = SEMITONE[c.fifth] % 12;
@@ -987,18 +1038,27 @@
         pc === rootPc ? c.note : pc === thirdPc ? degreeLabel(c, 'third') :
         pc === fifthPc ? degreeLabel(c, 'fifth') : degreeLabel(c, 'seventh');
 
-      const placements = cagedPlacements(rootPc, isMinor ? CAGED_MINOR : CAGED_MAJOR);
-      const gripNames = placements.map(p => p.name);
-      const grips = placements.map(p => (sevPc == null ? p.cells : seventhCells(p, rootPc, sevPc)));
+      const shapes = shapesOf ? shapesOf(c) : (() => {
+        const placements = cagedPlacements(rootPc, isMinor ? CAGED_MINOR : CAGED_MAJOR);
+        return placements.map(p => ({ name: p.name,
+          cells: sevPc == null ? p.cells : seventhCells(p, rootPc, sevPc) }));
+      })();
+      const gripNames = shapes.map(g => g.name);
+      const grips = shapes.map(g => g.cells);
+      // one shape per chord, the one most of which is under this hand — a
+      // union of all five clipped to the window is not a shape anyone plays
+      const fit = shapes.map(g => g.cells.filter(inWin).length);
+      const bestGrip = fit.some(n => n > 0)
+        ? grips[fit.indexOf(Math.max(...fit))] : [];
       // whatever the view in front is showing, the ghosts show the same of:
       // the grips, or every chord tone
       const cells = useGrips
-        ? grips.flat()
+        ? bestGrip
         : arpeggioCells(win.min, win.max,
             new Set([c.note, c.third, c.fifth, c.seventh].filter(Boolean).map(n => SEMITONE[n] % 12)));
 
-      const color = ROOT_PALETTE[i % ROOT_PALETTE.length];
-      const tag = 'c' + i;
+      const { tag, color } = ids.get(name);
+      const isNext = name === nextName;
       let drew = false;
       let letter = '';
       cells.forEach(cell => {
@@ -1010,12 +1070,12 @@
           if (!already.shapes.includes(tag)) already.shapes.push(tag);
           // if one of them is the chord you're heading into, the brighter
           // reading wins — the note is coming up either way
-          if (i === next && already.ghost) already.ghostNext = true;
+          if (isNext && already.ghost) already.ghostNext = true;
           return;
         }
         const pc = (STRING_TUNING[cell.string] + cell.fret) % 12;
         const m = { string: cell.string, fret: cell.fret, color, label: nameOf(pc),
-                    isRoot: pc === rootPc, shapes: [tag], ghost: true, ghostNext: i === next };
+                    isRoot: pc === rootPc, shapes: [tag], ghost: true, ghostNext: isNext };
         placed.set(k, m);
         markers.push(m);
       });
@@ -1023,12 +1083,12 @@
       grips.forEach((g, gi) => {
         if (g.length > 1 && g.every(inWin)){
           if (!letter) letter = gripNames[gi] || '';
-          lines.push({ color, shape: tag, ghost: true, ghostNext: i === next, letter,
+          lines.push({ color, shape: tag, ghost: true, ghostNext: isNext, letter,
                        cells: g.map(cell => ({ string: cell.string, fret: cell.fret })) });
         }
       });
-      if (drew) ghostLegendData.push({ name: displayName(c), numeral: c.numeral,
-                                       color, tag, shapeLetter: letter, order: i });
+      if (drew) ghostLegendData.push({ name, numeral: c.numeral, color, tag,
+                                       shapeLetter: letter, order: ids.get(name).tag });
     });
     return { markers, lines };
   }
@@ -1086,14 +1146,31 @@
     return chosen;
   }
 
+  // A chord is identified by what it is, not by where it sits: a twelve-bar
+  // blues has C7 in three slots, and drawing it in three colours with three
+  // legend entries says there are three chords when there's one. Colour and
+  // tag key off the chord's name, in the order it first appears.
+  function chordIdentity(cands){
+    const byName = new Map();
+    cands.forEach(c => {
+      const n = displayName(c);
+      if (!byName.has(n)){
+        byName.set(n, { tag: 'c' + byName.size, color: ROOT_PALETTE[byName.size % ROOT_PALETTE.length],
+                        name: n, numeral: c.numeral });
+      }
+    });
+    return byName;
+  }
+  const idOf = (cands, i) => chordIdentity(cands).get(displayName(cands[i]));
+
   // The chord in front takes its place in the same list the ghosted ones
   // build, so the legend reads as one entry per chord in progression order.
   function noteCurrentChord(cands, curIdx, tag, color){
     const c = cands[curIdx];
     if (!c) return;
     ghostLegendData.push({ name: displayName(c), numeral: c.numeral, color, tag,
-                           shapeLetter: shownBoxName, order: curIdx, current: true });
-    ghostLegendData.sort((a, b) => a.order - b.order);
+                           shapeLetter: shownBoxName, order: tag, current: true });
+    ghostLegendData.sort((a, b) => Number(a.order.slice(1)) - Number(b.order.slice(1)));
   }
 
   // the chord the single-chord views are showing
@@ -1127,7 +1204,7 @@
     // Chords in one position is Progression's picture, so it gets
     // Progression's legend: one entry per chord, named, numbered, tagged with
     // the CAGED shape it's sitting in, and spotlightable by hovering it.
-    if (fretMode === 'caged' && inPosition){
+    if (inPosition && (fretMode === 'caged' || fretMode === 'triads3')){
       const entries = ghostLegendData.map(g =>
         `<span data-shape="${g.tag}" tabindex="0" role="button" aria-label="Highlight ${g.name}"` +
         `${g.current ? ' class="legend-current"' : ''}>` +
