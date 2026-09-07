@@ -1,4 +1,4 @@
-# Chord Progression Generator
+# Guitar chords
 
 A single-page, dependency-free tool that generates random diatonic chord
 progressions and plays them back with a synthesized piano and optional
@@ -21,17 +21,23 @@ hi-hat click.
   implies), affecting the displayed names and the notes played
 - Info tooltips (ⓘ) on the less-obvious controls — hover on desktop, tap on
   touch, tap elsewhere to dismiss
-- Web Audio playback, with the panel split into a "Style" section (Genre,
+- Web Audio playback via icon Play/Pause buttons (both the corner button on
+  the chord display and the main one in the Style panel), with the panel
+  split into a "Style" section (Genre,
   Feel, and the Simple-only note value / metronome click / roots-only
   options) and an "All styles" section (tempo — with 60/90/120 BPM presets —
-  measures per chord, and a 4-beat count-in) that always applies. A "Genre"
+  measures per chord, and a 4-beat count-in) that always applies. A matching
+  Genre row (Simple / Rock / Blues / Jazz / Pop / Funk only, no Feel or other
+  advanced options) also sits at the bottom of the chord display panel for
+  quick switching, kept in sync with the main Style section. A "Genre"
   picker chooses the backing:
   Simple — the plain piano voicing, with note value (quarter / half / whole),
   metronome click and a roots-only mode;
   Rock — driving 8th-note piano chords and a basic kit, with a half-time
   feel and a 16th-note "1 & a" gallop (Punk drive) as alternate Feels;
   Blues — a 12/8 shuffle: boogie-woogie walking bass (1-3-5-6-♭7-6-5-3),
-  dominant-7th chord stabs on the shuffle upbeats, and a shuffled kick/snare/hat;
+  long-ringing dominant-7th chord stabs on the shuffle upbeats, and a
+  shuffled kick/snare/hat;
   Jazz — a swung "spang-a-lang" ride pattern with hi-hat on 2 & 4, a quarter-note
   walking bass (root–5th–3rd–chromatic approach to the next chord), and
   rootless Charleston-comped 7th-chord voicings;
@@ -41,12 +47,29 @@ hi-hat click.
   Every style (except Simple) offers three "Feel" variants — its canonical
   groove plus two common alternatives
 - Live chord highlighting synced to playback, with a measure.beat position
-  readout and 60/90/120 BPM shortcut buttons in the corner of the key display
-  (the key itself is shown plainly, e.g. "C major" / "C#m")
-- Fretboard panel (6 strings, 15 frets) with five views:
-  Root notes — every root-note location for the progression (colour-coded,
+  readout and a "BPM"-labelled trio of 60/90/120 shortcut buttons in the
+  corner of the key display (the key itself is shown plainly, e.g.
+  "C major" / "C#m")
+- Fretboard panel (6 strings, 15 frets) with five views, "Roots" and
+  "Chord positions" first:
+  Roots — every root-note location for the progression (colour-coded,
   legend gives each root's roman numeral; while playing, the currently
   sounding chord's root is ringed and spotlighted);
+  Chord positions — one shape per chord in the progression, colour-coded by
+  chord, chosen so every shape sits close together on the neck (shared notes
+  split-coloured, and hovering/tapping a chord name in the legend — which
+  also names each chord's CAGED shape letter — spotlights it, same as CAGED
+  triads); with the whole cluster shown at rest, every note is dimmed except
+  each chord's lowest root, so the anchor notes stand out; the barred
+  G-shape is skipped everywhere except its own open-G-chord form, since it's
+  not realistically playable elsewhere. "Next position" cycles to the next
+  cluster up the neck, wrapping back to the lowest. With "7 chords" on, it
+  also adds each chord's 7th nearby on an open string of that shape, when
+  one is reachable. "Follow playback" (on by default) lights up whichever
+  chord is currently sounding (in both the fretboard and its legend entry),
+  lightly dims the next chord, and dims the rest much further; a lit note
+  only wears the root ring when it's actually the sounding chord's own root,
+  not just a note it happens to share with another chord's root;
   CAGED triads — the five chord shapes for the chosen chord, outlined and
   colour-coded, every note named, shared notes split-coloured;
   CAGED pentatonic — the chosen chord's major/minor pentatonic, every note
@@ -56,17 +79,7 @@ hi-hat click.
   matching the chosen chord's own quality — major chord → major scale, minor
   chord → natural minor) and Key mode (chord-scale theory — the progression
   key's mode rooted on the chosen chord, e.g. a IV chord reads as Lydian);
-  same CAGED-box colouring either way;
-  Chord positions — one shape per chord in the progression, colour-coded by
-  chord, chosen so every shape sits close together on the neck (shared notes
-  split-coloured, and hovering/tapping a chord name in the legend spotlights
-  it, same as CAGED triads); the barred G-shape is skipped everywhere except
-  its own open-G-chord form, since it's not realistically playable elsewhere.
-  "Next position" cycles to the next cluster up the neck, wrapping back to
-  the lowest. With "7 chords" on, it also adds each chord's 7th nearby on an
-  open string of that shape, when one is reachable. "Follow playback" (on by
-  default) lights up whichever chord is currently sounding, half-lights the
-  next one, and dims the rest
+  same CAGED-box colouring either way
 - In the CAGED views, hover/tap a shape name in the legend to spotlight that
   shape; "Follow playback" (on by default) lets the fretboard track whichever
   chord is currently sounding
