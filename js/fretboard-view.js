@@ -58,8 +58,12 @@
   let voiceLead = false;         // Progression: follow the previous shape, not one fret
   let allTones = false;          // Progression: each chord's whole arpeggio, not just its grip
   let wholeArpeggio = false;     // Chords: the shapes opened out into the whole arpeggio
-  let ghostOthers = false;       // Chords: the progression's other chords, ghosted in
-  let cagedVoiceLead = false;    // Chords: let the progression choose the box, not you
+  // Chords reads two ways: one chord across the whole neck, or the whole
+  // progression under one hand. Everything about choosing a position — the
+  // stepper, voice leading, holding — belongs to the second; the first has no
+  // position to choose, it shows them all.
+  let cagedReading = 'neck';     // 'neck' | 'position'
+  let cagedVoiceLead = false;    // Chords: let the progression choose the position, not you
   let stringSetLow = 2;          // Triads: lowest string of the set (2 = e-B-G)
   let shapeRanges = {};          // per shape: the frets it spans, for the legend
 
@@ -138,8 +142,10 @@
   const stringSetRow = document.getElementById('stringSetRow');
   const cagedViewRow = document.getElementById('cagedViewRow');
   const wholeArpeggioToggle = document.getElementById('wholeArpeggioToggle');
-  const ghostOthersToggle = document.getElementById('ghostOthersToggle');
   const cagedVoiceLeadToggle = document.getElementById('cagedVoiceLeadToggle');
+  const cagedReadingGroup = document.getElementById('cagedReadingGroup');
+  const singleBoxCheck = document.getElementById('singleBoxCheck');
+  const cagedVoiceLeadCheck = document.getElementById('cagedVoiceLeadCheck');
 
   document.querySelectorAll('#stringSetGroup .seg-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -156,12 +162,18 @@
     chordPosRow.hidden = fretMode !== 'positions';
     stringSetRow.hidden = fretMode !== 'triads3';
     cagedViewRow.hidden = fretMode !== 'caged';
-    boxRow.hidden = !['caged', 'penta', 'scale'].includes(fretMode);
-    // stepping and holding only mean something once you're looking at one box
-    const ledHere = fretMode === 'caged' && cagedVoiceLead;
-    document.getElementById('boxStep').classList.toggle('locked', !singleBox || ledHere);
-    singleBoxToggle.closest('.inline-check').classList.toggle('off', ledHere);
-    holdPositionToggle.closest('.inline-check').classList.toggle('off', !singleBox && !ledHere);
+    // Choosing a position only means something where there is one: the two
+    // scale views when they're down to a single box, and Chords when it's
+    // reading the progression under one hand.
+    const cagedPos = fretMode === 'caged' && cagedReading === 'position';
+    boxRow.hidden = !(cagedPos || ['penta', 'scale'].includes(fretMode));
+    // in Chords the reading picks the box, so there's no checkbox to offer
+    singleBoxCheck.hidden = fretMode === 'caged';
+    cagedVoiceLeadCheck.hidden = fretMode !== 'caged';
+    // ...and stepping goes quiet when the progression is choosing for you
+    const picksItself = cagedPos ? cagedVoiceLead : !singleBox;
+    document.getElementById('boxStep').classList.toggle('locked', picksItself);
+    holdPositionToggle.closest('.inline-check').classList.toggle('off', !cagedPos && !singleBox);
     // Roots is already coloured by root and Progression by chord, so
     // there's nothing for the interval colouring to say in those
     colorByGroup.hidden = !singleChordModes;
@@ -192,14 +204,19 @@
     heldWindow = null;      // the grips and the arpeggio don't share a window
     renderFretboard();
   });
-  ghostOthersToggle.addEventListener('change', () => {
-    ghostOthers = ghostOthersToggle.checked;
-    renderFretboard();
+  cagedReadingGroup.querySelectorAll('.seg-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      cagedReadingGroup.querySelectorAll('.seg-btn').forEach(b => b.classList.toggle('active', b === btn));
+      cagedReading = btn.dataset.value;
+      heldWindow = null;      // the two readings don't share a window
+      updateFretUI();
+      renderFretboard();
+    });
   });
   cagedVoiceLeadToggle.addEventListener('change', () => {
     cagedVoiceLead = cagedVoiceLeadToggle.checked;
     heldWindow = null;
-    updateFretUI();       // it picks the box for you, so the stepper goes quiet
+    updateFretUI();       // it picks the position for you, so the stepper goes quiet
     renderFretboard();
   });
 
@@ -258,9 +275,12 @@
     return (Math.min(...frets) + Math.max(...frets)) / 2;
   };
 
-  function applyBoxWindow(markers, lines, boxes, forcedIndex){
+  // `opts.single` overrides the shared Single box checkbox (Chords decides it
+  // from which way it's reading); `opts.index` overrides the stepper.
+  function applyBoxWindow(markers, lines, boxes, opts = {}){
     shownWindow = null;
-    const single = singleBox || forcedIndex != null;
+    const forcedIndex = opts.index;
+    const single = opts.single === undefined ? singleBox : opts.single;
     if (!single || !boxes.length) return { markers, lines };
     const sorted = boxes.slice().sort((a, b) => a.anchor - b.anchor);
     // A box index means different frets for different chords — each chord has
@@ -694,10 +714,15 @@
     if (fretMode === 'caged'){
       const chord = currentChord();
       if (!chord) return { markers: [], lines: [] };
-      // with voice leading on, the progression chooses the box rather than you
+      // One position, or all of them. In one position the whole progression
+      // comes with you — that's what the reading is for — and voice leading
+      // hands the choice of which position to the progression itself.
+      const inPosition = cagedReading === 'position';
       const cands = host.progression().filter(c => c.quality !== 'dim');
-      const led = cagedVoiceLead
-        ? voiceLedBoxIndex(cands, Math.min(cagedChordIdx, cands.length - 1)) : null;
+      const boxOpts = { single: inPosition };
+      if (inPosition && cagedVoiceLead){
+        boxOpts.index = voiceLedBoxIndex(cands, Math.min(cagedChordIdx, cands.length - 1));
+      }
       const rootPc = SEMITONE[chord.note] % 12;
       const isMinor = chord.quality === 'min';
       const seventhPc = chord.seventh ? SEMITONE[chord.seventh] % 12 : null;
@@ -714,9 +739,9 @@
         const grips = board.lines.map(l => ({
           name: l.shape, anchor: Math.min(...l.cells.map(c => c.fret)), cells: l.cells,
         }));
-        const one = applyBoxWindow(board.markers, board.lines, grips, led);
+        const one = applyBoxWindow(board.markers, board.lines, grips, boxOpts);
         const lit = applyColorBy(one.markers, chord);
-        const ghosts = ghostOthers
+        const ghosts = inPosition
           ? ghostMarkers(shownWindow, new Set(lit.map(m => m.string + ':' + m.fret)), true)
           : { markers: [], lines: [] };
         return { markers: [...ghosts.markers, ...lit], lines: [...ghosts.lines, ...one.lines] };
@@ -755,9 +780,9 @@
           }
         }
       }
-      const shown = applyBoxWindow(markers, lines, boxes, led);
+      const shown = applyBoxWindow(markers, lines, boxes, boxOpts);
       const lit = applyColorBy(shown.markers, chord);
-      const ghosts = ghostOthers
+      const ghosts = inPosition
         ? ghostMarkers(shownWindow, new Set(lit.map(m => m.string + ':' + m.fret)), false)
         : { markers: [], lines: [] };
       return { markers: [...ghosts.markers, ...lit], lines: [...ghosts.lines, ...shown.lines] };

@@ -174,21 +174,22 @@ names the tab you're on.
   arpeggio a method book teaches — the shape you already know, plus the notes
   around it on each string. The outlines are the same grips either way, so the
   toggle changes how much you see rather than what you're looking at, and the
-  Box row works in both: with the grips alone each grip is its own box, so
-  "Single box" walks the neck one CAGED shape at a time. **Other chords**
-  draws the progression's remaining chords into the box you're practising in,
-  so you can see where the changes fall without moving your hand — the same
-  picture Progression paints while it plays, and drawn identically: each chord
-  in its own colour, labelled by degree, its grip traced faintly through, and
-  the same three tiers of brightness: the chord in front lit, the chord you're
-  heading into next half-lit, the rest dimmed much further — roots included,
-  with no chord's root singled out. Only the frets the chord in front isn't
-  already using are drawn, so it stays behind rather than competing.
-  **Voice leading** hands the choice of shape to the progression instead of
-  you: the first chord takes its lowest, and each one after it takes whichever
-  of its own shapes sits nearest where the last one landed, so the hand walks
-  through the changes rather than jumping back down the neck — Progression's
-  voice leading, read one chord at a time;
+  This view reads two ways, chosen by **Show**. *Across the neck* is one chord
+  at a time, its five shapes everywhere they fall — the view for learning where
+  a chord lives. *In one position* is the whole progression under one hand: the
+  chord that's sounding lit, and the rest of the changes drawn in behind it,
+  the same picture Progression paints while it plays and drawn identically —
+  each chord in its own colour, labelled by degree, its grip traced faintly
+  through, and the same three tiers of brightness (the chord in front lit, the
+  one you're heading into next half-lit, the rest dimmed much further, roots
+  included). Only the frets the chord in front isn't already using are drawn,
+  so the rest stays behind rather than competing. Whole arpeggio applies to
+  both. Everything about *choosing* a position belongs to the second reading,
+  since the first has no position to choose — it shows them all: ◂ ▸ walk the
+  hand up and down, **Hold position** pins it while the chords change, and
+  **Voice leading** hands the choice to the progression itself, each chord
+  taking whichever of its own shapes sits nearest where the last one landed,
+  so the hand walks through the changes rather than jumping back down the neck;
   Triads — close three-note triads on one set of three adjacent
   strings (e–B–G, B–G–D, G–D–A or D–A–E), every inversion, all the way up
   the neck, each legend entry also naming the CAGED grip its shapes are cut

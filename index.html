@@ -915,23 +915,17 @@
       </div>
     </div>
     <div class="setting" id="cagedViewRow" hidden>
-      <span class="setting-label">Shapes
-        <button type="button" class="info-dot" data-tip="The five CAGED grips for this chord, traced across the neck — the shape itself, with a chord carrying a 7th shown as the 7th-chord voicing you'd actually finger and its 7th drawn hollow. Whole arpeggio opens each grip out into every chord tone within reach of it, so you see the notes around the shape as well as the shape, with the grip still traced through the middle. Once it's opened out you can step through one box at a time.">i</button>
+      <span class="setting-label">Show
+        <button type="button" class="info-dot" data-tip="Two ways of reading the same chords. Across the neck: one chord at a time, its five CAGED shapes everywhere they fall — the view for learning where a chord lives. In one position: the whole progression under one hand, the chord that's sounding lit and the rest of the changes behind it — the view for playing through them without moving. Whole arpeggio opens each shape out into every chord tone within reach of it, with the grip still traced through the middle; it applies to both.">i</button>
       </span>
       <div class="row-control">
+        <div class="segmented" id="cagedReadingGroup">
+          <button type="button" class="seg-btn active" data-value="neck">Across the neck</button>
+          <button type="button" class="seg-btn" data-value="position">In one position</button>
+        </div>
         <label class="inline-check">
           <input type="checkbox" id="wholeArpeggioToggle">
           <span>Whole arpeggio</span>
-        </label>
-        <label class="inline-check">
-          <input type="checkbox" id="cagedVoiceLeadToggle">
-          <span>Voice leading</span>
-          <button type="button" class="info-dot" data-tip="Lets the progression choose which shape you're shown instead of you stepping to it: the first chord takes its lowest, and each one after it takes whichever of its own shapes sits nearest where the last one landed. The hand then walks through the changes rather than jumping back down the neck — the same thing Progression's Voice leading does, read one chord at a time.">i</button>
-        </label>
-        <label class="inline-check">
-          <input type="checkbox" id="ghostOthersToggle">
-          <span>Other chords</span>
-          <button type="button" class="info-dot" data-tip="Draws the progression's other chords faintly into the box you're practising in, each in its own colour, so you can see where the changes fall without moving your hand. Only the frets the chord in front isn't already using are drawn, so it stays background. Needs &quot;Single box&quot; on, since it fills one position.">i</button>
         </label>
       </div>
     </div>
@@ -947,11 +941,11 @@
       </div>
     </div>
     <div class="setting" id="boxRow" hidden>
-      <span class="setting-label">Box
-        <button type="button" class="info-dot" data-tip="Single box shows one CAGED position at a time — the one to practise in — with ◂ ▸ to walk up and down the neck.">i</button>
+      <span class="setting-label">Position
+        <button type="button" class="info-dot" data-tip="Which stretch of neck you're working in, and how it gets chosen — ◂ ▸ walk it up and down.">i</button>
       </span>
       <div class="row-control">
-        <label class="inline-check">
+        <label class="inline-check" id="singleBoxCheck">
           <input type="checkbox" id="singleBoxToggle">
           <span>Single box</span>
         </label>
@@ -962,7 +956,12 @@
         <label class="inline-check">
           <input type="checkbox" id="holdPositionToggle">
           <span>Hold position</span>
-          <button type="button" class="info-dot" data-tip="Keeps the stretch of frets you're on fixed when the chord changes during playback. Instead of the neck jumping to the new chord's own box, you see that chord's notes under the hand you already have there — which is what you actually do when comping through changes. Needs &quot;Single box&quot; on.">i</button>
+          <button type="button" class="info-dot" data-tip="Keeps the stretch of frets you're on fixed when the chord changes during playback. Instead of the neck jumping to the new chord's own box, you see that chord's notes under the hand you already have there — which is what you actually do when comping through changes.">i</button>
+        </label>
+        <label class="inline-check" id="cagedVoiceLeadCheck">
+          <input type="checkbox" id="cagedVoiceLeadToggle">
+          <span>Voice leading</span>
+          <button type="button" class="info-dot" data-tip="Lets the progression choose the position instead of you stepping to it: the first chord takes its lowest shape, and each one after it takes whichever of its own sits nearest where the last one landed. The hand then walks through the changes rather than jumping back down the neck.">i</button>
         </label>
       </div>
     </div>
