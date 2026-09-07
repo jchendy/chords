@@ -117,8 +117,11 @@ names the tab you're on.
   while playing sit against each other at the top, and everything you set once
   and leave sits below them. Play and a second copy of the 60/90/120 tempo
   shortcuts float together bottom-right, clear of the page, so the transport is
-  never somewhere you have to scroll back to; both copies are the same controls
-  and stay in step. A "Style" picker chooses the backing:
+  never somewhere you have to scroll back to, and a third Play sits in the
+  chart's own top-right corner, icon only — small enough to read as part of the
+  sheet rather than as the transport, and a fixed size so it can't shift under
+  the quick actions when its label changes. All three are the same control and
+  stay in step, whichever one you press. A "Style" picker chooses the backing:
   Simple — the plain piano voicing, with note value (quarter / half / whole),
   metronome click and a roots-only mode;
   Rock — driving 8th-note piano chords and a basic kit, with a half-time

@@ -134,6 +134,25 @@
 
   .play-btn{ display:flex; align-items:center; justify-content:center; }
   .play-btn svg{ display:block; }
+  /* In the chart's own top-right corner. Icon only: it reads as a control on
+     the sheet rather than as the transport, which lives below and floats over
+     — and a corner button whose width changed between Play and Pause would
+     shift under the quick actions beside it. The row reserves the width it
+     takes, so its centred contents can never slide underneath and become
+     unclickable, which is exactly what a full-width version of this did. */
+  .panel.display{ position: relative; }
+  .play-corner{
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    border-radius: 999px;
+  }
+  .play-corner span{ display: none; }
+  .play-corner svg{ width: 13px; height: 13px; }
+  .chart-actions{ padding-right: 44px; }
 
   /* ---- settings list ---- */
   .primary + .settings{ margin-top: 18px; }
@@ -873,6 +892,9 @@
   <!-- The chart on its own at the top: the thing you read while you play,
        with the neck directly under it and every setting below the two. -->
   <section class="panel narrow display">
+    <!-- Start and stop from the chart itself, without going to the transport
+         below it or reaching for the floating button over it. -->
+    <button id="playBtnChart" class="primary play-btn play-corner" type="button" aria-label="Play"></button>
     <!-- Quick actions on the chart itself: the two things you reach for most
          while playing, without scrolling down to the settings. They drive the
          same pickers rather than keeping any state of their own. -->
