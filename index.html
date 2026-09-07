@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Guitar chords</title>
+<title>Jeff's Guitar Tools</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -469,6 +469,17 @@
     line-height:1;
     letter-spacing: -0.01em;
   }
+  .chord-bars{
+    display:block;
+    margin-top: 4px;
+    font-size: 0.6rem;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--muted);
+    opacity: 0.75;
+  }
+
   .chord-numeral{
     display:block;
     margin-top: 0.34em;
@@ -642,10 +653,8 @@
   }
   .caged-overview-title{
     margin: 0 0 12px;
-    font-size: 0.7rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.07em;
+    font-size: 0.82rem;
+    font-weight: 600;
     color: var(--muted);
   }
   .caged-overview svg{ width: 100%; height: auto; display: block; min-width: 460px; }
@@ -683,6 +692,108 @@
     color: var(--muted);
     margin: 0 0 4px;
   }
+  /* ---- footer: the experimental corner ---- */
+  .site-footer{
+    border-top: 1px solid var(--line);
+    padding: 18px 16px 34px;
+    display: flex;
+    justify-content: center;
+    align-items: baseline;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .footer-label{
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--muted);
+  }
+  .site-tab.footer-tab{
+    font-size: 0.78rem;
+    font-weight: 500;
+    padding: 2px 0;
+    border-radius: 0;
+    border-bottom: 1px solid transparent;
+    background: none;
+    color: var(--muted);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .site-tab.footer-tab:hover{ color: var(--ink); }
+  .site-tab.footer-tab.active{
+    color: var(--accent-hi);
+    background: none;
+    border-bottom-color: transparent;
+  }
+
+  /* ---- Genre examples ---- */
+  .genre-family{ margin-bottom: 12px; }
+  .genre-family:last-child{ margin-bottom: 0; }
+  .genre-family-name{
+    display:block;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+  .link-btn{
+    -webkit-appearance:none;
+    appearance:none;
+    cursor:pointer;
+    background:none;
+    border:none;
+    padding:0;
+    font-family: inherit;
+    font-size: 0.82rem;
+    color: var(--accent-hi);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .link-btn:hover{ color: var(--ink); }
+  .link-btn:focus-visible{ outline: 2px solid var(--accent-hi); outline-offset: 2px; }
+
+  /* a chord slot pairs the chord with how many measures it lasts */
+  .chord-slot{ display:inline-flex; gap:3px; }
+  #presetGroup, #presetVariantGroup{ justify-content: flex-end; }
+  #presetGroup .seg-btn, #presetVariantGroup .seg-btn{ font-size: 0.78rem; padding: 6px 9px; }
+  .bars-select{ padding-right: 20px; font-variant-numeric: tabular-nums; }
+
+  .genre-blurb{
+    margin: 14px 0 0;
+    font-size: 0.86rem;
+    line-height: 1.5;
+    color: var(--muted);
+  }
+  .genre-transport{
+    display:flex;
+    align-items:center;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+  .genre-play{ width: auto; padding: 10px 26px; }
+  .genre-play.playing{ background: var(--accent-hi); }
+  .genre-tempo{
+    font-size: 0.8rem;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  /* the tab wraps onto extra rows rather than scrolling sideways; the
+     overflow is only a safety net for screens too narrow for a single bar */
+  .tab-scroll{ width: 100%; overflow-x: auto; }
+  #genreTab{ display:block; }
+
+  .tab-string{ stroke: var(--line); stroke-width: 1; }
+  .tab-bar{ stroke: var(--muted); stroke-width: 1.2; opacity: 0.55; }
+  .tab-label{ fill: var(--muted); font: 500 10px 'Inter', system-ui, sans-serif; }
+  .tab-chord{ fill: var(--accent-hi); font: 600 11px 'Inter', system-ui, sans-serif; }
+  .tab-note rect{ fill: var(--panel); }
+  .tab-note text{ fill: var(--ink); font: 600 10px 'Inter', system-ui, sans-serif; }
+  .tab-note.muted text{ fill: var(--muted); }
+  .tab-note.now text{ fill: var(--accent-hi); }
+  .tab-playhead{ fill: var(--accent); opacity: 0.16; }
 </style>
 </head>
 <body>
@@ -728,6 +839,16 @@
           </label>
           <div class="chord-slots" id="chordSlots"></div>
         </div>
+      </div>
+      <div class="setting">
+        <span class="setting-label">Preset
+          <button type="button" class="info-dot" data-tip="Common progressions written as scale degrees, so they land in whatever key you're in and follow you when you change key. Every chord stays editable afterwards — change one and it's yours, not the preset's.">i</button>
+        </span>
+        <div class="row-control"><div class="segmented" id="presetGroup"></div></div>
+      </div>
+      <div class="setting" id="presetVariantRow" hidden>
+        <span class="setting-label">Variant</span>
+        <div class="row-control"><div class="segmented" id="presetVariantGroup"></div></div>
       </div>
       <label class="setting">
         <span class="setting-label">Common chords only
@@ -863,14 +984,6 @@
           <span class="setting-value" id="tempoVal">60 BPM</span>
         </div>
       </div>
-      <div class="setting">
-        <span class="setting-label">Measures per chord</span>
-        <div class="stepper">
-          <button type="button" class="step-btn" id="measuresDown" aria-label="Fewer measures per chord">−</button>
-          <span class="step-value" id="measuresValue">2</span>
-          <button type="button" class="step-btn" id="measuresUp" aria-label="More measures per chord">+</button>
-        </div>
-      </div>
       <label class="setting">
         <span class="setting-label">Count-in (4 beats)</span>
         <input type="checkbox" id="countInToggle" checked>
@@ -900,6 +1013,14 @@
           <button type="button" class="seg-btn active" data-value="fingers">Fingers</button>
           <button type="button" class="seg-btn" data-value="degrees">Scale degrees</button>
         </div>
+      </div>
+    </div>
+    <div class="setting" id="shellOnlyRow" hidden>
+      <span class="setting-label">Shell voicings only
+        <button type="button" class="info-dot" data-tip="Shell voicings keep only the notes that name the chord — the root, the 3rd (or the sus note in its place) and the 7th — dropping the 5th. An altered 5th stays, since it's part of the chord's sound. These are the compact grips jazz players comp with, with the root on the 6th or 5th string.">i</button>
+      </span>
+      <div class="row-control">
+        <input type="checkbox" id="shellOnlyToggle">
       </div>
     </div>
     <div class="setting" id="triadOnlyRow" hidden>
@@ -942,7 +1063,60 @@
 </div>
 </div>
 
+<div class="tab-page" id="page-genres" hidden>
+<div class="app">
+
+  <section class="panel">
+    <div class="settings-heading">Genre</div>
+    <div id="genreGroup"></div>
+    <p class="genre-blurb" id="genreBlurb"></p>
+  </section>
+
+  <section class="panel narrow">
+    <div class="setting">
+      <span class="setting-label">Play</span>
+      <div class="row-control">
+        <div class="segmented" id="genreRoleGroup">
+          <button type="button" class="seg-btn active" data-value="rhythm">Rhythm</button>
+          <button type="button" class="seg-btn" data-value="lead">Lead</button>
+        </div>
+      </div>
+    </div>
+    <div class="setting" id="genreProgRow">
+      <span class="setting-label">Progression</span>
+      <div class="row-control"><div class="segmented" id="genreProgGroup"></div></div>
+    </div>
+    <div class="setting" id="genreOpenRow">
+      <span class="setting-label"></span>
+      <div class="row-control">
+        <button type="button" class="link-btn" id="genreOpenInPractice">Open this progression in CAGED practice →</button>
+      </div>
+    </div>
+    <div class="setting">
+      <span class="setting-label" id="genrePatternLabel">Rhythm</span>
+      <div class="row-control"><div class="segmented" id="genrePatternGroup"></div></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="genre-transport">
+      <button type="button" class="primary genre-play" id="genrePlayBtn">Play</button>
+      <span class="genre-tempo" id="genreTempo"></span>
+      <label class="inline-check"><input type="checkbox" id="genreLoopToggle" checked> Loop</label>
+      <label class="inline-check"><input type="checkbox" id="genreDrumsToggle" checked> Drums</label>
+    </div>
+    <div class="tab-scroll" id="genreTabWrap"></div>
+  </section>
+
+</div>
+</div>
+
 </main>
+
+<footer class="site-footer">
+  <span class="footer-label">Experimental features</span>
+  <button type="button" class="site-tab footer-tab" data-tab="genres">Genre examples</button>
+</footer>
 
 <div class="tooltip-bubble" id="tooltipBubble" role="tooltip" hidden></div>
 
@@ -950,6 +1124,7 @@
      Plain <script> tags (not modules) so the page still works opened straight
      from disk over file://, with no server and no build step. -->
 <script src="js/theory.js"></script>
+<script src="js/progressions.js"></script>
 <script src="js/fretboard.js"></script>
 <script src="js/audio.js"></script>
 <script src="js/neck.js"></script>
@@ -958,6 +1133,10 @@
 <script src="js/fretboard-view.js"></script>
 <script src="js/practice.js"></script>
 <script src="js/chord-finder.js"></script>
+<script src="js/genres.js"></script>
+<script src="js/genre-data.js"></script>
+<script src="js/tab.js"></script>
+<script src="js/genre-examples.js"></script>
 <script src="js/reverse-finder.js"></script>
 <script src="js/main.js"></script>
 

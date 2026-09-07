@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tests | Jeff's Guitar Tools</title>
+<style>
+  :root{
+    color-scheme: dark;
+    --bg: #191817; --panel: #201e1c; --line: #35322e;
+    --ink: #eceae4; --muted: #9a9284;
+    --good: #7fd18f; --bad: #e07a7a;
+  }
+  *{ box-sizing: border-box; }
+  body{
+    margin: 0;
+    padding: 32px 16px 60px;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 14px;
+  }
+  main{ max-width: 780px; margin: 0 auto; }
+  h1{ font-size: 1.3rem; margin: 0 0 4px; }
+  .intro{ color: var(--muted); margin: 0 0 24px; line-height: 1.5; }
+  .summary{
+    font-size: 1.05rem; font-weight: 600;
+    padding: 12px 16px; border-radius: 10px; border: 1px solid var(--line);
+    background: var(--panel);
+  }
+  .summary.good{ color: var(--good); }
+  .summary.bad{ color: var(--bad); }
+  h2{ font-size: 0.95rem; margin: 26px 0 8px; color: var(--muted); font-weight: 600; }
+  ul{ list-style: none; margin: 0; padding: 0; }
+  li{
+    padding: 6px 10px; border-radius: 7px;
+    display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px;
+  }
+  li + li{ margin-top: 2px; }
+  li.pass{ color: var(--ink); }
+  li.fail{ color: var(--bad); background: rgba(224,122,122,0.08); }
+  .mark{ font-weight: 700; }
+  li.pass .mark{ color: var(--good); }
+  small{ color: var(--muted); width: 100%; padding-left: 20px; }
+  code{ background: var(--panel); padding: 1px 5px; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<main>
+  <h1>Tests</h1>
+  <p class="intro">
+    Regression tests for the chord finder. They run as soon as this page loads —
+    no server or build step needed, just open the file. Results are also left on
+    <code>window.TEST_RESULTS</code> for anything driving the page automatically.
+  </p>
+  <div id="results"></div>
+</main>
+
+<!-- only the pieces the tests touch: the pure theory and fretboard logic, plus
+     the chord finder's search. The tab modules need the real page's markup. -->
+<script src="js/theory.js"></script>
+<script src="js/fretboard.js"></script>
+<script src="js/chord-finder.js"></script>
+<script src="js/tests.js"></script>
+
+</body>
+</html>

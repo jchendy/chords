@@ -8,8 +8,14 @@ A single-page, dependency-free site with three tabs under one header:
   see the common places to play it on the neck.
 - **Reverse chord finder** — click frets on an interactive fretboard and
   see what chord name(s) the selected notes could be.
+- **Genre examples** — pick a style, then a rhythm or a lead line, and read
+  the tab while you hear it played. It lives in the footer under
+  "Experimental features" rather than in the header.
 
-Switching tabs stops any playback that was running.
+Switching tabs stops any playback that was running. Each tab has its own URL
+fragment (`#chord-finder`, `#reverse-chord-finder`), so a tab can be
+bookmarked or linked to, and back/forward move between them; the page title
+names the tab you're on.
 
 ## CAGED practice
 
@@ -17,12 +23,28 @@ Switching tabs stops any playback that was running.
 
 - Major / Minor / Random mode toggle, with an occasional harmonic-minor
   dominant (V) substitution in minor
-- Manual key selection (any of the 24 keys, or Random)
+- Manual key selection (any of the 24 keys, or Random). Changing key
+  transposes what's already there rather than rolling something new: each
+  chord keeps its scale degree, so a I–V–vi–IV in A becomes the I–V–vi–IV of
+  wherever you land, and switching Major/Minor holds the same degrees in the
+  other mode. A progression loaded from a genre example isn't diatonic, so it
+  shifts by the same interval instead, spelled the way the new key spells it
+- Preset progressions — a twelve-bar blues (standard, quick change, jazz blues
+  or slow blues), I–IV–V, I–V–vi–IV, ii–V–I and a handful of other common
+  shapes. They're stored as scale degrees, so a preset lands in whatever key
+  you're in and follows you when you change key, and every chord stays
+  editable afterwards; changing one drops the preset label but keeps the rest.
+  The blues presets force dominant 7ths, which no key's own diatonic 7ths
+  give you — so a blues in a major key comes out I7 IV7 V7 and the same preset
+  in a minor key comes out i7 iv7 v7
 - Per-slot chord selection — pin any chord in the progression to a specific
   diatonic degree (or leave it Random); "New progression" only re-rolls the
   slots left on Random
 - Dark theme
-- Adjustable number of chords (1–7)
+- Adjustable number of chords (up to 12), each with its own number of
+  measures — set beside the chord in the progression settings, so one chord can
+  hold for four bars while the next passes in one, which is what a twelve-bar
+  blues needs. Each chord in the display says how many bars it gets
 - "Common chords only" — restricts the Random rolls to I, ii, IV, V, vi /
   i, iv, v–V, VI, VII (manual slots can still pick anything)
 - "7 chords" — toggles every chord between a plain triad and its diatonic
@@ -120,9 +142,13 @@ The results walk up the neck, showing the best grip at each position plus
 the strongest runners-up, so every place the chord can be played gets a
 look in. Open-position shapes draw a nut, higher ones are labelled with
 their starting fret, and a shape built on a CAGED form says which one.
-Two toggles sit above the results: dots can show **finger numbers** or
-**scale degrees**, and for a plain triad you can ask for **three-note
-voicings only**. A major or minor triad also gets the whole-neck CAGED
+Toggles sit above the results: dots can show **finger numbers** or **scale
+degrees**; **shell voicings only** narrows the list to shells — the chord
+stripped to the notes that name it (root, the 3rd or the sus note standing in
+for it, and the 7th), dropping the plain 5th but keeping an altered one, with
+the root underneath on the 6th or 5th string, which is the grip jazz players
+comp with; and for a plain triad you can ask for **three-note voicings
+only**. A major or minor triad also gets the whole-neck CAGED
 picture at the top — the same five shapes the practice tab draws, from the
 same code, so the two always agree.
 
@@ -140,6 +166,71 @@ chord-formula table as the chord finder.
 Open `index.html` in any modern browser. No build step, no dependencies
 (fonts load from Google Fonts).
 
+## Genre examples
+
+Fourteen styles, grouped by family: skate punk and ska punk; rockabilly,
+psychobilly, surf rock and country; delta and Chicago blues; bebop, gypsy
+jazz and bossa nova; funk and reggae; thrash metal.
+
+Choose **rhythm** and you get that genre's chord progressions and its
+strumming patterns as separate lists — pick any combination of the two, and
+the tab and playback update together. Choose **lead** and you get solo lines
+built from the same vocabulary. Either way the tab shows what you're about to
+hear, note for note, with a playhead tracking the beat, and there's a loop
+and a drums toggle. Long examples wrap onto as many rows as they need, the
+way printed notation does — breaking only at bar lines, and tightening the
+note spacing a little before wrapping to a single bar per row on narrow
+screens.
+
+Any progression here can be opened in the practice tab, which loads its
+chords, key, tempo and bar lengths. Runs of the same chord collapse into one
+chord held for that many measures, so a twelve-bar blues arrives as seven
+chords lasting 4, 2, 2, 1, 1, 1 and 1 bars. The practice tab's model is a
+triad plus an optional 7th, so anything richer arrives as its nearest
+equivalent: a 9th keeps its dominant 7th, a 6th chord drops to its triad, and
+a power chord is read as major.
+
+The chords aren't drawn from a chord dictionary: each rhythm says how it wants
+its chords voiced — power chords for punk, barre shapes for ska, jazz shells
+for bebop, the 9th grip for funk — and the shapes are derived from interval
+templates in `js/genres.js`. The material itself is the generic vocabulary
+method books teach (twelve-bar forms, ii–V–I, pentatonic and arpeggio
+patterns, strumming styles), not transcriptions of particular recordings.
+
+## Tests
+
+Open `tests.html` — the tests run on load and print a pass/fail list, with no
+server, runner or build step. They also leave the results on
+`window.TEST_RESULTS` so a headless browser can read them.
+
+Two things are guarded, over a fixed list of chords (C, A, G, E, D, Cm, Am,
+Gm, Em, Dm, Ab, Gb, C#, A9, E9, C7, D7, Cm7, CM7):
+
+1. **The chord finder keeps the shapes it already had.** Ranking and
+   playability are judgement calls, so the test holds a snapshot of every
+   shape those chords produced and fails if one stops coming back. Adding
+   shapes is fine; losing one is not.
+2. **Everything the chord finder draws, the reverse finder can name.** Each
+   voicing is fed back through the chord-identification code, which has to
+   recognise it as the chord it came from — so the two halves of the app
+   can't drift apart.
+
+The snapshot lives in `js/tests.js`. If a change is *meant* to alter the
+shapes, regenerate it deliberately rather than editing it to match.
+
+## Sound
+
+Everything is synthesized live in the Web Audio API — no MIDI, no samples,
+nothing to download. The piano is a single periodic wave (five harmonics
+baked into one oscillator, doubled and detuned a few cents) through a
+per-note lowpass that opens with velocity and closes as the note rings, and
+a two-stage decay so a note drops quickly then sustains quietly. The genre
+examples add a guitar voice — detuned sawtooth pairs through a filter, and
+through a soft-clipping waveshaper for the overdriven tones. Drums are
+the classic recipes: a pitched-down sine for the kick, filtered white noise
+for the snare and cymbals. Notes are scheduled against the audio clock by a
+25 ms lookahead loop, so timing doesn't drift when the main thread is busy.
+
 ## Code layout
 
 `index.html` is markup and styles only; the JavaScript lives in `js/`, split
@@ -150,13 +241,20 @@ by what each part does:
 | `theory.js` | Keys, scale degrees, chord formulas, chord naming, chord identification. Pure — no DOM, no audio, no app state. |
 | `fretboard.js` | Tuning, CAGED and pentatonic shape templates, the maths that places them on the neck, and CAGED shape matching. Also pure. |
 | `neck.js` | Draws a full 15-fret neck as SVG from markers and shape outlines — shared by the practice fretboard and the chord finder's CAGED overview. |
+| `progressions.js` | The preset progressions, written as scale degrees. Pure data. |
+| `genres.js` | Voicing templates and the code that turns a progression × rhythm into notes. Pure. |
+| `genre-data.js` | The genre library itself: progressions, rhythm patterns and lead lines. Pure data. |
+| `tab.js` | Draws guitar tablature from a note list. |
+| `genre-examples.js` | The Genre examples tab: pickers, tab display, and its player. |
 | `audio.js` | The Web Audio synth voices (piano, bass, drums) and the per-genre groove patterns. Owns the `AudioContext`; knows nothing about the UI. |
 | `fretboard-view.js` | The practice tab's fretboard panel: the five views, the legend, the hover spotlight, the follow-playback highlighting. |
 | `practice.js` | The CAGED practice tab: progression generation, the chord display and settings, and the playback transport. |
 | `chord-finder.js` | Chord finder tab: voicing search, fingering, chord diagrams. |
 | `reverse-finder.js` | Reverse chord finder tab: the clickable neck and the name lookup. |
-| `tooltips.js`, `tabs.js` | Small shared UI pieces. |
+| `tooltips.js` | The (i) info bubbles. |
+| `tabs.js` | Tab switching, plus the URL fragment and page title that go with each tab. |
 | `main.js` | Boots each tab and wires the header together. |
+| `tests.js` | The regression tests, run by `tests.html`. |
 
 Each file wraps itself in an IIFE and hangs its public interface off a single
 `GT` namespace, so nothing else leaks into global scope. Dependencies run one
