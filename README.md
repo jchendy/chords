@@ -119,7 +119,7 @@ names the tab you're on.
 - Live chord highlighting synced to playback, with a measure.beat position
   readout under the chords (the key itself is shown plainly above them,
   e.g. "C major" / "C#m")
-- Fretboard panel (6 strings, 15 frets) with seven views, "Roots" and
+- Fretboard panel (6 strings, 15 frets) with six views, "Roots" and
   "Chord positions" first:
   Roots — every root-note location for the progression (colour-coded,
   legend gives each root's roman numeral; while playing, the currently
@@ -129,7 +129,7 @@ names the tab you're on.
   split-coloured, no shape outlines since several overlapping shapes made
   them confusing here, and hovering/tapping a chord name in the legend —
   which also names each chord's CAGED shape letter — spotlights it, same as
-  CAGED triads); every note is labelled by scale degree except the root,
+  CAGED chords); every note is labelled by scale degree except the root,
   which keeps its note name; with the whole cluster shown at rest, every
   note is dimmed except each chord's lowest root, so the anchor notes stand
   out; the barred
@@ -154,18 +154,19 @@ names the tab you're on.
   lightly dims the next chord, and dims the rest much further; a lit note
   only wears the root ring when it's actually the sounding chord's own root,
   not just a note it happens to share with another chord's root;
-  CAGED triads — the five chord shapes for the chosen chord, outlined and
+  CAGED chords — the five chord shapes for the chosen chord, outlined and
   colour-coded, every note labelled by scale degree except the root (which
   keeps its note name), shared notes split-coloured; a chord carrying a 7th
   shows its 7th-chord shapes, the 7th drawn as a hollow dot, so this view
-  and "Chord positions" agree;
-  CAGED arpeggios — the same five shapes opened out into arpeggios: every
-  chord tone on the neck, each one coloured by the CAGED box it sits in
-  (seam notes split-coloured), labelled by degree, with the chord shape
-  itself still traced through the middle of its box. This is the CAGED
+  and "Chord positions" agree. **Whole arpeggio** opens those same five
+  shapes out: every chord tone on the neck, each one coloured by the CAGED
+  box it sits in (seam notes split-coloured), labelled by degree, with the
+  grip itself still traced through the middle of its box. That's the CAGED
   arpeggio a method book teaches — the shape you already know, plus the
-  notes around it on each string — and it takes the same Box row as the
-  scale views, so you can drill one position at a time;
+  notes around it on each string — and it brings in the same Box row as the
+  scale views, so you can drill one position at a time. The outlines are the
+  same grips either way, so the toggle changes how much you see rather than
+  what you're looking at;
   Triad inversions — close three-note triads on one set of three adjacent
   strings (e–B–G, B–G–D, G–D–A or D–A–E), every inversion, all the way up
   the neck. Each shape is outlined and coloured by which chord tone is
@@ -389,7 +390,7 @@ by what each part does:
 | `tab.js` | Draws guitar tablature from a note list. |
 | `genre-examples.js` | The Genre examples tab: pickers, tab display, and its player. |
 | `audio.js` | The Web Audio synth voices (piano, bass, drums) and the per-genre groove patterns. Owns the `AudioContext`; knows nothing about the UI. |
-| `fretboard-view.js` | The practice tab's fretboard panel: the five views, the legend, the hover spotlight, the follow-playback highlighting. |
+| `fretboard-view.js` | The practice tab's fretboard panel: the six views, the legend, the hover spotlight, the follow-playback highlighting. |
 | `practice.js` | The CAGED practice tab: progression generation, the chord display and settings, and the playback transport. |
 | `chord-finder.js` | Chord finder tab: voicing search, fingering, chord diagrams. |
 | `reverse-finder.js` | Reverse chord finder tab: click targets over the shared neck, and the name lookup. |

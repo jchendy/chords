@@ -95,7 +95,7 @@
   }
 
   // scale-degree label for a chord tone other than the root — used by
-  // "Chord positions" and "CAGED triads", which label every other note by
+  // "Chord positions" and "CAGED chords", which label every other note by
   // degree instead of by note name
   function degreeLabel(chord, role){
     if (role === 'third') return chord.quality === 'min' ? '♭3' : '3';

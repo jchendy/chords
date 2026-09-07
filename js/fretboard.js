@@ -216,7 +216,7 @@
 
   // The five CAGED shapes for one triad, laid out across the whole neck and
   // coloured by shape (notes two shapes share get a split dot). This is the
-  // data behind the practice tab's "CAGED triads" view; the chord finder draws
+  // data behind the practice tab's "CAGED chords" view; the chord finder draws
   // the same thing, so both stay identical by construction.
   // Pass `seventhPc` and each shape turns into its 7th-chord voicing (the
   // same way "Chord positions" does it), with the 7th drawn as a hollow dot.

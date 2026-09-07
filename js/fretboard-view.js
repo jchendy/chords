@@ -1,5 +1,5 @@
-// The fretboard panel on the CAGED practice tab: the five views (roots, chord
-// positions, CAGED triads/pentatonic/scales), their legend, the hover spotlight
+// The fretboard panel on the CAGED practice tab: the six views (roots, chord
+// positions, CAGED chords/pentatonic/scales), their legend, the hover spotlight
 // and the follow-playback highlighting.
 (function(){
   'use strict';
@@ -55,6 +55,7 @@
   let colorBy = 'shape';         // 'shape' (which CAGED box) | 'interval' (what the note is)
   let voiceLead = false;         // Chord positions: follow the previous shape, not one fret
   let allTones = false;          // Chord positions: each chord's whole arpeggio, not just its grip
+  let wholeArpeggio = false;     // CAGED chords: the shapes opened out into the whole arpeggio
   let stringSetLow = 2;          // Triad inversions: lowest string of the set (2 = e-B-G)
   let shapeRanges = {};          // per shape: the frets it spans, for the legend
 
@@ -131,6 +132,8 @@
   const voiceLeadToggle = document.getElementById('voiceLeadToggle');
   const allTonesToggle = document.getElementById('allTonesToggle');
   const stringSetRow = document.getElementById('stringSetRow');
+  const cagedViewRow = document.getElementById('cagedViewRow');
+  const wholeArpeggioToggle = document.getElementById('wholeArpeggioToggle');
 
   document.querySelectorAll('#stringSetGroup .seg-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -141,12 +144,15 @@
   });
 
   function updateFretUI(){
-    const singleChordModes = ['caged', 'arp', 'triads3', 'penta', 'scale'].includes(fretMode);
+    const singleChordModes = ['caged', 'triads3', 'penta', 'scale'].includes(fretMode);
     cagedChordRow.hidden = !singleChordModes;
     scaleTheoryRow.hidden = fretMode !== 'scale';
     chordPosRow.hidden = fretMode !== 'positions';
     stringSetRow.hidden = fretMode !== 'triads3';
-    boxRow.hidden = !['arp', 'penta', 'scale'].includes(fretMode);
+    cagedViewRow.hidden = fretMode !== 'caged';
+    // the grips on their own sit where they sit — there's no box to step
+    // through until they're opened out into the arpeggio
+    boxRow.hidden = !['penta', 'scale'].includes(fretMode) && !(fretMode === 'caged' && wholeArpeggio);
     // stepping and holding only mean something once you're looking at one box
     document.getElementById('boxStep').classList.toggle('locked', !singleBox);
     holdPositionToggle.closest('.inline-check').classList.toggle('off', !singleBox);
@@ -173,6 +179,12 @@
   });
   allTonesToggle.addEventListener('change', () => {
     allTones = allTonesToggle.checked;
+    renderFretboard();
+  });
+  wholeArpeggioToggle.addEventListener('change', () => {
+    wholeArpeggio = wholeArpeggioToggle.checked;
+    heldWindow = null;      // the grips and the arpeggio don't share a window
+    updateFretUI();         // ...and only the arpeggio has boxes to step through
     renderFretboard();
   });
 
@@ -631,16 +643,27 @@
       return { markers: applyColorBy(markers, chord), lines };
     }
 
-    // Every chord tone across the neck, grouped into the five CAGED boxes —
-    // the chord shape you already know, opened out into the arpeggio around
-    // it, with the shape itself still traced through the middle.
-    if (fretMode === 'arp'){
+    // The five movable CAGED shapes for one chord. "Whole arpeggio" opens each
+    // shape out into every chord tone around it, boxed by the shape it sits in
+    // — the same five grips either way, still traced through the middle, so
+    // the toggle changes how much you see rather than what you're looking at.
+    if (fretMode === 'caged'){
       const chord = currentChord();
       if (!chord) return { markers: [], lines: [] };
       const rootPc = SEMITONE[chord.note] % 12;
       const isMinor = chord.quality === 'min';
+      const seventhPc = chord.seventh ? SEMITONE[chord.seventh] % 12 : null;
 
-      const degByPc = { [rootPc]: '1' };
+      // The grips, and the outlines tracing them. A chord carrying a 7th gets
+      // its 7th-chord voicings, so what's traced is a shape you'd actually
+      // finger rather than the plain triad underneath it.
+      const board = cagedTriadBoard(rootPc, isMinor, chord.note, seventhPc);
+      if (!wholeArpeggio){
+        cagedShapesShown = board.shapesShown;
+        return { markers: applyColorBy(board.markers, chord), lines: board.lines };
+      }
+
+      const degByPc = { [rootPc]: chord.note };
       degByPc[SEMITONE[chord.third] % 12] = degreeLabel(chord, 'third');
       degByPc[SEMITONE[chord.fifth] % 12] = degreeLabel(chord, 'fifth');
       if (chord.seventh) degByPc[SEMITONE[chord.seventh] % 12] = degreeLabel(chord, 'seventh');
@@ -648,10 +671,7 @@
 
       const boxes = cagedArpeggioBoxes(rootPc, isMinor, tonePcs);
       cagedShapesShown = CAGED_ORDER.filter(n => boxes.some(b => b.name === n));
-
-      const lines = cagedPlacements(rootPc, isMinor ? CAGED_MINOR : CAGED_MAJOR)
-        .filter(p => p.cells.length > 1)
-        .map(p => ({ color: CAGED_COLORS[p.name], shape: p.name, cells: p.cells.map(c => ({ string: c.string, fret: c.fret })) }));
+      const lines = board.lines;
 
       const markers = [];
       for (let s = 0; s < 6; s++){
@@ -835,15 +855,7 @@
       return { markers, lines: [] };
     }
 
-    const cands = host.progression().filter(c => c.quality !== 'dim');
-    const chord = cands[Math.min(cagedChordIdx, cands.length - 1)];
-    if (!chord) return { markers: [], lines: [] };
-    // a chord carrying a 7th shows its 7th-chord shapes, the 7th as a hollow dot
-    const board = cagedTriadBoard(SEMITONE[chord.note] % 12, chord.quality === 'min', chord.note,
-      chord.seventh ? SEMITONE[chord.seventh] % 12 : null);
-    cagedShapesShown = board.shapesShown;
-    const { markers, lines } = board;
-    return { markers: applyColorBy(markers, chord), lines };
+    return { markers: [], lines: [] };
   }
 
   // the chord the single-chord views are showing
@@ -904,7 +916,12 @@
     // saying it twice reads as two different things
     if (colorBy !== 'interval'){
       parts.push(`<span><i class="ring"></i>root</span>`);
-      if (fretMode === 'caged') parts.push(`<span><i class="hollow"></i>7th</span>`);
+      // Only the grips draw a 7th as a hollow dot; opened out, it's just
+      // another chord tone with its own label — and a plain triad has no 7th
+      // to explain either way.
+      if (fretMode === 'caged' && !wholeArpeggio && currentChord() && currentChord().seventh){
+        parts.push(`<span><i class="hollow"></i>7th</span>`);
+      }
     }
     if (fretMode === 'penta' || fretMode === 'scale') parts.push(`<span><i class="passing"></i>passing note</span>`);
     if (shownWindow) parts.push(`<span><em>box: frets ${shownWindow.min}–${shownWindow.max}</em></span>`);
