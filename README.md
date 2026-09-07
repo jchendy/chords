@@ -142,15 +142,27 @@ names the tab you're on.
   not just a note it happens to share with another chord's root;
   CAGED triads — the five chord shapes for the chosen chord, outlined and
   colour-coded, every note labelled by scale degree except the root (which
-  keeps its note name), shared notes split-coloured;
+  keeps its note name), shared notes split-coloured; a chord carrying a 7th
+  shows its 7th-chord shapes, the 7th drawn as a hollow dot, so this view
+  and "Chord positions" agree;
   CAGED pentatonic — the chosen chord's major/minor pentatonic, every note
   coloured by the CAGED box it belongs to (seam notes split-coloured), scale
-  degrees in the dots, chord-shape outlines through the chord tones;
+  degrees in the dots, chord-shape outlines through the chord tones. The
+  chord's own notes (1, 3, 5 and its 7th) are drawn at full strength and
+  the rest of the scale sits back, so the notes to land on read at a glance;
   CAGED scales — with a toggle between two theories: Parallel (the scale
-  matching the chosen chord's own quality — major chord → major scale, minor
-  chord → natural minor) and Key mode (chord-scale theory — the progression
-  key's mode rooted on the chosen chord, e.g. a IV chord reads as Lydian);
-  same CAGED-box colouring either way
+  matching the chosen chord's own quality — major chord → major scale, a
+  dominant chord → Mixolydian so its ♭7 is in the scale, minor chord →
+  natural minor) and Key mode (chord-scale theory — the progression key's
+  mode rooted on the chosen chord, e.g. a IV chord reads as Lydian); same
+  CAGED-box colouring and chord-tone emphasis either way.
+  Both scale views have a "Box" row: **Single box** shows one CAGED
+  position at a time, with ◂ ▸ to walk up and down the neck and the legend
+  naming the fret range; **Hold position** keeps that stretch of frets fixed
+  when the chord changes (by hand or by following playback), so the new
+  chord's notes appear under the hand you already have there rather than the
+  view jumping to the new chord's box — the "stay in one position while the
+  ii–V–I goes by" exercise
 - In the CAGED views, hover/tap a shape name in the legend to spotlight that
   shape; "Follow playback" (on by default) lets the fretboard track whichever
   chord is currently sounding

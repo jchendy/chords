@@ -448,6 +448,10 @@
   }
 
   .note-dot text{ font-family: 'Inter', system-ui, sans-serif; font-weight: 700; fill: #17131d; }
+  .note-dot.hollow text{ fill: var(--ink); }
+  /* scale notes that aren't chord tones sit back, so the 1-3-5-7 read at a glance */
+  .note-dot.passing circle, .note-dot.passing path{ opacity: 0.38; }
+  .note-dot.passing text{ opacity: 0.6; }
   .dot-ring{ stroke: var(--ink); stroke-width: 2.6; }
   .note-dot.suppress-ring .dot-ring{ opacity: 0; }
 
@@ -484,6 +488,8 @@
   .caged-legend span{ display:inline-flex; align-items:center; gap: 6px; }
   .caged-legend i{ width: 11px; height: 11px; border-radius: 50%; display:inline-block; flex:none; }
   .caged-legend i.ring{ background: transparent; border: 1.6px solid var(--ink); }
+  .caged-legend i.hollow{ background: var(--panel); border: 2px solid var(--muted); }
+  .caged-legend i.passing{ background: var(--muted); opacity: 0.38; }
   .caged-legend em{ font-style: normal; opacity: 0.7; margin-left: 3px; }
   .caged-legend [data-shape]{ cursor: pointer; border-radius: 5px; padding: 2px 6px; margin: -2px 0; }
   .caged-legend [data-shape]:hover,
@@ -500,6 +506,9 @@
   .caged-legend [data-shape].legend-current{ background: rgba(255,255,255,0.16); }
 
   #cagedChordGroup.locked{ opacity: 0.45; pointer-events: none; }
+  #boxStep .seg-btn{ padding: 7px 12px; }
+  #boxStep.locked{ opacity: 0.45; pointer-events: none; }
+  #boxRow .inline-check.off{ opacity: 0.45; }
 
   .row-control{ display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-left:auto; justify-content:flex-end; }
   .inline-check{ display:flex; align-items:center; gap:6px; font-size:0.82rem; color:var(--ink); cursor:pointer; white-space:nowrap; }
@@ -900,6 +909,25 @@
         <label class="inline-check">
           <input type="checkbox" id="cagedFollowToggle" checked>
           <span>Follow playback</span>
+        </label>
+      </div>
+    </div>
+    <div class="setting" id="boxRow" hidden>
+      <span class="setting-label">Box
+        <button type="button" class="info-dot" data-tip="Single box shows one CAGED position at a time — the one to practise in — with ◂ ▸ to walk up and down the neck. Hold position keeps that stretch of frets fixed when the chord changes during playback, so you see the new chord's notes under the hand you already have there, rather than jumping to the new chord's box.">i</button>
+      </span>
+      <div class="row-control">
+        <label class="inline-check">
+          <input type="checkbox" id="singleBoxToggle">
+          <span>Single box</span>
+        </label>
+        <div class="segmented" id="boxStep">
+          <button type="button" class="seg-btn" id="boxPrev" aria-label="Previous box">◂</button>
+          <button type="button" class="seg-btn" id="boxNext" aria-label="Next box">▸</button>
+        </div>
+        <label class="inline-check">
+          <input type="checkbox" id="holdPositionToggle">
+          <span>Hold position</span>
         </label>
       </div>
     </div>
