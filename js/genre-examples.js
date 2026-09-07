@@ -261,6 +261,14 @@
         });
       });
       playBtn.addEventListener('click', toggle);
+      // space bar starts and stops, unless you're typing somewhere
+      document.addEventListener('keydown', e => {
+        if (e.code !== 'Space' || e.repeat) return;
+        if (document.getElementById('page-genres').hidden) return;
+        if (GT.keys.typing(e.target)) return;
+        e.preventDefault();
+        toggle();
+      });
 
       // hand the selected progression over to the practice tab
       openBtn.addEventListener('click', () => {

@@ -417,8 +417,25 @@
   function testCanonicalGrips(t){
     const shown = name => {
       const p = parseChordName(name);
-      return p ? findChordVoicings(p.rootPc, p.formula).map(v => grip(v.cells)) : [];
+      return p ? findChordVoicings(p.rootPc, p.formula, { bassPc: p.bassPc }).map(v => grip(v.cells)) : [];
     };
+    // slash chords: the named bass note has to be the lowest string played
+    // (D/F# with the A string muted is the open-A version minus an open
+    // string, so the list carries the fuller one)
+    const SLASH = { 'D/F#': '2-0-0-2-3-2', 'C/E': '0-3-2-0-1-0', 'G/B': 'x-2-0-0-0-3', 'Am/G': '3-0-2-2-1-0', 'C/G': '3-3-2-0-1-0' };
+    const SLASH_FIRST = ['C/E', 'G/B'];    // the others have an equally everyday open-string twin
+    Object.entries(SLASH).forEach(([name, canon]) => {
+      const grips = shown(name);
+      if (SLASH_FIRST.includes(name)) t.equal(grips[0], canon, `${name}: ${canon} reads first`);
+      else t.ok(grips.includes(canon), `${name}: ${canon} is shown`);
+      const p = parseChordName(name);
+      const wrongBass = grips.filter(g => {
+        const low = g.split('-').find(f => f !== 'x');
+        const lowIdx = g.split('-').findIndex(f => f !== 'x');
+        return (STRING_TUNING[5 - lowIdx] + Number(low)) % 12 !== p.bassPc;
+      });
+      t.equal(wrongBass.join(' '), '', `${name}: every shape has ${p.bassName} underneath`);
+    });
     Object.entries(CANON).forEach(([name, canon]) => {
       const grips = shown(name);
       t.equal(grips[0], canon, `${name}: ${canon} reads first`);
@@ -446,6 +463,12 @@
     parses('e7b9', '7♭9', 'E');
     parses('Cadd9', 'add9', 'C');
     parses('A5', '5', 'A');
+    // slash chords: the same chord with a named note underneath
+    const slash = parseChordName('D/F#');
+    t.equal(slash && `${slash.rootName}${slash.formula.name}/${slash.bassName}`, 'D/F#', '"D/F#" parses as D over F#');
+    t.equal(slash && slash.bassPc, 6, '"D/F#" puts F# in the bass');
+    t.equal(parseChordName('Am7/G').bassName, 'G', '"Am7/G" parses');
+    t.equal(parseChordName('C/H'), null, '"C/H" is rejected');
     t.equal(parseChordName('H7'), null, '"H7" is rejected');
     t.equal(parseChordName('Cxyz'), null, '"Cxyz" is rejected');
 

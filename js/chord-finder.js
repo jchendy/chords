@@ -163,6 +163,10 @@
     const fifthPc = (rootPc + ([6, 7, 8].find(iv => formula.intervals.includes(iv)) || 7)) % 12;
     const essentialPcs = new Set(formula.essential.map(iv => (rootPc + iv) % 12));
     const allowedPcs = shellPcs || new Set(formula.intervals.map(iv => (rootPc + iv) % 12));
+    // a slash chord names the note that has to be underneath — usually one of
+    // the chord's own (D/F#), occasionally not (C/D), so it's allowed either way
+    const wantBass = opts.bassPc === undefined ? rootPc : opts.bassPc;
+    if (opts.bassPc !== undefined) allowedPcs.add(opts.bassPc);
     const seen = new Set();
     const results = [];
 
@@ -221,6 +225,7 @@
           const allPcs = new Set(cells.map(c => (STRING_TUNING[c.string] + c.fret) % 12));
           const bass = cells.reduce((a, b) => (b.string > a.string ? b : a));
           const bassPc = (STRING_TUNING[bass.string] + bass.fret) % 12;
+          if (opts.bassPc !== undefined && bassPc !== opts.bassPc) return;   // not the slash chord asked for
           const openCount = cells.filter(c => c.fret === 0).length;
           const startFretEarly = frettedOnly.length ? Math.min(...frettedOnly) : 0;
           // open strings only really belong to grips down near the nut —
@@ -231,7 +236,7 @@
           const score = cells.length * 3                        // fuller chords ring better
             - span * 1.5                                         // ...but keep the stretch small
             - fingering.fingerCount * 0.75                        // ...and the grip simple
-            + (bassPc === rootPc ? 8 : 0)                         // root in the bass = the everyday voicing
+            + (bassPc === wantBass ? 8 : 0)                       // root in the bass = the everyday voicing
             + (allPcs.has(fifthPc) ? 1 : 0)                       // a 5th in there fills it out
             + openCount * 0.25                                    // open strings are free and ring out
             - innerMutes;                                         // skipping a string mid-chord is fiddly
@@ -263,7 +268,7 @@
             - maxFret * 0.1;                 // all else equal, the hand nearer the nut
           results.push({ cells, fingering, score: score + shapeBonus, rank, startFret, key,
                          caged: match ? match.name : null,
-                         rootInBass: bassPc === rootPc, innerMutes, innerOpens, openCount,
+                         rootInBass: bassPc === wantBass, innerMutes, innerOpens, openCount,
                          bassString: bass.string,
                          // the power-chord layout: root on the bottom string, the 5th right above it
                          powerShape: cells.length >= 2 && cells[cells.length - 2].string === bass.string - 1
@@ -480,19 +485,48 @@
     const voicings = findChordVoicings(parsed.rootPc, parsed.formula, {
       threeNoteOnly: isTriad && triadOnlyToggle.checked,
       shellOnly,
+      bassPc: parsed.bassPc,
     });
-    const chordLabel = parsed.rootName + parsed.formula.name;
+    const chordLabel = parsed.rootName + parsed.formula.name + (parsed.bassName ? '/' + parsed.bassName : '');
     if (!voicings.length){
       const what = shellOnly ? `shell voicing for ${chordLabel}` : `shape for ${chordLabel}`;
       chordFinderResults.innerHTML = `<p class="diagram-empty">No playable ${what} within a comfortable stretch.</p>`;
       return;
     }
-    chordFinderResults.innerHTML = voicings.map(v => `
-      <div class="diagram-card">
+    shownVoicings = voicings;
+    chordFinderResults.innerHTML = voicings.map((v, i) => `
+      <div class="diagram-card" role="button" tabindex="0" data-voicing="${i}" aria-label="Play ${chordLabel}, shape ${i + 1}">
         ${buildDiagramSVG(v.cells, parsed.rootPc, v.fingering, labelMode, parsed.formula)}
         <p class="diagram-caption">${chordLabel}${v.caged ? `<span class="diagram-shape">${v.caged} shape</span>` : ''}</p>
       </div>
     `).join('');
+  }
+
+  // ---- hearing a shape ----------------------------------------------------
+  let shownVoicings = [];
+  const OPEN_MIDI = [64, 59, 55, 50, 45, 40];     // high e down to low E
+  const freqOf = (string, fret) => 440 * Math.pow(2, (OPEN_MIDI[string] + fret - 69) / 12);
+
+  // Strum the shape, low string to high, the way a pick sweeps across it.
+  function strum(cells){
+    const audio = GT.audio;
+    audio.ensureAudio();
+    if (audio.ctx().state === 'suspended') audio.ctx().resume();
+    const t0 = audio.ctx().currentTime + 0.03;
+    const ordered = cells.slice().sort((a, b) => b.string - a.string);
+    ordered.forEach((c, i) => audio.playGuitar(freqOf(c.string, c.fret), t0 + i * 0.018, 1.6, 0.9, 'clean'));
+  }
+
+  function onCardActivate(e){
+    const card = e.target.closest('.diagram-card');
+    if (!card) return;
+    const v = shownVoicings[Number(card.dataset.voicing)];
+    if (!v) return;
+    e.preventDefault();
+    strum(v.cells);
+    card.classList.remove('rang');
+    void card.offsetWidth;            // restart the flash animation
+    card.classList.add('rang');
   }
 
   GT.chordFinder = {
@@ -500,6 +534,10 @@
       chordFinderInput.addEventListener('input', runChordFinder);
       triadOnlyToggle.addEventListener('change', runChordFinder);
       shellOnlyToggle.addEventListener('change', runChordFinder);
+      chordFinderResults.addEventListener('click', onCardActivate);
+      chordFinderResults.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') onCardActivate(e);
+      });
       labelModeGroup.querySelectorAll('.seg-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           labelModeGroup.querySelectorAll('.seg-btn').forEach(b => b.classList.toggle('active', b === btn));
@@ -509,6 +547,6 @@
       });
     },
     // exposed for reuse and for checking shapes outside the UI
-    computeFingering, findChordVoicings, buildDiagramSVG, shellIntervals,
+    computeFingering, findChordVoicings, buildDiagramSVG, shellIntervals, strum,
   };
 })();

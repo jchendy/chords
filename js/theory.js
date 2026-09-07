@@ -167,19 +167,31 @@
       .replace(/°/g, 'dim');       // the app writes diminished chords this way itself
   }
 
-  // parse a typed chord name like "G#9" or "Dm7b5" into { rootPc, rootName, formula }
-  function parseChordName(input){
-    const m = (input || '').trim().match(/^([A-Ga-g])([#♯b♭]?)(.*)$/);
-    if (!m) return null;
-    let acc = m[2];
+  function parseNote(letter, acc){
     if (acc === '♯') acc = '#';
     if (acc === '♭') acc = 'b';
-    const rootName = m[1].toUpperCase() + acc;
-    const rootPc = SEMITONE[rootName];
-    if (rootPc === undefined) return null;
+    const name = letter.toUpperCase() + acc;
+    return SEMITONE[name] === undefined ? null : { name, pc: SEMITONE[name] };
+  }
+
+  // Parse a typed chord name like "G#9" or "Dm7b5" into { rootPc, rootName,
+  // formula }. A slash chord ("D/F#", "C/E") adds bassPc and bassName: the
+  // same chord, with that note underneath.
+  function parseChordName(input){
+    const m = (input || '').trim().match(/^([A-Ga-g])([#♯b♭]?)([^/]*)(?:\/([A-Ga-g])([#♯b♭]?))?$/);
+    if (!m) return null;
+    const root = parseNote(m[1], m[2]);
+    if (!root) return null;
     const formula = CHORD_ALIAS_MAP[normalizeSuffix(m[3])];
     if (!formula) return null;
-    return { rootPc, rootName, formula };
+    const out = { rootPc: root.pc, rootName: root.name, formula };
+    if (m[4]){
+      const bass = parseNote(m[4], m[5] || '');
+      if (!bass) return null;
+      out.bassPc = bass.pc;
+      out.bassName = bass.name;
+    }
+    return out;
   }
 
   function identifyChords(pcs){

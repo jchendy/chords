@@ -837,6 +837,94 @@
 
   playBtn.addEventListener('click', togglePlay);
   playBtn2.addEventListener('click', togglePlay);
+  // space bar starts and stops, unless you're typing somewhere
+  document.addEventListener('keydown', e => {
+    if (e.code !== 'Space' || e.repeat) return;
+    if (document.getElementById('page-caged').hidden) return;
+    if (GT.keys.typing(e.target)) return;
+    e.preventDefault();
+    togglePlay();
+  });
+
+  // ---- sharing a progression by link ---------------------------------------
+  // The state rides in the URL fragment after the tab name:
+  //   #caged-practice?k=major:C&c=0.2.maj7,3.1,4.1.7&t=90&s=blues.0
+  // k = mode:tonic; c = one entry per chord as degree.bars.shape (shape blank
+  // for the key's own triad); t = tempo; s = style.variant. A progression that
+  // came in as chord names (from a genre example) is written as n = name.bars
+  // instead, since its chords aren't degrees of anything.
+  function shareState(){
+    const p = new URLSearchParams();
+    p.set('k', `${currentMode}:${currentTonic}`);
+    if (currentProgression.every(c => c._deg != null)){
+      p.set('c', currentProgression.map((c, i) => [c._deg, measuresFor(i), c._sev || ''].join('.')).join(','));
+    } else {
+      p.set('n', currentProgression.map((c, i) => `${displayName(c)}.${measuresFor(i)}`).join(','));
+      if (loadedLabel) p.set('l', loadedLabel);
+    }
+    p.set('t', String(getTempo()));
+    if (currentStyle !== 'simple') p.set('s', `${currentStyle}.${currentVariant}`);
+    return p;
+  }
+
+  // Bring a shared link's state in. Returns false if there wasn't one, so the
+  // caller can roll a progression as usual.
+  function applyShareState(p){
+    if (!p.get('k') || !(p.get('c') || p.get('n'))) return false;
+    const [mode, tonic] = p.get('k').split(':');
+    const table = mode === 'major' ? MAJOR_KEYS : mode === 'minor' ? MINOR_KEYS : null;
+    if (!table || !table[tonic]) return false;
+    setKey(mode, tonic);
+
+    if (p.get('t')){
+      tempoInput.value = p.get('t');
+      tempoInput.dispatchEvent(new Event('input'));
+    }
+    if (p.get('s')){
+      const [style, variant] = p.get('s').split('.');
+      const btn = document.querySelector(`#styleGroup .genre-btn[data-value="${style}"]`);
+      if (btn && STYLES[style]){
+        btn.click();
+        currentVariant = Math.min(Number(variant) || 0, STYLES[style].variants.length - 1);
+        renderVariantButtons();
+      }
+    }
+
+    if (p.get('n')){
+      const entries = p.get('n').split(',').map(e => e.split('.'));
+      const chords = [];
+      entries.forEach(([name, bars]) => { for (let b = 0; b < (Number(bars) || 1); b++) chords.push(name); });
+      loadProgression({ chords, label: p.get('l') || null, key: tonic });
+      return true;
+    }
+    const entries = p.get('c').split(',').map(e => e.split('.'));
+    const valid = new Set(currentDiatonic.map(c => c.deg));
+    const kept = entries.filter(([deg]) => valid.has(Number(deg))).slice(0, MAX_CHORDS);
+    if (!kept.length) return false;
+    setSlotCount(kept.length);
+    slotChoices = kept.map(([deg]) => Number(deg));
+    slotMeasures = kept.map(([, bars]) => Math.max(1, Number(bars) || 1));
+    slotSevenths = kept.map(([, , shape]) => CHORD_SHAPES[shape] ? shape : null);
+    currentProgression = kept.map(([deg], i) => chordForDegree(Number(deg), slotSevenths[i]));
+    renderAll();
+    return true;
+  }
+
+  const shareBtn = document.getElementById('shareBtn');
+  const shareOut = document.getElementById('shareOut');
+  shareBtn.addEventListener('click', async () => {
+    const slug = location.hash.slice(1).split('?')[0] || 'caged-practice';
+    const url = `${location.href.split('#')[0]}#${slug}?${shareState()}`;
+    try { history.replaceState(null, '', `#${slug}?${shareState()}`); } catch (e) { /* file:// can refuse */ }
+    let copied = false;
+    try { await navigator.clipboard.writeText(url); copied = true; } catch (e) { /* no clipboard here */ }
+    shareOut.value = url;
+    shareOut.hidden = copied;
+    if (!copied){ shareOut.focus(); shareOut.select(); }
+    shareBtn.textContent = copied ? 'Link copied ✓' : 'Copy the link above';
+    clearTimeout(shareBtn._reset);
+    shareBtn._reset = setTimeout(() => { shareBtn.textContent = 'Copy link to this progression'; }, 2200);
+  });
 
   // Take a progression from somewhere else in the app — a genre example, say —
   // and set the practice tab up to play it. Runs of the same chord collapse
@@ -905,7 +993,8 @@
       renderPresets();
       updatePlaybackUI();
       setPlayLabel('Play');
-      render();
+      // a shared link opens on its progression; otherwise roll one
+      if (!applyShareState(GT.tabs.stateParams())) render();
     },
   };
 })();

@@ -104,6 +104,12 @@
     updateReverseMatches();
   });
 
+  // hear the notes you've picked, strummed low to high
+  document.getElementById('reversePlayBtn').addEventListener('click', () => {
+    const cells = reverseSelection.map((f, s) => f === null ? null : { string: s, fret: f }).filter(Boolean);
+    if (cells.length) GT.chordFinder.strum(cells);
+  });
+
   GT.reverseFinder = {
     init(){ renderReverseFretboard(); updateReverseMatches(); },
     refresh(){ renderReverseFretboard(); },
