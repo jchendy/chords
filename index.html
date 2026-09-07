@@ -350,6 +350,7 @@
   .key{
     margin: 0 0 14px;
     padding: 0 148px;    /* stay clear of the corner play button and "BPM" presets */
+    overflow-wrap: anywhere;
     font-family: 'Fraunces', Georgia, serif;
     font-weight: 500;
     font-style: italic;
@@ -421,6 +422,17 @@
   .tempo-mini-btn:focus-visible{
     outline: 2px solid var(--accent-hi);
     outline-offset: 2px;
+  }
+
+  /* On a phone there's no room beside the corner controls for the key, so it
+     drops under them and takes the full width; and the sticky header would
+     eat a sixth of the screen, so it scrolls away with everything else. */
+  @media (max-width: 520px){
+    .key{ padding: 0; margin-top: 44px; }
+    .site-header{ position: static; padding: 14px 12px 0; gap: 6px; }
+    .site-title{ font-size: 1.15rem; }
+    .site-tab{ padding: 8px 12px; font-size: 0.8rem; }
+    .site-main{ padding-top: 20px; }
   }
 
   .measure-readout{

@@ -29,14 +29,17 @@ names the tab you're on.
   wherever you land, and switching Major/Minor holds the same degrees in the
   other mode. A progression loaded from a genre example isn't diatonic, so it
   shifts by the same interval instead, spelled the way the new key spells it
-- Preset progressions — a twelve-bar blues (standard, quick change, jazz blues
-  or slow blues), I–IV–V, I–V–vi–IV, ii–V–I and a handful of other common
-  shapes. They're stored as scale degrees, so a preset lands in whatever key
-  you're in and follows you when you change key, and every chord stays
-  editable afterwards; changing one drops the preset label but keeps the rest.
-  The blues presets force dominant 7ths, which no key's own diatonic 7ths
-  give you — so a blues in a major key comes out I7 IV7 V7 and the same preset
-  in a minor key comes out i7 iv7 v7
+- Preset progressions — the blues (12-bar, quick change, jazz blues, minor
+  blues, 8-bar, slow blues), I–IV–V, I–IV–V–IV, I–V–vi–IV, ii–V–I, the
+  I–VI7–ii–V7 turnaround, Pachelbel's canon, the Andalusian i–VII–VI–V and a
+  few more. They're stored as scale degrees, so a preset lands in whatever
+  key you're in and follows you when you change key, and every chord stays
+  editable afterwards; changing one drops the preset label but keeps the
+  rest. The blues presets force dominant 7ths, which no key's own diatonic
+  7ths give you — I7 IV7 V7 in a major key, i7 iv7 V7 in a minor one, the V
+  a real dominant either way. A preset that only makes sense in one mode
+  (the minor blues, the Andalusian cadence with its major V) moves the key
+  there when you pick it, keeping the tonic
 - Per-slot chord selection — pin any chord in the progression to a specific
   diatonic degree (or leave it Random); "New progression" only re-rolls the
   slots left on Random. The presets sit above these, so you can drop a shape
@@ -155,10 +158,19 @@ finger laid flat over neighbouring strings (the ring-finger barre that
 shapes like C9 and Em9 need). A barre that would silence an open string, or
 sound a note outside the chord, means the shape isn't offered at all.
 
-The results walk up the neck, showing the best grip at each position plus
-the strongest runners-up, so every place the chord can be played gets a
-look in. Open-position shapes draw a nut, higher ones are labelled with
-their starting fret, and a shape built on a CAGED form says which one.
+The results walk up the neck, showing the best grips at each position, so
+every place the chord can be played gets a look in. Choosing and ordering
+are separate judgements: a score decides which shapes make the cut (fuller
+chords, small stretches, root in the bass), and a second pass makes sure the
+compact everyday grips — the four-string Fmaj7, the three-string power
+chord, the A9 that lost out to a dozen six-string variants at the nut —
+aren't hidden behind bigger shapes that merely contain them. Within a
+position the everyday grip reads first: extra strings past four count for
+little, a barre costs, and so does a hand that zigzags between frets. Open
+position (anything within reach of the nut) counts as one position, so a
+shape that happens to be all open strings never sorts ahead of the real open
+chord. Open-position shapes draw a nut, higher ones are labelled with their
+starting fret, and a shape built on a CAGED form says which one.
 Toggles sit above the results: dots can show **finger numbers** or **scale
 degrees**; **shell voicings only** narrows the list to shells — the chord
 stripped to the notes that name it (root, the 3rd or the sus note standing in
@@ -220,8 +232,8 @@ Open `tests.html` — the tests run on load and print a pass/fail list, with no
 server, runner or build step. They also leave the results on
 `window.TEST_RESULTS` so a headless browser can read them.
 
-Two things are guarded, over a fixed list of chords (C, A, G, E, D, Cm, Am,
-Gm, Em, Dm, Ab, Gb, C#, A9, E9, C7, D7, Cm7, CM7):
+Five things are guarded. The first two run over a fixed list of chords (C,
+A, G, E, D, Cm, Am, Gm, Em, Dm, Ab, Gb, C#, A9, E9, C7, D7, Cm7, CM7):
 
 1. **The chord finder keeps the shapes it already had.** Ranking and
    playability are judgement calls, so the test holds a snapshot of every
@@ -231,6 +243,21 @@ Gm, Em, Dm, Ab, Gb, C#, A9, E9, C7, D7, Cm7, CM7):
    voicing is fed back through the chord-identification code, which has to
    recognise it as the chord it came from — so the two halves of the app
    can't drift apart.
+
+3. **The chord finder shows the everyday grips.** Some fifty method-book
+   shapes — open chords, E- and A-shape barres, the open 7ths, power chords,
+   the funk 9ths — must come back, and for the unambiguous ones (open C, F
+   barre, A7 …) must read first. The snapshot keeps old shapes from
+   vanishing; this keeps the textbook ones from being buried.
+4. **Naming round-trips.** What the app writes (`B°`, `CM7`, `Bø`, `CmM7`)
+   its chord finder can read back, chords built from names keep the right
+   notes, and identification names both a C6 and an Am7 for C E G A.
+5. **The genre library and the presets are well-formed.** Every progression
+   has a key and parseable chords, a "twelve-bar" has twelve bars, hits sit
+   inside their grid, a six-slot bar declares itself a waltz, every chord can
+   be voiced the way its rhythm asks, lead lines stay on the neck and inside
+   their bars, and a "pentatonic" line uses five notes. This is the check
+   that would have caught the eight-bar quick-change blues.
 
 The snapshot lives in `js/tests.js`. If a change is *meant* to alter the
 shapes, regenerate it deliberately rather than editing it to match.
@@ -245,8 +272,13 @@ a two-stage decay so a note drops quickly then sustains quietly. The genre
 examples add a guitar voice — detuned sawtooth pairs through a filter, and
 through a soft-clipping waveshaper for the overdriven tones. Drums are
 the classic recipes: a pitched-down sine for the kick, filtered white noise
-for the snare and cymbals. Notes are scheduled against the audio clock by a
-25 ms lookahead loop, so timing doesn't drift when the main thread is busy.
+for the snare and cymbals. Every bus meets at one gentle limiter before the
+output, so a kick, a bass note and a full chord landing together can't add
+up past what the output can carry. The style voices play a chord's own
+seventh when it has one (a `D7` set on the ii is a real dominant) and only
+fall back to the style's implied seventh for a plain triad. Notes are
+scheduled against the audio clock by a 25 ms lookahead loop, so timing
+doesn't drift when the main thread is busy.
 
 ## Code layout
 
