@@ -42,6 +42,39 @@
   let boxIndex = 0;              // which box, low to high, when showing one
   let heldWindow = null;         // { min, max } of frets kept while holding position
   let shownWindow = null;        // what the legend reports
+  let fretRange = 'all';         // 'all' | 'fit' | 'from-to' — how much neck to draw
+  let colorBy = 'shape';         // 'shape' (which CAGED box) | 'interval' (what the note is)
+  let voiceLead = false;         // Chord positions: follow the previous shape, not one fret
+  let shapeRanges = {};          // per shape: the frets it spans, for the legend
+
+  // What each note *is* in the chord it's being read against. Colouring by
+  // this rather than by CAGED box is what you want when playing over changes:
+  // the roots, 3rds and 7ths are the notes that spell the chord. The roles
+  // come from the chord itself, so a ♭5 reads as the 5th it is while a ♭6 in
+  // the scale around it doesn't.
+  const ROLE_COLORS = { root: '#e6733a', '3rd': '#2fbccb', '5th': '#5f8ce8', '7th': '#e069a6', other: '#8ec93f' };
+  const ROLE_ORDER = ['root', '3rd', '5th', '7th', 'other'];
+
+  function rolesOf(chord){
+    const rootPc = SEMITONE[chord.note] % 12;
+    const at = n => ((SEMITONE[n] - rootPc) % 12 + 12) % 12;
+    const roles = { 0: 'root' };
+    if (chord.third) roles[at(chord.third)] = '3rd';
+    if (chord.fifth) roles[at(chord.fifth)] = '5th';
+    if (chord.seventh) roles[at(chord.seventh)] = '7th';
+    return { rootPc, roles };
+  }
+
+  // recolour a finished marker list, keeping everything else about it
+  function applyColorBy(markers, chord){
+    if (colorBy !== 'interval' || !chord) return markers;
+    const { rootPc, roles } = rolesOf(chord);
+    return markers.map(m => {
+      const iv = (((STRING_TUNING[m.string] + m.fret) % 12) - rootPc + 12) % 12;
+      const { split, ...rest } = m;      // one note, one role — nothing to split
+      return { ...rest, color: ROLE_COLORS[roles[iv] || 'other'] };
+    });
+  }
 
   const fretModeGroup = document.getElementById('fretModeGroup');
   const cagedChordRow = document.getElementById('cagedChordRow');
@@ -81,6 +114,10 @@
   const boxRow = document.getElementById('boxRow');
   const singleBoxToggle = document.getElementById('singleBoxToggle');
   const holdPositionToggle = document.getElementById('holdPositionToggle');
+  const fretRangeSelect = document.getElementById('fretRangeSelect');
+  const colorByGroup = document.getElementById('colorByGroup');
+  const colorByLabel = document.getElementById('colorByLabel');
+  const voiceLeadToggle = document.getElementById('voiceLeadToggle');
 
   function updateFretUI(){
     const singleChordModes = fretMode === 'caged' || fretMode === 'penta' || fretMode === 'scale';
@@ -91,6 +128,58 @@
     // stepping and holding only mean something once you're looking at one box
     document.getElementById('boxStep').classList.toggle('locked', !singleBox);
     holdPositionToggle.closest('.inline-check').classList.toggle('off', !singleBox);
+    // Roots is already coloured by root and Chord positions by chord, so
+    // there's nothing for the interval colouring to say in those
+    colorByGroup.hidden = !singleChordModes;
+    colorByLabel.hidden = !singleChordModes;
+  }
+
+  fretRangeSelect.addEventListener('change', () => {
+    fretRange = fretRangeSelect.value;
+    renderFretboard();
+  });
+  colorByGroup.querySelectorAll('.seg-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      colorByGroup.querySelectorAll('.seg-btn').forEach(b => b.classList.toggle('active', b === btn));
+      colorBy = btn.dataset.value;
+      renderFretboard();
+    });
+  });
+  voiceLeadToggle.addEventListener('change', () => {
+    voiceLead = voiceLeadToggle.checked;
+    renderFretboard();
+  });
+
+  // Which slice of neck to draw. "Fit to box" follows whatever single box is
+  // on screen, with a fret of room either side; the rest are fixed stretches.
+  function currentGeometry(){
+    if (fretRange === 'fit' && shownWindow){
+      return GT.neck.geometry(Math.max(0, shownWindow.min - 1), Math.min(FRET_COUNT, shownWindow.max + 1));
+    }
+    const m = /^(\d+)-(\d+)$/.exec(fretRange);
+    return m ? GT.neck.geometry(Number(m[1]), Number(m[2])) : GT.neck.geometry();
+  }
+
+  // Where each shape sits, for the legend. A shape can appear twice on a
+  // 15-fret neck (an octave apart), so gather contiguous runs rather than one
+  // span — "0–3 · 12–15" is useful where "0–15" would be a lie.
+  function collectShapeRanges(markers){
+    const fretsByShape = {};
+    markers.forEach(m => {
+      (m.shapes || []).forEach(n => (fretsByShape[n] = fretsByShape[n] || new Set()).add(m.fret));
+    });
+    shapeRanges = {};
+    Object.entries(fretsByShape).forEach(([n, set]) => {
+      const frets = [...set].sort((a, b) => a - b);
+      const runs = [];
+      frets.forEach(f => {
+        const last = runs[runs.length - 1];
+        // a CAGED shape spans four frets, so a bigger gap is a second one
+        if (last && f - last.max <= 4) last.max = f;
+        else runs.push({ min: f, max: f });
+      });
+      shapeRanges[n] = runs;
+    });
   }
 
   singleBoxToggle.addEventListener('change', () => {
@@ -356,6 +445,10 @@
       if (!refPlacements.length) return { markers: [], lines: [] };
       const idx = ((chordPosIndex % refPlacements.length) + refPlacements.length) % refPlacements.length;
       const targetFret = refPlacements[idx].meanFret;
+      // With voice leading on, each chord aims at wherever the *previous* one
+      // landed rather than at one fixed fret, so the shapes walk from one to
+      // the next the way a hand does instead of all crowding one position.
+      let aimFret = targetFret;
 
       const lines = [];
       const cellMap = new Map();
@@ -365,7 +458,8 @@
         const placements = perChordPlacements[i];
         if (!placements.length) return;
         const placement = placements.reduce((best, p) =>
-          Math.abs(p.meanFret - targetFret) < Math.abs(best.meanFret - targetFret) ? p : best);
+          Math.abs(p.meanFret - aimFret) < Math.abs(best.meanFret - aimFret) ? p : best);
+        if (voiceLead) aimFret = placement.meanFret;
         const color = ROOT_PALETTE[i % ROOT_PALETTE.length];
         const tag = String(i);   // reuses the shape-spotlight mechanism, keyed by chord index
         posLegendData.push({ name: displayName(chord), numeral: chord.numeral, color, tag, shapeLetter: placement.name });
@@ -478,7 +572,8 @@
         }
       }
       const onNeck = placements.filter(p => p.anchor >= 0 && p.anchor <= FRET_COUNT);
-      return applyBoxWindow(markers, lines, onNeck);
+      const shown = applyBoxWindow(markers, lines, onNeck);
+      return { markers: applyColorBy(shown.markers, chord), lines: shown.lines };
     }
 
     if (fretMode === 'scale'){
@@ -553,7 +648,8 @@
           }
         }
       }
-      return applyBoxWindow(markers, lines, boxes.filter(onNeck));
+      const shown = applyBoxWindow(markers, lines, boxes.filter(onNeck));
+      return { markers: applyColorBy(shown.markers, chord), lines: shown.lines };
     }
 
     if (fretMode === 'roots'){
@@ -589,7 +685,13 @@
       chord.seventh ? SEMITONE[chord.seventh] % 12 : null);
     cagedShapesShown = board.shapesShown;
     const { markers, lines } = board;
-    return { markers, lines };
+    return { markers: applyColorBy(markers, chord), lines };
+  }
+
+  // the chord the single-chord views are showing
+  function currentChord(){
+    const cands = host.progression().filter(c => c.quality !== 'dim');
+    return cands[Math.min(cagedChordIdx, cands.length - 1)] || null;
   }
 
   function renderFretLegend(){
@@ -599,29 +701,58 @@
         .join('');
       return;
     }
+    // each entry says where on the neck that shape sits, so you can find it
+    // without hunting for the colour
+    const range = n => {
+      const runs = shapeRanges[n];
+      if (!runs || !runs.length) return '';
+      return `<em class="range">${runs.map(r => `${r.min}–${r.max}`).join(' · ')}</em>`;
+    };
     if (fretMode === 'positions'){
       cagedLegend.innerHTML = posLegendData
-        .map(c => `<span data-shape="${c.tag}" tabindex="0" role="button" aria-label="Highlight ${c.name}"><i style="background:${c.color}"></i>${c.name}<em>${c.numeral}</em><small class="pos-shape-tag">${c.shapeLetter}</small></span>`)
+        .map(c => `<span data-shape="${c.tag}" tabindex="0" role="button" aria-label="Highlight ${c.name}"><i style="background:${c.color}"></i>${c.name}<em>${c.numeral}</em><small class="pos-shape-tag">${c.shapeLetter}</small>${range(c.tag)}</span>`)
         .join('');
       return;
     }
-    // with one box on screen, only the shapes actually drawn get an entry
-    const drawn = new Set([...fretboardSvg.querySelectorAll('.note-dot[data-shapes]')]
-      .flatMap(g => g.getAttribute('data-shapes').split(',')));
-    const shown = shownWindow ? cagedShapesShown.filter(n => drawn.has(n)) : cagedShapesShown;
-    const parts = shown.map(n =>
-      `<span data-shape="${n}" tabindex="0" role="button" aria-label="Highlight ${n} shape"><i style="background:${CAGED_COLORS[n]}"></i>${n} shape</span>`);
-    parts.push(`<span><i class="ring"></i>root</span>`);
-    if (fretMode === 'caged') parts.push(`<span><i class="hollow"></i>7th</span>`);
+    const parts = [];
+    if (colorBy === 'interval'){
+      // the dots are coloured by what each note is in the chord, so that's
+      // what the legend has to explain — the shape outlines still trace boxes
+      const chord = currentChord();
+      const names = ['root', '3rd', '5th'];
+      if (chord && chord.seventh) names.push('7th');
+      if (fretMode === 'penta' || fretMode === 'scale') names.push('other');
+      ROLE_ORDER.filter(n => names.includes(n)).forEach(n =>
+        parts.push(`<span><i style="background:${ROLE_COLORS[n]}"></i>${n === 'other' ? 'scale tone' : n}</span>`));
+    } else {
+      // only the shapes actually on screen get an entry — a single box, or a
+      // zoomed-in stretch of neck, leaves the others out
+      const drawn = new Set([...fretboardSvg.querySelectorAll('.note-dot[data-shapes]')]
+        .flatMap(g => g.getAttribute('data-shapes').split(',')));
+      cagedShapesShown.filter(n => drawn.has(n)).forEach(n =>
+        parts.push(`<span data-shape="${n}" tabindex="0" role="button" aria-label="Highlight ${n} shape"><i style="background:${CAGED_COLORS[n]}"></i>${n} shape${range(n)}</span>`));
+    }
+    // colouring by interval, the swatches already name the root and the 7th —
+    // saying it twice reads as two different things
+    if (colorBy !== 'interval'){
+      parts.push(`<span><i class="ring"></i>root</span>`);
+      if (fretMode === 'caged') parts.push(`<span><i class="hollow"></i>7th</span>`);
+    }
     if (fretMode === 'penta' || fretMode === 'scale') parts.push(`<span><i class="passing"></i>passing note</span>`);
-    if (shownWindow) parts.push(`<span><em>frets ${shownWindow.min}–${shownWindow.max}</em></span>`);
+    if (shownWindow) parts.push(`<span><em>box: frets ${shownWindow.min}–${shownWindow.max}</em></span>`);
     cagedLegend.innerHTML = parts.join('');
   }
 
   function renderFretboard(){
     const { markers, lines } = computeFretData();
-    fretboardSvg.setAttribute('viewBox', GT.neck.viewBox);
-    fretboardSvg.innerHTML = GT.neck.buildSVG(markers, lines);
+    // computeFretData decides what to draw; the geometry decides how much of
+    // the neck it's drawn on, and skips anything off the end
+    const geo = currentGeometry();
+    collectShapeRanges(markers.filter(m => geo.inRange(m.fret)));
+    fretboardSvg.setAttribute('viewBox', geo.viewBox);
+    fretboardSvg.style.maxWidth = geo.maxWidth + 'px';
+    fretboardSvg.style.minWidth = geo.minWidth + 'px';
+    fretboardSvg.innerHTML = geo.buildSVG(markers, lines);
     renderFretLegend();
     fretboardSvg.classList.toggle('positions-mode', fretMode === 'positions');
 
