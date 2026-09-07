@@ -39,17 +39,34 @@ names the tab you're on.
   in a minor key comes out i7 iv7 v7
 - Per-slot chord selection — pin any chord in the progression to a specific
   diatonic degree (or leave it Random); "New progression" only re-rolls the
-  slots left on Random
+  slots left on Random. The presets sit above these, so you can drop a shape
+  in and then edit it
+- Per-slot chord quality — the degree picker names the degree and nothing
+  else (`Dm · ii`); a second picker beside it sets the shape, and offers
+  Major, Minor, 7, maj7 and m7 on any degree, with dim, m7♭5 and dim7 added
+  on the one degree whose own chord is diminished. A **✓** marks the two
+  shapes the key itself gives that degree, so leaving the key is a choice you
+  can see yourself making — a secondary dominant on the ii, a borrowed minor
+  iv, a major III. The numeral follows: pick Major on the ii and it reads
+  `II`. The choice rides along when you transpose or switch Major/Minor,
+  while a shape you haven't touched keeps following the key
 - Dark theme
 - Adjustable number of chords (up to 12), each with its own number of
   measures — set beside the chord in the progression settings, so one chord can
   hold for four bars while the next passes in one, which is what a twelve-bar
-  blues needs. Each chord in the display says how many bars it gets
+  blues needs. The display writes out every bar rather than a bar count —
+  a chord held for two reads `F C C`, wrapping four bars to a line the way a
+  chart does, with the numeral under each bar and the carried-over bars
+  dimmed so you can still see where the chord changes
 - "Common chords only" — restricts the Random rolls to I, ii, IV, V, vi /
   i, iv, v–V, VI, VII (manual slots can still pick anything)
-- "7 chords" — toggles every chord between a plain triad and its diatonic
-  seventh chord (maj7 / dominant 7 / m7 / m7♭5, whichever the scale degree
-  implies), affecting the displayed names and the notes played
+- "Use 7ths for randomized chords" — a slot left on Random comes up as the
+  diatonic seventh of whatever degree it landed on (maj7 / dominant 7 / m7 /
+  m7♭5, whichever the scale implies) instead of a plain triad. Ticking it
+  swaps triads for sevenths where they stand: the roots, the degrees and the
+  bar lengths don't move, and any chord you've set yourself — or that a preset
+  pinned — is left alone. A rolled chord is always one the key contains;
+  handing a slot back to Random hands its shape back too
 - Info tooltips (ⓘ) on the less-obvious controls — hover on desktop, tap on
   touch, tap elsewhere to dismiss
 - Web Audio playback via icon Play/Pause buttons (both the corner button on
@@ -97,8 +114,8 @@ names the tab you're on.
   out; the barred
   G-shape is skipped everywhere except its own open-G-chord form, since it's
   not realistically playable elsewhere. "Next position" cycles to the next
-  cluster up the neck, wrapping back to the lowest. With "7 chords" on, each
-  shape turns into the 7th-chord voicing guitarists actually use for it —
+  cluster up the neck, wrapping back to the lowest. When a chord carries a
+  seventh, its shapes turn into the 7th-chord voicing guitarists use for it —
   flattening that shape's own doubled root by a half step (major 7th) or a
   whole step (dominant/minor 7th) — rather than tacking a note onto some
   other string. "Follow playback" (on by default) lights up whichever
@@ -261,8 +278,8 @@ Each file wraps itself in an IIFE and hangs its public interface off a single
 way — `theory` and `fretboard` know about nothing, `audio` uses `theory`, the
 tab modules use those, and `main` starts them.
 
-`practice.js` and `fretboard-view.js` share state (which chord is sounding,
-whether 7ths are on), so rather than reaching into each other, the view gets a
+`practice.js` and `fretboard-view.js` share state (the progression, which
+chord is sounding), so rather than reaching into each other, the view gets a
 small **host object** of getters at `init()` and exposes a handful of methods
 (`render`, `followChord`, `onPlaybackStarted`, …) for the practice tab to call.
 

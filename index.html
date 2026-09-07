@@ -440,27 +440,29 @@
   }
   .genre-picker{ justify-content:center; }
 
+  /* one cell per bar, four bars to a line, the way a chart reads */
   .chords{
-    display:flex;
-    justify-content:center;
-    align-items:flex-start;
-    flex-wrap:nowrap;
-    gap: clamp(8px, 2.5vw, 18px);
+    display: grid;
+    grid-template-columns: repeat(var(--cols, 4), 1fr);
+    gap: 10px clamp(6px, 2vw, 14px);
+    max-width: 460px;
+    margin: 0 auto;
   }
-  .chords.tight{ gap: clamp(12px, 4vw, 26px); }
 
-  .chord{
-    flex: 1 1 0;
-    min-width:0;
+  .bar{
+    min-width: 0;
     padding-bottom: 8px;
     border-bottom: 2px solid transparent;
-    font-size: clamp(1rem, calc(24vw / var(--n, 4)), 2.15rem);
-    opacity:0;
+    font-size: clamp(0.95rem, calc(30vw / (var(--cols, 4) * max(var(--len, 3), 2))), 1.9rem);
+    opacity: 0;
     animation: fade 0.4s ease forwards;
     transition: opacity 0.15s ease, border-color 0.15s ease;
   }
-  .chord.dim{ opacity: 0.3; }
-  .chord.active{ border-bottom-color: var(--accent); }
+  .bar.dim{ opacity: 0.3; }
+  .bar.active{ border-bottom-color: var(--accent); }
+  /* a bar that carries the chord over from the one before it sits back a little */
+  .bar.held .chord-name{ opacity: 0.62; }
+  .bar.held .chord-numeral{ opacity: 0.55; }
 
   .chord-name{
     display:block;
@@ -469,17 +471,6 @@
     line-height:1;
     letter-spacing: -0.01em;
   }
-  .chord-bars{
-    display:block;
-    margin-top: 4px;
-    font-size: 0.6rem;
-    font-weight: 500;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    color: var(--muted);
-    opacity: 0.75;
-  }
-
   .chord-numeral{
     display:block;
     margin-top: 0.34em;
@@ -497,7 +488,7 @@
     to{ opacity:1; transform: translateY(0); }
   }
   @media (prefers-reduced-motion: reduce){
-    .chord{ animation:none; opacity:1; }
+    .bar{ animation:none; opacity:1; }
   }
 
   /* ---- fretboard ---- */
@@ -756,6 +747,7 @@
 
   /* a chord slot pairs the chord with how many measures it lasts */
   .chord-slot{ display:inline-flex; gap:3px; }
+  .seventh-select{ padding-right: 20px; }
   #presetGroup, #presetVariantGroup{ justify-content: flex-end; }
   #presetGroup .seg-btn, #presetVariantGroup .seg-btn{ font-size: 0.78rem; padding: 6px 9px; }
   .bars-select{ padding-right: 20px; font-variant-numeric: tabular-nums; }
@@ -826,21 +818,6 @@
         </div>
       </div>
       <div class="setting">
-        <span class="setting-label">Chords</span>
-        <div class="row-control">
-          <div class="stepper">
-            <button type="button" class="step-btn" id="chordCountDown" aria-label="Fewer chords">−</button>
-            <span class="step-value" id="chordCountValue">3</span>
-            <button type="button" class="step-btn" id="chordCountUp" aria-label="More chords">+</button>
-          </div>
-          <label class="inline-check">
-            <input type="checkbox" id="seventhToggle">
-            <span>7</span>
-          </label>
-          <div class="chord-slots" id="chordSlots"></div>
-        </div>
-      </div>
-      <div class="setting">
         <span class="setting-label">Preset
           <button type="button" class="info-dot" data-tip="Common progressions written as scale degrees, so they land in whatever key you're in and follow you when you change key. Every chord stays editable afterwards — change one and it's yours, not the preset's.">i</button>
         </span>
@@ -850,6 +827,25 @@
         <span class="setting-label">Variant</span>
         <div class="row-control"><div class="segmented" id="presetVariantGroup"></div></div>
       </div>
+      <div class="setting">
+        <span class="setting-label">Chords
+          <button type="button" class="info-dot" data-tip="Each chord has three pickers: which scale degree it is, how many measures it lasts, and whether it's a plain triad or a seventh. Picking &quot;7&quot; on a minor or diminished degree raises its 3rd, giving you a secondary dominant.">i</button>
+        </span>
+        <div class="row-control">
+          <div class="stepper">
+            <button type="button" class="step-btn" id="chordCountDown" aria-label="Fewer chords">−</button>
+            <span class="step-value" id="chordCountValue">3</span>
+            <button type="button" class="step-btn" id="chordCountUp" aria-label="More chords">+</button>
+          </div>
+          <div class="chord-slots" id="chordSlots"></div>
+        </div>
+      </div>
+      <label class="setting">
+        <span class="setting-label">Use 7ths for randomized chords
+          <button type="button" class="info-dot" data-tip="Chords rolled at random take the seventh their scale degree implies (maj7, dominant 7, m7 or m7♭5) instead of a plain triad. It swaps triads for sevenths where they stand — the roots and bar lengths don't move — and leaves any chord you've set yourself, or pinned to a degree, alone.">i</button>
+        </span>
+        <input type="checkbox" id="randomSeventhsToggle">
+      </label>
       <label class="setting">
         <span class="setting-label">Common chords only
           <button type="button" class="info-dot" data-tip="Only use the most common diatonic chords when rolling a Random slot: I, ii, IV, V, vi (or i, iv, v, VI, VII in minor). Turn off to allow any diatonic chord, including the less-used iii and vii°. Manual chord picks always ignore this.">i</button>
