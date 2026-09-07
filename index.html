@@ -501,6 +501,7 @@
   }
   @media (prefers-reduced-motion: reduce){
     .bar{ animation:none; opacity:1; }
+    .diagram-card.rang{ animation:none; }
   }
 
   /* ---- fretboard ---- */
@@ -619,7 +620,17 @@
     padding: 10px;
     text-align:center;
   }
+  .diagram-card{ cursor:pointer; transition: border-color 0.12s ease, transform 0.12s ease; }
+  .diagram-card:hover{ border-color: var(--accent); }
+  .diagram-card:focus-visible{ outline: 2px solid var(--accent-hi); outline-offset: 2px; }
+  .diagram-card.rang{ animation: ring 0.5s ease; }
+  @keyframes ring{
+    0%{ border-color: var(--accent-hi); transform: scale(1.03); }
+    100%{ border-color: var(--line); transform: scale(1); }
+  }
   .diagram-card svg{ width:100%; height:auto; display:block; }
+  .share-row{ margin-top: 14px; display:flex; flex-direction:column; align-items:center; gap: 8px; }
+  .share-out{ width: 100%; max-width: 420px; font-size: 0.78rem; }
   .diagram-caption{
     margin: 6px 0 0;
     font-size: 0.72rem;
@@ -879,6 +890,10 @@
     </div>
     <div class="chords" id="chords"></div>
     <p class="measure-readout" id="measureReadout"></p>
+    <div class="share-row">
+      <button type="button" class="link-btn" id="shareBtn">Copy link to this progression</button>
+      <input type="text" class="text-input share-out" id="shareOut" readonly aria-label="Link to this progression" hidden>
+    </div>
     <div class="display-genre">
       <div class="segmented genre-picker" id="displayGenreGroup">
         <button type="button" class="seg-btn genre-btn active" data-value="simple">Simple</button>
@@ -1013,7 +1028,7 @@
       </div>
     </div>
     <p class="finder-error" id="chordFinderError"></p>
-    <p class="finder-hint">Try things like C, Am7, F#dim, Bbsus4, G#9, D13, E7b9.</p>
+    <p class="finder-hint">Try things like C, Am7, F#dim, Bbsus4, G#9, D13, E7b9, or a slash chord like D/F#. Click a shape to hear it.</p>
     <div class="setting">
       <span class="setting-label">Dots show</span>
       <div class="row-control">
@@ -1060,6 +1075,7 @@
     <div class="setting">
       <span class="setting-label">Fretboard</span>
       <div class="row-control">
+        <button type="button" class="seg-btn" id="reversePlayBtn">Play notes</button>
         <button type="button" class="seg-btn" id="reverseClearBtn">Clear</button>
       </div>
     </div>

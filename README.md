@@ -70,6 +70,13 @@ names the tab you're on.
   bar lengths don't move, and any chord you've set yourself — or that a preset
   pinned — is left alone. A rolled chord is always one the key contains;
   handing a slot back to Random hands its shape back too
+- Space bar starts and stops playback (here and in the genre examples), as
+  long as you're not typing in a field
+- "Copy link to this progression" writes the key, every chord's degree, bar
+  count and shape, the tempo and the style into the page's URL and copies it,
+  so a progression can be bookmarked or sent to someone; opening the link
+  brings it all back. A progression loaded from a genre example is written as
+  chord names instead, since its chords aren't degrees of anything
 - Info tooltips (ⓘ) on the less-obvious controls — hover on desktop, tap on
   touch, tap elsewhere to dismiss
 - Web Audio playback via icon Play/Pause buttons (both the corner button on
@@ -181,6 +188,12 @@ only**. A major or minor triad also gets the whole-neck CAGED
 picture at the top — the same five shapes the practice tab draws, from the
 same code, so the two always agree.
 
+Click any shape to hear it strummed, low string to high, on the clean guitar
+voice. A slash chord (`D/F#`, `C/E`, `Am/G`) works too: the same chord with
+the named note underneath, so only shapes with that note on their lowest
+sounding string are offered — and the note can be one from outside the
+chord, as in `C/D`.
+
 ## Reverse chord finder
 
 Click frets on the interactive fretboard to select notes (clicking a
@@ -188,7 +201,8 @@ selected fret again clears it; picking a different fret on the same string
 replaces the old selection, since a string only sounds one note at a time).
 Once one or more frets are selected, every chord name that fits — trying
 each selected note in turn as the root — is listed below, using the same
-chord-formula table as the chord finder.
+chord-formula table as the chord finder. "Play notes" strums what you've
+picked.
 
 ## Usage
 
