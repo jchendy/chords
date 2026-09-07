@@ -130,7 +130,11 @@ names the tab you're on.
   note is dimmed except each chord's lowest root, so the anchor notes stand
   out; the barred
   G-shape is skipped everywhere except its own open-G-chord form, since it's
-  not realistically playable elsewhere. "Next position" cycles to the next
+  not realistically playable elsewhere. **Voice leading** picks each chord's
+  shape closest to where the *previous* one landed rather than to one fixed
+  fret, so the shapes walk from one to the next the way a hand does — an
+  Am7 that would otherwise jump back to the nut carries on up the neck
+  instead. "Next position" cycles to the next
   cluster up the neck, wrapping back to the lowest. When a chord carries a
   seventh, its shapes turn into the 7th-chord voicing guitarists use for it —
   flattening that shape's own doubled root by a half step (major 7th) or a
@@ -163,6 +167,22 @@ names the tab you're on.
   chord's notes appear under the hand you already have there rather than the
   view jumping to the new chord's box — the "stay in one position while the
   ii–V–I goes by" exercise
+- A "Display" row applies to every view. **Frets** zooms in on a stretch of
+  the neck — all frets, 0–7, 4–11, 8–15, or "Fit to box", which follows
+  whichever single box is on screen. The frets keep their width, so a shorter
+  neck is drawn in a narrower space and scales up: on a phone the dots go
+  from 14px to 18px and the sideways scroll disappears. **Colour** fills each
+  dot either by the CAGED shape it belongs to (the default) or by what the
+  note is in the current chord — root, 3rd, 5th, 7th, everything else a
+  scale tone. The roles come from the chord itself, so a ♭5 reads as that
+  chord's 5th while a ♭6 in the scale around it reads as a scale tone. The
+  shape outlines stay shape-coloured either way; colouring by interval has
+  nothing to add to Roots (already coloured by root) or Chord positions
+  (coloured by chord), so the control is hidden there
+- The legend says where each shape sits — "C shape 6–10" — and, for a shape
+  that appears twice on a 15-fret neck, both places ("D shape 0–2 · 12–14").
+  Only shapes actually on screen get an entry, so a single box or a zoomed
+  stretch of neck leaves the others out
 - In the CAGED views, hover/tap a shape name in the legend to spotlight that
   shape; "Follow playback" (on by default) lets the fretboard track whichever
   chord is currently sounding

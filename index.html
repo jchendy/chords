@@ -432,7 +432,9 @@
 
   /* ---- fretboard ---- */
   .fret-scroll{ overflow-x:auto; margin-top: 6px; }
-  .fret-scroll svg{ display:block; width:100%; min-width: 440px; max-width: 820px; margin: 0 auto; height:auto; }
+  /* zoomed in, the neck's own max width comes from the script, so a short
+     stretch of frets doesn't tower over the page */
+  .fret-scroll svg{ display:block; width:100%; min-width: 380px; max-width: 820px; margin: 0 auto; height:auto; }
 
   .fret-string, .fret-wire{ stroke: var(--line); stroke-width: 1; }
   .fret-nut{ stroke: var(--muted); stroke-width: 3; }
@@ -508,6 +510,10 @@
   #cagedChordGroup.locked{ opacity: 0.45; pointer-events: none; }
   #boxStep .seg-btn{ padding: 7px 12px; }
   #boxStep.locked{ opacity: 0.45; pointer-events: none; }
+  /* a label and its buttons wrap as one, so the label is never left behind */
+  .ctl-group{ display:inline-flex; align-items:center; gap: 8px; }
+  .ctl-label{ font-size: 0.78rem; color: var(--muted); }
+  .caged-legend em.range{ font-style: normal; opacity: 0.65; margin-left: 4px; font-variant-numeric: tabular-nums; }
   #boxRow .inline-check.off{ opacity: 0.45; }
 
   .row-control{ display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-left:auto; justify-content:flex-end; }
@@ -902,6 +908,27 @@
         <button type="button" class="seg-btn" data-value="scale">CAGED scales</button>
       </div>
     </div>
+    <div class="setting" id="displayRow">
+      <span class="setting-label">Display
+        <button type="button" class="info-dot" data-tip="Frets zooms in on a stretch of the neck — the same drawing over fewer frets, so the dots are bigger and easier to read, especially on a phone. &quot;Fit to box&quot; follows the single box you're practising in. Colour fills each dot by the CAGED shape it belongs to, or by what the note is in the chord — root, 3rd, 5th, 7th — which is the more useful reading when you're playing over changes.">i</button>
+      </span>
+      <div class="row-control">
+        <select id="fretRangeSelect" class="mini-select" aria-label="Frets shown">
+          <option value="all">All frets</option>
+          <option value="fit">Fit to box</option>
+          <option value="0-7">Frets 0–7</option>
+          <option value="4-11">Frets 4–11</option>
+          <option value="8-15">Frets 8–15</option>
+        </select>
+        <span class="ctl-group" id="colorByLabel">
+          <span class="ctl-label">Colour</span>
+          <span class="segmented" id="colorByGroup" aria-label="Colour dots by">
+            <button type="button" class="seg-btn active" data-value="shape">Shape</button>
+            <button type="button" class="seg-btn" data-value="interval">Interval</button>
+          </span>
+        </span>
+      </div>
+    </div>
     <div class="setting" id="cagedChordRow" hidden>
       <span class="setting-label">Chord</span>
       <div class="row-control">
@@ -937,6 +964,10 @@
       </span>
       <div class="row-control">
         <button type="button" class="seg-btn" id="chordPosNext">Next position ▸</button>
+        <label class="inline-check">
+          <input type="checkbox" id="voiceLeadToggle">
+          <span>Voice leading</span>
+        </label>
         <label class="inline-check">
           <input type="checkbox" id="chordPosFollowToggle" checked>
           <span>Follow playback</span>
