@@ -341,6 +341,67 @@
     };
   }
 
+  // The box whose starting fret is nearest. Deliberately not nearestShape(),
+  // which measures from a shape's middle to work out where a hand is: this one
+  // answers "which box does a stray note read as belonging to", and the two
+  // want different metrics. Keep them apart.
+  function nearestByAnchor(boxes, fret){
+    let best = null, bd = Infinity;
+    boxes.forEach(b => { const d = Math.abs(fret - b.anchor); if (d < bd){ bd = d; best = b; } });
+    return best;
+  }
+
+  // Every note a view draws, coloured by the CAGED box that owns it: a note two
+  // adjacent boxes share gets a split dot (lower box on the left, higher on the
+  // right), a note in one box takes that box's colour, and a note in none takes
+  // the nearest box's — an arpeggio note just outside a box still reads as
+  // belonging to it.
+  //
+  // Chords with the shapes opened out, Pentatonic and Scales all draw this same
+  // picture, and each used to carry its own copy of this loop. The copies had
+  // drifted: one counted raw owners where the others counted distinct box
+  // names, and B5 was one of them colouring from a box list the others had
+  // already filtered. What actually differs between the three is only which
+  // notes they draw and what they call them, which is all `labelOf` is — the
+  // degree to write on a pitch class, or nothing for a note this view leaves out.
+  function boxColouredNotes(boxes, { labelOf, rootPc, passingOf }){
+    const markers = [];
+    for (let s = 0; s < 6; s++){
+      for (let f = 0; f <= FRET_COUNT; f++){
+        const pc = (STRING_TUNING[s] + f) % 12;
+        const label = labelOf(pc);
+        if (label == null) continue;
+        // Owners by name, each kept at its nearest placement. Two boxes share
+        // a note or they don't; one box reaching the same note twice isn't
+        // sharing it with anyone, and shouldn't split the dot with itself.
+        const byName = new Map();
+        boxes.forEach(b => {
+          if (!b.cells.some(c => c.string === s && c.fret === f)) return;
+          const held = byName.get(b.name);
+          if (!held || Math.abs(f - b.anchor) < Math.abs(f - held.anchor)) byName.set(b.name, b);
+        });
+        const owners = [...byName.values()];
+        const base = { string: s, fret: f, label, isRoot: pc === rootPc,
+                       shapes: owners.map(o => o.name) };
+        if (passingOf) base.passing = passingOf(pc);
+        if (owners.length >= 2){
+          const two = owners.slice()
+            .sort((a, b) => Math.abs(f - a.anchor) - Math.abs(f - b.anchor))
+            .slice(0, 2)
+            .sort((a, b) => a.anchor - b.anchor);
+          markers.push({ ...base, split: [CAGED_COLORS[two[0].name], CAGED_COLORS[two[1].name]] });
+        } else if (owners.length === 1){
+          markers.push({ ...base, color: CAGED_COLORS[owners[0].name] });
+        } else {
+          const near = nearestByAnchor(boxes, f);
+          markers.push({ ...base, shapes: near ? [near.name] : [],
+                         color: near ? CAGED_COLORS[near.name] : '#6b655b' });
+        }
+      }
+    }
+    return markers;
+  }
+
   // the notes of the chord itself, so the scale views can set the rest back
   function chordTonePcs(chord){
     return new Set([chord.note, chord.third, chord.fifth, chord.seventh]
@@ -805,29 +866,7 @@
       cagedShapesShown = CAGED_ORDER.filter(n => boxes.some(b => b.name === n));
       const lines = board.lines;
 
-      const markers = [];
-      for (let s = 0; s < 6; s++){
-        for (let f = 0; f <= FRET_COUNT; f++){
-          const pc = (STRING_TUNING[s] + f) % 12;
-          if (!tonePcs.has(pc)) continue;
-          const owners = boxes.filter(b => b.cells.some(c => c.string === s && c.fret === f));
-          const ownerNames = [...new Set(owners.map(o => o.name))];
-          const base = { string: s, fret: f, label: degByPc[pc], isRoot: pc === rootPc, shapes: ownerNames };
-          if (ownerNames.length >= 2){
-            const two = owners.slice()
-              .sort((a, b) => Math.abs(f - a.anchor) - Math.abs(f - b.anchor))
-              .slice(0, 2)
-              .sort((a, b) => a.anchor - b.anchor);
-            markers.push({ ...base, split: [CAGED_COLORS[two[0].name], CAGED_COLORS[two[1].name]] });
-          } else if (ownerNames.length === 1){
-            markers.push({ ...base, color: CAGED_COLORS[ownerNames[0]] });
-          } else {
-            let best = null, bd = Infinity;
-            boxes.forEach(b => { const d = Math.abs(f - b.anchor); if (d < bd){ bd = d; best = b; } });
-            markers.push({ ...base, shapes: best ? [best.name] : [], color: best ? CAGED_COLORS[best.name] : '#6b655b' });
-          }
-        }
-      }
+      const markers = boxColouredNotes(boxes, { labelOf: pc => degByPc[pc], rootPc });
       const shown = applyBoxWindow(markers, lines, boxes, boxOpts);
       shown.markers = withTagColors(shown.markers, n => CAGED_COLORS[n]);
       const lit = inPosition ? shown.markers.map(asChord) : applyColorBy(shown.markers, chord);
@@ -871,30 +910,9 @@
       // every pentatonic note is coloured by the CAGED box(es) that actually
       // contain it: notes shared by two adjacent boxes get a split dot
       // (left half = lower box, right half = higher box)
-      const markers = [];
-      for (let s = 0; s < 6; s++){
-        for (let f = 0; f <= FRET_COUNT; f++){
-          const pc = (STRING_TUNING[s] + f) % 12;
-          if (!(pc in degByPc)) continue;
-          const owners = placements.filter(p => p.cells.some(c => c.string === s && c.fret === f));
-          const ownerNames = [...new Set(owners.map(o => o.name))];
-          const base = { string: s, fret: f, label: degByPc[pc], isRoot: pc === rootPc, shapes: ownerNames,
-            passing: !tones.has(pc) };
-          if (owners.length >= 2){
-            const two = owners.slice()
-              .sort((a, b) => Math.abs(f - a.anchor) - Math.abs(f - b.anchor))
-              .slice(0, 2)
-              .sort((a, b) => a.anchor - b.anchor);
-            markers.push({ ...base, split: [CAGED_COLORS[two[0].name], CAGED_COLORS[two[1].name]] });
-          } else if (owners.length === 1){
-            markers.push({ ...base, color: CAGED_COLORS[owners[0].name] });
-          } else {
-            let best = null, bd = Infinity;
-            placements.forEach(p => { const d = Math.abs(f - p.anchor); if (d < bd){ bd = d; best = p; } });
-            markers.push({ ...base, shapes: best ? [best.name] : [], color: best ? CAGED_COLORS[best.name] : '#6b655b' });
-          }
-        }
-      }
+      const markers = boxColouredNotes(placements, {
+        labelOf: pc => degByPc[pc], rootPc, passingOf: pc => !tones.has(pc),
+      });
       const shown = applyBoxWindow(withTagColors(markers, n => CAGED_COLORS[n]), lines, placements);
       return { markers: applyColorBy(shown.markers, chord), lines: shown.lines };
     }
@@ -945,32 +963,9 @@
         .filter(p => p.cells.length > 1)
         .map(p => ({ color: CAGED_COLORS[p.name], shape: p.name, cells: p.cells.map(c => ({ string: c.string, fret: c.fret })) }));
 
-      const markers = [];
-      for (let s = 0; s < 6; s++){
-        for (let f = 0; f <= FRET_COUNT; f++){
-          const pc = (STRING_TUNING[s] + f) % 12;
-          if (!scalePcs.has(pc)) continue;
-          // only boxes that genuinely sit on the neck can share a note; a
-          // partial box poking past the nut / 15th fret doesn't create a split
-          const owners = boxes.filter(b => b.cells.some(c => c.string === s && c.fret === f));
-          const ownerNames = [...new Set(owners.map(o => o.name))];
-          const base = { string: s, fret: f, label: degByPc[pc],
-            isRoot: pc === rootPc, shapes: ownerNames, passing: !tones.has(pc) };
-          if (ownerNames.length >= 2){
-            const two = owners.slice()
-              .sort((a, b) => Math.abs(f - a.anchor) - Math.abs(f - b.anchor))
-              .slice(0, 2)
-              .sort((a, b) => a.anchor - b.anchor);
-            markers.push({ ...base, split: [CAGED_COLORS[two[0].name], CAGED_COLORS[two[1].name]] });
-          } else if (ownerNames.length === 1){
-            markers.push({ ...base, color: CAGED_COLORS[ownerNames[0]] });
-          } else {
-            let best = null, bd = Infinity;
-            boxes.forEach(b => { const d = Math.abs(f - b.anchor); if (d < bd){ bd = d; best = b; } });
-            markers.push({ ...base, shapes: best ? [best.name] : [], color: best ? CAGED_COLORS[best.name] : '#6b655b' });
-          }
-        }
-      }
+      const markers = boxColouredNotes(boxes, {
+        labelOf: pc => degByPc[pc], rootPc, passingOf: pc => !tones.has(pc),
+      });
       const shown = applyBoxWindow(withTagColors(markers, n => CAGED_COLORS[n]), lines, boxes);
       return { markers: applyColorBy(shown.markers, chord), lines: shown.lines };
     }
