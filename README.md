@@ -197,9 +197,10 @@ Open `index.html` in any modern browser. No build step, no dependencies
 
 ## Genre examples
 
-Fourteen styles, grouped by family: skate punk and ska punk; rockabilly,
-psychobilly, surf rock and country; delta and Chicago blues; bebop, gypsy
-jazz and bossa nova; funk and reggae; thrash metal.
+Twenty-two styles, grouped by family: skate punk, ska punk, pop punk and
+hardcore; rockabilly, psychobilly, surf rock, country and bluegrass; hard
+rock and grunge; delta blues, Chicago blues and blues rock; bebop, gypsy jazz
+and bossa nova; funk, reggae and soul; thrash metal; flamenco.
 
 Choose **rhythm** and you get that genre's chord progressions and its
 strumming patterns as separate lists — pick any combination of the two, and
@@ -221,8 +222,13 @@ a power chord is read as major.
 
 The chords aren't drawn from a chord dictionary: each rhythm says how it wants
 its chords voiced — power chords for punk, barre shapes for ska, jazz shells
-for bebop, the 9th grip for funk — and the shapes are derived from interval
-templates in `js/genres.js`. The material itself is the generic vocabulary
+for bebop, the 9th grip for funk, octaves for pop punk, and for the styles
+that live at the nut (delta blues, country, bluegrass, flamenco) "open",
+which tries every CAGED form and takes the lowest one that fits, so G is the
+open G and B7 the open B7 rather than a barre — and the shapes are derived
+from interval templates in `js/genres.js`. A boom-chick bass can alternate
+between the root and the 5th of whatever grip it's on. The material itself
+is the generic vocabulary
 method books teach (twelve-bar forms, ii–V–I, pentatonic and arpeggio
 patterns, strumming styles), not transcriptions of particular recordings.
 
@@ -267,12 +273,20 @@ shapes, regenerate it deliberately rather than editing it to match.
 Everything is synthesized live in the Web Audio API — no MIDI, no samples,
 nothing to download. The piano is a single periodic wave (five harmonics
 baked into one oscillator, doubled and detuned a few cents) through a
-per-note lowpass that opens with velocity and closes as the note rings, and
-a two-stage decay so a note drops quickly then sustains quietly. The genre
-examples add a guitar voice — detuned sawtooth pairs through a filter, and
-through a soft-clipping waveshaper for the overdriven tones. Drums are
-the classic recipes: a pitched-down sine for the kick, filtered white noise
-for the snare and cymbals. Every bus meets at one gentle limiter before the
+per-note lowpass that opens with velocity and closes as the note rings, a
+two-stage decay so a note drops quickly then sustains quietly, a few
+milliseconds of filtered noise on the front for the hammer, and a level that
+eases off up the keyboard the way a real piano's does. The genre examples
+add a guitar voice — detuned sawtooth pairs through a filter. The overdriven
+tones all go through one shared clipping stage, so the strings of a chord
+are distorted *together*: that intermodulation is where a power chord's
+crunch comes from, and clipping each string on its own never gets there.
+There's a reverb too — a convolver fed by a synthesized room, decaying noise
+whose top end rolls off over the tail — with a send from each voice at its
+own level: a clean guitar sits in it, an overdriven one only touches it, and
+the palm-muted chug stays dry. Drums are the classic recipes: a pitched-down
+sine for the kick, filtered white noise for the snare and cymbals. Every bus
+meets at one gentle limiter before the
 output, so a kick, a bass note and a full chord landing together can't add
 up past what the output can carry. The style voices play a chord's own
 seventh when it has one (a `D7` set on the ii is a real dominant) and only
