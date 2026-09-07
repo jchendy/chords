@@ -19,8 +19,7 @@
   let currentProgression = [];
   let chordCount = 3;
   const MAX_CHORDS = 12;        // enough to hold a twelve-bar blues once repeats are merged
-  let modeSetting = 'random';           // 'major' | 'minor' | 'random'
-  let keyChoice = null;                 // null = random, else { mode, tonic }
+  let keyChoice = null;                 // null = a random key each roll, else { mode, tonic }
   let slotChoices = [null, null, null]; // per slot: null = random, else a diatonic degree
   let slotMeasures = [];                // per slot: how many measures that chord lasts
   let slotShapes = [];                // per slot: the shape you chose, or null to follow the key
@@ -110,8 +109,19 @@
   // as sevenths. Leaving that last case implicit rather than writing it into
   // `slotShapes` is what lets the checkbox turn triads into sevenths and
   // back without disturbing anything else about the progression.
+  // Two of the stored shapes are relative to the key rather than fixed, so a
+  // preset keeps its meaning when the key changes mode: `dia7` is the key's
+  // own seventh on that degree (the ii of a ii–V–I is m7 in major, m7♭5 in
+  // minor), `flat7` is the key's triad with a flat 7 (a blues I is I7 in
+  // major, i7 in minor).
+  function resolveShape(shape, deg){
+    if (shape === 'dia7') return diatonicSeventhFor(deg);
+    if (shape === 'flat7') return flatSeventh(chordForDegree(deg).quality);
+    return shape;
+  }
+
   function shapeFor(i, deg){
-    if (slotShapes[i]) return slotShapes[i];
+    if (slotShapes[i]) return resolveShape(slotShapes[i], deg);
     if (slotChoices[i] == null && randomSeventhsToggle.checked) return diatonicSeventhFor(deg);
     return null;
   }
@@ -159,7 +169,7 @@
       currentMode = keyChoice.mode;
       currentTonic = keyChoice.tonic;
     } else {
-      currentMode = modeSetting === 'random' ? (Math.random() < 0.5 ? 'major' : 'minor') : modeSetting;
+      currentMode = Math.random() < 0.5 ? 'major' : 'minor';
       currentTonic = pick(Object.keys(currentMode === 'major' ? MAJOR_KEYS : MINOR_KEYS));
     }
     currentDiatonic = keyChordChoices();
@@ -191,11 +201,10 @@
       `<optgroup label="${label}">` +
       Object.keys(obj).slice().sort().map(t => `<option value="${mode}:${t}">${t} ${mode}</option>`).join('') +
       `</optgroup>`;
-    // only offer keys that match the current Major/Minor/Random setting
-    let groups = '';
-    if (modeSetting !== 'minor') groups += grp('Major keys', MAJOR_KEYS, 'major');
-    if (modeSetting !== 'major') groups += grp('Minor keys', MINOR_KEYS, 'minor');
-    keySelect.innerHTML = `<option value="random">Random</option>` + groups;
+    // one picker for all 24 keys, major and minor side by side; "Random key"
+    // means a fresh one, either mode, on every roll
+    keySelect.innerHTML = `<option value="random">Random key</option>`
+      + grp('Major keys', MAJOR_KEYS, 'major') + grp('Minor keys', MINOR_KEYS, 'minor');
     keySelect.value = keyChoice ? `${keyChoice.mode}:${keyChoice.tonic}` : 'random';
   }
 
@@ -206,17 +215,14 @@
   let presetIdx = null;      // which preset is showing, if any
   let variantIdx = 0;
 
-  // Put the tab in a key: the state, the diatonic chord list, and the
-  // Major/Minor buttons and key picker that show it. Doesn't touch the
-  // progression — callers rebuild or transpose that themselves.
+  // Put the tab in a key: the state, the diatonic chord list, and the key
+  // picker that shows it. Doesn't touch the progression — callers rebuild or
+  // transpose that themselves.
   function setKey(mode, tonic){
     currentMode = mode;
     currentTonic = tonic;
     currentDiatonic = keyChordChoices();
-    modeSetting = mode;
     keyChoice = { mode, tonic };
-    document.querySelectorAll('#modeGroup .seg-btn')
-      .forEach(b => b.classList.toggle('active', b.dataset.value === mode));
     buildKeySelect();
   }
 
@@ -237,24 +243,30 @@
     slotChoices = chords.map(c => c.deg);
     slotMeasures = chords.map(c => c.bars);
     // `maj` asks for a real dominant; `dom` keeps whatever triad the key gives
-    // the degree and just flattens its 7th
+    // the degree and just flattens its 7th; `dia` takes the key's own 7th.
+    // The last two are stored relative to the key, so they follow a change of
+    // mode rather than freezing as whatever they were when the preset landed.
     slotShapes = chords.map(c => {
-      if (c.dia) return diatonicSeventhFor(c.deg);
+      if (c.dia) return 'dia7';
       if (!c.dom) return null;
-      return c.maj ? '7' : flatSeventh(chordForDegree(c.deg).quality);
+      return c.maj ? '7' : 'flat7';
     });
-    currentProgression = chords.map((c, i) => chordForDegree(c.deg, slotShapes[i]));
+    currentProgression = chords.map((c, i) => chordForDegree(c.deg, shapeFor(i, c.deg)));
     loadedLabel = null;
     renderAll();
   }
 
+  // a preset or variant written for one mode only shows up in that mode
+  const fitsMode = item => !item.mode || item.mode === currentMode;
+
   function renderPresetVariants(){
     const preset = presetIdx == null ? null : GT.progressionPresets[presetIdx];
-    const many = preset && preset.variants.length > 1;
+    const shown = preset ? preset.variants.map((v, i) => [v, i]).filter(([v]) => fitsMode(v)) : [];
+    const many = shown.length > 1;
     presetVariantRow.hidden = !many;
     if (!many) return;
     presetVariantGroup.innerHTML = '';
-    preset.variants.forEach((v, i) => {
+    shown.forEach(([v, i]) => {
       const b = document.createElement('button');
       b.type = 'button';
       b.className = 'seg-btn' + (i === variantIdx ? ' active' : '');
@@ -269,20 +281,31 @@
   }
 
   // One picker, each entry named the way people name it, with the numerals
-  // beside it — twelve buttons of roman numerals all looked the same.
+  // beside it — twelve buttons of roman numerals all looked the same. The
+  // list follows the key: a major key offers the doo-wop and the canon, a
+  // minor one the Andalusian cadence and the minor four-chord, and the ones
+  // that work in both read with the numerals of the mode they're in.
   function buildPresetSelect(){
-    presetSelect.innerHTML = `<option value="">None</option>` +
-      GT.progressionPresets.map((p, i) =>
-        `<option value="${i}">${p.name}${p.numerals ? ' · ' + p.numerals : ''}</option>`).join('');
+    const options = GT.progressionPresets
+      .map((p, i) => [p, i])
+      .filter(([p]) => fitsMode(p))
+      .map(([p, i]) => {
+        const numerals = currentMode === 'minor' && p.numeralsMinor ? p.numeralsMinor : p.numerals;
+        return `<option value="${i}">${p.name}${numerals ? ' · ' + numerals : ''}</option>`;
+      });
+    presetSelect.innerHTML = `<option value="">None</option>` + options.join('');
+    // a preset that doesn't exist in this mode is no longer the one showing
+    if (presetIdx != null && !fitsMode(GT.progressionPresets[presetIdx])) presetIdx = null;
     presetSelect.value = presetIdx == null ? '' : String(presetIdx);
   }
 
   presetSelect.addEventListener('change', () => {
     if (presetSelect.value === ''){ clearPreset(); return; }
     presetIdx = Number(presetSelect.value);
-    variantIdx = 0;
+    const preset = GT.progressionPresets[presetIdx];
+    variantIdx = preset.variants.findIndex(fitsMode);
     renderPresetVariants();
-    applyPreset(GT.progressionPresets[presetIdx], GT.progressionPresets[presetIdx].variants[0]);
+    applyPreset(preset, preset.variants[variantIdx]);
   });
 
   // once you've changed something by hand it isn't that preset any more
@@ -299,10 +322,15 @@
   const genBtn = document.getElementById('genBtn');
   function updateRerollButton(){
     const n = slotChoices.filter(s => s == null).length;
-    genBtn.disabled = n === 0;
-    genBtn.textContent = n === 0 ? 'All chords pinned'
-      : n === chordCount ? 'Re-roll all chords'
-      : `Re-roll ${n} random chord${n === 1 ? '' : 's'}`;
+    const chords = n === 0 ? '' : n === chordCount ? 'all chords' : `${n} random chord${n === 1 ? '' : 's'}`;
+    if (keyChoice == null){
+      // a random key is itself something to re-roll, whatever the chords
+      genBtn.disabled = false;
+      genBtn.textContent = chords ? `Re-roll key and ${chords}` : 'Re-roll key';
+    } else {
+      genBtn.disabled = n === 0;
+      genBtn.textContent = chords ? `Re-roll ${chords}` : 'All chords pinned';
+    }
   }
 
   // Which degree of the current key a slot is sitting on. Chords generated
@@ -372,7 +400,12 @@
       const deg = degreeOf(i);
       const dia = currentDiatonic.find(x => x.deg === deg) || currentDiatonic[0] || {};
       const inKey = diatonicShapesFor(deg);
-      sev.innerHTML = shapeOptions(dia.quality).map(tok =>
+      const options = shapeOptions(dia.quality);
+      // whatever is actually sounding is always on the list, even a shape a
+      // key change carried in from the other mode
+      const sounding = shapeFor(i, deg);
+      if (sounding && !options.includes(sounding)) options.push(sounding);
+      sev.innerHTML = options.map(tok =>
         `<option value="${tok}">${CHORD_SHAPES[tok].label}${inKey.includes(tok) ? ' ✓' : ''}</option>`
       ).join('');
       // what this slot would be showing if you'd never touched it
@@ -441,6 +474,8 @@
     renderChordDisplay();
     renderChordSlots();
     updateRerollButton();
+    buildPresetSelect();          // the list follows whichever mode the key is in
+    renderPresetVariants();
     view.rebuildChordPicker();
     view.render();
     resetPlaybackCursor();
@@ -471,10 +506,10 @@
       render();
       return;
     }
+    // Same progression, other key: each chord keeps its degree, so picking C
+    // minor from C major turns I–V–vi–IV into i–v–VI–iv rather than rolling
+    // something unrelated.
     keyChoice = { mode: m, tonic: t };
-    modeSetting = m;
-    document.querySelectorAll('#modeGroup .seg-btn')
-      .forEach(b => b.classList.toggle('active', b.dataset.value === m));
     buildKeySelect();
     transposeToKey(m, t);
   });
@@ -621,27 +656,6 @@
       document.querySelectorAll('#noteValueGroup .seg-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       noteBeats = Number(btn.dataset.value);
-    });
-  });
-
-  document.querySelectorAll('#modeGroup .seg-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('#modeGroup .seg-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      modeSetting = btn.dataset.value;
-      if (modeSetting === 'random'){
-        keyChoice = null;
-        buildKeySelect();
-        render();
-        return;
-      }
-      // Same progression, other mode: hold the tonic if that key exists in the
-      // new mode, so I–V–vi–IV in C major becomes i–v–VI–IV in C minor rather
-      // than something unrelated.
-      const tonic = tonicIn(modeSetting, currentTonic);
-      keyChoice = { mode: modeSetting, tonic };
-      buildKeySelect();
-      transposeToKey(modeSetting, tonic);
     });
   });
 
@@ -998,7 +1012,6 @@
         activeChord: () => scheduledLog[0],
       });
       buildKeySelect();
-      buildPresetSelect();
       updatePlaybackUI();
       setPlayLabel('Play');
       // a shared link opens on its progression; otherwise roll one
