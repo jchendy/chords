@@ -150,9 +150,7 @@
     chordPosRow.hidden = fretMode !== 'positions';
     stringSetRow.hidden = fretMode !== 'triads3';
     cagedViewRow.hidden = fretMode !== 'caged';
-    // the grips on their own sit where they sit — there's no box to step
-    // through until they're opened out into the arpeggio
-    boxRow.hidden = !['penta', 'scale'].includes(fretMode) && !(fretMode === 'caged' && wholeArpeggio);
+    boxRow.hidden = !['caged', 'penta', 'scale'].includes(fretMode);
     // stepping and holding only mean something once you're looking at one box
     document.getElementById('boxStep').classList.toggle('locked', !singleBox);
     holdPositionToggle.closest('.inline-check').classList.toggle('off', !singleBox);
@@ -184,7 +182,6 @@
   wholeArpeggioToggle.addEventListener('change', () => {
     wholeArpeggio = wholeArpeggioToggle.checked;
     heldWindow = null;      // the grips and the arpeggio don't share a window
-    updateFretUI();         // ...and only the arpeggio has boxes to step through
     renderFretboard();
   });
 
@@ -664,7 +661,14 @@
       const board = cagedTriadBoard(rootPc, isMinor, chord.note, seventhPc);
       if (!wholeArpeggio){
         cagedShapesShown = board.shapesShown;
-        return { markers: applyColorBy(board.markers, chord), lines: board.lines };
+        // Each grip is its own box, so "Single box" walks the neck one CAGED
+        // shape at a time here just as it walks one arpeggio box at a time
+        // with the shapes opened out.
+        const grips = board.lines.map(l => ({
+          name: l.shape, anchor: Math.min(...l.cells.map(c => c.fret)), cells: l.cells,
+        }));
+        const one = applyBoxWindow(board.markers, board.lines, grips);
+        return { markers: applyColorBy(one.markers, chord), lines: one.lines };
       }
 
       const degByPc = { [rootPc]: chord.note };

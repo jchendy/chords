@@ -50,8 +50,11 @@ names the tab you're on.
   those sevenths are stored relative to the key rather than frozen when the
   preset landed. A preset that isn't in the new list simply stops being "the
   preset" while its chords stay, transposed
-- Per-slot chord selection — every chord picker always names a real chord of
-  the key, and "Randomize all chords" rolls the whole set at once. Randomness
+- Per-slot chord selection — one row per chord, with the columns named once
+  at the top (Chord / Bars / Quality) so which picker does what is readable
+  rather than something you learn by clicking. Every chord picker always names
+  a real chord of the key, and the dice beside the count stepper rolls the
+  whole set at once. Randomness
   is an action rather than a state a slot sits in, so what you see in the
   pickers is always what's sounding. A chord loaded from a genre example that
   isn't a degree of the key names itself instead. The presets sit above these,
@@ -101,8 +104,9 @@ names the tab you're on.
   roots-only / count-in options, and the share link), and then the chord
   chart itself. The chart closes that panel and the neck opens the next one,
   so the two things you read while playing sit against each other rather than
-  with the controls between them. "Randomize all chords" sits at the foot of
-  the build panel. A "Style" picker chooses the backing:
+  with the controls between them. Play floats bottom-right, clear of the page,
+  so the transport is never somewhere you have to scroll back to. A "Style"
+  picker chooses the backing:
   Simple — the plain piano voicing, with note value (quarter / half / whole),
   metronome click and a roots-only mode;
   Rock — driving 8th-note piano chords and a basic kit, with a half-time
@@ -164,11 +168,11 @@ names the tab you're on.
   shapes out: every chord tone on the neck, each one coloured by the CAGED
   box it sits in (seam notes split-coloured), labelled by degree, with the
   grip itself still traced through the middle of its box. That's the CAGED
-  arpeggio a method book teaches — the shape you already know, plus the
-  notes around it on each string — and it brings in the same Box row as the
-  scale views, so you can drill one position at a time. The outlines are the
-  same grips either way, so the toggle changes how much you see rather than
-  what you're looking at;
+  arpeggio a method book teaches — the shape you already know, plus the notes
+  around it on each string. The outlines are the same grips either way, so the
+  toggle changes how much you see rather than what you're looking at, and the
+  Box row works in both: with the grips alone each grip is its own box, so
+  "Single box" walks the neck one CAGED shape at a time;
   Triad inversions — close three-note triads on one set of three adjacent
   strings (e–B–G, B–G–D, G–D–A or D–A–E), every inversion, all the way up
   the neck, each legend entry also naming the CAGED grip its shapes are cut

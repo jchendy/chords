@@ -332,13 +332,31 @@
   .mini-select:focus-visible{ outline: 2px solid var(--accent-hi); outline-offset: 2px; }
   .mini-select option{ background: var(--panel); color: var(--ink); }
 
-  .chord-slots{
-    display:flex;
-    flex-wrap:wrap;
-    gap: 6px;
-    justify-content:flex-end;
+  /* One chord per row, columns named once at the top, so which box does what
+     is readable rather than something you learn by clicking. */
+  .chord-table{ margin-top: 12px; }
+  .chord-row{
+    display:grid;
+    grid-template-columns: 1.5rem minmax(0,1fr) 4rem minmax(0,1fr);
+    align-items:center;
+    gap: 7px;
+    padding: 3px 0;
   }
-  .chord-slots .mini-select{ font-size: 0.78rem; padding: 5px 22px 5px 8px; }
+  .chord-head{
+    font-size: 0.67rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    padding-bottom: 4px;
+  }
+  .chord-num{
+    font-size: 0.72rem;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+  .chord-row .mini-select{ width: 100%; font-size: 0.78rem; padding: 5px 22px 5px 8px; }
 
   /* ---- progression display ---- */
   .display{
@@ -719,8 +737,6 @@
   .link-btn:hover{ color: var(--ink); }
   .link-btn:focus-visible{ outline: 2px solid var(--accent-hi); outline-offset: 2px; }
 
-  /* a chord slot pairs the chord with how many measures it lasts */
-  .chord-slot{ display:inline-flex; gap:3px; }
   .seventh-select{ padding-right: 20px; }
   #presetVariantGroup{ justify-content: flex-end; }
   #presetVariantGroup .seg-btn{ font-size: 0.78rem; padding: 6px 9px; }
@@ -735,7 +751,23 @@
      panel but left-aligned inside the centred display — everything you touch
      is above the chart, so the chart itself ends the panel and sits against
      the fretboard below it. */
-  .display .play-btn{ margin-top: 0; gap: 8px; }
+  /* Play floats clear of the page: the chart and the neck are what you scroll
+     between while practising, and the transport shouldn't be somewhere you
+     have to scroll back to. It lives inside the practice tab's markup, so it
+     disappears with that tab rather than needing its own visibility rule. */
+  .display .play-btn{
+    position: fixed;
+    z-index: 40;
+    right: 20px;
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+    width: auto;
+    gap: 8px;
+    padding: 13px 22px;
+    border-radius: 999px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+  }
+  /* room under the last panel so the button never sits on top of it */
+  #page-caged .app{ padding-bottom: 76px; }
   .transport{ text-align: left; margin-top: 14px; }
   .transport .setting:first-child{ border-top: 1px solid var(--line); padding-top: 13px; }
   /* the chart, with its key line, closes the panel */
@@ -821,7 +853,7 @@
       </div>
       <div class="setting">
         <span class="setting-label">Chords
-          <button type="button" class="info-dot" data-tip="Each chord has three pickers: which scale degree it is, how many measures it lasts, and whether it's a plain triad or a seventh. Every one always names a real chord — the dice below rolls them all at once. Picking &quot;7&quot; on a minor or diminished degree raises its 3rd, giving you a secondary dominant.">i</button>
+          <button type="button" class="info-dot" data-tip="One row per chord: which scale degree it is, how many measures it lasts, and whether it's a plain triad or a seventh. Every picker always names a real chord — the dice rolls them all at once, and − / + change how many there are. Picking &quot;7&quot; on a minor or diminished degree raises its 3rd, giving you a secondary dominant.">i</button>
         </span>
         <div class="row-control">
           <div class="stepper">
@@ -829,8 +861,18 @@
             <span class="step-value" id="chordCountValue">3</span>
             <button type="button" class="step-btn" id="chordCountUp" aria-label="More chords">+</button>
           </div>
-          <div class="chord-slots" id="chordSlots"></div>
+          <button type="button" class="seg-btn dice-btn" id="genBtn" aria-label="Randomize all chords" title="Randomize all chords">⚄</button>
         </div>
+      </div>
+      <!-- one chord per row, with the columns named once at the top -->
+      <div class="chord-table">
+        <div class="chord-row chord-head" aria-hidden="true">
+          <span class="chord-num"></span>
+          <span>Chord</span>
+          <span>Bars</span>
+          <span>Quality</span>
+        </div>
+        <div id="chordSlots"></div>
       </div>
       <div class="settings-heading">When randomizing</div>
       <label class="setting">
@@ -845,12 +887,6 @@
         </span>
         <input type="checkbox" id="commonToggle" checked>
       </label>
-      <div class="setting">
-        <span class="setting-label"></span>
-        <div class="row-control">
-          <button type="button" class="seg-btn reroll-btn" id="genBtn">⚄ Randomize all chords</button>
-        </div>
-      </div>
     </div>
   </section>
 
@@ -991,7 +1027,7 @@
     </div>
     <div class="setting" id="boxRow" hidden>
       <span class="setting-label">Box
-        <button type="button" class="info-dot" data-tip="Single box shows one CAGED position at a time — the one to practise in — with ◂ ▸ to walk up and down the neck. Hold position keeps that stretch of frets fixed when the chord changes during playback, so you see the new chord's notes under the hand you already have there, rather than jumping to the new chord's box.">i</button>
+        <button type="button" class="info-dot" data-tip="Single box shows one CAGED position at a time — the one to practise in — with ◂ ▸ to walk up and down the neck.">i</button>
       </span>
       <div class="row-control">
         <label class="inline-check">
@@ -1005,6 +1041,7 @@
         <label class="inline-check">
           <input type="checkbox" id="holdPositionToggle">
           <span>Hold position</span>
+          <button type="button" class="info-dot" data-tip="Keeps the stretch of frets you're on fixed when the chord changes during playback. Instead of the neck jumping to the new chord's own box, you see that chord's notes under the hand you already have there — which is what you actually do when comping through changes. Needs &quot;Single box&quot; on.">i</button>
         </label>
       </div>
     </div>
@@ -1021,6 +1058,7 @@
         <label class="inline-check">
           <input type="checkbox" id="voiceLeadToggle">
           <span>Voice leading</span>
+          <button type="button" class="info-dot" data-tip="Picks each chord's shape closest to where the previous one landed, rather than to one fixed fret. The shapes then walk from one to the next the way a hand does — an Am7 that would otherwise jump back to the nut carries on up the neck instead.">i</button>
         </label>
         <label class="inline-check">
           <input type="checkbox" id="chordPosFollowToggle" checked>

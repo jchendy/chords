@@ -343,8 +343,13 @@
   function renderChordSlots(){
     chordSlotsEl.innerHTML = '';
     for (let i = 0; i < chordCount; i++){
-      const slot = document.createElement('span');
-      slot.className = 'chord-slot';
+      const slot = document.createElement('div');
+      slot.className = 'chord-row';
+      // the row number, so a chord can be talked about by position
+      const num = document.createElement('span');
+      num.className = 'chord-num';
+      num.textContent = i + 1;
+      slot.appendChild(num);
 
       const sel = document.createElement('select');
       sel.className = 'mini-select chord-degree';
@@ -380,9 +385,8 @@
       const bars = document.createElement('select');
       bars.className = 'mini-select bars-select';
       bars.setAttribute('aria-label', `Measures for chord ${i + 1}`);
-      bars.title = 'Measures on this chord';
       bars.innerHTML = [1, 2, 3, 4, 6, 8]
-        .map(n => `<option value="${n}">\u00d7${n}</option>`).join('');
+        .map(n => `<option value="${n}">${n}</option>`).join('');
       bars.value = String(measuresFor(i));
       bars.addEventListener('change', () => {
         slotMeasures[i] = Number(bars.value) || DEFAULT_MEASURES;
@@ -397,7 +401,7 @@
       const sev = document.createElement('select');
       sev.className = 'mini-select seventh-select';
       sev.setAttribute('aria-label', `Chord quality for chord ${i + 1}`);
-      sev.title = 'Chord quality — ✓ marks the shapes in this key';
+      sev.title = '✓ marks the shapes this key gives that degree';
       const deg = degreeOf(i);
       const dia = currentDiatonic.find(x => x.deg === deg) || currentDiatonic[0] || {};
       const inKey = diatonicShapesFor(deg);
