@@ -80,5 +80,7 @@
     return els.join('');
   }
 
-  GT.neck = { buildSVG, viewBox };
+  // `board` and the two coordinate helpers are shared with the reverse chord
+  // finder, which draws its own click targets on the same empty neck
+  GT.neck = { buildSVG, board, fretX, stringY, viewBox };
 })();

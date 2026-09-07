@@ -1,11 +1,13 @@
 // Reverse chord finder tab: click notes on a fretboard, get back every chord
-// name those notes could go by.
+// name those notes could go by. The neck itself comes from neck.js, so it
+// matches the practice tab's; this file only adds the click targets.
 (function(){
   'use strict';
   const GT = (window.GT = window.GT || {});
 
   const { NOTE_NAMES_SHARP, identifyChords } = GT.theory;
-  const { STRING_TUNING, STRING_LABELS, FRET_COUNT } = GT.fretboard;
+  const { STRING_TUNING, FRET_COUNT } = GT.fretboard;
+  const { board, fretX, stringY } = GT.neck;
 
   const reverseFretboardSvg = document.getElementById('reverseFretboard');
   const reverseMatchesEl = document.getElementById('reverseMatches');
@@ -14,28 +16,8 @@
   let reverseSelection = new Array(6).fill(null);   // per string: fret number or null (muted)
 
   function renderReverseFretboard(){
-    const W = 520, H = 156;
-    const padL = 44, padR = 12, padT = 14, padB = 22;
-    const nutX = padL + 12;
-    const cellW = (W - nutX - padR) / FRET_COUNT;
-    const rowH = (H - padT - padB) / 5;
-    const stringY = s => padT + s * rowH;
-    const wireX = f => nutX + f * cellW;
-    const fretX = f => f === 0 ? nutX - 11 : nutX + (f - 0.5) * cellW;
-
-    const els = [];
-    for (let s = 0; s < 6; s++){
-      els.push(`<line class="fret-string" x1="${nutX}" y1="${stringY(s)}" x2="${W - padR}" y2="${stringY(s)}"/>`);
-      els.push(`<text class="string-label" x="${padL - 10}" y="${stringY(s) + 3}" text-anchor="end">${STRING_LABELS[s]}</text>`);
-    }
-    els.push(`<line class="fret-nut" x1="${nutX}" y1="${stringY(0)}" x2="${nutX}" y2="${stringY(5)}"/>`);
-    for (let f = 1; f <= FRET_COUNT; f++){
-      els.push(`<line class="fret-wire" x1="${wireX(f)}" y1="${stringY(0)}" x2="${wireX(f)}" y2="${stringY(5)}"/>`);
-    }
-    [3, 5, 7, 9, 15].forEach(f => els.push(`<circle class="fret-inlay" cx="${fretX(f)}" cy="${padT + 2.5 * rowH}" r="3.6"/>`));
-    els.push(`<circle class="fret-inlay" cx="${fretX(12)}" cy="${padT + 1.5 * rowH}" r="3.6"/>`);
-    els.push(`<circle class="fret-inlay" cx="${fretX(12)}" cy="${padT + 3.5 * rowH}" r="3.6"/>`);
-    [3, 5, 7, 9, 12, 15].forEach(f => els.push(`<text class="fret-num" x="${fretX(f)}" y="${H - 6}" text-anchor="middle">${f}</text>`));
+    // the same empty neck the practice tab draws, from the same code
+    const els = board();
 
     // one clickable target per string/fret intersection, plus fret 0 (open)
     for (let s = 0; s < 6; s++){

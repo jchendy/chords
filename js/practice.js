@@ -23,7 +23,7 @@
   let keyChoice = null;                 // null = random, else { mode, tonic }
   let slotChoices = [null, null, null]; // per slot: null = random, else a diatonic degree
   let slotMeasures = [];                // per slot: how many measures that chord lasts
-  let slotSevenths = [];                // per slot: the shape you chose, or null to follow the key
+  let slotShapes = [];                // per slot: the shape you chose, or null to follow the key
   let loadedLabel = null;               // set when a progression came in from elsewhere
   let currentMode = 'major';
   let currentTonic = 'C';
@@ -60,7 +60,7 @@
   }
 
   // Name the shape a chord is currently in — the key a slot stores.
-  function seventhLabelOf(chord){
+  function shapeOf(chord){
     if (!chord.seventh) return chord.quality === 'min' ? 'min' : chord.quality === 'dim' ? 'dim' : 'maj';
     const iv = ((SEMITONE[chord.seventh] - SEMITONE[chord.note]) % 12 + 12) % 12;
     if (chord.quality === 'dim') return iv === 9 ? 'dim7' : 'm7♭5';
@@ -72,7 +72,7 @@
   // Read from the diatonic list, since a chord built as a triad has none.
   function diatonicSeventhFor(deg){
     const c = currentDiatonic.find(x => x.deg === deg) || currentDiatonic[0];
-    return seventhLabelOf(c);
+    return shapeOf(c);
   }
 
   // the flat-7 that keeps the triad it's built on
@@ -108,10 +108,10 @@
   // The shape a slot should take: whatever you set it to, otherwise the key's
   // own triad — or the key's own seventh, if random slots are set to come up
   // as sevenths. Leaving that last case implicit rather than writing it into
-  // `slotSevenths` is what lets the checkbox turn triads into sevenths and
+  // `slotShapes` is what lets the checkbox turn triads into sevenths and
   // back without disturbing anything else about the progression.
   function shapeFor(i, deg){
-    if (slotSevenths[i]) return slotSevenths[i];
+    if (slotShapes[i]) return slotShapes[i];
     if (slotChoices[i] == null && randomSeventhsToggle.checked) return diatonicSeventhFor(deg);
     return null;
   }
@@ -136,7 +136,7 @@
   // follow along when the key or the mode changes.
   function chordForDegree(deg, shape){
     const c = currentDiatonic.find(x => x.deg === deg) || currentDiatonic[0];
-    const chord = { ...c, _deg: c.deg, _sev: shape || null };
+    const chord = { ...c, _deg: c.deg, _shape: shape || null };
     const spec = CHORD_SHAPES[shape];
 
     if (!spec){ chord.seventh = null; return chord; }
@@ -170,7 +170,7 @@
 
     // a slot being re-rolled gets a fresh shape too; a pinned slot keeps the
     // one you gave it
-    slotSevenths = slotSevenths.map((s, i) => slotChoices[i] == null ? null : s);
+    slotShapes = slotShapes.map((s, i) => slotChoices[i] == null ? null : s);
 
     const prog = [];
     for (let i = 0; i < chordCount; i++){
@@ -238,12 +238,12 @@
     slotMeasures = chords.map(c => c.bars);
     // `maj` asks for a real dominant; `dom` keeps whatever triad the key gives
     // the degree and just flattens its 7th
-    slotSevenths = chords.map(c => {
+    slotShapes = chords.map(c => {
       if (c.dia) return diatonicSeventhFor(c.deg);
       if (!c.dom) return null;
       return c.maj ? '7' : flatSeventh(chordForDegree(c.deg).quality);
     });
-    currentProgression = chords.map((c, i) => chordForDegree(c.deg, slotSevenths[i]));
+    currentProgression = chords.map((c, i) => chordForDegree(c.deg, slotShapes[i]));
     loadedLabel = null;
     renderAll();
   }
@@ -326,7 +326,7 @@
         slotChoices[i] = sel.value === 'random' ? null : Number(sel.value);
         // handing a slot back to Random hands its shape back too, so a rolled
         // chord is always one the key actually contains
-        if (slotChoices[i] == null) slotSevenths[i] = null;
+        if (slotChoices[i] == null) slotShapes[i] = null;
         const rolled = slotChoices[i] != null ? slotChoices[i] : rollDegree(-1);
         currentProgression[i] = chordForDegree(rolled, shapeFor(i, rolled));
         loadedLabel = null;
@@ -371,7 +371,7 @@
       sev.addEventListener('change', () => {
         // leaving the untouched choice unrecorded is what lets a slot follow
         // the key when you transpose or flip Major/Minor
-        slotSevenths[i] = sev.value === implied ? null : sev.value;
+        slotShapes[i] = sev.value === implied ? null : sev.value;
         currentProgression[i] = chordForDegree(deg, shapeFor(i, deg));
         clearPreset();
         renderAll();
@@ -587,8 +587,8 @@
     slotChoices.length = chordCount;
     while (slotMeasures.length < chordCount) slotMeasures.push(DEFAULT_MEASURES);
     slotMeasures.length = chordCount;
-    while (slotSevenths.length < chordCount) slotSevenths.push(null);
-    slotSevenths.length = chordCount;
+    while (slotShapes.length < chordCount) slotShapes.push(null);
+    slotShapes.length = chordCount;
   }
 
   function setChordCount(n){
@@ -857,7 +857,7 @@
     const p = new URLSearchParams();
     p.set('k', `${currentMode}:${currentTonic}`);
     if (currentProgression.every(c => c._deg != null)){
-      p.set('c', currentProgression.map((c, i) => [c._deg, measuresFor(i), c._sev || ''].join('.')).join(','));
+      p.set('c', currentProgression.map((c, i) => [c._deg, measuresFor(i), c._shape || ''].join('.')).join(','));
     } else {
       p.set('n', currentProgression.map((c, i) => `${displayName(c)}.${measuresFor(i)}`).join(','));
       if (loadedLabel) p.set('l', loadedLabel);
@@ -904,8 +904,8 @@
     setSlotCount(kept.length);
     slotChoices = kept.map(([deg]) => Number(deg));
     slotMeasures = kept.map(([, bars]) => Math.max(1, Number(bars) || 1));
-    slotSevenths = kept.map(([, , shape]) => CHORD_SHAPES[shape] ? shape : null);
-    currentProgression = kept.map(([deg], i) => chordForDegree(Number(deg), slotSevenths[i]));
+    slotShapes = kept.map(([, , shape]) => CHORD_SHAPES[shape] ? shape : null);
+    currentProgression = kept.map(([deg], i) => chordForDegree(Number(deg), slotShapes[i]));
     renderAll();
     return true;
   }
@@ -968,7 +968,7 @@
     slotMeasures = kept.slice(0, built.length).map(r => r.bars);
     // spelled out rather than left to the key: a loaded progression is whatever
     // it is, so its pickers should show the chord that's actually sounding
-    slotSevenths = built.map(seventhLabelOf);
+    slotShapes = built.map(shapeOf);
     loadedLabel = label || null;
     if (tempo){
       tempoInput.value = tempo;
