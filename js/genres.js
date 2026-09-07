@@ -77,6 +77,13 @@
     octave: { '': ['octave6', 'octave5'], m: ['octave6', 'octave5'], 5: ['octave6', 'octave5'] },
   };
 
+  // Styles whose grips hold nothing but the root, the 5th and the octave.
+  // There's no 3rd or 7th in them to alter, so every quality plays the same
+  // shape: a G7 in a power-chord riff is a G5, the way it's actually played.
+  // Without this an unlisted quality fell through to the barre table, which
+  // put a six-string dominant barre in the middle of a power-chord part.
+  const ROOT_FIFTH_STYLES = new Set(['power', 'octave']);
+
   // Put a grip on the neck: pick whichever root string keeps it low and in
   // reach, preferring the 6th string so the chord has a bass note under it.
   function placeVoicing(rootPc, templateName, lowestFret = 0){
@@ -114,8 +121,13 @@
     const parsed = parseChordName(chordName);
     if (!parsed) return null;
     const table = STYLE_TABLE[style] || STYLE_TABLE.barre;
-    const options = table[parsed.formula.name] || STYLE_TABLE.barre[parsed.formula.name]
-      || STYLE_TABLE.barre[''];
+    // a quality this style doesn't list falls back to the barre grip for it —
+    // except where the style has no room for a quality in the first place,
+    // which keeps its own shape instead of reaching for a barre
+    const fallback = ROOT_FIFTH_STYLES.has(style)
+      ? table['']
+      : STYLE_TABLE.barre[parsed.formula.name];
+    const options = table[parsed.formula.name] || fallback || STYLE_TABLE.barre[''];
     if (style === 'open'){
       // whichever grip keeps the hand nearest the nut
       let best = null;

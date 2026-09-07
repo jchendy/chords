@@ -700,6 +700,13 @@
     letter-spacing: 0.07em;
     color: var(--muted);
   }
+  .footer-mail{
+    font-size: 0.72rem;
+    color: var(--muted);
+    text-decoration: none;
+    border-bottom: 1px solid var(--line);
+  }
+  .footer-mail:hover, .footer-mail:focus-visible{ color: var(--ink); }
   .site-tab.footer-tab{
     font-size: 0.78rem;
     font-weight: 500;
@@ -1243,6 +1250,7 @@
 <footer class="site-footer">
   <span class="footer-label">Experimental features</span>
   <button type="button" class="site-tab footer-tab" data-tab="genres">Genre examples</button>
+  <a class="footer-mail" href="mailto:jeff@jeffsguitartools.com">jeff@jeffsguitartools.com</a>
 </footer>
 
 <div class="tooltip-bubble" id="tooltipBubble" role="tooltip" hidden></div>

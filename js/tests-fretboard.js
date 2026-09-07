@@ -456,6 +456,31 @@
       + `(${readings.length} readings)` + (bad ? ` — ${bad}` : ''));
   }
 
+  // A box anchored off the end of the neck is one the arrows can never land
+  // on, so nothing should be coloured by it or named after it. Pentatonic used
+  // to hand notes at the nut to a D box anchored at -2, which put a run in the
+  // legend — "D shape 0-1 · 9-13" — for a position you could not step to.
+  // Every run the legend draws should be a position you can reach: count them.
+  function testEveryBoxNamedCanBeReached(t){
+    loadProgression(['C', 'F', 'G']);
+    ['penta', 'scale'].forEach(mode => {
+      setMode(mode);
+      setView('neck');
+      const runs = [...q('#cagedLegend').querySelectorAll('.range')]
+        .reduce((n, el) => n + el.textContent.split('·').length, 0);
+      // walk the stepper right round and collect the distinct windows it lands on
+      setView('position');
+      const seen = new Set();
+      for (let i = 0; i < 16; i++){
+        const last = [...q('#cagedLegend').querySelectorAll('span')].pop();
+        seen.add(last.textContent.trim());
+        stepPosition();
+      }
+      t.equal(runs, seen.size,
+        `${mode}: the legend names ${runs} stretches of neck and the arrows reach ${seen.size}`);
+    });
+  }
+
   GT.fretboardSuites = [
     ['Fretboard: chords are drawn as shapes you can hold', testGripsAreGrips],
     ['Fretboard: whole arpeggio opens the shapes out', testArpeggioReallyOpensOut],
@@ -467,5 +492,6 @@
     ['Fretboard: a chord previewed is the chord you get', testPreviewMatchesArrival],
     ['Fretboard: one position narrows the neck', testPositionNarrows],
     ['Fretboard: every position method draws alike', testPositionMethodsRenderAlike],
+    ['Fretboard: every box named is a box you can reach', testEveryBoxNamedCanBeReached],
   ];
 })();

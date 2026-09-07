@@ -518,7 +518,18 @@
           (arr || []).forEach(at => { if (at >= r.grid) issues.push(`rhythm "${r.name}" ${k} at ${at} of ${r.grid}`); }));
         g.progressions.forEach(p => p.chords.forEach(c => {
           const v = voiceChord(c, r.voicing);
-          if (!v) issues.push(`"${c}" can't be voiced as ${r.voicing} for "${r.name}"`);
+          if (!v){ issues.push(`"${c}" can't be voiced as ${r.voicing} for "${r.name}"`); return; }
+          // A power chord or an octave holds the root, the 5th and the octave
+          // and nothing else. A quality the style didn't list used to fall
+          // through to the barre table, so a G7 in a power-chord riff came out
+          // as a six-string dominant barre — audibly the wrong instrument part.
+          if (!['power', 'octave'].includes(r.voicing)) return;
+          const rootPc = parseChordName(c).rootPc;
+          const stray = [...new Set(v.cells
+            .map(x => (((STRING_TUNING[x.string] + x.fret) - rootPc) % 12 + 12) % 12))]
+            .filter(iv => iv !== 0 && iv !== 7);
+          if (stray.length) issues.push(
+            `"${c}" as ${r.voicing} for "${r.name}" plays ${stray.join(',')} semitones above the root`);
         }));
       });
       g.leads.forEach(l => {

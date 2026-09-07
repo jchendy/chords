@@ -853,7 +853,12 @@
       const degByPc = {};
       scale.forEach(([off, deg]) => { degByPc[(rootPc + off) % 12] = deg; });
 
-      const placements = pentaBoxPlacements(rootPc, isMinor);
+      // A box anchored off the end of the neck is one you can neither play nor
+      // step to, so it owns no notes and names nothing: it used to claim notes
+      // down at the nut, putting a run in the legend for a box the arrows can
+      // never reach.
+      const placements = pentaBoxPlacements(rootPc, isMinor)
+        .filter(p => p.anchor >= 0 && p.anchor <= FRET_COUNT);
       cagedShapesShown = CAGED_ORDER.filter(n => placements.some(p => p.name === n));
       const tones = chordTonePcs(chord);
 
@@ -890,8 +895,7 @@
           }
         }
       }
-      const onNeck = placements.filter(p => p.anchor >= 0 && p.anchor <= FRET_COUNT);
-      const shown = applyBoxWindow(withTagColors(markers, n => CAGED_COLORS[n]), lines, onNeck);
+      const shown = applyBoxWindow(withTagColors(markers, n => CAGED_COLORS[n]), lines, placements);
       return { markers: applyColorBy(shown.markers, chord), lines: shown.lines };
     }
 
@@ -932,9 +936,9 @@
         scalePcs = new Set(Object.keys(degByPc).map(Number));
       }
 
-      const boxes = scaleBoxPlacements(rootPc, isMinor, scalePcs);
-      const onNeck = b => b.anchor >= 0 && b.anchor <= FRET_COUNT;
-      cagedShapesShown = CAGED_ORDER.filter(n => boxes.some(b => b.name === n && onNeck(b)));
+      const boxes = scaleBoxPlacements(rootPc, isMinor, scalePcs)
+        .filter(b => b.anchor >= 0 && b.anchor <= FRET_COUNT);
+      cagedShapesShown = CAGED_ORDER.filter(n => boxes.some(b => b.name === n));
       const tones = chordTonePcs(chord);
 
       const lines = cagedPlacements(rootPc, isMinor ? CAGED_MINOR : CAGED_MAJOR)
@@ -948,7 +952,7 @@
           if (!scalePcs.has(pc)) continue;
           // only boxes that genuinely sit on the neck can share a note; a
           // partial box poking past the nut / 15th fret doesn't create a split
-          const owners = boxes.filter(b => onNeck(b) && b.cells.some(c => c.string === s && c.fret === f));
+          const owners = boxes.filter(b => b.cells.some(c => c.string === s && c.fret === f));
           const ownerNames = [...new Set(owners.map(o => o.name))];
           const base = { string: s, fret: f, label: degByPc[pc],
             isRoot: pc === rootPc, shapes: ownerNames, passing: !tones.has(pc) };
@@ -967,7 +971,7 @@
           }
         }
       }
-      const shown = applyBoxWindow(withTagColors(markers, n => CAGED_COLORS[n]), lines, boxes.filter(onNeck));
+      const shown = applyBoxWindow(withTagColors(markers, n => CAGED_COLORS[n]), lines, boxes);
       return { markers: applyColorBy(shown.markers, chord), lines: shown.lines };
     }
 
