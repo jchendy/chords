@@ -163,13 +163,14 @@ names the tab you're on.
   arpeggio a method book teaches — the shape you already know, plus the notes
   around it on each string. The outlines are the same grips either way, so the
   toggle changes how much you see rather than what you're looking at, and the
-  This view reads two ways, chosen by **Show**. *Across the neck* is one chord
+  Position row works in both: with the grips alone each grip is its own box, so
+  one position walks the neck one CAGED shape at a time.
+  This view reads two ways, chosen by **View**. *Across the neck* is one chord
   at a time, its five shapes everywhere they fall — the view for learning where
-  a chord lives. *In one position* is the whole progression under one hand: the
-  chord that's sounding lit, and the rest of the changes drawn in behind it,
-  the whole progression gathered into one place, drawn the way it plays —
+  a chord lives. *In one position* is the whole progression gathered under one
+  hand, drawn the way it plays —
   each chord in its own colour, labelled by degree, its grip traced faintly
-  through, and the same three tiers of brightness (the chord in front lit, the
+  through, and three tiers of brightness (the chord in front lit, the
   one you're heading into next half-lit, the rest dimmed much further, roots
   included). Only the frets the chord in front isn't already using are drawn,
   so the rest stays behind rather than competing. A chord shows whichever of
