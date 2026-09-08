@@ -762,6 +762,56 @@
     t.equal(bad.join('; '), '', 'The legend publishes the position for the window on the neck');
   }
 
+  // A position is a stretch of neck, not one chord's box: changing which chord
+  // is in front changes what's lit, not where the hand is. It went wrong with
+  // the arpeggio opened out (B32) — that reading took its window from its own
+  // boxes, which are wider and fewer than the grips, so each chord's nearest
+  // to the same anchor could land a couple of frets from the last.
+  function testThePositionHoldsWhileTheChordChanges(t){
+    const bad = [];
+    const arpToggle = q('#wholeArpeggioToggle');
+    const win = () => q('#cagedLegend').dataset.window || '(none)';
+    const acrossChords = () => {
+      const seen = new Set();
+      [...q('#cagedChordGroup').querySelectorAll('.seg-btn')].forEach(b => { b.click(); seen.add(win()); });
+      return [...seen];
+    };
+
+    [['C', 'F', 'G'], ['G', 'C', 'D'], ['Am', 'Dm', 'E'], ['C', 'Am', 'F', 'G']].forEach(names => {
+      loadProgression(names);
+      setMode('caged');
+      setView('position');
+      setShapes(['A', 'E', 'D']);
+      ['box', 'cluster', 'lead'].forEach(method => {
+        setMethod(method);
+        for (let step = 0; step < 4; step++){
+          if (step) stepPosition();
+          const held = {};
+          [false, true].forEach(arp => {
+            if (arpToggle.checked !== arp) arpToggle.click();
+            const seen = acrossChords();
+            if (seen.length !== 1){
+              bad.push(`${names.join('-')} ${method} position ${step} arpeggio=${arp}: ` +
+                       `the window moved between chords — ${seen.join(' then ')}`);
+            }
+            held[arp] = seen[0];
+          });
+          // One box is a box you pick, so the toggle must leave it alone. The
+          // other two put each chord where it really falls and report the
+          // stretch that covers, and the arpeggio genuinely draws more — so
+          // there the window is allowed to grow with it.
+          if (method === 'box' && held[false] !== held[true]){
+            bad.push(`${names.join('-')} position ${step}: ` +
+                     `the arpeggio toggle moved the hand, ${held[false]} to ${held[true]}`);
+          }
+          if (arpToggle.checked) arpToggle.click();
+        }
+      });
+    });
+    setMethod('box');
+    t.equal(bad.join('; '), '', 'The position holds while the chord in front changes');
+  }
+
   GT.fretboardSuites = [
     ['Fretboard: chords are drawn as shapes you can hold', testGripsAreGrips],
     ['Fretboard: whole arpeggio opens the shapes out', testArpeggioReallyOpensOut],
@@ -782,5 +832,6 @@
     ['Fretboard: One box goes when it cannot hold the progression', testOneBoxGoesWhenItCannotHold],
     ['Fretboard: a bar in the chart picks its chord', testChartClickPicksTheChord],
     ['Fretboard: the position is published, not printed', testThePositionIsPublishedForTheWindow],
+    ['Fretboard: the position holds while the chord changes', testThePositionHoldsWhileTheChordChanges],
   ];
 })();

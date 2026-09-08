@@ -1003,7 +1003,35 @@
       const lines = board.lines;
 
       const markers = boxColouredNotes(boxes, { labelOf: pc => degByPc[pc], rootPc });
-      const shown = applyBoxWindow(markers, lines, boxes, boxOpts);
+      // In one position the window is the hand's, so it's chosen from the
+      // grips — the same boxes the arpeggio-off reading steps through.
+      // Stepping the arpeggio's own boxes instead moved the position whenever
+      // you changed which chord was in front: they're wider and there are
+      // fewer of them, so the one nearest the hand could be a couple of frets
+      // off, and each chord's nearest was somewhere else again. It also meant
+      // the toggle moved the hand, when it is meant to change how much you see
+      // rather than where you're looking from.
+      const shown = applyBoxWindow(markers, lines, inPosition ? gripBoxes(chord) : boxes, boxOpts);
+      if (inPosition && shownWindow){
+        // The position is the one the grips reading arrives at, so it is worked
+        // out the same way — lay out that reading's grips and cover what they
+        // came to. Only the window is kept; what's drawn is the arpeggio.
+        // Taken from the arpeggio's own boxes instead, the position moved a
+        // couple of frets whenever you changed which chord was in front: those
+        // boxes are wider and there are fewer of them, so each chord's nearest
+        // to the same anchor was somewhere else again. It moved when the
+        // toggle did, too, when the toggle is meant to change how much you see
+        // rather than where you're looking from.
+        const gripLit = shownBoxCells
+          ? board.markers.filter(m => shownBoxCells.has(m.string + ':' + m.fret))
+          : [];
+        const gripGhosts = ghostMarkers(shownWindow,
+          new Map(gripLit.map(m => [m.string + ':' + m.fret, m])), true, gripBoxes, true);
+        windowCovering([...gripGhosts.markers, ...gripLit]);
+        const inWin = f => f >= shownWindow.min && f <= shownWindow.max;
+        shown.markers = markers.filter(m => inWin(m.fret));
+        shown.lines = lines.filter(l => l.cells.every(c => inWin(c.fret)));
+      }
       shown.markers = withTagColors(shown.markers, n => CAGED_COLORS[n]);
       const lit = inPosition ? shown.markers.map(asChord) : applyColorBy(shown.markers, chord);
       const litLines = inPosition
