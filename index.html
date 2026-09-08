@@ -164,7 +164,7 @@
   .fret-nut{ stroke:#d8d1c4; stroke-width:5; }
   .fret-inlay{ fill:#3a3631; }
   .fret-num, .string-label{ fill:var(--muted); font-size:9.5px; font-family:Inter,sans-serif; font-weight:600; }
-  .note-dot text{ fill:#0c0b0a; font-size:9px; font-weight:700; font-family:Inter,sans-serif; }
+  .note-dot text{ fill:#0c0b0a; font-weight:700; font-family:Inter,sans-serif; }   /* size set per label in neck.js */
   .note-dot.hollow text{ fill:var(--ink); }
   .dot-ring{ stroke:var(--ink); stroke-width:2.6; }
   .shape-line{ fill:none; stroke-width:2.2; opacity:.85; stroke-linecap:round; stroke-linejoin:round; }
@@ -317,7 +317,7 @@
   .rct-ring{ fill:none; stroke:var(--line2); stroke-width:1.4; opacity:.7; }
   .reverse-click-target.selected .rct-ring{ opacity:0; }
   .reverse-selected-dot{ pointer-events:none; }
-  .reverse-note-label{ fill:var(--bg); font:600 10px Inter,system-ui,sans-serif; }
+  .reverse-note-label{ fill:var(--bg); font:600 8px Inter,system-ui,sans-serif; }
 
   /* ---------- genre examples ---------- */
   .page-title{ margin:0; font-family:Fraunces,Georgia,serif; font-style:italic; font-weight:500; font-size:1.5rem; line-height:1; display:flex; align-items:center; gap:10px; }
@@ -526,7 +526,7 @@
            drag, and it shows where the arrows have taken you. -->
       <div class="stage">
         <div class="fret-scroll">
-          <svg id="fretboard" viewBox="0 0 608 156" role="img" aria-label="Guitar fretboard"></svg>
+          <svg id="fretboard" viewBox="0 0 608 131" role="img" aria-label="Guitar fretboard"></svg>
           <div id="posWindow" class="window" hidden>
             <!-- the same step as the toolbar pair, on the window's own edges -->
             <button type="button" class="win-arrow l" data-step="boxPrev" aria-label="Previous position">‹</button>
@@ -718,7 +718,7 @@
     <div class="chord-match-list" id="reverseMatches"></div>
     <div class="stage">
       <div class="fret-scroll">
-        <svg id="reverseFretboard" viewBox="0 0 608 156" role="img" aria-label="Interactive guitar fretboard"></svg>
+        <svg id="reverseFretboard" viewBox="0 0 608 131" role="img" aria-label="Interactive guitar fretboard"></svg>
       </div>
     </div>
   </section>

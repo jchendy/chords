@@ -25,8 +25,8 @@
         const cx = fretX(f), cy = stringY(s);
         const selected = reverseSelection[s] === f;
         els.push(`<g class="reverse-click-target${selected ? ' selected' : ''}" data-string="${s}" data-fret="${f}">
-          <circle class="rct-hit" cx="${cx}" cy="${cy}" r="10"/>
-          <circle class="rct-ring" cx="${cx}" cy="${cy}" r="7"/>
+          <circle class="rct-hit" cx="${cx}" cy="${cy}" r="9"/>
+          <circle class="rct-ring" cx="${cx}" cy="${cy}" r="6"/>
         </g>`);
       }
     }
@@ -38,8 +38,8 @@
       const cx = fretX(f), cy = stringY(s);
       const pc = (STRING_TUNING[s] + f) % 12;
       els.push(`<g class="reverse-selected-dot">
-        <circle class="diagram-note" cx="${cx}" cy="${cy}" r="9"/>
-        <text class="reverse-note-label" x="${cx}" y="${cy + 3.5}" text-anchor="middle">${NOTE_NAMES_SHARP[pc]}</text>
+        <circle class="diagram-note" cx="${cx}" cy="${cy}" r="7.5"/>
+        <text class="reverse-note-label" x="${cx}" y="${cy + 2.8}" text-anchor="middle">${NOTE_NAMES_SHARP[pc]}</text>
       </g>`);
     });
 

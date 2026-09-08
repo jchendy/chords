@@ -13,10 +13,15 @@
 
   const { STRING_LABELS, FRET_COUNT } = GT.fretboard;
 
-  const H = 156;
+  // The strings sit closer together than the frets are wide — near enough the
+  // proportions of the real thing that a grip drawn on it reads as a grip.
+  // H follows from the string gap: the padding is the room the fret numbers
+  // and the string names need.
+  const ROW_H = 19;
   const padL = 44, padR = 12, padT = 14, padB = 22;
+  const H = padT + padB + 5 * ROW_H;
   const nutX = padL + 12;
-  // A fret is half again as wide as the gap between two strings, which is
+  // A fret is close to twice as wide as the gap between two strings, which is
   // roughly the shape of the real thing — a fret square enough to be mistaken
   // for a grid cell is harder to read a shape off. The neck that comes out is
   // wide, so a full one wants most of a laptop's width; see maxWidth below.
@@ -25,7 +30,7 @@
   // rather than in the middle of the gap, and putting the dots there says
   // which fret is which without having to count the wires.
   const DOT_AT = 0.62;
-  const rowH = (H - padT - padB) / 5;
+  const rowH = ROW_H;
 
   const INLAYS = [3, 5, 7, 9, 15];
   const FRET_NUMS = [3, 5, 7, 9, 12, 15];
@@ -87,8 +92,11 @@
       });
 
       markers.filter(m => inRange(m.fret)).forEach(m => {
-        const cx = fretX(m.fret), cy = stringY(m.string), r = 9.5;
-        const fs = (m.label && m.label.length > 1) ? 10.5 : 13;
+        // Small enough that two on neighbouring strings stay two dots, and no
+        // smaller than the label it carries — a longer one ("♭3") is set a
+        // size down to fit rather than the dot being grown to hold it.
+        const cx = fretX(m.fret), cy = stringY(m.string), r = 7.5;
+        const fs = (m.label && m.label.length > 1) ? 7.5 : 9;
         const shapeAttr = (m.shapes && m.shapes.length) ? ` data-shapes="${m.shapes.join(',')}"` : '';
         const rootPcAttr = m.pc !== undefined ? ` data-rootpc="${m.pc}"` : '';
         // a cell shared by two chords reads as a different degree for each —
