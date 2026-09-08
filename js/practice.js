@@ -705,12 +705,56 @@
     });
   }
 
+  // The transport carries the style as a name you can tap rather than six
+  // buttons it has no room for — the chart head's move, and like the key
+  // there it's a view of the same state, not a second copy of it. The options
+  // are built from the buttons, so the list is written once.
+  //
+  // Simple's note value belongs in that list too: on its own "Simple" says
+  // nothing about what you'll hear, and quarter/half/whole is the only thing
+  // left to choose once you've picked it. So Simple appears once per note
+  // value, and picking one sets both.
+  const quickStyle = document.getElementById('quickStyle');
+  const styleLabel = document.getElementById('styleLabel');
+  const noteValueButtons = () => [...document.querySelectorAll('#noteValueGroup .seg-btn')];
+  const simpleName = beats => {
+    const btn = noteValueButtons().find(b => b.dataset.value === String(beats));
+    return btn ? `Simple ${btn.textContent.toLowerCase()} note` : 'Simple';
+  };
+  document.querySelectorAll('#styleGroup .genre-btn').forEach(btn => {
+    if (btn.dataset.value === 'simple'){
+      noteValueButtons().forEach(nv =>
+        quickStyle.appendChild(new Option(simpleName(nv.dataset.value), `simple.${nv.dataset.value}`)));
+    } else {
+      quickStyle.appendChild(new Option(btn.textContent, btn.dataset.value));
+    }
+  });
+  quickStyle.addEventListener('change', () => {
+    const [style, beats] = quickStyle.value.split('.');
+    const btn = document.querySelector(`#styleGroup .genre-btn[data-value="${style}"]`);
+    if (btn) btn.click();
+    if (beats){
+      const nv = noteValueButtons().find(b => b.dataset.value === beats);
+      if (nv) nv.click();
+    }
+    syncQuickStyle();
+  });
+
+  // the name in the bar, and which option the picker is sitting on
+  function syncQuickStyle(){
+    const simple = currentStyle === 'simple';
+    const chosen = document.querySelector('#styleGroup .genre-btn.active');
+    styleLabel.textContent = simple ? simpleName(noteBeats) : (chosen ? chosen.textContent : '');
+    quickStyle.value = simple ? `simple.${noteBeats}` : currentStyle;
+  }
+
   function updatePlaybackUI(){
     const simple = currentStyle === 'simple';
     noteValueRow.hidden = !simple;
     rootOnlyRow.hidden = !simple;
     clickRow.hidden = !simple;
     styleVariantRow.hidden = simple;
+    syncQuickStyle();
   }
 
   document.querySelectorAll('.genre-btn').forEach(btn => {
@@ -775,6 +819,7 @@
       document.querySelectorAll('#noteValueGroup .seg-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       noteBeats = Number(btn.dataset.value);
+      syncQuickStyle();      // Simple is named for its note value in the bar
     });
   });
 

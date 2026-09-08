@@ -107,7 +107,8 @@
   .quick{ display:inline-flex; align-items:center; gap:6px; margin-left:4px; padding-left:14px; border-left:1px solid var(--line2); }
   .pick-edit{ position:relative; display:inline-flex; align-items:center; gap:8px; padding:4px 6px; margin:-4px 0 -4px -6px; border-radius:6px; cursor:pointer; }
   .pick-edit:hover, .pick-edit:focus-within{ background:var(--panel); }
-  .pick-edit:hover .progline, .pick-edit:focus-within .progline{ text-decoration:underline; text-decoration-color:var(--muted2); text-underline-offset:4px; }
+  .pick-edit:hover .progline, .pick-edit:focus-within .progline,
+  .pick-edit:hover .styleline, .pick-edit:focus-within .styleline{ text-decoration:underline; text-decoration-color:var(--muted2); text-underline-offset:4px; }
   .progline{ font-family:Fraunces,Georgia,serif; font-size:1.15rem; color:var(--ink); line-height:1; white-space:nowrap; }
   .progline.unset{ color:var(--muted); font-style:italic; }
 
@@ -234,8 +235,12 @@
   .tempo #tempo{ flex:1 1 110px; min-width:70px; accent-color:var(--ink); }
   .tempo .val{ font-variant-numeric:tabular-nums; color:var(--muted); font-size:.85rem; min-width:64px; text-align:right; white-space:nowrap; }
   .bpm-row .seg-btn{ font-size:.72rem; padding:2px 1px; margin:0 9px 0 0; font-variant-numeric:tabular-nums; }
-  /* Style and the metronome, when the bar is wide enough to hold them: the
-     same rows the sheet uses, so they read the same wherever they are. */
+  /* the style, named rather than laid out — the chart head's move, at the
+     bar's size */
+  .bar-style{ display:inline-flex; align-items:center; flex:none; }
+  .styleline{ font-family:Fraunces,Georgia,serif; font-size:1rem; color:var(--ink); line-height:1; white-space:nowrap; }
+  /* The metronome when the bar is wide enough to hold it: the same row the
+     sheet uses, so it reads the same wherever it is. */
   .bar-slot{ display:inline-flex; align-items:center; min-width:0; }
   .bar-slot:empty{ display:none; }
   .bar-slot .frow{ padding:0; gap:0; flex-wrap:nowrap; }
@@ -277,7 +282,6 @@
   .big-input::placeholder{ color:var(--muted2); font-style:italic; }
   .finder-error{ margin:0; font-size:.82rem; color:#e07a7a; }
   .finder-error:empty{ display:none; }
-  .hint{ margin:6px 0 0; font-size:.78rem; color:var(--muted); }
   .caged-overview{ background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:14px 16px 10px; margin-top:12px; }
   .caged-overview-title{ margin:0 0 6px; font-size:.66rem; text-transform:uppercase; letter-spacing:.1em; color:var(--muted2); font-weight:700; }
   .caged-overview .caged-legend{ margin-top:8px; }
@@ -363,7 +367,12 @@
     .tempo{ flex:1 1 auto; gap:8px; }
     .tempo #tempo{ min-width:60px; }
     .tempo .val{ min-width:0; font-size:.78rem; }
+    /* five tempos have to share a phone's worth of bar without wrapping onto
+       a second line and making the transport two rows tall */
+    .bpm-row{ flex-wrap:nowrap; }
+    .bpm-row .seg-btn{ font-size:.68rem; margin:0 6px 0 0; }
     .tbtn{ padding:7px 11px; font-size:.78rem; }
+    .bar-style{ display:none; }        /* no room beside Play; it's in Set up */
     .phone-only{ display:inline-block; }
     .sheet-cols{ grid-template-columns:1fr; gap:6px; }
     .chart-grid{ gap:8px 10px; }
@@ -555,22 +564,33 @@
       <span class="tb-lbl">Tempo</span>
       <div class="tempo-stack">
         <div class="tempo-row">
-          <input type="range" id="tempo" min="40" max="200" value="60" aria-label="Tempo">
-          <span class="val" id="tempoVal">60 BPM</span>
+          <input type="range" id="tempo" min="40" max="200" value="120" aria-label="Tempo">
+          <span class="val" id="tempoVal">120 BPM</span>
         </div>
         <!-- the three tempos worth one tap; practice.js binds every
              .bpm-preset and lights whichever matches the slider -->
         <span class="segmented bpm-row" aria-label="Tempo shortcuts">
-          <button type="button" class="seg-btn bpm-preset active" data-bpm="60">60</button>
+          <button type="button" class="seg-btn bpm-preset" data-bpm="60">60</button>
           <button type="button" class="seg-btn bpm-preset" data-bpm="90">90</button>
-          <button type="button" class="seg-btn bpm-preset" data-bpm="120">120</button>
+          <button type="button" class="seg-btn bpm-preset active" data-bpm="120">120</button>
+          <button type="button" class="seg-btn bpm-preset" data-bpm="150">150</button>
+          <button type="button" class="seg-btn bpm-preset" data-bpm="180">180</button>
         </span>
       </div>
     </div>
-    <!-- Where Style and the metronome sit when the bar is wide enough for
-         them. stage.js moves the real rows here out of the Set up sheet, so
-         there's one of each rather than two to keep in step. -->
-    <span class="bar-slot" id="barStyleSlot"></span>
+    <!-- The backing style, condensed the way the key is at the top of the
+         chart: the value as text with the real picker lying over it. It's a
+         second view of the sheet's own Style row, not a second setting. -->
+    <div class="bar-style">
+      <span class="tb-lbl">Style</span>
+      <span class="pick-edit" title="Change the backing style">
+        <span class="styleline" id="styleLabel">Simple</span>
+        <svg class="key-caret" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 6l4.5 4.5L12.5 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <select id="quickStyle" class="key-select" aria-label="Backing style"></select>
+      </span>
+    </div>
+    <!-- Where the metronome sits when the bar is wide enough for it: stage.js
+         moves the sheet's own row here, so there's one of it, not two. -->
     <span class="bar-slot" id="barClickSlot"></span>
     <span class="counter" id="measureReadout"></span>
     <span class="sp"></span>
@@ -617,7 +637,7 @@
           <button type="button" class="seg-btn" data-value="2">Half</button>
           <button type="button" class="seg-btn" data-value="4">Whole</button></span></div>
         <div class="frow checks">
-          <label class="check" id="clickRow"><input type="checkbox" id="clickToggle" checked><span>Metronome</span></label>
+          <label class="check" id="clickRow"><input type="checkbox" id="clickToggle" checked><span>Click</span></label>
           <label class="check" id="rootOnlyRow"><input type="checkbox" id="rootOnlyToggle"><span>Roots only</span></label>
           <label class="check"><input type="checkbox" id="countInToggle" checked><span>Count-in</span></label>
         </div>
@@ -648,7 +668,6 @@
       <input type="text" id="chordFinderInput" class="big-input" placeholder="e.g. G#9, Cmaj7, Dm7b5" autocomplete="off" spellcheck="false" aria-label="Chord name">
       <p class="finder-error" id="chordFinderError"></p>
     </div>
-    <p class="hint">Name a chord and this finds every comfortable way to play it on the neck. Click a shape to hear it.</p>
     <!-- The examples are the quickest way in: with nothing typed there's
          otherwise only an empty field to guess at. -->
     <div class="toolbar">
@@ -667,7 +686,8 @@
       </div>
     </div>
     <div class="toolbar">
-      <div class="tb-group">
+      <!-- nothing to label until something is drawn, so this waits for a chord -->
+      <div class="tb-group" id="labelModeRow" hidden>
         <span class="tb-lbl">Dots show</span>
         <span class="segmented" id="labelModeGroup">
           <button type="button" class="seg-btn active" data-value="fingers">Fingers</button>

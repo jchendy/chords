@@ -26,10 +26,11 @@
   };
 
   add('div', 'page-caged');
-  ['keySelect', 'presetSelect', 'quickKey', 'quickPreset'].forEach(id => add('select', id));
+  ['keySelect', 'presetSelect', 'quickKey', 'quickPreset', 'quickStyle'].forEach(id => add('select', id));
   add('input', 'tempo', { type: 'range', min: '40', max: '208', value: '60' });
   add('input', 'shareOut', { type: 'text' });
-  ['tempoVal', 'keyReadout', 'measureReadout', 'chordCountValue'].forEach(id => add('span', id));
+  ['tempoVal', 'keyReadout', 'measureReadout', 'chordCountValue', 'styleLabel']
+    .forEach(id => add('span', id));
   ['chords', 'chordSlots', 'presetVariantGroup', 'presetVariantRow',
    'styleVariantGroup', 'styleVariantRow', 'clickRow', 'noteValueRow',
    'rootOnlyRow'].forEach(id => add('div', id));
@@ -49,7 +50,7 @@
   // the transport: two copies, as the real page has, so "they stay in step"
   // is something the tests can actually see
   [0, 1].forEach(() => add('button', null, { type: 'button', className: 'primary play-btn' }));
-  [60, 90, 120].forEach(bpm => {
+  [60, 90, 120, 150, 180].forEach(bpm => {
     const b = add('button', null, { type: 'button', className: 'seg-btn bpm-preset' });
     b.dataset.bpm = String(bpm);
     if (bpm === 60) b.classList.add('active');

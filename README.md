@@ -123,18 +123,20 @@ names the tab you're on.
   the stretch of frets is drawn on the neck as a window you can drag; a
   joined ‹ › pair at the end of the toolbar and an arrow on each edge of the
   window step it. One transport is pinned to the bottom of the tab: Play, the
-  tempo slider with its BPM readout and the three one-tap tempos under it,
-  and Set up. While it plays, a beat line
+  tempo slider with its BPM readout and five one-tap tempos under it, the
+  style, the click, and Set up. While it plays, a beat line
   appears along the top of every bar in the chart and fills through the
   sounding one a quarter per beat. Everything set once and left alone — key,
   preset, the per-chord pickers and what the dice may use; style and feel,
-  the Simple-only note value, the metronome / roots-only / count-in options;
+  the Simple-only note value, the click / roots-only / count-in options;
   dot colour and the fret range; the share link — lives in the Set up sheet,
-  which slides up over the stage so nothing scrolls. Style and the metronome
-  are the two you reach for mid-progression, so on a wide enough window they
-  move out of the sheet and into the transport, and back into it while the
-  sheet is open: the row itself moves, so there's one of each rather than two
-  to keep in step. On a phone the site
+  which slides up over the stage so nothing scrolls. The style and the click
+  are the two you reach for mid-progression, so they appear in the transport
+  as well once the window is wide enough. Neither is a second setting: the
+  style is named there rather than laid out, the chart head's move, with the
+  real picker lying over the name; and the click's own row moves out of the
+  sheet into the bar and back again — into it whenever the sheet is open, so
+  a settings sheet is never missing a setting. On a phone the site
   name drops out, the tools row scrolls sideways, and a Controls button in
   the transport hides every control on the neck so the picture has the
   screen. A "Style" picker chooses the backing:

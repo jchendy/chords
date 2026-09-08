@@ -9,14 +9,13 @@
   const $ = id => document.getElementById(id);
 
   function init(){
-    // ---- two homes for the controls you reach for mid-progression ----
-    // Style and the metronome belong beside Play when the bar is wide enough
-    // to hold them, and in the Set up sheet when it isn't. The row itself
-    // moves rather than being copied, so there is only ever one of each and
-    // nothing to keep in step. Style needs room for six names and the
-    // metronome only a checkbox, so they leave the sheet at different widths.
+    // ---- a second home for the click, which you reach for mid-progression ----
+    // It belongs beside Play when the bar is wide enough to hold it, and in
+    // the Set up sheet when it isn't. The row itself moves rather than being
+    // copied, so there is only ever one of it and nothing to keep in step.
+    // (The style is a named picker in the bar instead: six buttons don't fit,
+    // and practice.js already keeps that kind of pair in step.)
     const homes = [
-      { el: $('styleRow'), slot: $('barStyleSlot'), mq: window.matchMedia('(min-width: 1140px)') },
       { el: $('clickRow'), slot: $('barClickSlot'), mq: window.matchMedia('(min-width: 900px)') },
     ];
     const placers = homes.map(h => {

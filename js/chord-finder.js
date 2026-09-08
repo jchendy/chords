@@ -16,6 +16,7 @@
   const shellOnlyRow = document.getElementById('shellOnlyRow');
   const shellOnlyToggle = document.getElementById('shellOnlyToggle');
   const labelModeGroup = document.getElementById('labelModeGroup');
+  const labelModeRow = document.getElementById('labelModeRow');
   let labelMode = 'fingers';        // 'fingers' | 'degrees'
   const MAX_VOICINGS = 16;          // enough for the whole neck plus a few alternatives
   const EXTRA_VOICINGS = 6;         // room for grips the containment rule would otherwise hide
@@ -460,15 +461,14 @@
     const raw = chordFinderInput.value;
     if (!raw.trim()){
       chordFinderError.textContent = '';
-      // an empty field with an empty page under it says nothing about what to
-      // do next, so the empty state points at the way in
-      chordFinderResults.innerHTML =
-        '<p class="diagram-empty">Type a chord name above, or pick one of the examples, to see where it sits on the neck.</p>';
+      chordFinderResults.innerHTML = '';
       cagedOverviewEl.innerHTML = '';
       triadOnlyRow.hidden = true;
       shellOnlyRow.hidden = true;
+      labelModeRow.hidden = true;
       return;
     }
+    labelModeRow.hidden = false;
     const parsed = parseChordName(raw);
     if (!parsed){
       chordFinderError.textContent = `Couldn't recognize "${raw.trim()}" as a chord name.`;
@@ -566,6 +566,11 @@
           runChordFinder();
         });
       });
+    },
+    // Arriving on the tab with nothing typed, the field is the only thing to
+    // do — so put the cursor in it. A field with a chord in it is left alone.
+    focus(){
+      if (!chordFinderInput.value.trim()) chordFinderInput.focus();
     },
     // exposed for reuse and for checking shapes outside the UI
     computeFingering, findChordVoicings, buildDiagramSVG, shellIntervals, strum, ARPEGGIO_GAP,

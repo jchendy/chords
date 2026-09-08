@@ -11,8 +11,10 @@
   GT.tabs.init({
     // whichever tab you're leaving, don't let it keep playing
     onSwitch: () => { GT.practice.stop(); GT.genreExamples.stop(); },
-    // neither of these can measure itself while its page is hidden
+    // neither of the finders' necks can measure itself while its page is
+    // hidden, and an empty chord finder wants the cursor in its field
     onShow: {
+      finder: () => GT.chordFinder.focus(),
       reverse: () => GT.reverseFinder.refresh(),
       genres: () => GT.genreExamples.refresh(),
     },
