@@ -10,7 +10,8 @@
   const { parseChordName, identifyChords, chordFromName, seventhSuffix, NOTE_NAMES_SHARP,
           degreeLabel, SEMITONE } = GT.theory;
   const { STRING_TUNING, STRING_MIDI, FRET_COUNT, seventhCells, cagedPlacements, CAGED_MAJOR,
-          cagedTriadBoard, scaleBoxPlacements, pentaBoxPlacements } = GT.fretboard;
+          cagedTriadBoard, scaleBoxPlacements, pentaBoxPlacements,
+          cagedArpeggioBoxes } = GT.fretboard;
   const { findChordVoicings } = GT.chordFinder;
   const { voiceChord, midiFor } = GT.genres;
 
@@ -786,6 +787,123 @@
   }
 
 
+  // The CAGED arpeggio boxes, pinned. Unlike the scale and pentatonic shapes
+  // above these are not a judgement about where a note is best fingered —
+  // the box is every chord tone inside a hand span, so there is nothing to
+  // choose. What is worth holding still is where each box sits and how wide
+  // it opens: those decide which stretch of neck a position covers, and the
+  // position is what the readings quarrel over (B26, B28, B32).
+  //
+  // "shape@anchor window strings" — the frets on each string, high e first.
+  const ARP_BOXES = {
+    'C': [
+      'C@0 0-3 0-3 1 0 2 3 0-3',
+      'C@12 12-15 12-15 13 12 14 15 12-15',
+      'A@3 3-6 3 5 5 5 3 3',
+      'G@5 5-8 8 5-8 5 5 7 8',
+      'E@8 8-11 8 8 9 10 10 8',
+      'D@10 10-13 12 13 12 10 10 12',
+    ],
+    'Cm': [
+      'C@11 11-15 11-15 13 12 13 15 11-15',
+      'A@3 3-6 3 4 5 5 3-6 3',
+      'G@4 4-8 8 4-8 5-8 5 6 8',
+      'E@8 8-11 8-11 8 8 10 10 8-11',
+      'D@10 10-13 11 13 12 10-13 10 11',
+    ],
+    'C7': [
+      'C@0 0-3 0-3 1 0-3 2 1-3 0-3',
+      'C@12 12-15 12-15 13 12-15 14 13-15 12-15',
+      'A@3 3-6 3-6 5 3-5 5 3 3-6',
+      'G@5 5-8 6-8 5-8 5 5-8 7 6-8',
+      'E@8 8-11 8 8-11 9 8-10 10 8',
+      'D@10 10-13 12 11-13 12 10 10-13 12',
+    ],
+    'Cm7': [
+      'C@11 11-15 11-15 11-13 12-15 13 13-15 11-15',
+      'A@3 3-6 3-6 4 3-5 5 3-6 3-6',
+      'G@4 4-8 6-8 4-8 5-8 5-8 6 6-8',
+      'E@8 8-11 8-11 8-11 8 8-10 10 8-11',
+      'D@10 10-13 11 11-13 12 10-13 10-13 11',
+    ],
+    'G': [
+      'C@7 7-10 7-10 8 7 9 10 7-10',
+      'A@10 10-13 10 12 12 12 10 10',
+      'G@0 0-3 3 0-3 0 0 2 3',
+      'G@12 12-15 15 12-15 12 12 14 15',
+      'E@3 3-6 3 3 4 5 5 3',
+      'D@5 5-8 7 8 7 5 5 7',
+    ],
+    'Am': [
+      'C@8 8-12 8-12 10 9 10 12 8-12',
+      'A@0 0-3 0 1 2 2 0-3 0',
+      'A@12 12-15 12 13 14 14 12-15 12',
+      'G@1 1-5 5 1-5 2-5 2 3 5',
+      'E@5 5-8 5-8 5 5 7 7 5-8',
+      'D@7 7-10 8 10 9 7-10 7 8',
+    ],
+  };
+
+  // the tones a chord is made of, which is all an arpeggio box is filled from
+  function tonePcsOf(chord){
+    return new Set([chord.note, chord.third, chord.fifth, chord.seventh]
+      .filter(Boolean).map(n => SEMITONE[n] % 12));
+  }
+
+  function arpBoxLines(name){
+    const chord = chordFromName(name, 0, 'major');
+    const rootPc = SEMITONE[chord.note] % 12;
+    return cagedArpeggioBoxes(rootPc, chord.quality === 'min', tonePcsOf(chord)).map(b => {
+      const byString = {};
+      b.cells.forEach(c => { (byString[c.string] = byString[c.string] || []).push(c.fret); });
+      const strings = [0, 1, 2, 3, 4, 5]
+        .map(s => (byString[s] || []).sort((a, x) => a - x).join('-') || '.');
+      return `${b.name}@${b.anchor} ${b.window.min}-${b.window.max} ${strings.join(' ')}`;
+    });
+  }
+
+  function testArpeggioBoxesAreUnchanged(t){
+    Object.entries(ARP_BOXES).forEach(([name, expected]) => {
+      t.equal(arpBoxLines(name).join('\n'), expected.join('\n'),
+              `${name}: its arpeggio boxes are where they were`);
+    });
+  }
+
+  // A snapshot pins whatever it was shown, so it wants an invariant beside it
+  // that knows what right looks like. An arpeggio box is every chord tone
+  // under the hand: nothing in reach may be left out, and nothing that isn't
+  // a chord tone may be in. That holds whatever the boxes are moved to.
+  function testArpeggioBoxesHoldEveryToneInReach(t){
+    const bad = [];
+    ['C', 'Cm', 'C7', 'Cm7', 'CM7', 'F#', 'Ebm7', 'Am'].forEach(name => {
+      const chord = chordFromName(name, 0, 'major');
+      const rootPc = SEMITONE[chord.note] % 12;
+      const tonePcs = tonePcsOf(chord);
+      cagedArpeggioBoxes(rootPc, chord.quality === 'min', tonePcs).forEach(b => {
+        const where = `${name} ${b.name}@${b.anchor}`;
+        const drawn = new Set(b.cells.map(c => `${c.string}:${c.fret}`));
+        for (let s = 0; s < 6; s++){
+          for (let f = b.window.min; f <= b.window.max; f++){
+            const isTone = tonePcs.has((STRING_TUNING[s] + f) % 12);
+            const has = drawn.has(`${s}:${f}`);
+            if (isTone && !has) bad.push(`${where}: string ${s} fret ${f} is a chord tone left out`);
+            if (!isTone && has) bad.push(`${where}: string ${s} fret ${f} is not a chord tone`);
+          }
+        }
+        b.cells.forEach(c => {
+          if (c.fret < b.window.min || c.fret > b.window.max){
+            bad.push(`${where}: a note at fret ${c.fret} sits outside the box`);
+          }
+        });
+        if (b.window.min < 0 || b.window.max > FRET_COUNT){
+          bad.push(`${where}: the box runs off the neck, ${b.window.min}-${b.window.max}`);
+        }
+      });
+    });
+    t.equal(bad.slice(0, 4).join('; '), '', 'An arpeggio box holds every chord tone under the hand, and nothing else');
+  }
+
+
   // What a scale box is for: you can play the scale up through it without a
   // note going missing. The boxes used to be worked out from the pentatonic
   // ones by filling gaps of a minor third, which left every single box with a
@@ -853,6 +971,8 @@
       ['Fretboard: the pentatonic boxes are unchanged', testPentatonicBoxesAreUnchanged],
       ['Fretboard: the scale boxes are unchanged', testScaleBoxesAreUnchanged],
       ['Fretboard: every scale box is playable', testScaleBoxesHaveNoHoles],
+      ['Fretboard: the arpeggio boxes are unchanged', testArpeggioBoxesAreUnchanged],
+      ['Fretboard: an arpeggio box holds every tone in reach', testArpeggioBoxesHoldEveryToneInReach],
       ['Genre library and presets are well-formed', testData],
     ].concat(GT.fretboardSuites || []).concat(GT.practiceSuites || []);   // added by js/tests-fretboard.js, if it loaded
     const out = [];
