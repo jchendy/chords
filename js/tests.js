@@ -11,7 +11,7 @@
           degreeLabel, SEMITONE } = GT.theory;
   const { STRING_TUNING, STRING_MIDI, FRET_COUNT, seventhCells, cagedPlacements, CAGED_MAJOR,
           cagedTriadBoard, scaleBoxPlacements, pentaBoxPlacements,
-          cagedArpeggioBoxes } = GT.fretboard;
+          cagedArpeggioBoxes, stringSetTriads, CAGED_MINOR } = GT.fretboard;
   const { findChordVoicings } = GT.chordFinder;
   const { voiceChord, midiFor } = GT.genres;
 
@@ -904,6 +904,295 @@
   }
 
 
+  // The close triads the Triads view is made of, pinned. "startFret frets /bass"
+  // — the frets low string to high, and which chord tone is underneath.
+  // Checked against the shapes players actually use: C on the top three
+  // strings runs 0-1-0, 5-5-3, 9-8-8 through its inversions, and Am runs
+  // 2-1-0, 5-5-5, 9-10-8.
+  const TRIAD_SETS = {
+    'C set2': ['0 0-1-0 /G', '3 5-5-3 /C', '8 9-8-8 /E', '12 12-13-12 /G'],
+    'C set3': ['0 2-0-1 /E', '5 5-5-5 /G', '8 10-9-8 /C', '12 14-12-13 /E'],
+    'C set4': ['0 3-2-0 /C', '5 7-5-5 /E', '9 10-10-9 /G', '12 15-14-12 /C'],
+    'C set5': ['2 3-3-2 /G', '5 8-7-5 /C', '10 12-10-10 /E', '14 15-15-14 /G'],
+    'Am set2': ['0 2-1-0 /A', '5 5-5-5 /C', '8 9-10-8 /E', '12 14-13-12 /A'],
+    'Am set5': ['2 5-3-2 /A', '7 8-7-7 /C', '10 12-12-10 /E'],
+  };
+
+  function triadSetLines(name, lowString){
+    const chord = chordFromName(name, 0, 'major');
+    const tonePcs = new Set([chord.note, chord.third, chord.fifth].map(n => SEMITONE[n] % 12));
+    return stringSetTriads(lowString, tonePcs)
+      .map(v => `${v.startFret} ${v.cells.map(c => c.fret).join('-')} /${NOTE_NAMES_SHARP[v.bassPc]}`);
+  }
+
+  function testTriadShapesAreUnchanged(t){
+    Object.entries(TRIAD_SETS).forEach(([key, expected]) => {
+      const [name, set] = key.split(' set');
+      t.equal(triadSetLines(name, Number(set)).join('\n'), expected.join('\n'),
+              `${key}: its close triads are where they were`);
+    });
+  }
+
+  // What makes a close triad one: three notes on three adjacent strings, one
+  // of each chord tone, rising in pitch across the set, inside an octave and
+  // inside a hand's reach. Beside the snapshot because a snapshot only knows
+  // what it was shown — this knows what a triad is.
+  function testCloseTriadsAreCloseTriads(t){
+    const bad = [];
+    const HAND = 4;
+    ['C', 'Am', 'F#', 'Ebm', 'Bdim'].forEach(name => {
+      const chord = chordFromName(name, 0, 'major');
+      const tonePcs = new Set([chord.note, chord.third, chord.fifth].map(n => SEMITONE[n] % 12));
+      [2, 3, 4, 5].forEach(lowString => {
+        stringSetTriads(lowString, tonePcs).forEach(v => {
+          const where = `${name} set ${lowString} at ${v.startFret}`;
+          const strings = v.cells.map(c => c.string);
+          const frets = v.cells.map(c => c.fret);
+          if (strings.join() !== [lowString, lowString - 1, lowString - 2].join()){
+            bad.push(`${where}: sits on strings ${strings.join('-')} rather than three adjacent ones`);
+          }
+          const pcs = v.cells.map(c => (STRING_TUNING[c.string] + c.fret) % 12);
+          if (new Set(pcs).size !== 3 || pcs.some(pc => !tonePcs.has(pc))){
+            bad.push(`${where}: is not one of each chord tone`);
+          }
+          const notes = v.cells.map(c => STRING_MIDI[c.string] + c.fret);
+          if (notes[1] <= notes[0] || notes[2] <= notes[1]) bad.push(`${where}: does not rise across the set`);
+          if (notes[2] - notes[0] >= 12) bad.push(`${where}: spans an octave or more, so it isn't close`);
+          if (Math.max(...frets) - Math.min(...frets) > HAND) bad.push(`${where}: is wider than a hand`);
+          if (frets.some(f => f < 0 || f > FRET_COUNT)) bad.push(`${where}: runs off the neck`);
+          if (v.bassPc !== pcs[0]) bad.push(`${where}: names the wrong tone underneath`);
+        });
+      });
+    });
+    t.equal(bad.slice(0, 4).join('; '), '', 'Every close triad is three rising chord tones under one hand');
+  }
+
+  // Turning a CAGED triad into its 7th-chord voicing is a judgement — which
+  // note a player actually flattens — so the whole matrix is pinned rather
+  // than the two cases that used to stand for it. These are the everyday
+  // shapes: open C7 x-3-2-3-1-0, open G7 3-2-0-0-0-1, the E-shape maj7 barre
+  // 5-7-6-6-5-5, the A-shape m7 x-3-5-3-4-3.
+  const SEVENTH_GRIPS = {
+    'Cmaj7': [
+      'C@0 x-3-2-0-1-0 -> x-3-2-0-0-0',
+      'C@12 x-15-14-12-13-12 -> x-15-14-12-12-12',
+      'A@3 x-3-5-5-5-3 -> x-3-5-4-5-3',
+      'G@5 8-7-5-5-5-8 -> 8-7-5-5-5-7',
+      'E@8 8-10-10-9-8-8 -> 8-10-9-9-8-8',
+      'D@10 x-x-10-12-13-12 -> x-x-10-12-12-12',
+    ],
+    'C7': [
+      'C@0 x-3-2-0-1-0 -> x-3-2-3-1-0',
+      'C@12 x-15-14-12-13-12 -> x-15-14-12-11-12',
+      'A@3 x-3-5-5-5-3 -> x-3-5-3-5-3',
+      'G@5 8-7-5-5-5-8 -> 8-7-5-5-5-6',
+      'E@8 8-10-10-9-8-8 -> 8-10-8-9-8-8',
+      'D@10 x-x-10-12-13-12 -> x-x-10-12-11-12',
+    ],
+    'Cm7': [
+      'C@11 x-15-13-12-13-11 -> x-15-13-12-11-11',
+      'A@3 x-3-5-5-4-3 -> x-3-5-3-4-3',
+      'G@4 8-6-5-5-4-8 -> 8-6-5-5-4-6',
+      'E@8 8-10-10-8-8-8 -> 8-10-8-8-8-8',
+      'D@10 x-x-10-12-13-11 -> x-x-10-12-11-11',
+    ],
+    'Gmaj7': [
+      'C@7 x-10-9-7-8-7 -> x-10-9-7-7-7',
+      'A@10 x-10-12-12-12-10 -> x-10-12-11-12-10',
+      'G@0 3-2-0-0-0-3 -> 3-2-0-0-0-2',
+      'G@12 15-14-12-12-12-15 -> 15-14-12-12-12-14',
+      'E@3 3-5-5-4-3-3 -> 3-5-4-4-3-3',
+      'D@5 x-x-5-7-8-7 -> x-x-5-7-7-7',
+    ],
+    'G7': [
+      'C@7 x-10-9-7-8-7 -> x-10-9-7-6-7',
+      'A@10 x-10-12-12-12-10 -> x-10-12-10-12-10',
+      'G@0 3-2-0-0-0-3 -> 3-2-0-0-0-1',
+      'G@12 15-14-12-12-12-15 -> 15-14-12-12-12-13',
+      'E@3 3-5-5-4-3-3 -> 3-5-3-4-3-3',
+      'D@5 x-x-5-7-8-7 -> x-x-5-7-6-7',
+    ],
+    'Am7': [
+      'C@8 x-12-10-9-10-8 -> x-12-10-9-8-8',
+      'A@0 x-0-2-2-1-0 -> x-0-2-0-1-0',
+      'A@12 x-12-14-14-13-12 -> x-12-14-12-13-12',
+      'G@1 5-3-2-2-1-5 -> 5-3-2-2-1-3',
+      'E@5 5-7-7-5-5-5 -> 5-7-5-5-5-5',
+      'D@7 x-x-7-9-10-8 -> x-x-7-9-8-8',
+    ],
+    'A7': [
+      'C@9 x-12-11-9-10-9 -> x-12-11-9-8-9',
+      'A@0 x-0-2-2-2-0 -> x-0-2-0-2-0',
+      'A@12 x-12-14-14-14-12 -> x-12-14-12-14-12',
+      'G@2 5-4-2-2-2-5 -> 5-4-2-2-2-3',
+      'E@5 5-7-7-6-5-5 -> 5-7-5-6-5-5',
+      'D@7 x-x-7-9-10-9 -> x-x-7-9-8-9',
+    ],
+  };
+
+  function seventhGripLines(name){
+    const chord = chordFromName(name, 0, 'major');
+    const rootPc = SEMITONE[chord.note] % 12;
+    const sevPc = SEMITONE[chord.seventh] % 12;
+    const shapes = chord.quality === 'min' ? CAGED_MINOR : CAGED_MAJOR;
+    return cagedPlacements(rootPc, shapes).map(p =>
+      `${p.name}@${p.fretMin} ${grip(p.cells)} -> ${grip(seventhCells(p, rootPc, sevPc))}`);
+  }
+
+  function testSeventhVoicingsAreUnchanged(t){
+    Object.entries(SEVENTH_GRIPS).forEach(([name, expected]) => {
+      t.equal(seventhGripLines(name).join('\n'), expected.join('\n'),
+              `${name}: its 7th-chord voicings are where they were`);
+    });
+  }
+
+  // A 7th voicing is the triad with one note moved: the same strings, one
+  // fret different, and the note that moved is now the 7th.
+  function testSeventhVoicingsMoveOneNote(t){
+    const bad = [];
+    ['Cmaj7', 'C7', 'Cm7', 'G7', 'Am7', 'F#m7', 'Ebmaj7'].forEach(name => {
+      const chord = chordFromName(name, 0, 'major');
+      const rootPc = SEMITONE[chord.note] % 12;
+      const sevPc = SEMITONE[chord.seventh] % 12;
+      const shapes = chord.quality === 'min' ? CAGED_MINOR : CAGED_MAJOR;
+      cagedPlacements(rootPc, shapes).forEach(p => {
+        const after = seventhCells(p, rootPc, sevPc);
+        const where = `${name} ${p.name}@${p.fretMin}`;
+        if (after.length !== p.cells.length){ bad.push(`${where}: changed how many notes it has`); return; }
+        if (after.map(c => c.string).sort().join() !== p.cells.map(c => c.string).sort().join()){
+          bad.push(`${where}: moved to different strings`);
+          return;
+        }
+        const moved = after.filter((c, i) => c.fret !== p.cells[i].fret);
+        if (moved.length !== 1){ bad.push(`${where}: moved ${moved.length} notes, not one`); return; }
+        const pc = (STRING_TUNING[moved[0].string] + moved[0].fret) % 12;
+        if (pc !== sevPc) bad.push(`${where}: the note it moved landed on ${NOTE_NAMES_SHARP[pc]}, not the 7th`);
+        if (moved[0].fret < 0 || moved[0].fret > FRET_COUNT) bad.push(`${where}: the moved note runs off the neck`);
+      });
+    });
+    t.equal(bad.slice(0, 4).join('; '), '', 'A 7th voicing is the triad with one note moved onto the 7th');
+  }
+
+  // What the finder puts your fingers on, pinned — the grip, then a finger per
+  // string low E first (x muted, 0 open, 1 index … 4 little).
+  //
+  // Checked against how these are taught rather than only against themselves:
+  // G is middle-index-ring (2-1-0-0-0-3), A is index-middle-ring across the
+  // D, G and B strings, the B barre is the index across the 2nd fret with
+  // middle, ring and little on the 4th, and the open sevenths are the
+  // everyday ones. The one place this differs from what is usually taught is
+  // Em: it comes out index and middle, where most teaching uses middle and
+  // ring so the index stays free and the fingers match E major. Both are
+  // played; til.co gives ours as the alternative.
+  const FINGERINGS = {
+    'C': 'x-3-2-0-1-0  x-3-2-0-1-0',
+    'G': '3-2-0-0-0-3  2-1-0-0-0-3',
+    'D': 'x-x-0-2-3-2  x-x-0-1-3-2',
+    'A': 'x-0-2-2-2-0  x-0-1-2-3-0',
+    'E': '0-2-2-1-0-0  0-2-3-1-0-0',
+    'Am': 'x-0-2-2-1-0  x-0-2-3-1-0',
+    'Em': '0-2-2-0-0-0  0-1-2-0-0-0',
+    'Dm': 'x-x-0-2-3-1  x-x-0-2-3-1',
+    'F': '1-3-3-2-1-1  1-3-4-2-1-1  barre 1@0-5',
+    'Bm': 'x-2-4-4-3-2  x-1-3-4-2-1  barre 2@0-4',
+    'B': 'x-2-4-4-4-2  x-1-2-3-4-1  barre 2@0-4',
+    'Bb': 'x-1-3-3-3-1  x-1-2-3-4-1  barre 1@0-4',
+    'F#m': '2-4-4-2-2-2  1-2-3-1-1-1  barre 2@0-5',
+    'C7': 'x-3-2-3-1-0  x-3-2-4-1-0',
+    'G7': '3-2-0-0-0-1  3-2-0-0-0-1',
+    'D7': 'x-x-0-2-1-2  x-x-0-2-1-3',
+    'A7': 'x-0-2-0-2-0  x-0-1-0-2-0',
+    'E7': '0-2-0-1-0-0  0-2-0-1-0-0',
+    'B7': 'x-2-1-2-0-2  x-2-1-3-0-4',
+    'Cmaj7': 'x-3-2-0-0-0  x-2-1-0-0-0',
+    'Fmaj7': '1-0-2-2-1-0  1-0-3-4-2-0',
+    'Am7': 'x-0-2-0-1-0  x-0-2-0-1-0',
+    'Em7': '0-2-0-0-0-0  0-1-0-0-0-0',
+  };
+
+  function fingeringLine(name){
+    const p = parseChordName(name);
+    const v = findChordVoicings(p.rootPc, p.formula, { bassPc: p.bassPc })[0];
+    if (!v) return '(no shape)';
+    const at = new Map(v.cells.map(c => [c.string, c.fret]));
+    const by = (v.fingering && v.fingering.fingerByString) || {};
+    const cell = s => at.has(s) ? at.get(s) : 'x';
+    const finger = s => !at.has(s) ? 'x' : at.get(s) === 0 ? '0' : (by[s] || '-');
+    const order = [5, 4, 3, 2, 1, 0];
+    const barres = ((v.fingering && v.fingering.barres) || [])
+      .map(b => `${b.fret}@${b.fromString}-${b.toString}`).join(' ');
+    return `${order.map(cell).join('-')}  ${order.map(finger).join('-')}` + (barres ? `  barre ${barres}` : '');
+  }
+
+  function testFingeringsAreUnchanged(t){
+    Object.entries(FINGERINGS).forEach(([name, expected]) => {
+      t.equal(fingeringLine(name), expected, `${name}: is fingered the way it was`);
+    });
+  }
+
+  // What makes a fingering playable, whatever the shapes become: four fingers
+  // at most, every stopped note has one, a finger appears at one fret only —
+  // and across two frets a lower one never takes a higher finger, which is
+  // the ordering a hand actually falls into. A finger on more than one string
+  // has to be a barre: one fret, strings next to each other.
+  function testFingeringsArePlayable(t){
+    const bad = [];
+    CHORDS.forEach(name => {
+      const p = parseChordName(name);
+      if (!p) return;
+      findChordVoicings(p.rootPc, p.formula, { bassPc: p.bassPc }).forEach(v => {
+        const f = v.fingering;
+        if (!f) return;
+        const where = `${name} ${grip(v.cells)}`;
+        const by = f.fingerByString || {};
+        const at = new Map(v.cells.map(c => [c.string, c.fret]));
+        const fretOf = {};                            // finger -> the frets it is asked to hold
+        const stringsOf = {};
+        v.cells.forEach(c => {
+          const finger = by[c.string];
+          if (c.fret === 0){
+            if (finger) bad.push(`${where}: an open string is given finger ${finger}`);
+            return;
+          }
+          if (!finger){ bad.push(`${where}: string ${c.string} at fret ${c.fret} has no finger`); return; }
+          if (finger < 1 || finger > 4) bad.push(`${where}: uses a finger numbered ${finger}`);
+          (fretOf[finger] = fretOf[finger] || new Set()).add(c.fret);
+          (stringsOf[finger] = stringsOf[finger] || []).push(c.string);
+        });
+        Object.entries(fretOf).forEach(([finger, frets]) => {
+          if (frets.size > 1) bad.push(`${where}: finger ${finger} is at frets ${[...frets].join(' and ')}`);
+        });
+        // A finger on more than one string is a barre — it lies across a
+        // range, and the strings between may be stopped higher up by other
+        // fingers, so what matters is that they all fall inside its reach.
+        Object.entries(stringsOf).forEach(([finger, strings]) => {
+          if (strings.length < 2) return;
+          const fret = [...fretOf[finger]][0];
+          const barre = (f.barres || []).find(b => b.finger === Number(finger) && b.fret === fret);
+          if (!barre){
+            bad.push(`${where}: finger ${finger} holds ${strings.length} strings with no barre to lie across`);
+            return;
+          }
+          const outside = strings.filter(x => x < barre.fromString || x > barre.toString);
+          if (outside.length){
+            bad.push(`${where}: finger ${finger} holds string ${outside[0]}, outside the barre it lies across`);
+          }
+        });
+        // the ordering: a note further down the neck never takes a higher finger
+        v.cells.filter(c => c.fret > 0).forEach(a => {
+          v.cells.filter(c => c.fret > 0).forEach(b => {
+            if (a.fret < b.fret && by[a.string] > by[b.string]){
+              bad.push(`${where}: fret ${a.fret} takes finger ${by[a.string]} while fret ${b.fret} takes ${by[b.string]}`);
+            }
+          });
+        });
+        const used = new Set(Object.values(by).filter(Boolean));
+        if (used.size > 4) bad.push(`${where}: wants ${used.size} fingers`);
+      });
+    });
+    t.equal(bad.slice(0, 4).join('; '), '', 'Every fingering is one a hand can make');
+  }
+
   // What a scale box is for: you can play the scale up through it without a
   // note going missing. The boxes used to be worked out from the pentatonic
   // ones by filling gaps of a minor third, which left every single box with a
@@ -973,6 +1262,12 @@
       ['Fretboard: every scale box is playable', testScaleBoxesHaveNoHoles],
       ['Fretboard: the arpeggio boxes are unchanged', testArpeggioBoxesAreUnchanged],
       ['Fretboard: an arpeggio box holds every tone in reach', testArpeggioBoxesHoldEveryToneInReach],
+      ['Fretboard: the close triads are unchanged', testTriadShapesAreUnchanged],
+      ['Fretboard: every close triad is one', testCloseTriadsAreCloseTriads],
+      ['Fretboard: the 7th-chord voicings are unchanged', testSeventhVoicingsAreUnchanged],
+      ['Fretboard: a 7th voicing moves one note', testSeventhVoicingsMoveOneNote],
+      ['Finder: the fingerings are unchanged', testFingeringsAreUnchanged],
+      ['Finder: every fingering is playable', testFingeringsArePlayable],
       ['Genre library and presets are well-formed', testData],
     ].concat(GT.fretboardSuites || []).concat(GT.practiceSuites || []);   // added by js/tests-fretboard.js, if it loaded
     const out = [];
