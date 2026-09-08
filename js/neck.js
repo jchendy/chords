@@ -16,7 +16,15 @@
   const H = 156;
   const padL = 44, padR = 12, padT = 14, padB = 22;
   const nutX = padL + 12;
-  const CELL_W = (520 - nutX - padR) / FRET_COUNT;   // one fret, at full-neck scale
+  // A fret is half again as wide as the gap between two strings, which is
+  // roughly the shape of the real thing — a fret square enough to be mistaken
+  // for a grid cell is harder to read a shape off. The neck that comes out is
+  // wide, so a full one wants most of a laptop's width; see maxWidth below.
+  const CELL_W = 36;                                 // one fret, at full-neck scale
+  // Where a note sits inside its fret. A finger goes just behind the wire
+  // rather than in the middle of the gap, and putting the dots there says
+  // which fret is which without having to count the wires.
+  const DOT_AT = 0.62;
   const rowH = (H - padT - padB) / 5;
 
   const INLAYS = [3, 5, 7, 9, 15];
@@ -31,7 +39,11 @@
 
     const stringY = s => padT + s * rowH;
     const wireX = f => nutX + (f - startFret + 1) * CELL_W;
-    const fretX = f => f === 0 ? nutX - 11 : nutX + (f - startFret + 0.5) * CELL_W;
+    // where a note is drawn — behind the wire, where the finger goes
+    const fretX = f => f === 0 ? nutX - 11 : nutX + (f - startFret + DOT_AT) * CELL_W;
+    // ...and the middle of the fret, which is where an inlay is set and where
+    // the fret's own number belongs
+    const cellX = f => nutX + (f - startFret + 0.5) * CELL_W;
     const inRange = f => f === 0 ? openColumn : (f >= startFret && f <= to);
 
     // strings, nut, fret wires, inlays and fret numbers — the empty neck
@@ -47,17 +59,17 @@
         els.push(`<line class="fret-wire" x1="${wireX(f)}" y1="${stringY(0)}" x2="${wireX(f)}" y2="${stringY(5)}"/>`);
       }
       INLAYS.filter(inRange).forEach(f =>
-        els.push(`<circle class="fret-inlay" cx="${fretX(f)}" cy="${padT + 2.5 * rowH}" r="3.6"/>`));
+        els.push(`<circle class="fret-inlay" cx="${cellX(f)}" cy="${padT + 2.5 * rowH}" r="3.6"/>`));
       if (inRange(12)){
-        els.push(`<circle class="fret-inlay" cx="${fretX(12)}" cy="${padT + 1.5 * rowH}" r="3.6"/>`);
-        els.push(`<circle class="fret-inlay" cx="${fretX(12)}" cy="${padT + 3.5 * rowH}" r="3.6"/>`);
+        els.push(`<circle class="fret-inlay" cx="${cellX(12)}" cy="${padT + 1.5 * rowH}" r="3.6"/>`);
+        els.push(`<circle class="fret-inlay" cx="${cellX(12)}" cy="${padT + 3.5 * rowH}" r="3.6"/>`);
       }
       // zoomed in, the first fret is numbered too — otherwise there's nothing
       // to say where on the neck you are
       const nums = FRET_NUMS.filter(inRange);
       if (!openColumn && !nums.includes(startFret)) nums.unshift(startFret);
       nums.forEach(f =>
-        els.push(`<text class="fret-num" x="${fretX(f)}" y="${H - 6}" text-anchor="middle">${f}</text>`));
+        els.push(`<text class="fret-num" x="${cellX(f)}" y="${H - 6}" text-anchor="middle">${f}</text>`));
       return els;
     }
 
@@ -121,10 +133,10 @@
       viewBox: `0 0 ${W} ${H}`,
       // Keep the drawing about this tall on screen whatever the zoom: a
       // narrower neck scaled to the full width would tower over the page.
-      maxWidth: Math.min(820, Math.round(W * 1.9)),
+      maxWidth: Math.min(1020, Math.round(W * 1.9)),
       // ...and a short neck doesn't need the full neck's floor, which would
       // only force a phone to scroll sideways for no reason
-      minWidth: Math.min(440, Math.round(W * 0.9)),
+      minWidth: Math.min(500, Math.round(W * 0.9)),
       from, to, width: W,
     };
   }
