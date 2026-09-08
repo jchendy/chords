@@ -1077,13 +1077,14 @@
   // string low E first (x muted, 0 open, 1 index … 4 little).
   //
   // Checked against how these are taught rather than only against themselves:
-  // G is middle-index-ring (2-1-0-0-0-3), A is index-middle-ring across the
-  // D, G and B strings, the B barre is the index across the 2nd fret with
-  // middle, ring and little on the 4th, and the open sevenths are the
-  // everyday ones. The one place this differs from what is usually taught is
-  // Em: it comes out index and middle, where most teaching uses middle and
-  // ring so the index stays free and the fingers match E major. Both are
-  // played; til.co gives ours as the alternative.
+  // C is index-middle-ring off the B string, Am the same across D, G and B,
+  // G is middle-index-ring, A index-middle-ring, Dm middle-ring-index, the F
+  // barre takes ring on the A string, little on the D and middle on the G,
+  // the B barre is the index across the 2nd fret with middle, ring and little
+  // on the 4th, and B7 goes index-middle-ring-little. Em is fingered middle
+  // and ring, which is E major with the index lifted — see
+  // CONVENTIONAL_FINGERING, since no rule about frets can tell it from Asus2,
+  // the same shape fingered index and middle.
   const FINGERINGS = {
     'C': 'x-3-2-0-1-0  x-3-2-0-1-0',
     'G': '3-2-0-0-0-3  2-1-0-0-0-3',
@@ -1091,7 +1092,7 @@
     'A': 'x-0-2-2-2-0  x-0-1-2-3-0',
     'E': '0-2-2-1-0-0  0-2-3-1-0-0',
     'Am': 'x-0-2-2-1-0  x-0-2-3-1-0',
-    'Em': '0-2-2-0-0-0  0-1-2-0-0-0',
+    'Em': '0-2-2-0-0-0  0-2-3-0-0-0',
     'Dm': 'x-x-0-2-3-1  x-x-0-2-3-1',
     'F': '1-3-3-2-1-1  1-3-4-2-1-1  barre 1@0-5',
     'Bm': 'x-2-4-4-3-2  x-1-3-4-2-1  barre 2@0-4',

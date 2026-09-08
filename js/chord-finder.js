@@ -32,7 +32,32 @@
   // shapes like C9 and Em9). `allowedPcs` is the chord's own set of notes: an
   // index barre presses every string it crosses, so whatever it sounds has to
   // belong to the chord.
+  // A few open shapes are fingered by convention rather than by the rule
+  // below, and the convention comes from the chord they are lifted from
+  // rather than from anything about the frets. Em is E major with the index
+  // taken off, so it keeps E major's middle and ring — while Asus2, the same
+  // two-notes-on-one-fret shape, is A major with the ring taken off and keeps
+  // A major's index and middle. Nothing in the geometry tells those two
+  // apart, which is why this is a table and not a rule.
+  //
+  // Keyed by the grip, low E first; the value gives the finger for each
+  // fretted string, by string index (0 = high e).
+  const CONVENTIONAL_FINGERING = {
+    '0-2-2-0-0-0': { 4: 2, 3: 3 },     // Em — E major with the index lifted
+  };
+
+  const gripOf = cells => {
+    const at = new Map(cells.map(c => [c.string, c.fret]));
+    return [5, 4, 3, 2, 1, 0].map(s => at.has(s) ? at.get(s) : 'x').join('-');
+  };
+
   function computeFingering(cells, allowedPcs){
+    const known = CONVENTIONAL_FINGERING[gripOf(cells)];
+    if (known){
+      return { fingerByString: { ...known }, barre: null, barres: [],
+               fingerCount: new Set(Object.values(known)).size, barredExtras: [] };
+    }
+
     const fretted = cells.filter(c => c.fret > 0);
     const openStrings = new Set(cells.filter(c => c.fret === 0).map(c => c.string));
     if (!fretted.length) return { fingerByString: {}, barre: null, barres: [], fingerCount: 0 };

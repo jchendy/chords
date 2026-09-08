@@ -318,6 +318,14 @@ finger laid flat over neighbouring strings (the ring-finger barre that
 shapes like C9 and Em9 need). A barre that would silence an open string, or
 sound a note outside the chord, means the shape isn't offered at all.
 
+A few open shapes are fingered by convention instead, from a small table the
+pass consults first. The convention there comes from the chord a shape is
+lifted from rather than from anything about the frets: Em is E major with the
+index taken off, so it keeps E major's middle and ring, while Asus2 — two
+notes on one fret, the same shape as Em — is A major with the ring taken off
+and keeps A major's index and middle. Nothing about the geometry separates
+those two, so they can't both come out of a rule.
+
 The results walk up the neck, showing the best grips at each position, so
 every place the chord can be played gets a look in. Choosing and ordering
 are separate judgements: a score decides which shapes make the cut (fuller
