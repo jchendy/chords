@@ -76,6 +76,9 @@
   // five because the view starts across the neck — in one position it's A, E
   // and D, and the buttons are repainted when the reading changes.
   const SEG_ACTIVE = { cagedShapeGroup: ['C', 'A', 'G', 'E', 'D'] };
+  // the view rewrites this one's label as the mode changes, so it has to start
+  // with the text the page ships rather than empty
+  const SEG_TEXT = { viewGroup: { neck: 'Across the neck', position: 'In one position' } };
   Object.entries(SEG).forEach(([id, values]) => {
     const group = document.createElement('div');
     group.id = id;
@@ -86,6 +89,7 @@
       const on = lit ? lit.includes(v) : i === 0;
       b.className = 'seg-btn' + (on ? ' active' : '');
       b.dataset.value = v;
+      if (SEG_TEXT[id] && SEG_TEXT[id][v]) b.textContent = SEG_TEXT[id][v];
       group.appendChild(b);
     });
     root.appendChild(group);
@@ -682,6 +686,33 @@
       + (bad.length ? ` — ${bad[0]}` : ''));
   }
 
+  // Chords and Triads are the two views that bring the whole progression into
+  // the position with you, so there the reading is named for that. The others
+  // put one view's notes in a position rather than every chord and keep the
+  // plain name. Only the wording differs: the reading is chosen by the button's
+  // data-value, so a test that clicked by label would still work either way —
+  // which is exactly why this checks the label itself.
+  function testTheReadingIsNamedForWhatItShows(t){
+    const bad = [];
+    loadProgression(['Am7', 'Dm7', 'E7']);
+    const label = () => q('#viewGroup [data-value="position"]').textContent.trim();
+    const WHOLE_PROGRESSION = 'All chords in one position';
+    [['caged', WHOLE_PROGRESSION], ['triads3', WHOLE_PROGRESSION],
+     ['roots', 'In one position'], ['penta', 'In one position'],
+     ['scale', 'In one position']].forEach(([mode, want]) => {
+      setMode(mode);
+      if (label() !== want) bad.push(`${mode} reads "${label()}", not "${want}"`);
+    });
+    // and the label is only a label — choosing the reading still works
+    setMode('caged');
+    setView('position');
+    const on = [...q('#viewGroup').querySelectorAll('.seg-btn')]
+      .filter(b => b.classList.contains('active')).map(b => b.dataset.value);
+    if (on.join() !== 'position') bad.push(`selecting it left [${on}] active`);
+    setView('neck');
+    t.equal(bad.join('; '), '', 'The reading is named for what that view puts in the position');
+  }
+
   GT.fretboardSuites = [
     ['Fretboard: chords are drawn as shapes you can hold', testGripsAreGrips],
     ['Fretboard: whole arpeggio opens the shapes out', testArpeggioReallyOpensOut],
@@ -698,6 +729,7 @@
     ['Fretboard: a shape switched off leaves the view', testDisabledShapesLeaveTheView],
     ['Fretboard: each reading keeps its own shapes', testEachReadingKeepsItsOwnShapes],
     ['Fretboard: the shapes follow you between views', testShapesCarryBetweenViews],
+    ['Fretboard: the reading is named for what it shows', testTheReadingIsNamedForWhatItShows],
     ['Fretboard: One box goes when it cannot hold the progression', testOneBoxGoesWhenItCannotHold],
   ];
 })();

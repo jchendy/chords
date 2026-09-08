@@ -226,6 +226,17 @@
       .filter(b => shapeOn(b.name));
   }
 
+  // Chords and Triads are the two views that bring the whole progression into
+  // the position with you, so there the button says so. Pentatonic, Scales and
+  // Roots put one thing in a position rather than every chord, and keep the
+  // plain name. Only the wording changes — the reading is chosen by the
+  // button's data-value either way.
+  function paintViewButton(){
+    const btn = viewGroup.querySelector('[data-value="position"]');
+    const wholeProgression = ['caged', 'triads3'].includes(fretMode);
+    btn.textContent = wholeProgression ? 'All chords in one position' : 'In one position';
+  }
+
   // the buttons show the set belonging to the reading you're in
   function paintShapeButtons(){
     const shapes = enabledShapes();
@@ -234,6 +245,7 @@
   }
 
   function updateFretUI(){
+    paintViewButton();
     paintShapeButtons();
     const chordModes = ['caged', 'triads3', 'penta', 'scale'].includes(fretMode);
     // Every view but Roots is about one chord, so it picks one. Roots draws

@@ -145,7 +145,11 @@ names the tab you're on.
   "C shape", so the prefix was carrying nothing. One **View** toggle above
   them all decides whether you're looking at the whole neck or at one hand
   position, and it stays put when you switch view, so following a chord into
-  its scale doesn't throw you back out to the whole neck. In one position a
+  its scale doesn't throw you back out to the whole neck. The second button is
+  named for what that view actually puts in the position: **All chords in one
+  position** in Chords and Triads, which bring the whole progression with you,
+  and plain **In one position** in Roots, Pentatonic and Scales, which put one
+  view's notes there rather than every chord. In one position a
   single Position row appears — ◂ ▸ to move the hand — and each view narrows
   to its own notes inside that stretch. It stays where you put it as the chords
   change; only the arrows move it. The views number their positions differently (a pentatonic box
@@ -170,8 +174,8 @@ names the tab you're on.
   one position walks the neck one CAGED shape at a time.
   This view reads two ways, chosen by **View**. *Across the neck* is one chord
   at a time, its five shapes everywhere they fall — the view for learning where
-  a chord lives. *In one position* is the whole progression gathered under one
-  hand, drawn the way it plays —
+  a chord lives. *All chords in one position* is the whole progression gathered
+  under one hand, drawn the way it plays —
   each chord in its own colour, labelled by degree, its grip traced faintly
   through, and three tiers of brightness (the chord in front lit, the
   one you're heading into next half-lit, the rest dimmed much further, roots
