@@ -9,7 +9,7 @@
   const GT = window.GT;
   const { parseChordName, identifyChords, chordFromName, seventhSuffix, NOTE_NAMES_SHARP,
           degreeLabel, SEMITONE } = GT.theory;
-  const { STRING_TUNING, FRET_COUNT, seventhCells, cagedPlacements, CAGED_MAJOR,
+  const { STRING_TUNING, STRING_MIDI, FRET_COUNT, seventhCells, cagedPlacements, CAGED_MAJOR,
           cagedTriadBoard, scaleBoxPlacements, pentaBoxPlacements } = GT.fretboard;
   const { findChordVoicings } = GT.chordFinder;
   const { voiceChord, midiFor } = GT.genres;
@@ -625,64 +625,64 @@
   // change visible and reviewable instead of silent.
   const SCALE_BOXES = {
     'C': [
-      'C@0 0-1-3 1-3 0-2 0-2 0-2-3 0-1-3',
-      'C@12 12-13-15 13-15 12-14 12-14 12-14-15 12-13-15',
-      'A@3 3-5 3-5 2-4-5 2-3-5 3-5 3-5',
-      'A@15 15 15 14 14 15 15',
-      'G@5 5-7-8 5-6-8 5-7 5-7 5-7 5-7-8',
-      'E@8 8-10 8-10 7-9 7-9-10 7-8-10 8-10',
-      'D@-2 0 1 0 0 0 0',
-      'D@10 10-12 10-12-13 9-10-12 10-12 10-12 10-12',
+      'C@0 0-1-3 0-1-3 0-2 0-2-3 0-2-3 0-1-3',
+      'C@12 12-13-15 12-13-15 12-14 12-14-15 12-14-15 12-13-15',
+      'A@3 3-5 3-5-6 2-4-5 2-3-5 2-3-5 3-5',
+      'A@15 15 15 14 14-15 14-15 15',
+      'G@5 5-7-8 5-6-8 4-5-7 5-7 5-7-8 5-7-8',
+      'E@8 7-8-10 8-10 7-9-10 7-9-10 7-8-10 8-10',
+      'D@-2 0 0-1 0 0 0 0-1',
+      'D@10 10-12 10-12-13 9-10-12 9-10-12 10-12 10-12-13',
     ],
     'Cm': [
-      'C@1 1-3 1-3-4 0-1-3 1-3 1-3 1-3',
-      'C@13 13-15 13 12-13-15 13-15 13-15 13-15',
-      'A@3 3-4-6 4-6 3-5 3-5 3-5-6 3-4-6',
-      'A@15 15 . 15 15 15 15',
-      'G@6 6-8 6-8 5-7-8 5-6-8 6-8 6-8',
-      'E@8 8-10-11 8-9-11 8-10 8-10 8-10 8-10-11',
-      'D@-1 1 1 0 1 1 1',
-      'D@11 11-13 11-13 10-12 10-12-13 10-11-13 11-13',
+      'C@1 1-3 1-3-4 0-1-3 0-1-3 1-3 1-3-4',
+      'C@13 13-15 13-15 12-13-15 12-13-15 13-15 13-15',
+      'A@3 3-4-6 3-4-6 3-5 3-5-6 3-5-6 3-4-6',
+      'A@15 15 15 15 15 15 15',
+      'G@6 6-8 6-8-9 5-7-8 5-6-8 5-6-8 6-8',
+      'E@8 8-10-11 8-9-11 7-8-10 8-10 8-10-11 8-10-11',
+      'D@-1 1 1 0-1 0-1 1 1',
+      'D@11 10-11-13 11-13 10-12-13 10-12-13 10-11-13 11-13',
     ],
     'G': [
-      'C@7 7-8-10 8-10 7-9 7-9 7-9-10 7-8-10',
-      'A@-2 0 0 0 0 0 0',
-      'A@10 10-12 10-12 9-11-12 9-10-12 10-12 10-12',
-      'G@0 0-2-3 0-1-3 0-2 0-2 0-2 0-2-3',
-      'G@12 12-14-15 12-13-15 12-14 12-14 12-14 12-14-15',
-      'E@3 3-5 3-5 2-4 2-4-5 2-3-5 3-5',
-      'E@15 15 15 14 14 14 15',
-      'D@5 5-7 5-7-8 4-5-7 5-7 5-7 5-7',
+      'C@7 7-8-10 7-8-10 7-9 7-9-10 7-9-10 7-8-10',
+      'A@-2 0 0-1 0 0 0 0',
+      'A@10 10-12 10-12-13 9-11-12 9-10-12 9-10-12 10-12',
+      'G@0 0-2-3 0-1-3 0-2 0-2 0-2-3 0-2-3',
+      'G@12 12-14-15 12-13-15 11-12-14 12-14 12-14-15 12-14-15',
+      'E@3 2-3-5 3-5 2-4-5 2-4-5 2-3-5 3-5',
+      'E@15 14-15 15 14 14 14-15 15',
+      'D@5 5-7 5-7-8 4-5-7 4-5-7 5-7 5-7-8',
     ],
     'Gm': [
-      'C@8 8-10 8-10-11 7-8-10 8-10 8-10 8-10',
-      'A@-2 1 1 0 0 1 1',
-      'A@10 10-11-13 11-13 10-12 10-12 10-12-13 10-11-13',
-      'G@1 1-3 1-3 0-2-3 0-1-3 1-3 1-3',
-      'G@13 13-15 13-15 12-14-15 12-13-15 13-15 13-15',
-      'E@3 3-5-6 3-4-6 3-5 3-5 3-5 3-5-6',
-      'E@15 15 15 15 15 15 15',
-      'D@6 6-8 6-8 5-7 5-7-8 5-6-8 6-8',
+      'C@8 8-10 8-10-11 7-8-10 7-8-10 8-10 8-10-11',
+      'A@-2 1 1 0 0-1 0-1 1',
+      'A@10 10-11-13 10-11-13 10-12 10-12-13 10-12-13 10-11-13',
+      'G@1 1-3 1-3-4 0-2-3 0-1-3 0-1-3 1-3',
+      'G@13 13-15 13-15 12-14-15 12-13-15 12-13-15 13-15',
+      'E@3 3-5-6 3-4-6 2-3-5 3-5 3-5-6 3-5-6',
+      'E@15 15 15 14-15 15 15 15',
+      'D@6 5-6-8 6-8 5-7-8 5-7-8 5-6-8 6-8',
     ],
     'A': [
-      'C@-3 0 0 . . 0 0',
-      'C@9 9-10-12 10-12 9-11 9-11 9-11-12 9-10-12',
-      'A@0 0-2 0-2 2 2 0-2 0-2',
-      'A@12 12-14 12-14 11-13-14 11-12-14 12-14 12-14',
-      'G@2 2-4-5 2-3-5 2-4 2-4 2-4 2-4-5',
-      'G@14 14 14 14 14 14 14',
-      'E@5 5-7 5-7 4-6 4-6-7 4-5-7 5-7',
-      'D@7 7-9 7-9-10 6-7-9 7-9 7-9 7-9',
+      'C@-3 0 0 . 0 0 0',
+      'C@9 9-10-12 9-10-12 9-11 9-11-12 9-11-12 9-10-12',
+      'A@0 0-2 0-2-3 1-2 0-2 0-2 0-2',
+      'A@12 12-14 12-14-15 11-13-14 11-12-14 11-12-14 12-14',
+      'G@2 2-4-5 2-3-5 1-2-4 2-4 2-4-5 2-4-5',
+      'G@14 14 14-15 13-14 14 14 14',
+      'E@5 4-5-7 5-7 4-6-7 4-6-7 4-5-7 5-7',
+      'D@7 7-9 7-9-10 6-7-9 6-7-9 7-9 7-9-10',
     ],
     'Am': [
-      'C@-2 0 1 0 0 0 0',
-      'C@10 10-12 10-12-13 9-10-12 10-12 10-12 10-12',
-      'A@0 0-1-3 1-3 0-2 0-2 0-2-3 0-1-3',
-      'A@12 12-13-15 13-15 12-14 12-14 12-14-15 12-13-15',
-      'G@3 3-5 3-5 2-4-5 2-3-5 3-5 3-5',
-      'G@15 15 15 14 14 15 15',
-      'E@5 5-7-8 5-6-8 5-7 5-7 5-7 5-7-8',
-      'D@8 8-10 8-10 7-9 7-9-10 7-8-10 8-10',
+      'C@-2 0 0-1 0 0 0 0-1',
+      'C@10 10-12 10-12-13 9-10-12 9-10-12 10-12 10-12-13',
+      'A@0 0-1-3 0-1-3 0-2 0-2-3 0-2-3 0-1-3',
+      'A@12 12-13-15 12-13-15 12-14 12-14-15 12-14-15 12-13-15',
+      'G@3 3-5 3-5-6 2-4-5 2-3-5 2-3-5 3-5',
+      'G@15 15 15 14 14-15 14-15 15',
+      'E@5 5-7-8 5-6-8 4-5-7 5-7 5-7-8 5-7-8',
+      'D@8 7-8-10 8-10 7-9-10 7-9-10 7-8-10 8-10',
     ],
   };
 
@@ -785,6 +785,55 @@
     });
   }
 
+
+  // What a scale box is for: you can play the scale up through it without a
+  // note going missing. The boxes used to be worked out from the pentatonic
+  // ones by filling gaps of a minor third, which left every single box with a
+  // hole in it — the 2 absent from an octave, the b6 absent from another. They
+  // are written out now, so this is what keeps them honest, over all seven
+  // modes and all twelve roots. A box running off the end of the neck is
+  // partial by definition and is not asked to be complete.
+  function testScaleBoxesHaveNoHoles(t){
+    const MODES = {
+      '0,2,4,5,7,9,11': 'Ionian',    '0,2,3,5,7,9,10': 'Dorian',
+      '0,1,3,5,7,8,10': 'Phrygian',  '0,2,4,6,7,9,11': 'Lydian',
+      '0,2,4,5,7,9,10': 'Mixolydian', '0,2,3,5,7,8,10': 'Aeolian',
+      '0,1,3,5,6,8,10': 'Locrian',
+    };
+    const holes = [];
+    let whole = 0, widest = 0;
+    Object.keys(MODES).forEach(signature => {
+      const steps = signature.split(',').map(Number);
+      const sizes = steps.map((o, i) => ((steps[(i + 1) % 7] - o) + 12) % 12);
+      for (let root = 0; root < 12; root++){
+        const pcs = new Set(steps.map(o => (root + o) % 12));
+        const boxes = scaleBoxPlacements(root, steps.indexOf(3) >= 0, pcs);
+        const fullest = {};
+        boxes.forEach(b => {
+          if (!fullest[b.name] || b.cells.length > fullest[b.name]) fullest[b.name] = b.cells.length;
+        });
+        boxes.forEach(b => {
+          if (b.anchor < 0 || b.anchor > FRET_COUNT) return;
+          if (b.cells.length < fullest[b.name]) return;      // clipped by the nut or the 15th
+          whole++;
+          const frets = b.cells.map(c => c.fret);
+          widest = Math.max(widest, Math.max(...frets) - Math.min(...frets) + 1);
+          b.cells.forEach(c => {
+            if (!pcs.has((STRING_TUNING[c.string] + c.fret) % 12))
+              holes.push(`${MODES[signature]} ${b.name}: a note that isn't in the scale`);
+          });
+          const run = [...new Set(b.cells.map(c => STRING_MIDI[c.string] + c.fret))].sort((a, x) => a - x);
+          for (let i = 0; i < run.length - 1; i++){
+            if (!sizes.includes(run[i + 1] - run[i]))
+              holes.push(`${MODES[signature]} ${b.name}@${b.anchor}: the scale skips a note`);
+          }
+        });
+      }
+    });
+    t.equal([...new Set(holes)].join('; '), '',
+      `Every scale box is a run you can play, in all seven modes (${whole} boxes, widest ${widest} frets)`);
+  }
+
   // ---- a very small test runner ----
   function run(){
     const results = [];
@@ -803,6 +852,7 @@
       ['Theory: one answer for what degree a note is', testDegreeNamesAgree],
       ['Fretboard: the pentatonic boxes are unchanged', testPentatonicBoxesAreUnchanged],
       ['Fretboard: the scale boxes are unchanged', testScaleBoxesAreUnchanged],
+      ['Fretboard: every scale box is playable', testScaleBoxesHaveNoHoles],
       ['Genre library and presets are well-formed', testData],
     ].concat(GT.fretboardSuites || []).concat(GT.practiceSuites || []);   // added by js/tests-fretboard.js, if it loaded
     const out = [];

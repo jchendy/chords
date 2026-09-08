@@ -243,6 +243,16 @@ names the tab you're on.
   natural minor) and Key mode (chord-scale theory — the progression key's
   mode rooted on the chosen chord, e.g. a IV chord reads as Lydian); same
   CAGED-box colouring and chord-tone emphasis either way.
+  Every scale box is written out rather than worked out, the way the
+  pentatonic ones are: which of two places a note is best fingered in is a
+  judgement, not something a rule derives, and deriving them left every box
+  with a hole in it — the 2 missing from an octave here, the ♭6 there. A mode
+  has the same notes as the major scale it comes from, so it has the same five
+  boxes: you play D Dorian with C major's shapes and count from a different
+  root. That moves the roots inside each box and so moves the CAGED name with
+  them — C major's D shape is D Dorian's E shape — and every mode is written
+  out on that basis. The result is a complete run of the scale in every box,
+  over four or five frets, tested across all seven modes and all twelve roots.
   Both scale views take the same Position row as the others: ◂ ▸ walk one
   CAGED position at a time up and down the neck, with the legend naming the
   fret range. The position stays where you leave it as the chords change, so

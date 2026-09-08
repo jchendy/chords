@@ -191,27 +191,107 @@
     return out;
   }
 
-  // full 7-note scale box per CAGED position: each box's pentatonic notes plus
-  // the diatonic passing tones (4 / 7) that sit inside its minor-third gaps
+  // The full scale in each CAGED position, written out rather than worked out.
+  // These are the shapes players learn, and like the pentatonic ones above they
+  // are a judgement about where a note is best fingered, not something a rule
+  // derives: where a note can be had in two places, which one belongs to this
+  // box is a choice. Deriving them produced boxes with holes in — a scale you
+  // could not play up through the position without a note going missing.
+  //
+  // Keyed by the scale's own intervals from its root, so a mode is looked up by
+  // what it is rather than by what it's called. Then fret offsets from the
+  // anchor, per string, high e first.
+  //
+  // A mode has the same notes as the major scale it comes from, so it has the
+  // same five boxes — you play D Dorian with C major's shapes and just count
+  // from a different root. That moves the roots inside each box, which moves
+  // the CAGED name with them: the shape that is C major's D shape is D Dorian's
+  // E shape. Each row below says which major shape it is, so the two can be
+  // checked against each other.
+  const SCALE_SHAPES = {
+    // Ionian — the major scale itself
+    '0,2,4,5,7,9,11': {
+      C: { a: 0,  offs: [[0, 1, 3], [0, 1, 3], [0, 2], [0, 2, 3], [0, 2, 3], [0, 1, 3]] },   // = the major scale's C shape
+      A: { a: 3,  offs: [[0, 2], [0, 2, 3], [-1, 1, 2], [-1, 0, 2], [-1, 0, 2], [0, 2]] },   // = the major scale's A shape
+      G: { a: 5,  offs: [[0, 2, 3], [0, 1, 3], [-1, 0, 2], [0, 2], [0, 2, 3], [0, 2, 3]] },   // = the major scale's G shape
+      E: { a: 8,  offs: [[-1, 0, 2], [0, 2], [-1, 1, 2], [-1, 1, 2], [-1, 0, 2], [0, 2]] },   // = the major scale's E shape
+      D: { a: 10, offs: [[0, 2], [0, 2, 3], [-1, 0, 2], [-1, 0, 2], [0, 2], [0, 2, 3]] },   // = the major scale's D shape
+    },
+    // Dorian — the parent major's boxes, rooted on its 2nd
+    '0,2,3,5,7,9,10': {
+      C: { a: 1,  offs: [[0, 2], [0, 2, 3], [-1, 1, 2], [-1, 0, 2], [-1, 0, 2], [0, 2]] },   // = the major scale's A shape
+      A: { a: 3,  offs: [[0, 2, 3], [0, 1, 3], [-1, 0, 2], [0, 2], [0, 2, 3], [0, 2, 3]] },   // = the major scale's G shape
+      G: { a: 6,  offs: [[-1, 0, 2], [0, 2], [-1, 1, 2], [-1, 1, 2], [-1, 0, 2], [0, 2]] },   // = the major scale's E shape
+      E: { a: 8,  offs: [[0, 2], [0, 2, 3], [-1, 0, 2], [-1, 0, 2], [0, 2], [0, 2, 3]] },   // = the major scale's D shape
+      D: { a: 10, offs: [[0, 1, 3], [0, 1, 3], [0, 2], [0, 2, 3], [0, 2, 3], [0, 1, 3]] },   // = the major scale's C shape
+    },
+    // Phrygian — the parent major's boxes, rooted on its 3rd
+    '0,1,3,5,7,8,10': {
+      C: { a: 1,  offs: [[0, 2, 3], [0, 1, 3], [-1, 0, 2], [0, 2], [0, 2, 3], [0, 2, 3]] },   // = the major scale's G shape
+      A: { a: 4,  offs: [[-1, 0, 2], [0, 2], [-1, 1, 2], [-1, 1, 2], [-1, 0, 2], [0, 2]] },   // = the major scale's E shape
+      G: { a: 6,  offs: [[0, 2], [0, 2, 3], [-1, 0, 2], [-1, 0, 2], [0, 2], [0, 2, 3]] },   // = the major scale's D shape
+      E: { a: 8,  offs: [[0, 1, 3], [0, 1, 3], [0, 2], [0, 2, 3], [0, 2, 3], [0, 1, 3]] },   // = the major scale's C shape
+      D: { a: 11, offs: [[0, 2], [0, 2, 3], [-1, 1, 2], [-1, 0, 2], [-1, 0, 2], [0, 2]] },   // = the major scale's A shape
+    },
+    // Lydian — the parent major's boxes, rooted on its 4th
+    '0,2,4,6,7,9,11': {
+      C: { a: 0,  offs: [[0, 2, 3], [0, 1, 3], [-1, 0, 2], [0, 2], [0, 2, 3], [0, 2, 3]] },   // = the major scale's G shape
+      A: { a: 3,  offs: [[-1, 0, 2], [0, 2], [-1, 1, 2], [-1, 1, 2], [-1, 0, 2], [0, 2]] },   // = the major scale's E shape
+      G: { a: 5,  offs: [[0, 2], [0, 2, 3], [-1, 0, 2], [-1, 0, 2], [0, 2], [0, 2, 3]] },   // = the major scale's D shape
+      E: { a: 7,  offs: [[0, 1, 3], [0, 1, 3], [0, 2], [0, 2, 3], [0, 2, 3], [0, 1, 3]] },   // = the major scale's C shape
+      D: { a: 10, offs: [[0, 2], [0, 2, 3], [-1, 1, 2], [-1, 0, 2], [-1, 0, 2], [0, 2]] },   // = the major scale's A shape
+    },
+    // Mixolydian — the parent major's boxes, rooted on its 5th
+    '0,2,4,5,7,9,10': {
+      C: { a: 1,  offs: [[-1, 0, 2], [0, 2], [-1, 1, 2], [-1, 1, 2], [-1, 0, 2], [0, 2]] },   // = the major scale's E shape
+      A: { a: 3,  offs: [[0, 2], [0, 2, 3], [-1, 0, 2], [-1, 0, 2], [0, 2], [0, 2, 3]] },   // = the major scale's D shape
+      G: { a: 5,  offs: [[0, 1, 3], [0, 1, 3], [0, 2], [0, 2, 3], [0, 2, 3], [0, 1, 3]] },   // = the major scale's C shape
+      E: { a: 8,  offs: [[0, 2], [0, 2, 3], [-1, 1, 2], [-1, 0, 2], [-1, 0, 2], [0, 2]] },   // = the major scale's A shape
+      D: { a: 10, offs: [[0, 2, 3], [0, 1, 3], [-1, 0, 2], [0, 2], [0, 2, 3], [0, 2, 3]] },   // = the major scale's G shape
+    },
+    // Aeolian — the parent major's boxes, rooted on its 6th — the natural minor
+    '0,2,3,5,7,8,10': {
+      C: { a: 1,  offs: [[0, 2], [0, 2, 3], [-1, 0, 2], [-1, 0, 2], [0, 2], [0, 2, 3]] },   // = the major scale's D shape
+      A: { a: 3,  offs: [[0, 1, 3], [0, 1, 3], [0, 2], [0, 2, 3], [0, 2, 3], [0, 1, 3]] },   // = the major scale's C shape
+      G: { a: 6,  offs: [[0, 2], [0, 2, 3], [-1, 1, 2], [-1, 0, 2], [-1, 0, 2], [0, 2]] },   // = the major scale's A shape
+      E: { a: 8,  offs: [[0, 2, 3], [0, 1, 3], [-1, 0, 2], [0, 2], [0, 2, 3], [0, 2, 3]] },   // = the major scale's G shape
+      D: { a: 11, offs: [[-1, 0, 2], [0, 2], [-1, 1, 2], [-1, 1, 2], [-1, 0, 2], [0, 2]] },   // = the major scale's E shape
+    },
+    // Locrian — the parent major's boxes, rooted on its 7th
+    '0,1,3,5,6,8,10': {
+      C: { a: 1,  offs: [[0, 1, 3], [0, 1, 3], [0, 2], [0, 2, 3], [0, 2, 3], [0, 1, 3]] },   // = the major scale's C shape
+      A: { a: 4,  offs: [[0, 2], [0, 2, 3], [-1, 1, 2], [-1, 0, 2], [-1, 0, 2], [0, 2]] },   // = the major scale's A shape
+      G: { a: 6,  offs: [[0, 2, 3], [0, 1, 3], [-1, 0, 2], [0, 2], [0, 2, 3], [0, 2, 3]] },   // = the major scale's G shape
+      E: { a: 9,  offs: [[-1, 0, 2], [0, 2], [-1, 1, 2], [-1, 1, 2], [-1, 0, 2], [0, 2]] },   // = the major scale's E shape
+      D: { a: 11, offs: [[0, 2], [0, 2, 3], [-1, 0, 2], [-1, 0, 2], [0, 2], [0, 2, 3]] },   // = the major scale's D shape
+    },
+  };
+
+  // the two a chord asks for when it isn't asking for a mode
+  const IONIAN = '0,2,4,5,7,9,11', AEOLIAN = '0,2,3,5,7,8,10';
+
   function scaleBoxPlacements(rootPc, isMinor, scalePcs){
-    return pentaBoxPlacements(rootPc, isMinor).map(p => {
-      const byString = {};
-      p.cells.forEach(c => { (byString[c.string] = byString[c.string] || []).push(c.fret); });
-      const cells = [];
-      Object.keys(byString).forEach(key => {
-        const s = Number(key);
-        const frets = byString[key].slice().sort((a, b) => a - b);
-        frets.forEach(f => cells.push({ string: s, fret: f }));
-        for (let k = 0; k < frets.length - 1; k++){
-          if (frets[k + 1] - frets[k] === 3){
-            for (let mid = frets[k] + 1; mid < frets[k + 1]; mid++){
-              if (scalePcs.has((STRING_TUNING[s] + mid) % 12)) cells.push({ string: s, fret: mid });
-            }
-          }
-        }
+    const signature = [...scalePcs]
+      .map(pc => ((pc - rootPc) % 12 + 12) % 12)
+      .sort((a, b) => a - b)
+      .join(',');
+    // A chord borrowed from outside the key can hand us something that is no
+    // mode at all; the parallel scale is the honest fallback for that.
+    const set = SCALE_SHAPES[signature] || SCALE_SHAPES[isMinor ? AEOLIAN : IONIAN];
+    const out = [];
+    CAGED_ORDER.forEach(name => {
+      const box = set[name];
+      const base = (((box.a + rootPc) % 12) + 12) % 12;
+      [base - 12, base, base + 12].forEach(anchor => {
+        const cells = [];
+        box.offs.forEach((list, s) => list.forEach(o => {
+          const fret = anchor + o;
+          if (fret >= 0 && fret <= FRET_COUNT) cells.push({ string: s, fret });
+        }));
+        if (cells.length) out.push({ name, anchor, cells });
       });
-      return { name: p.name, anchor: p.anchor, cells };
     });
+    return out;
   }
 
   // The five CAGED shapes for one triad, laid out across the whole neck and
