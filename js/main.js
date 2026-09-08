@@ -4,6 +4,7 @@
   const GT = window.GT;
 
   GT.practice.init();
+  GT.stage.init();
   GT.chordFinder.init();
   GT.reverseFinder.init();
   GT.genreExamples.init();

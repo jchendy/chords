@@ -9,8 +9,9 @@ A single-page, dependency-free site with three tabs under one header:
 - **Reverse chord finder** — click frets on an interactive fretboard and
   see what chord name(s) the selected notes could be.
 - **Genre examples** — pick a style, then a rhythm or a lead line, and read
-  the tab while you hear it played. It lives in the footer under
-  "Experimental features" rather than in the header.
+  the tab while you hear it played. It's experimental, and lives behind the
+  menu at the right end of the header (with a mailto link) rather than among
+  the tools.
 
 Switching tabs stops any playback that was running. Each tab has its own URL
 fragment (`#chord-finder`, `#reverse-chord-finder`), so a tab can be
@@ -105,23 +106,30 @@ names the tab you're on.
   so a progression can be bookmarked or sent to someone; opening the link
   brings it all back. A progression loaded from a genre example is written as
   chord names instead, since its chords aren't degrees of anything
-- Info tooltips (ⓘ) on the less-obvious controls — hover on desktop, tap on
-  touch, tap elsewhere to dismiss
-- The tab is three panels in the order a session runs: build the
-  progression (key, preset, the per-chord pickers, and what the dice may
-  use), then everything you touch while it plays (Play, tempo with 60/90/120
-  shortcuts, style and feel, the Simple-only note value, the metronome /
-  roots-only / count-in options, and the share link), and then the chord
-  chart itself. The tab reads top to bottom as chart, then fretboard, then the
-  key and chord settings, then the playback settings — the two things you read
-  while playing sit against each other at the top, and everything you set once
-  and leave sits below them. Play and a second copy of the 60/90/120 tempo
-  shortcuts float together bottom-right, clear of the page, so the transport is
-  never somewhere you have to scroll back to, and a third Play sits in the
-  chart's own top-right corner, icon only — small enough to read as part of the
-  sheet rather than as the transport, and a fixed size so it can't shift under
-  the quick actions when its label changes. All three are the same control and
-  stay in step, whichever one you press. A "Style" picker chooses the backing:
+- An info tooltip (ⓘ) beside the position method, the one choice that
+  needs explaining — hover on desktop, tap on touch, tap elsewhere to dismiss
+- The tab is laid out as a stage: near-black ground and high-contrast ink,
+  meant to be read from a music stand, with colour reserved for the CAGED
+  shapes — a chosen control is ink with a rule under it, not a coloured
+  fill. The chart comes first, its key as the title and the progression's
+  name beside it, both directly editable (the real pickers lie over the text)
+  with a dice for each and a gear that opens Set up. The neck sits under the
+  chart with its controls on it: the five views as tabs above, a toolbar for
+  the reading (across the neck / in one position) and whatever the view
+  needs, and a quieter row for the shapes under the legend. In one position
+  the stretch of frets is drawn on the neck as a window you can drag; a
+  joined ‹ › pair at the end of the toolbar and an arrow on each edge of the
+  window step it. One transport is pinned to the bottom of the tab: Play, the
+  tempo slider with its BPM readout, and Set up. While it plays, a beat line
+  appears along the top of every bar in the chart and fills through the
+  sounding one a quarter per beat. Everything set once and left alone — key,
+  preset, the per-chord pickers and what the dice may use; style and feel,
+  the Simple-only note value, the metronome / roots-only / count-in options;
+  dot colour and the fret range; the share link — lives in the Set up sheet,
+  which slides up over the stage so nothing scrolls. On a phone the site
+  name drops out, the tools row scrolls sideways, and a Controls button in
+  the transport hides every control on the neck so the picture has the
+  screen. A "Style" picker chooses the backing:
   Simple — the plain piano voicing, with note value (quarter / half / whole),
   metronome click and a roots-only mode;
   Rock — driving 8th-note piano chords and a basic kit, with a half-time
@@ -486,6 +494,7 @@ by what each part does:
 | `audio.js` | The Web Audio synth voices (piano, bass, drums) and the per-genre groove patterns. Owns the `AudioContext`; knows nothing about the UI. |
 | `fretboard-view.js` | The practice tab's fretboard panel: the six views, the legend, the hover spotlight, the follow-playback highlighting. |
 | `practice.js` | The CAGED practice tab: progression generation, the chord display and settings, and the playback transport. |
+| `stage.js` | The practice tab's chrome: the Set up sheet, the phone's controls toggle, the progression name in the chart head, the beat line, the draggable position window, and the site menu. Reads what the other modules draw; keeps no state. |
 | `chord-finder.js` | Chord finder tab: voicing search, fingering, chord diagrams. |
 | `reverse-finder.js` | Reverse chord finder tab: click targets over the shared neck, and the name lookup. |
 | `tooltips.js` | The (i) info bubbles. |
