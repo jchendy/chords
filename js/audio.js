@@ -243,6 +243,18 @@
     return node;
   }
 
+  // How many steps a scheduler's cursor has to jump to land on or after `now`.
+  // A moment that has already passed can't be scheduled: the audio clock
+  // doesn't play a past time late, it starts everything at that time at once,
+  // which is heard as a burst of attacks rather than music. So a scheduler
+  // steps over what a stall ate — a browser throttles the timers of a page
+  // that isn't focused, to a second or more — and the run slips instead.
+  // Shared by both players, since both queue against the same clock.
+  function stepsToSkip(cursor, now, step){
+    if (step <= 0 || cursor >= now) return 0;
+    return Math.ceil((now - cursor) / step);
+  }
+
   // Called off: a note that hasn't started yet is stopped outright, while one
   // already sounding is left to ring out the way it would have. Stopping a
   // source before its start time means it never plays at all.
@@ -731,7 +743,7 @@
   GT.audio = {
     ctx: () => audioCtx,               // live handle; null until ensureAudio() runs
     pianoWaveFor, PIANO_PARTIALS,      // exposed so the tests can render a note offline
-    ensureAudio, keepAwake, cancelScheduled, noteFreq, chordFrequencies, pcFreq, bassFreqAt, walkBassFreq, ROOT_OCTAVE,
+    ensureAudio, keepAwake, cancelScheduled, stepsToSkip, noteFreq, chordFrequencies, pcFreq, bassFreqAt, walkBassFreq, ROOT_OCTAVE,
     playNote, playChord, playChord7, playBass, playGuitar,
     playHiHat, playRide, playKick, playSnare, playStyleVoice,
     STYLES,

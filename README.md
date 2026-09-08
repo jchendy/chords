@@ -483,7 +483,10 @@ starts at the same instant, which is heard as a burst of pops rather than
 music. Stepping over the missed beats makes a stall a slip in the
 progression instead, the way a metronome carries on while you look away. The
 cushion costs nothing at the transport, because stopping calls off the notes
-still queued; the ones already sounding are left to ring out.
+still queued; the ones already sounding are left to ring out. The genre
+examples player queues into the same clock and works the same way, so the
+counting and the calling-off both live in `audio.js` rather than in either
+tab.
 
 Two things keep a practice session alive on a phone propped up on a music
 stand. The screen is held awake while something is playing — and only while
@@ -511,7 +514,7 @@ by what each part does:
 | `genre-data.js` | The genre library itself: progressions, rhythm patterns and lead lines. Pure data. |
 | `tab.js` | Draws guitar tablature from a note list. |
 | `genre-examples.js` | The Genre examples tab: pickers, tab display, and its player. |
-| `audio.js` | The Web Audio synth voices (piano, bass, drums) and the per-genre groove patterns. Owns the `AudioContext`; knows nothing about the UI. |
+| `audio.js` | The Web Audio synth voices (piano, bass, drums) and the per-genre groove patterns. Owns the `AudioContext` and the queue both players schedule into — how far a stall has put a cursor behind the clock, and calling off notes that haven't sounded — but knows nothing about the UI. |
 | `fretboard-view.js` | The practice tab's fretboard panel: the six views, the legend, the hover spotlight, the follow-playback highlighting. |
 | `practice.js` | The CAGED practice tab: progression generation, the chord display and settings, and the playback transport. |
 | `stage.js` | The practice tab's chrome: the Set up sheet, the phone's controls toggle, the progression name in the chart head, the beat line, the draggable position window, and the site menu. Reads what the other modules draw; keeps no state. |

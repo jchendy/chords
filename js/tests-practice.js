@@ -183,15 +183,16 @@
     t.equal(out.join('; '), '', `Every Play button reads the same (${btns.length} copies)`);
   }
 
-  // The scheduler queues notes ahead of the sound. If a stall — a background
-  // tab's throttled timer, most of all — leaves the cursor behind the clock,
-  // the beats it missed must be stepped over rather than queued: a time in the
-  // past doesn't play late, it starts every note of that beat at once, which
-  // is heard as popping. So: after skipping, the cursor is never behind the
-  // clock, and never further ahead than it has to be.
+  // Both players queue notes ahead of the sound against the same clock. If a
+  // stall — a background tab's throttled timer, most of all — leaves the
+  // cursor behind that clock, the beats it missed must be stepped over rather
+  // than queued: a time in the past doesn't play late, it starts every note of
+  // that beat at once, which is heard as popping. So: after skipping, the
+  // cursor is never behind the clock, and never further ahead than it has to
+  // be.
   function testTheSchedulerNeverQueuesThePast(t){
     const bad = [];
-    const skip = GT.practice.beatsToSkip;
+    const skip = GT.audio.stepsToSkip;
     const spb = 60 / 180;                       // the tempo this went wrong at
 
     // nothing to skip while the cursor is still ahead of the clock
@@ -230,7 +231,7 @@
     // the cushion has to cover a throttled timer, which browsers clamp to a
     // second: too short and a stall becomes a burst instead of a slip
     const spb = 60 / 180;
-    if (GT.practice.beatsToSkip(0, 0.3, spb) === 0){
+    if (GT.audio.stepsToSkip(0, 0.3, spb) === 0){
       bad.push('a 0.3s stall was treated as no stall at all');
     }
     t.equal(bad.join('; '), '', 'Playback can be called off without waiting for the queue');

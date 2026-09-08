@@ -956,21 +956,13 @@
     }
   }
 
-  // How many beats the cursor has to jump to land on or after `now`. A beat
-  // whose moment has already passed can't be played: queueing it hands the
-  // browser a time in the past, and every note of it then starts at the same
-  // instant instead of in order. So the scheduler steps over the beats a stall
-  // ate rather than firing them all at once — the progression slips, which is
-  // what a metronome does when you look away, instead of popping.
-  function beatsToSkip(cursor, now, secondsPerBeat){
-    if (secondsPerBeat <= 0 || cursor >= now) return 0;
-    return Math.ceil((now - cursor) / secondsPerBeat);
-  }
-
   function scheduler(){
     const now = audio.ctx().currentTime;
     const secondsPerBeat = 60 / getTempo();
-    for (let skip = beatsToSkip(nextNoteTime, now, secondsPerBeat); skip > 0; skip--){
+    // A beat whose moment has passed can't be played — queueing it would start
+    // every note of it at once — so step over the ones a stall ate. The
+    // progression slips, which is what a metronome does when you look away.
+    for (let skip = audio.stepsToSkip(nextNoteTime, now, secondsPerBeat); skip > 0; skip--){
       advanceBeat(secondsPerBeat);
     }
 
@@ -1224,7 +1216,6 @@
     stop(){ if (isPlaying) togglePlay(); },
     loadProgression,
     copyShareLink,
-    beatsToSkip,      // exposed so the tests can check the scheduler never queues the past
     init(){
       view.init({
         progression: () => currentProgression,

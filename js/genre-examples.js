@@ -38,7 +38,11 @@
   let stopTimer = null;         // the end-of-run stop, when not looping
   let nextSlot = 0;             // next slot index still to be scheduled
   const LOOKAHEAD_MS = 25;
-  const SCHEDULE_AHEAD = 0.15;
+  // Queued this far ahead of the sound, to cover the longest the timer below
+  // might be held up — a browser throttles an unfocused page's timers to a
+  // second or more. Stopping calls off whatever is still queued, so the
+  // cushion isn't felt at the button.
+  const SCHEDULE_AHEAD = 0.4;
 
   function tempo(){
     if (!genre) return 120;
@@ -72,13 +76,24 @@
 
   function scheduler(){
     const now = audio.ctx().currentTime;
-    while (startTime + nextSlot * secondsPerSlot < now + SCHEDULE_AHEAD){
+    const at = () => startTime + nextSlot * secondsPerSlot;
+    // A slot whose moment has passed can't be played: the audio clock starts
+    // every note of a past time at once, which is a burst of attacks rather
+    // than music. Step over the ones a stall ate so the run slips instead.
+    nextSlot += audio.stepsToSkip(at(), now, secondsPerSlot);
+    // and a run that isn't looping has simply ended if the stall reached past it
+    if (!loopToggle.checked && nextSlot >= example.totalSlots){
+      stop();
+      return;
+    }
+
+    while (at() < now + SCHEDULE_AHEAD){
       const slotInLoop = nextSlot % example.totalSlots;
-      scheduleSlot(slotInLoop, startTime + nextSlot * secondsPerSlot);
+      scheduleSlot(slotInLoop, at());
       nextSlot++;
       if (!loopToggle.checked && nextSlot >= example.totalSlots){
         // let the last notes ring, then stop
-        stopTimer = setTimeout(stop, (startTime + nextSlot * secondsPerSlot - now + 0.6) * 1000);
+        stopTimer = setTimeout(stop, (at() - now + 0.6) * 1000);
         return;
       }
     }
@@ -123,6 +138,9 @@
     playing = false;
     clearTimeout(schedulerId);
     clearTimeout(stopTimer);
+    // the notes queued ahead of the sound would otherwise play on past the
+    // button; what's already sounding is left to ring out
+    audio.cancelScheduled();
     playBtn.textContent = 'Play';
     playBtn.classList.remove('playing');
     audio.keepAwake(false);
