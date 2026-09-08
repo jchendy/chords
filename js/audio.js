@@ -39,6 +39,9 @@
 
   let audioCtx = null;
   let masterGain = null;
+  // every voice that has been scheduled but hasn't sounded yet, so playback
+  // can be called off without waiting for what's already in the queue
+  let pending = [];
   let hihatGain = null;
   let bassGain = null;
   let drumGain = null;
@@ -226,6 +229,34 @@
     return ctx.createPeriodicWave(real, imag, { disableNormalization: true });
   }
 
+  // Start a source, and remember it until its moment comes. Notes are queued
+  // ahead of the sound, so stopping playback has to be able to call off the
+  // ones that haven't started — otherwise the queue plays on past the button.
+  function startVoice(node, time){
+    node.start(time);
+    pending.push({ node, time });
+    // the list only ever needs the notes still to come
+    if (pending.length > 256){
+      const now = audioCtx.currentTime;
+      pending = pending.filter(v => v.time > now);
+    }
+    return node;
+  }
+
+  // Called off: a note that hasn't started yet is stopped outright, while one
+  // already sounding is left to ring out the way it would have. Stopping a
+  // source before its start time means it never plays at all.
+  function cancelScheduled(){
+    if (!audioCtx) return;
+    const now = audioCtx.currentTime;
+    pending.forEach(v => {
+      if (v.time > now){
+        try { v.node.stop(now); } catch (e) { /* already finished */ }
+      }
+    });
+    pending = [];
+  }
+
   function playNote(freq, time, duration, velocity){
     // A struck string doesn't fade evenly: it drops fast at first, then rings
     // on quietly. Two ramps give that shape instead of one straight decay.
@@ -260,7 +291,7 @@
       osc.frequency.value = freq;
       osc.detune.value = detune;
       osc.connect(tone);
-      osc.start(time);
+      startVoice(osc, time);
       osc.stop(time + duration + 0.05);
     });
 
@@ -277,7 +308,7 @@
     knockGain.gain.exponentialRampToValueAtTime(0.09 * velocity, time + 0.002);
     knockGain.gain.exponentialRampToValueAtTime(0.0001, time + 0.014);
     hammer.connect(knock).connect(knockGain).connect(masterGain);
-    hammer.start(time);
+    startVoice(hammer, time);
     hammer.stop(time + 0.02);
   }
 
@@ -326,7 +357,7 @@
     env.gain.exponentialRampToValueAtTime(velocity, time + 0.012);
     env.gain.exponentialRampToValueAtTime(0.0001, time + duration);
     osc.connect(lp).connect(env).connect(bassGain);
-    osc.start(time);
+    startVoice(osc, time);
     osc.stop(time + duration + 0.05);
   }
 
@@ -341,7 +372,7 @@
     envelope.gain.exponentialRampToValueAtTime(velocity, time + 0.002);
     envelope.gain.exponentialRampToValueAtTime(0.0001, time + decay);
     src.connect(highpass).connect(envelope).connect(hihatGain);
-    src.start(time);
+    startVoice(src, time);
     src.stop(time + decay + 0.03);
   }
 
@@ -355,7 +386,7 @@
     env.gain.exponentialRampToValueAtTime(velocity * 0.1, time + 0.003);
     env.gain.exponentialRampToValueAtTime(0.0001, time + 0.22);
     osc.connect(env).connect(hihatGain);
-    osc.start(time);
+    startVoice(osc, time);
     osc.stop(time + 0.24);
   }
 
@@ -369,7 +400,7 @@
     env.gain.exponentialRampToValueAtTime(velocity, time + 0.005);
     env.gain.exponentialRampToValueAtTime(0.0001, time + 0.3);
     osc.connect(env).connect(drumGain);
-    osc.start(time);
+    startVoice(osc, time);
     osc.stop(time + 0.32);
   }
 
@@ -386,7 +417,7 @@
     ng.gain.exponentialRampToValueAtTime(0.0001, time + 0.16);
     src.connect(bp).connect(ng).connect(drumGain);
     ng.connect(reverbSends.drums);
-    src.start(time);
+    startVoice(src, time);
     src.stop(time + 0.18);
 
     const osc = audioCtx.createOscillator();
@@ -398,7 +429,7 @@
     og.gain.exponentialRampToValueAtTime(velocity * 0.45, time + 0.004);
     og.gain.exponentialRampToValueAtTime(0.0001, time + 0.11);
     osc.connect(og).connect(drumGain);
-    osc.start(time);
+    startVoice(osc, time);
     osc.stop(time + 0.13);
   }
 
@@ -450,7 +481,7 @@
       osc.frequency.value = freq;
       osc.detune.value = detune;
       osc.connect(filter);
-      osc.start(time);
+      startVoice(osc, time);
       osc.stop(time + ring + 0.05);
     });
   }
@@ -700,7 +731,7 @@
   GT.audio = {
     ctx: () => audioCtx,               // live handle; null until ensureAudio() runs
     pianoWaveFor, PIANO_PARTIALS,      // exposed so the tests can render a note offline
-    ensureAudio, keepAwake, noteFreq, chordFrequencies, pcFreq, bassFreqAt, walkBassFreq, ROOT_OCTAVE,
+    ensureAudio, keepAwake, cancelScheduled, noteFreq, chordFrequencies, pcFreq, bassFreqAt, walkBassFreq, ROOT_OCTAVE,
     playNote, playChord, playChord7, playBass, playGuitar,
     playHiHat, playRide, playKick, playSnare, playStyleVoice,
     STYLES,

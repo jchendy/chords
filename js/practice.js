@@ -875,7 +875,13 @@
 
 
   const LOOKAHEAD_MS = 25;
-  const SCHEDULE_AHEAD_SEC = 0.12;
+  // How far ahead of the sound the notes are queued. It has to cover the
+  // longest the timer below might be held up: a browser throttles the timers
+  // of a page that isn't focused, to a second or more, and a beat queued after
+  // its moment has passed doesn't play late — every note of it starts at once,
+  // which is what a burst of pops is. Stopping playback calls off whatever is
+  // still queued, so the cushion costs nothing at the button.
+  const SCHEDULE_AHEAD_SEC = 0.4;
 
   function scheduleSimpleBeat(chord, secondsPerBeat, beatInMeasure, isDownbeat){
     const noteBeats = getNoteBeats();
@@ -940,10 +946,36 @@
     }
   }
 
+  // Move the cursor on to the next beat of the progression.
+  function advanceBeat(secondsPerBeat){
+    nextNoteTime += secondsPerBeat;
+    beatInChord++;
+    if (beatInChord >= beatsForChord(chordIdx)){
+      beatInChord = 0;
+      chordIdx = (chordIdx + 1) % currentProgression.length;
+    }
+  }
+
+  // How many beats the cursor has to jump to land on or after `now`. A beat
+  // whose moment has already passed can't be played: queueing it hands the
+  // browser a time in the past, and every note of it then starts at the same
+  // instant instead of in order. So the scheduler steps over the beats a stall
+  // ate rather than firing them all at once — the progression slips, which is
+  // what a metronome does when you look away, instead of popping.
+  function beatsToSkip(cursor, now, secondsPerBeat){
+    if (secondsPerBeat <= 0 || cursor >= now) return 0;
+    return Math.ceil((now - cursor) / secondsPerBeat);
+  }
+
   function scheduler(){
-    while (nextNoteTime < audio.ctx().currentTime + SCHEDULE_AHEAD_SEC){
+    const now = audio.ctx().currentTime;
+    const secondsPerBeat = 60 / getTempo();
+    for (let skip = beatsToSkip(nextNoteTime, now, secondsPerBeat); skip > 0; skip--){
+      advanceBeat(secondsPerBeat);
+    }
+
+    while (nextNoteTime < now + SCHEDULE_AHEAD_SEC){
       const chord = currentProgression[chordIdx];
-      const secondsPerBeat = 60 / getTempo();
       const beatInMeasure = beatInChord % 4;
 
       if (currentStyle === 'simple'){
@@ -952,12 +984,7 @@
         scheduleStyleBeat(STYLES[currentStyle].variants[currentVariant], chord, secondsPerBeat, beatInMeasure);
       }
 
-      nextNoteTime += secondsPerBeat;
-      beatInChord++;
-      if (beatInChord >= beatsForChord(chordIdx)){
-        beatInChord = 0;
-        chordIdx = (chordIdx + 1) % currentProgression.length;
-      }
+      advanceBeat(secondsPerBeat);
     }
     schedulerId = setTimeout(scheduler, LOOKAHEAD_MS);
   }
@@ -1022,6 +1049,9 @@
     } else {
       isPlaying = false;
       clearTimeout(schedulerId);
+      // the notes queued ahead of the sound would otherwise play on past the
+      // button; what's already sounding is left to ring out
+      audio.cancelScheduled();
       document.querySelectorAll('#chords .bar').forEach(el => el.classList.remove('dim', 'active'));
       measureReadout.textContent = '';
       setPlayLabel('Play');
@@ -1194,6 +1224,7 @@
     stop(){ if (isPlaying) togglePlay(); },
     loadProgression,
     copyShareLink,
+    beatsToSkip,      // exposed so the tests can check the scheduler never queues the past
     init(){
       view.init({
         progression: () => currentProgression,

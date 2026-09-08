@@ -475,6 +475,16 @@ fall back to the style's implied seventh for a plain triad. Notes are
 scheduled against the audio clock by a 25 ms lookahead loop, so timing
 doesn't drift when the main thread is busy.
 
+That loop queues the notes 0.4 s ahead of the sound, and steps over any beat
+whose moment has already passed. Both matter for the same reason: a browser
+throttles the timers of a page that isn't focused, to a second or more, and a
+beat handed to the audio clock late doesn't play late — every note of it
+starts at the same instant, which is heard as a burst of pops rather than
+music. Stepping over the missed beats makes a stall a slip in the
+progression instead, the way a metronome carries on while you look away. The
+cushion costs nothing at the transport, because stopping calls off the notes
+still queued; the ones already sounding are left to ring out.
+
 Two things keep a practice session alive on a phone propped up on a music
 stand. The screen is held awake while something is playing — and only while
 it's playing, since a lock left on would keep the screen lit for as long as

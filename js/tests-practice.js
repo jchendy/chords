@@ -183,10 +183,65 @@
     t.equal(out.join('; '), '', `Every Play button reads the same (${btns.length} copies)`);
   }
 
+  // The scheduler queues notes ahead of the sound. If a stall — a background
+  // tab's throttled timer, most of all — leaves the cursor behind the clock,
+  // the beats it missed must be stepped over rather than queued: a time in the
+  // past doesn't play late, it starts every note of that beat at once, which
+  // is heard as popping. So: after skipping, the cursor is never behind the
+  // clock, and never further ahead than it has to be.
+  function testTheSchedulerNeverQueuesThePast(t){
+    const bad = [];
+    const skip = GT.practice.beatsToSkip;
+    const spb = 60 / 180;                       // the tempo this went wrong at
+
+    // nothing to skip while the cursor is still ahead of the clock
+    [[10.5, 10], [10, 10], [10.0001, 10]].forEach(([cursor, now]) => {
+      if (skip(cursor, now, spb) !== 0) bad.push(`skipped ${skip(cursor, now, spb)} beats while ${cursor} >= ${now}`);
+    });
+
+    // a stall of each of these lengths, at 180 and at 60
+    [0.4, 1, 2.5, 9].forEach(stall => {
+      [60, 180].forEach(bpm => {
+        const beat = 60 / bpm;
+        const now = 100, cursor = now - stall;
+        const n = skip(cursor, now, beat);
+        const landed = cursor + n * beat;
+        if (landed < now) bad.push(`${stall}s stall at ${bpm}bpm left the cursor ${(now - landed).toFixed(3)}s in the past`);
+        if (landed - now >= beat) bad.push(`${stall}s stall at ${bpm}bpm overshot by ${(landed - now).toFixed(3)}s, a whole beat or more`);
+      });
+    });
+
+    // the case from the bug: a second of throttled timer at 180bpm is three
+    // beats gone, not three beats of notes piled onto one instant
+    if (skip(0, 1, spb) !== 3) bad.push(`a 1s stall at 180bpm skipped ${skip(0, 1, spb)} beats, not 3`);
+    // a tempo of zero can't be stepped through; it must not spin
+    if (skip(0, 5, 0) !== 0) bad.push('a zero-length beat asked for a skip');
+
+    t.equal(bad.join('; '), '', 'A stall makes the progression slip, not the notes pile up');
+  }
+
+  // Notes are queued ahead of the sound, so stopping has to call off the ones
+  // that haven't started — otherwise the queue plays on past the button.
+  function testStoppingCallsOffWhatIsQueued(t){
+    const bad = [];
+    if (typeof GT.audio.cancelScheduled !== 'function'){
+      bad.push('audio exposes no way to call off queued notes');
+    }
+    // the cushion has to cover a throttled timer, which browsers clamp to a
+    // second: too short and a stall becomes a burst instead of a slip
+    const spb = 60 / 180;
+    if (GT.practice.beatsToSkip(0, 0.3, spb) === 0){
+      bad.push('a 0.3s stall was treated as no stall at all');
+    }
+    t.equal(bad.join('; '), '', 'Playback can be called off without waiting for the queue');
+  }
+
   GT.practiceSuites = [
     ['Practice: a shared link round-trips', testShareLinkRoundTrips],
     ['Practice: a variant the mode drops takes its preset with it', testModeLockedVariantDropsItsPreset],
     ['Practice: a hidden variant row is empty', testHiddenVariantRowIsEmpty],
     ['Practice: the transports stay in step', testTransportsStayInStep],
+    ['Practice: a stall slips the progression, it does not pile up notes', testTheSchedulerNeverQueuesThePast],
+    ['Practice: stopping calls off what is queued', testStoppingCallsOffWhatIsQueued],
   ];
 })();
