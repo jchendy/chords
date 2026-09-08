@@ -896,13 +896,19 @@
       } else {
         playChord(chord, nextNoteTime, duration, velocity);
       }
+    }
+    if (clickToggle.checked) playHiHat(nextNoteTime);
+    // Every beat goes in the log, struck or not. The log is what the chart
+    // reads to sweep its beat line, and on half and whole notes only one beat
+    // in two or four is struck — logging just those left the line sitting
+    // still between attacks instead of moving a quarter of the bar per beat.
+    if (chord){
       scheduledLog.push({
         idx: chordIdx, time: nextNoteTime,
         measure: Math.floor(beatInChord / 4) + 1,
         beat: (beatInChord % 4) + 1,
       });
     }
-    if (clickToggle.checked) playHiHat(nextNoteTime);
   }
 
   function scheduleStyleBeat(style, chord, secondsPerBeat, beatInMeasure){
