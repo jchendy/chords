@@ -460,7 +460,10 @@
     const raw = chordFinderInput.value;
     if (!raw.trim()){
       chordFinderError.textContent = '';
-      chordFinderResults.innerHTML = '';
+      // an empty field with an empty page under it says nothing about what to
+      // do next, so the empty state points at the way in
+      chordFinderResults.innerHTML =
+        '<p class="diagram-empty">Type a chord name above, or pick one of the examples, to see where it sits on the neck.</p>';
       cagedOverviewEl.innerHTML = '';
       triadOnlyRow.hidden = true;
       shellOnlyRow.hidden = true;
@@ -510,15 +513,22 @@
   const OPEN_MIDI = [64, 59, 55, 50, 45, 40];     // high e down to low E
   const freqOf = (string, fret) => 440 * Math.pow(2, (OPEN_MIDI[string] + fret - 69) / 12);
 
-  // Strum the shape, low string to high, the way a pick sweeps across it.
-  function strum(cells){
+  // Sound the shape low string to high. The gap between the notes is the
+  // difference between a chord and an arpeggio: a pick's sweep is fast enough
+  // that the notes arrive as one, and spacing them out is the same notes heard
+  // one at a time.
+  function strum(cells, gap = 0.018){
     const audio = GT.audio;
     audio.ensureAudio();
     if (audio.ctx().state === 'suspended') audio.ctx().resume();
     const t0 = audio.ctx().currentTime + 0.03;
     const ordered = cells.slice().sort((a, b) => b.string - a.string);
-    ordered.forEach((c, i) => audio.playGuitar(freqOf(c.string, c.fret), t0 + i * 0.018, 1.6, 0.9, 'clean'));
+    // an arpeggio's notes have to ring past the ones after them to add up to
+    // the chord, so a slower roll holds each note longer
+    const hold = Math.max(1.6, 0.9 + gap * ordered.length * 1.6);
+    ordered.forEach((c, i) => audio.playGuitar(freqOf(c.string, c.fret), t0 + i * gap, hold, 0.9, 'clean'));
   }
+  const ARPEGGIO_GAP = 0.28;
 
   function onCardActivate(e){
     const card = e.target.closest('.diagram-card');
@@ -535,6 +545,14 @@
   GT.chordFinder = {
     init(){
       chordFinderInput.addEventListener('input', runChordFinder);
+      // the examples fill the field rather than being prose about it
+      document.querySelectorAll('#chordExamples .seg-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          chordFinderInput.value = btn.dataset.chord;
+          runChordFinder();
+        });
+      });
+      runChordFinder();          // draw the empty state
       triadOnlyToggle.addEventListener('change', runChordFinder);
       shellOnlyToggle.addEventListener('change', runChordFinder);
       chordFinderResults.addEventListener('click', onCardActivate);
@@ -550,6 +568,6 @@
       });
     },
     // exposed for reuse and for checking shapes outside the UI
-    computeFingering, findChordVoicings, buildDiagramSVG, shellIntervals, strum,
+    computeFingering, findChordVoicings, buildDiagramSVG, shellIntervals, strum, ARPEGGIO_GAP,
   };
 })();

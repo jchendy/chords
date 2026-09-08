@@ -4,10 +4,11 @@ A single-page, dependency-free site with three tabs under one header:
 
 - **CAGED practice** — generates random diatonic chord progressions and
   plays them back with a synthesized piano and optional hi-hat click.
-- **Chord finder** — type a chord name (e.g. `G#9`, `Cmaj7`, `Dm7b5`) and
-  see the common places to play it on the neck.
+- **Chord finder** — type a chord name (e.g. `G#9`, `Cmaj7`, `Dm7b5`), or
+  pick one of the examples, and see the common places to play it on the neck.
 - **Reverse chord finder** — click frets on an interactive fretboard and
-  see what chord name(s) the selected notes could be.
+  see what chord name(s) the selected notes could be; hear them together as
+  a chord or one at a time as an arpeggio.
 - **Genre examples** — pick a style, then a rhythm or a lead line, and read
   the tab while you hear it played. It's experimental, and lives behind the
   menu at the right end of the header (with a mailto link) rather than among
@@ -113,20 +114,27 @@ names the tab you're on.
   shapes — a chosen control is ink with a rule under it, not a coloured
   fill. The chart comes first, its key as the title and the progression's
   name beside it, both directly editable (the real pickers lie over the text)
-  with a dice for each and a gear that opens Set up. The neck sits under the
+  with a dice for each, a button that copies the link to what's on screen, and
+  a gear that opens Set up — and a Play at the head of the row, so playback
+  starts without looking away from the chart. The neck sits under the
   chart with its controls on it: the five views as tabs above, a toolbar for
   the reading (across the neck / in one position) and whatever the view
   needs, and a quieter row for the shapes under the legend. In one position
   the stretch of frets is drawn on the neck as a window you can drag; a
   joined ‹ › pair at the end of the toolbar and an arrow on each edge of the
   window step it. One transport is pinned to the bottom of the tab: Play, the
-  tempo slider with its BPM readout, and Set up. While it plays, a beat line
+  tempo slider with its BPM readout and the three one-tap tempos under it,
+  and Set up. While it plays, a beat line
   appears along the top of every bar in the chart and fills through the
   sounding one a quarter per beat. Everything set once and left alone — key,
   preset, the per-chord pickers and what the dice may use; style and feel,
   the Simple-only note value, the metronome / roots-only / count-in options;
   dot colour and the fret range; the share link — lives in the Set up sheet,
-  which slides up over the stage so nothing scrolls. On a phone the site
+  which slides up over the stage so nothing scrolls. Style and the metronome
+  are the two you reach for mid-progression, so on a wide enough window they
+  move out of the sheet and into the transport, and back into it while the
+  sheet is open: the row itself moves, so there's one of each rather than two
+  to keep in step. On a phone the site
   name drops out, the tools row scrolls sideways, and a Controls button in
   the transport hides every control on the neck so the picture has the
   screen. A "Style" picker chooses the backing:

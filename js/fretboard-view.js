@@ -546,23 +546,47 @@
     cagedChordGroup.classList.toggle('locked', cagedFollow && host.isPlaying());
   }
 
+  // The picker only lists the chords that have CAGED shapes, so a place in
+  // the progression has to be counted past the diminished ones to find its
+  // button. Null when that chord isn't in the picker at all.
+  function pickerIndexFor(progIdx){
+    const prog = host.progression();
+    if (!prog[progIdx] || prog[progIdx].quality === 'dim') return null;
+    let ci = 0;
+    for (let k = 0; k < progIdx; k++){
+      if (prog[k] && prog[k].quality !== 'dim') ci++;
+    }
+    return ci;
+  }
+
+  // Put one of the progression's chords in front, the way clicking its button
+  // in the picker does.
+  function showChordAt(ci){
+    cagedChordIdx = ci;
+    rebaseBox = true;      // stay where the hand is rather than where the index points
+    cagedChordGroup.querySelectorAll('.seg-btn').forEach((b, k) => b.classList.toggle('active', k === ci));
+    renderFretboard();
+  }
+
   // while "follows playback" is on, jump the CAGED chord picker to whatever
   // chord is currently sounding
   function followPlayingChord(force){
     if (!cagedFollow || fretMode === 'roots') return;
     const active = host.activeChord();
     if (!active) return;
-    const chord = host.progression()[active.idx];
-    if (!chord || chord.quality === 'dim') return;   // no CAGED shapes for a diminished chord
-    let ci = 0;
-    for (let k = 0; k < active.idx; k++){
-      if (host.progression()[k] && host.progression()[k].quality !== 'dim') ci++;
-    }
+    const ci = pickerIndexFor(active.idx);
+    if (ci === null) return;             // no CAGED shapes for a diminished chord
     if (ci === cagedChordIdx && !force) return;
-    cagedChordIdx = ci;
-    rebaseBox = true;      // stay where the hand is rather than where the index points
-    cagedChordGroup.querySelectorAll('.seg-btn').forEach((b, k) => b.classList.toggle('active', k === ci));
-    renderFretboard();
+    showChordAt(ci);
+  }
+
+  // Clicking a bar in the chart while nothing is playing brings that chord
+  // onto the neck — the same move Follow makes while it plays.
+  function selectChord(progIdx){
+    if (fretMode === 'roots') return;    // roots draws the whole progression at once
+    const ci = pickerIndexFor(progIdx);
+    if (ci === null || ci === cagedChordIdx) return;
+    showChordAt(ci);
   }
 
   cagedFollowToggle.addEventListener('change', () => {
@@ -1280,11 +1304,15 @@
   }
 
   function renderFretLegend(){
+    // The position is drawn on the neck itself, as a labelled window over the
+    // frets it covers, so the legend doesn't say it again in words. It's
+    // published here instead, for whatever draws that window.
+    if (shownWindow) cagedLegend.dataset.window = `${shownWindow.min}-${shownWindow.max}`;
+    else delete cagedLegend.dataset.window;
+
     if (fretMode === 'roots'){
-      const entries = rootLegendData
-        .map(r => `<span><i style="background:${r.color}"></i>${r.name}<em>${r.num}</em></span>`);
-      if (shownWindow) entries.push(`<span><em>position: frets ${shownWindow.min}–${shownWindow.max}</em></span>`);
-      cagedLegend.innerHTML = entries.join('');
+      cagedLegend.innerHTML = rootLegendData
+        .map(r => `<span><i style="background:${r.color}"></i>${r.name}<em>${r.num}</em></span>`).join('');
       return;
     }
     // each entry says where on the neck that shape sits, so you can find it
@@ -1303,7 +1331,6 @@
         `${g.current ? ' class="legend-current"' : ''}>` +
         `<i style="background:${g.color}"></i>${g.name}<em>${g.numeral}</em>` +
         `${g.shapeLetter ? `<small class="pos-shape-tag">${g.shapeLetter}</small>` : ''}${range(g.tag)}</span>`);
-      if (shownWindow) entries.push(`<span><em>position: frets ${shownWindow.min}–${shownWindow.max}</em></span>`);
       cagedLegend.innerHTML = entries.join('');
       return;
     }
@@ -1355,7 +1382,6 @@
       }
     }
     if (fretMode === 'penta' || fretMode === 'scale') parts.push(`<span><i class="passing"></i>passing note</span>`);
-    if (shownWindow) parts.push(`<span><em>position: frets ${shownWindow.min}–${shownWindow.max}</em></span>`);
     cagedLegend.innerHTML = parts.join('');
   }
 
@@ -1421,6 +1447,6 @@
     updateVisibility: updateFretUI,
     rebuildChordPicker: rebuildCagedPicker,
     resetPosition(){ chordPosIndex = 0; },   // a fresh progression starts at the lowest cluster
-    resetFollow, followChord, onPlaybackStarted, onPlaybackStopped,
+    resetFollow, followChord, selectChord, onPlaybackStarted, onPlaybackStopped,
   };
 })();

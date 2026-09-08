@@ -86,10 +86,16 @@
     updateReverseMatches();
   });
 
-  // hear the notes you've picked, strummed low to high
+  // hear the notes you've picked: together as a chord, or one at a time
+  const picked = () => reverseSelection
+    .map((f, s) => f === null ? null : { string: s, fret: f }).filter(Boolean);
   document.getElementById('reversePlayBtn').addEventListener('click', () => {
-    const cells = reverseSelection.map((f, s) => f === null ? null : { string: s, fret: f }).filter(Boolean);
+    const cells = picked();
     if (cells.length) GT.chordFinder.strum(cells);
+  });
+  document.getElementById('reverseArpBtn').addEventListener('click', () => {
+    const cells = picked();
+    if (cells.length) GT.chordFinder.strum(cells, GT.chordFinder.ARPEGGIO_GAP);
   });
 
   GT.reverseFinder = {

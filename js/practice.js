@@ -474,8 +474,12 @@
   // Click a bar and just that chord sounds, whether or not the progression is
   // playing — for checking a shape against what it's supposed to sound like.
   function auditionBar(bar){
-    const chord = currentProgression[Number(bar.dataset.chord)];
+    const idx = Number(bar.dataset.chord);
+    const chord = currentProgression[idx];
     if (!chord) return;
+    // While nothing is playing there's no Follow to move the neck for you, so
+    // the bar you tap to hear also becomes the chord the fretboard shows.
+    if (!isPlaying) view.selectChord(idx);
     ensureAudio();
     if (audio.ctx().state === 'suspended') audio.ctx().resume();
     playChord(chord, audio.ctx().currentTime + 0.02, 1.8, 0.85);
@@ -1057,12 +1061,21 @@
 
   const shareBtn = document.getElementById('shareBtn');
   const shareOut = document.getElementById('shareOut');
-  shareBtn.addEventListener('click', async () => {
+
+  // Write the progression into the address bar and onto the clipboard. Says
+  // whether the copy took, so each button offering it can report back its own
+  // way — and hands back the link for the ones that show it.
+  let shareUrl = '';
+  async function copyShareLink(){
     const slug = location.hash.slice(1).split('?')[0] || 'caged-practice';
-    const url = `${location.href.split('#')[0]}#${slug}?${shareState()}`;
+    shareUrl = `${location.href.split('#')[0]}#${slug}?${shareState()}`;
     try { history.replaceState(null, '', `#${slug}?${shareState()}`); } catch (e) { /* file:// can refuse */ }
-    let copied = false;
-    try { await navigator.clipboard.writeText(url); copied = true; } catch (e) { /* no clipboard here */ }
+    try { await navigator.clipboard.writeText(shareUrl); return true; } catch (e) { return false; }
+  }
+
+  shareBtn.addEventListener('click', async () => {
+    const copied = await copyShareLink();
+    const url = shareUrl;
     shareOut.value = url;
     shareOut.hidden = copied;
     if (!copied){ shareOut.focus(); shareOut.select(); }
@@ -1135,6 +1148,7 @@
     // leaving the tab shouldn't leave a progression playing behind you
     stop(){ if (isPlaying) togglePlay(); },
     loadProgression,
+    copyShareLink,
     init(){
       view.init({
         progression: () => currentProgression,

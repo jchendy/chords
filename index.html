@@ -50,6 +50,11 @@
   .ib{ width:32px; height:32px; border:1px solid var(--line2); border-radius:7px; color:var(--muted); display:inline-flex; align-items:center; justify-content:center; font-size:.9rem; flex:none; }
   .ib svg{ width:19px; height:19px; fill:currentColor; }
   .ib:hover{ color:var(--ink); border-color:var(--muted); }
+  /* an icon button that reports back: the tick replaces the icon for a moment */
+  .ib .i-tick{ display:none; }
+  .ib.copied{ color:var(--ink); border-color:var(--ink); }
+  .ib.copied .i-tick{ display:block; }
+  .ib.copied .i-link{ display:none; }
   .tbtn{ padding:7px 14px; border:1px solid var(--line2); border-radius:999px; color:var(--ink); font-weight:600; font-size:.82rem; white-space:nowrap; }
   .tbtn:hover{ border-color:var(--muted); }
   .check{ display:inline-flex; align-items:center; gap:7px; font-size:.82rem; color:var(--muted); cursor:pointer; }
@@ -217,11 +222,26 @@
   .play-btn span{ display:none; }
   .play-btn svg{ width:20px; height:20px; display:block; }
   .play-btn:focus-visible{ outline:2px solid var(--muted); outline-offset:3px; }
-  /* tempo lives in the bar: the slider itself, with the number beside it; it
-     takes a fixed share of the width so the buttons on the right stay put */
-  .tempo{ display:inline-flex; align-items:center; gap:12px; flex:0 1 320px; min-width:0; }
-  .tempo #tempo{ flex:1 1 120px; min-width:80px; accent-color:var(--ink); }
+  /* the copy in the chart head: the same control, at the chart's own weight */
+  .play-sm{ width:38px; height:38px; }
+  .play-sm svg{ width:14px; height:14px; }
+  /* tempo lives in the bar: the slider itself, with the number beside it and
+     the three one-tap tempos under it; it takes a fixed share of the width so
+     the controls to its right stay put */
+  .tempo{ display:inline-flex; align-items:center; gap:10px; flex:0 1 300px; min-width:0; }
+  .tempo-stack{ display:flex; flex-direction:column; gap:2px; min-width:0; flex:1; }
+  .tempo-row{ display:flex; align-items:center; gap:12px; min-width:0; }
+  .tempo #tempo{ flex:1 1 110px; min-width:70px; accent-color:var(--ink); }
   .tempo .val{ font-variant-numeric:tabular-nums; color:var(--muted); font-size:.85rem; min-width:64px; text-align:right; white-space:nowrap; }
+  .bpm-row .seg-btn{ font-size:.72rem; padding:2px 1px; margin:0 9px 0 0; font-variant-numeric:tabular-nums; }
+  /* Style and the metronome, when the bar is wide enough to hold them: the
+     same rows the sheet uses, so they read the same wherever they are. */
+  .bar-slot{ display:inline-flex; align-items:center; min-width:0; }
+  .bar-slot:empty{ display:none; }
+  .bar-slot .frow{ padding:0; gap:0; flex-wrap:nowrap; }
+  .bar-slot .tb-lbl{ min-width:0; }
+  .bar-slot .segmented{ flex-wrap:nowrap; }
+  .bar-slot .seg-btn{ font-size:.76rem; margin:0 7px; }
   /* the phone's controls toggle reads as on/off by the same ink underline the
      other chosen controls use */
   .tbtn[aria-pressed="true"]{ text-decoration:underline; text-underline-offset:4px; }
@@ -403,6 +423,10 @@
        them and the app's own handlers do the rest -->
   <section class="chart">
     <div class="chart-head">
+      <!-- the same transport control as the one pinned below, so playback can
+           start without looking away from the chart; practice.js drives every
+           .play-btn together -->
+      <button class="play-btn play-sm" type="button" aria-label="Play"></button>
       <span class="key-edit" title="Change key">
         <h2 class="keyline" id="keyReadout">—</h2>
         <svg class="key-caret" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 6l4.5 4.5L12.5 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -417,6 +441,9 @@
           <select id="quickPreset" class="key-select" aria-label="Progression"></select>
         </span>
         <button type="button" class="ib" id="quickRandomChords" aria-label="Random progression" title="Random progression"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="2" y="2" width="16" height="16" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="6.3" cy="6.3" r="1.6"/><circle cx="13.7" cy="6.3" r="1.6"/><circle cx="10" cy="10" r="1.6"/><circle cx="6.3" cy="13.7" r="1.6"/><circle cx="13.7" cy="13.7" r="1.6"/></svg></button>
+        <!-- sharing is a thing you do to this chart, so it lives on it rather
+             than at the bottom of the Set up sheet -->
+        <button type="button" class="ib" id="quickShare" aria-label="Copy link to this progression" title="Copy link to this progression"><svg class="i-link" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8.2 11.8a3.4 3.4 0 0 0 5 .3l2.6-2.6a3.4 3.4 0 0 0-4.8-4.8l-1.5 1.5"/><path d="M11.8 8.2a3.4 3.4 0 0 0-5-.3L4.2 10.5a3.4 3.4 0 0 0 4.8 4.8l1.5-1.5"/></svg><svg class="i-tick" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 10.5l3.5 3.5 7.5-8"/></svg></button>
         <!-- the rest of the settings, from here as well as from the bar below -->
         <button type="button" class="ib" id="setupOpenQuick" aria-label="Set up" title="Set up"><svg viewBox="0 0 20 20" aria-hidden="true"><path fill-rule="evenodd" d="M16.46,8.63 L19.23,8.87 L19.23,11.13 L16.46,11.37 L15.54,13.59 L17.33,15.73 L15.73,17.33 L13.59,15.54 L11.37,16.46 L11.13,19.23 L8.87,19.23 L8.63,16.46 L6.41,15.54 L4.27,17.33 L2.67,15.73 L4.46,13.59 L3.54,11.37 L0.77,11.13 L0.77,8.87 L3.54,8.63 L4.46,6.41 L2.67,4.27 L4.27,2.67 L6.41,4.46 L8.63,3.54 L8.87,0.77 L11.13,0.77 L11.37,3.54 L13.59,4.46 L15.73,2.67 L17.33,4.27 L15.54,6.41 Z M10,7 a3,3 0 1,0 0.01,0 Z"/></svg></button>
       </div>
@@ -526,9 +553,25 @@
     <button class="play-btn" type="button" aria-label="Play"></button>
     <div class="tempo">
       <span class="tb-lbl">Tempo</span>
-      <input type="range" id="tempo" min="40" max="200" value="60" aria-label="Tempo">
-      <span class="val" id="tempoVal">60 BPM</span>
+      <div class="tempo-stack">
+        <div class="tempo-row">
+          <input type="range" id="tempo" min="40" max="200" value="60" aria-label="Tempo">
+          <span class="val" id="tempoVal">60 BPM</span>
+        </div>
+        <!-- the three tempos worth one tap; practice.js binds every
+             .bpm-preset and lights whichever matches the slider -->
+        <span class="segmented bpm-row" aria-label="Tempo shortcuts">
+          <button type="button" class="seg-btn bpm-preset active" data-bpm="60">60</button>
+          <button type="button" class="seg-btn bpm-preset" data-bpm="90">90</button>
+          <button type="button" class="seg-btn bpm-preset" data-bpm="120">120</button>
+        </span>
+      </div>
     </div>
+    <!-- Where Style and the metronome sit when the bar is wide enough for
+         them. stage.js moves the real rows here out of the Set up sheet, so
+         there's one of each rather than two to keep in step. -->
+    <span class="bar-slot" id="barStyleSlot"></span>
+    <span class="bar-slot" id="barClickSlot"></span>
     <span class="counter" id="measureReadout"></span>
     <span class="sp"></span>
     <button type="button" class="tbtn phone-only" id="controlsToggle" aria-pressed="true" title="Show or hide the controls on the neck">Controls</button>
@@ -561,7 +604,7 @@
       </section>
       <section class="sheet-col">
         <h3>Playback</h3>
-        <div class="frow"><span class="tb-lbl">Style</span><span class="segmented" id="styleGroup">
+        <div class="frow" id="styleRow"><span class="tb-lbl">Style</span><span class="segmented" id="styleGroup">
           <button type="button" class="seg-btn genre-btn active" data-value="simple">Simple</button>
           <button type="button" class="seg-btn genre-btn" data-value="rock">Rock</button>
           <button type="button" class="seg-btn genre-btn" data-value="blues">Blues</button>
@@ -605,7 +648,24 @@
       <input type="text" id="chordFinderInput" class="big-input" placeholder="e.g. G#9, Cmaj7, Dm7b5" autocomplete="off" spellcheck="false" aria-label="Chord name">
       <p class="finder-error" id="chordFinderError"></p>
     </div>
-    <p class="hint">Try things like C, Am7, F#dim, Bbsus4, G#9, D13, E7b9, or a slash chord like D/F#. Click a shape to hear it.</p>
+    <p class="hint">Name a chord and this finds every comfortable way to play it on the neck. Click a shape to hear it.</p>
+    <!-- The examples are the quickest way in: with nothing typed there's
+         otherwise only an empty field to guess at. -->
+    <div class="toolbar">
+      <div class="tb-group">
+        <span class="tb-lbl">Try</span>
+        <span class="segmented" id="chordExamples">
+          <button type="button" class="seg-btn" data-chord="C">C</button>
+          <button type="button" class="seg-btn" data-chord="Am7">Am7</button>
+          <button type="button" class="seg-btn" data-chord="F#dim">F#dim</button>
+          <button type="button" class="seg-btn" data-chord="Bbsus4">Bbsus4</button>
+          <button type="button" class="seg-btn" data-chord="G#9">G#9</button>
+          <button type="button" class="seg-btn" data-chord="D13">D13</button>
+          <button type="button" class="seg-btn" data-chord="E7b9">E7♭9</button>
+          <button type="button" class="seg-btn" data-chord="D/F#">D/F#</button>
+        </span>
+      </div>
+    </div>
     <div class="toolbar">
       <div class="tb-group">
         <span class="tb-lbl">Dots show</span>
@@ -631,7 +691,8 @@
     <div class="toolbar">
       <p class="selected-notes" id="reverseSelectedNotes">Click frets on the neck below to select notes.</p>
       <span class="sp"></span>
-      <button type="button" class="tbtn" id="reversePlayBtn">Play notes</button>
+      <button type="button" class="tbtn" id="reversePlayBtn">Play chord</button>
+      <button type="button" class="tbtn" id="reverseArpBtn">Play arpeggio</button>
       <button type="button" class="tbtn" id="reverseClearBtn">Clear</button>
     </div>
     <div class="chord-match-list" id="reverseMatches"></div>

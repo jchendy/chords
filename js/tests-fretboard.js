@@ -367,7 +367,7 @@
             for (let n = 0; n < 24; n++){
               active = (active + 1) % chords.length;
               view.followChord({ idx: active, measure: 1, beat: 1 });
-              const w = (q('#cagedLegend').textContent.match(/position: frets (\d+)[–-](\d+)/) || []).slice(1);
+              const w = (q('#cagedLegend').dataset.window || '').split('-').filter(Boolean);
               seen.push(w.length ? (Number(w[0]) + Number(w[1])) / 2 : null);
             }
             // Chords that share no position will alternate between their own,
@@ -473,8 +473,8 @@
                 ? 'shows the rest of the progression at full strength'
               : q('#cagedLegend').querySelectorAll('.legend-current').length !== 1
                 ? 'names no single chord as the one in front'
-              : !legend.some(x => x.startsWith('position: frets')) ? 'has no fret readout'
-              : legend.length - 1 < new Set(names).size ? 'leaves a chord out of the legend'
+              : !q('#cagedLegend').dataset.window ? 'publishes no position for the window on the neck'
+              : legend.length < new Set(names).size ? 'leaves a chord out of the legend'
               : '';
             if (fail && !bad) bad = `${where} ${fail}`;
             readings.push(where);
@@ -509,8 +509,7 @@
       setShapes(all);
       const seen = new Set();
       for (let i = 0; i < 16; i++){
-        const last = [...q('#cagedLegend').querySelectorAll('span')].pop();
-        seen.add(last.textContent.trim());
+        seen.add(q('#cagedLegend').dataset.window || '');
         stepPosition();
       }
       t.equal(runs, seen.size,
@@ -713,6 +712,56 @@
     t.equal(bad.join('; '), '', 'The reading is named for what that view puts in the position');
   }
 
+  // A bar in the chord chart is a way onto the neck: while nothing is playing
+  // there's no Follow to move the hand for you, so clicking a bar brings that
+  // chord forward itself. The picker leaves out diminished chords, which have
+  // no CAGED shapes, so a place in the progression has to be counted past them
+  // rather than used as a button index — the bug this guards.
+  function testChartClickPicksTheChord(t){
+    const bad = [];
+    loadProgression(['C', 'Bdim', 'F', 'G']);
+    setMode('caged');
+    setView('neck');
+    const buttons = () => [...q('#cagedChordGroup').querySelectorAll('.seg-btn')];
+    const inFront = () => (buttons().find(b => b.classList.contains('active')) || {}).textContent || 'nothing';
+    if (buttons().map(b => b.textContent).join() !== 'C,F,G'){
+      bad.push(`the picker lists [${buttons().map(b => b.textContent)}], not the chords with shapes`);
+    }
+    [[0, 'C'], [2, 'F'], [3, 'G']].forEach(([idx, want]) => {
+      GT.fretboardView.selectChord(idx);
+      if (inFront() !== want) bad.push(`bar ${idx} put ${inFront()} in front, not ${want}`);
+    });
+    // the diminished chord has no button, so its bar leaves the neck alone
+    GT.fretboardView.selectChord(1);
+    if (inFront() !== 'G') bad.push(`the diminished chord's bar moved the neck to ${inFront()}`);
+    // Roots draws every chord at once — there's nothing to bring forward
+    setMode('roots');
+    GT.fretboardView.selectChord(0);
+    if (inFront() !== 'G') bad.push(`in Roots it still moved the neck to ${inFront()}`);
+    setMode('caged');
+    t.equal(bad.join('; '), '', 'A bar in the chart brings its own chord onto the neck');
+  }
+
+  // The position is drawn on the neck as a window over the frets it covers, so
+  // the legend publishes it as data for whatever draws that window rather than
+  // spelling it out again in words underneath.
+  function testThePositionIsPublishedForTheWindow(t){
+    const bad = [];
+    loadProgression(['C', 'F', 'G']);
+    ['caged', 'triads3', 'penta', 'scale'].forEach(mode => {
+      setMode(mode);
+      setView('position');
+      const win = q('#cagedLegend').dataset.window;
+      if (!/^\d+-\d+$/.test(win || '')) bad.push(`${mode} in one position publishes "${win}"`);
+      if (/position: frets/.test(q('#cagedLegend').textContent)){
+        bad.push(`${mode} still spells the position out in the legend`);
+      }
+    });
+    setMode('caged');
+    setView('neck');
+    t.equal(bad.join('; '), '', 'The legend publishes the position for the window on the neck');
+  }
+
   GT.fretboardSuites = [
     ['Fretboard: chords are drawn as shapes you can hold', testGripsAreGrips],
     ['Fretboard: whole arpeggio opens the shapes out', testArpeggioReallyOpensOut],
@@ -731,5 +780,7 @@
     ['Fretboard: the shapes follow you between views', testShapesCarryBetweenViews],
     ['Fretboard: the reading is named for what it shows', testTheReadingIsNamedForWhatItShows],
     ['Fretboard: One box goes when it cannot hold the progression', testOneBoxGoesWhenItCannotHold],
+    ['Fretboard: a bar in the chart picks its chord', testChartClickPicksTheChord],
+    ['Fretboard: the position is published, not printed', testThePositionIsPublishedForTheWindow],
   ];
 })();

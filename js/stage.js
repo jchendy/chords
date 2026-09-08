@@ -9,16 +9,46 @@
   const $ = id => document.getElementById(id);
 
   function init(){
+    // ---- two homes for the controls you reach for mid-progression ----
+    // Style and the metronome belong beside Play when the bar is wide enough
+    // to hold them, and in the Set up sheet when it isn't. The row itself
+    // moves rather than being copied, so there is only ever one of each and
+    // nothing to keep in step. Style needs room for six names and the
+    // metronome only a checkbox, so they leave the sheet at different widths.
+    const homes = [
+      { el: $('styleRow'), slot: $('barStyleSlot'), mq: window.matchMedia('(min-width: 1140px)') },
+      { el: $('clickRow'), slot: $('barClickSlot'), mq: window.matchMedia('(min-width: 900px)') },
+    ];
+    const placers = homes.map(h => {
+      const sheetParent = h.el.parentElement;
+      const nextInSheet = h.el.nextElementSibling;
+      return () => {
+        // While the sheet is open everything goes back into it: the bar is
+        // behind the scrim then, and a settings sheet missing a setting is a
+        // worse trade than the row moving for a moment.
+        const wanted = (h.mq.matches && $('sheet').hidden) ? h.slot : sheetParent;
+        if (h.el.parentElement === wanted) return;
+        if (wanted === sheetParent) sheetParent.insertBefore(h.el, nextInSheet);
+        else h.slot.appendChild(h.el);
+      };
+    });
+    const placeHomes = () => placers.forEach(p => p());
+    // a resize can change the answer without the query itself firing
+    homes.forEach(h => h.mq.addEventListener('change', placeHomes));
+    window.addEventListener('resize', placeHomes);
+
     // ---- set-up sheet ----
     const openSheet = on => {
       $('sheet').hidden = !on;
       $('scrim').hidden = !on;
       document.body.classList.toggle('sheet-open', on);
+      placeHomes();
     };
     $('setupOpen').addEventListener('click', () => openSheet(true));
     $('setupOpenQuick').addEventListener('click', () => openSheet(true));
     $('setupClose').addEventListener('click', () => openSheet(false));
     $('scrim').addEventListener('click', () => openSheet(false));
+    placeHomes();
 
     // ---- phone: all the controls on the neck, or none of them ----
     const tog = $('controlsToggle');
@@ -62,31 +92,46 @@
     new MutationObserver(beatLine).observe($('measureReadout'), { childList: true, characterData: true, subtree: true });
 
     // ---- the position window: drawn from what the neck actually shows ----
-    // The legend names the position ("position: frets 3–7") whenever there is
-    // one; the window is that stretch, measured off the fret wires the neck
-    // drew, so it can never disagree with the picture.
+    // fretboard-view publishes the position it drew on the legend as
+    // data-window="3-7"; the window is that stretch, measured off the fret
+    // wires the neck drew, so it can never disagree with the picture.
     const svg = $('fretboard'), win = $('posWindow'), lbl = $('windowLbl');
     function placeWindow(){
       win.hidden = $('boxRow').hidden;          // the window shows only in the position reading
       if (win.hidden) return;
-      const read = [...document.querySelectorAll('#cagedLegend span')].map(s => s.textContent).find(t => /position: frets/.test(t));
-      const m = read && read.match(/frets (\d+)–(\d+)/);
+      const m = ($('cagedLegend').dataset.window || '').match(/^(\d+)-(\d+)$/);
       if (!m){ win.style.display = 'none'; return; }
       const lo = Number(m[1]), hi = Number(m[2]);
-      const wires = [...svg.querySelectorAll('.fret-nut, .fret-wire')].map(l => Number(l.getAttribute('x1'))).sort((a, b) => a - b);
+      // Measured off the drawn wires themselves rather than off the viewBox:
+      // the neck has a max width, so on a wide screen the drawing is centred
+      // inside the scroller and its own coordinates start somewhere in the
+      // middle of it. Client rects already carry that, and the scroll offset.
+      const scroll = svg.parentElement;
+      const base = scroll.getBoundingClientRect().left - scroll.scrollLeft;
+      const xs = els => [...svg.querySelectorAll(els)]
+        .map(el => { const b = el.getBoundingClientRect(); return b.left + b.width / 2 - base; });
+      // one wire at the head of the neck, then one after every fret drawn
+      const wires = xs('.fret-nut, .fret-wire').sort((a, b) => a - b);
       if (wires.length < 2){ win.style.display = 'none'; return; }
-      const nums = [...svg.querySelectorAll('.fret-num')].map(n => ({ f: Number(n.textContent), x: Number(n.getAttribute('x')) }));
-      const vb = svg.viewBox.baseVal, box = svg.getBoundingClientRect(), k = box.width / vb.width;
-      // wires run one per fret from the first drawn; a zoomed range starts later than the nut
-      const startFret = nums.length ? nums[0].f - Math.round((nums[0].x - wires[0]) / (wires[1] - wires[0]) + 0.5) : 0;
-      const xOf = f => wires[Math.max(0, Math.min(wires.length - 1, f - startFret))];
-      const left = (lo === 0 ? 4 : xOf(lo - 1)) * k, right = xOf(hi) * k;
+      const cell = wires[1] - wires[0];
+      // A numbered fret says which fret the head of this neck is: its number
+      // sits half a cell into its own fret, so counting cells back from it
+      // gives the first fret drawn — 1 on the full neck, higher when zoomed.
+      const num = svg.querySelector('.fret-num');
+      const first = num
+        ? Number(num.textContent) - Math.round((xs('.fret-num')[0] - wires[0]) / cell - 0.5)
+        : 1;
+      // wires[i] is the left edge of the first fret drawn when i is 0, and the
+      // right edge of fret (first + i - 1) after that
+      const at = i => wires[Math.max(0, Math.min(wires.length - 1, i))];
+      const left = lo === 0 ? at(0) - cell * 0.35 : at(lo - first);
+      const right = at(hi - first + 1);
       win.style.display = '';
       win.style.left = left + 'px';
       win.style.width = Math.max(24, right - left) + 'px';
       lbl.textContent = `${lo}–${hi}`;
     }
-    new MutationObserver(placeWindow).observe($('cagedLegend'), { childList: true, subtree: true });
+    new MutationObserver(placeWindow).observe($('cagedLegend'), { childList: true, subtree: true, attributes: true, attributeFilter: ['data-window'] });
     new MutationObserver(placeWindow).observe($('boxRow'), { attributes: true, attributeFilter: ['hidden'] });
     window.addEventListener('resize', placeWindow);
     placeWindow();
@@ -118,6 +163,26 @@
         (d > 0 ? $('boxNext') : $('boxPrev')).click();
       }
       placeWindow();
+    });
+
+    // ---- copy the link from the chart, where there's only room for an icon ----
+    const quickShare = $('quickShare');
+    quickShare.addEventListener('click', async () => {
+      const copied = await GT.practice.copyShareLink();
+      if (!copied){
+        // no clipboard here, so fall back to the sheet's field, which can be
+        // selected by hand
+        openSheet(true);
+        $('shareBtn').click();
+        return;
+      }
+      quickShare.classList.add('copied');
+      quickShare.setAttribute('aria-label', 'Link copied');
+      clearTimeout(quickShare._reset);
+      quickShare._reset = setTimeout(() => {
+        quickShare.classList.remove('copied');
+        quickShare.setAttribute('aria-label', 'Copy link to this progression');
+      }, 1800);
     });
 
     // ---- the site menu: opens under its button, closes on a tap elsewhere or Escape ----
