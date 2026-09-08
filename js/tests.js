@@ -407,12 +407,12 @@
     'Am': 'x-0-2-2-1-0', 'Em': '0-2-2-0-0-0', 'Dm': 'x-x-0-2-3-1',
     'A7': 'x-0-2-0-2-0', 'B7': 'x-2-1-2-0-2', 'C7': 'x-3-2-3-1-0', 'D7': 'x-x-0-2-1-2', 'E7': '0-2-0-1-0-0', 'G7': '3-2-0-0-0-1',
     'Am7': 'x-0-2-0-1-0', 'Dm7': 'x-x-0-2-1-1', 'Em7': '0-2-0-0-0-0', 'Amaj7': 'x-0-2-1-2-0', 'Cmaj7': 'x-3-2-0-0-0',
-    'Dsus2': 'x-x-0-2-3-0', 'G6': '3-2-0-0-0-0', 'Am6': 'x-0-2-2-1-2', 'Caug': 'x-3-2-1-1-0',
+    'Dsus2': 'x-x-0-2-3-0', 'Dsus4': 'x-x-0-2-3-3', 'G6': '3-2-0-0-0-0', 'Am6': 'x-0-2-2-1-2', 'Caug': 'x-3-2-1-1-0',
     'E5': '0-2-2-x-x-x', 'A5': 'x-0-2-2-x-x', 'D5': 'x-x-0-2-3-x', 'G5': '3-5-5-x-x-x',
   };
   // present, though another everyday grip may reasonably read first
   const CANON_PRESENT = {
-    'Fmaj7': 'x-x-3-2-1-0', 'Dsus4': 'x-x-0-2-3-3', 'Asus2': 'x-0-2-2-0-0', 'Esus4': '0-2-2-2-0-0',
+    'Fmaj7': 'x-x-3-2-1-0', 'Asus2': 'x-0-2-2-0-0', 'Esus4': '0-2-2-2-0-0',
     'Cadd9': 'x-3-2-0-3-0', 'A9': 'x-0-2-4-2-3', 'E9': 'x-7-6-7-7-7', 'C9': 'x-3-2-3-3-3', 'D9': 'x-5-4-5-5-5',
     'Bdim': 'x-2-3-4-3-x', 'Bm7b5': 'x-2-3-2-3-x', 'Bdim7': 'x-2-3-1-3-x', 'Eaug': '0-3-2-1-1-0',
     'F#m7': '2-4-2-2-2-2', 'Gm7': '3-5-3-3-3-3', 'Bbmaj7': 'x-1-3-2-3-1', 'C#m7': 'x-4-6-4-5-4', 'Eb7': 'x-6-8-6-8-6',
@@ -1194,6 +1194,27 @@
     t.equal(bad.slice(0, 4).join('; '), '', 'Every fingering is one a hand can make');
   }
 
+  // A triad can drop its 5th and still be itself — root and 3rd say major or
+  // minor on their own, which is why the shell voicings work. A sus chord
+  // can't: its sus note is heard against the 5th, and root plus 4th alone is
+  // a bare fourth that reads as a power chord on the note above. This app's
+  // own reverse finder calls D and G "G5" before it calls it "Dsus4". So
+  // every shape offered for a sus chord has to carry all three notes.
+  function testSusChordsKeepTheirFifth(t){
+    const bad = [];
+    ['Dsus4', 'Asus2', 'Esus4', 'Csus2', 'Gsus4', 'Dsus2', 'Fsus4', 'Bbsus2'].forEach(name => {
+      const p = parseChordName(name);
+      if (!p){ bad.push(`${name}: doesn't parse`); return; }
+      const fifth = (p.rootPc + 7) % 12;
+      const without = findChordVoicings(p.rootPc, p.formula, { bassPc: p.bassPc })
+        .filter(v => !v.cells.some(c => (STRING_TUNING[c.string] + c.fret) % 12 === fifth));
+      if (without.length){
+        bad.push(`${name}: ${without.length} of its shapes have no 5th, such as ${grip(without[0].cells)}`);
+      }
+    });
+    t.equal(bad.join('; '), '', 'A sus chord is never offered without its 5th');
+  }
+
   // What a scale box is for: you can play the scale up through it without a
   // note going missing. The boxes used to be worked out from the pentatonic
   // ones by filling gaps of a minor third, which left every single box with a
@@ -1269,6 +1290,7 @@
       ['Fretboard: a 7th voicing moves one note', testSeventhVoicingsMoveOneNote],
       ['Finder: the fingerings are unchanged', testFingeringsAreUnchanged],
       ['Finder: every fingering is playable', testFingeringsArePlayable],
+      ['Finder: a sus chord keeps its 5th', testSusChordsKeepTheirFifth],
       ['Genre library and presets are well-formed', testData],
     ].concat(GT.fretboardSuites || []).concat(GT.practiceSuites || []);   // added by js/tests-fretboard.js, if it loaded
     const out = [];

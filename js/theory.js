@@ -124,8 +124,13 @@
     { aliases: ['5'],                                 name: '5',       intervals: [0,7],          essential: [0,7] },
     { aliases: ['dim', 'o', 'diminished'],            name: 'dim',     intervals: [0,3,6],        essential: [0,3,6] },
     { aliases: ['aug', '+', 'augmented'],             name: 'aug',     intervals: [0,4,8],        essential: [0,4,8] },
-    { aliases: ['sus2'],                              name: 'sus2',    intervals: [0,2,7],        essential: [0,2] },
-    { aliases: ['sus4', 'sus'],                       name: 'sus4',    intervals: [0,5,7],        essential: [0,5] },
+    // A triad can lose its 5th and still be a triad — root and 3rd say major
+    // or minor on their own. A sus chord can't: the sus note is heard against
+    // the 5th, and root plus 4th alone is a bare fourth that reads as a power
+    // chord on the note above (D and G is G5 before it is Dsus4, which is what
+    // this app's own reverse finder calls it). So the 5th stays essential here.
+    { aliases: ['sus2'],                              name: 'sus2',    intervals: [0,2,7],        essential: [0,2,7] },
+    { aliases: ['sus4', 'sus'],                       name: 'sus4',    intervals: [0,5,7],        essential: [0,5,7] },
     { aliases: ['6', 'maj6'],                         name: '6',       intervals: [0,4,7,9],      essential: [0,4,9] },
     { aliases: ['m6', 'min6'],                        name: 'm6',      intervals: [0,3,7,9],      essential: [0,3,9] },
     { aliases: ['69', '6/9'],                         name: '6/9',     intervals: [0,4,7,9,2],    essential: [0,4,9,2] },
