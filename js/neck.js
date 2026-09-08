@@ -28,8 +28,9 @@
   const CELL_W = 36;                                 // one fret, at full-neck scale
   // Where a note sits inside its fret. A finger goes just behind the wire
   // rather than in the middle of the gap, and putting the dots there says
-  // which fret is which without having to count the wires.
-  const DOT_AT = 0.62;
+  // which fret is which without having to count the wires. Close enough that
+  // roughly three units of the fret are left beyond the dot's edge.
+  const DOT_AT = 0.705;
   const rowH = ROW_H;
 
   const INLAYS = [3, 5, 7, 9, 15];
@@ -95,8 +96,11 @@
         // Small enough that two on neighbouring strings stay two dots, and no
         // smaller than the label it carries — a longer one ("♭3") is set a
         // size down to fit rather than the dot being grown to hold it.
+        // A single character is set as large as the dot will hold: the widest
+        // of them ("A") measures 5.55 from the middle to the corner of its
+        // ink at 11, against the 6.2 where a root's ring starts.
         const cx = fretX(m.fret), cy = stringY(m.string), r = 7.5;
-        const fs = (m.label && m.label.length > 1) ? 7.5 : 9;
+        const fs = (m.label && m.label.length > 1) ? 7.5 : 11;
         const shapeAttr = (m.shapes && m.shapes.length) ? ` data-shapes="${m.shapes.join(',')}"` : '';
         const rootPcAttr = m.pc !== undefined ? ` data-rootpc="${m.pc}"` : '';
         // a cell shared by two chords reads as a different degree for each —
