@@ -871,7 +871,7 @@
   // sounds, what's in it, then how it sounds with those notes in your ear.
   // The top note isn't struck twice at the turn, so the run reads as one
   // line rather than stalling at the top.
-  const TOUR_GAP = 0.16;
+  const TOUR_GAP = 0.28;      // as slow as the reverse finder's own arpeggio
   function tour(cells){
     const t0 = beginSound();
     const low = cells.slice().sort((a, b) => b.string - a.string);
