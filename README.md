@@ -489,8 +489,11 @@ a player runs while learning the shape — is a fairer drill than eighteen
 notes spread over five frets. The whole box is still drawn either way; the
 notes outside the octave in play just go quiet — still labelled with their
 degree, since reading the shape is half of what a box is for — so you can
-see the whole thing and see which part of it you're being asked about. **↓ ↑** move the octave, and
-stop at the ends rather than wrapping.
+see the whole thing and see which part of it you're being asked about.
+**↓ ↑** move the octave, and stop at the ends rather than wrapping. The ends
+include the partial octaves: the one at the top of the box that runs off the
+end of the shape, and the tail below its lowest root — built downward to a
+root rather than up from one, and the only way those notes are ever in play.
 
 Which octave it starts on takes a little care: usually the one above the
 box's lowest root, but a box clipped by the nut can have its lowest root so
@@ -550,7 +553,9 @@ the root it's an interval, which is the thing an ear can actually learn.
 Turn it off when you don't want the help. The root plays even when the root
 *is* the answer — skipping it there would be easier, and would also give the
 game away, since a question that played one note instead of two could only
-ever be the root.
+ever be the root. When the root *is* the answer it's asked an octave up from
+the reference wherever the shape has one: the same note twice is no question
+at all, where a root against its own octave is one worth being able to hear.
 
 ## Usage
 
@@ -678,11 +683,12 @@ Ab, Gb, C#, A9, E9, C7, D7, Cm7, CM7):
    come back as the parallel major or minor, and the drill would be showing
    one scale while calling it another. So every scale offered has boxes made
    of its own notes, and a full box holds all of them.
-9. **One octave of a box is one octave of it** — rooted on one of the box's
-   own roots, reaching no further than the next, and the fullest octave that
-   box has. Over all twelve roots, because the case it guards is rare: three
-   boxes in 582 have a higher root whose octave beats the lowest's, and two
-   roots wouldn't meet one.
+9. **One octave of a box is one octave of it** — an octave span with one of
+   the box's own roots at one end of it, and the fullest octave that box has,
+   counting both the octaves built up from a root and the tail built down to
+   the lowest one. Over all twelve roots, because the case it guards is rare:
+   three boxes in 582 have a higher root whose octave beats the lowest's, and
+   two roots wouldn't meet one.
 10. **Every note the neck can play has a recording near it.** Fifteen samples
    cover the range by being stretched a semitone or three either side of
    themselves; stretch one much further and it stops sounding like the guitar
