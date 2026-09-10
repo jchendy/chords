@@ -111,26 +111,40 @@
   // ones at either end of the neck can be like that — holds no octave, and
   // the whole thing is played instead.
   function octavesOf(cells, rootPc){
-    return cells.filter(c => pcOf(c) === rootPc)
-      .sort((a, b) => midiOf(a) - midiOf(b))
-      .map(r => {
-        const low = midiOf(r);
-        return cells.filter(c => midiOf(c) >= low && midiOf(c) <= low + 12);
-      })
-      .filter(oct => oct.length > 2);
+    const roots = cells.filter(c => pcOf(c) === rootPc).sort((a, b) => midiOf(a) - midiOf(b));
+    const octs = roots.map(r => {
+      const low = midiOf(r);
+      return cells.filter(c => midiOf(c) >= low && midiOf(c) <= low + 12);
+    });
+    // ...and the tail below the lowest root, which every octave above reaches
+    // past. Built downward to a root rather than up from one, it's the only
+    // way those notes are ever in play: a box that starts on the 6th and 7th
+    // of the scale would otherwise never ask about them, while the partial
+    // octave at the *top* of the same box has been reachable all along.
+    if (roots.length){
+      const top = midiOf(roots[0]);
+      const below = cells.filter(c => midiOf(c) >= top - 12 && midiOf(c) <= top);
+      if (below.some(c => midiOf(c) < top)) octs.unshift(below);
+    }
+    return octs.filter(oct => oct.length > 2);
   }
 
   // Which one to start on. The lowest is the obvious answer and usually the
   // right one, but not always: a box clipped by the nut can have its lowest
   // root so high that the octave above it runs off the top of the shape,
   // while the octave above the next root is whole. So take the one holding
-  // the most of the scale, the lowest of them where two are equal. Three
-  // boxes in 582 turn on this; A major pentatonic's A box has three of its
-  // five notes above the lowest root and all five above the next.
-  function fullestOctave(octs){
+  // the most of the scale, and where two hold as many, the one that begins on
+  // a root — the tail below the lowest root is somewhere to step to, not
+  // somewhere to start. Three boxes in 582 turn on the first rule; A major
+  // pentatonic's A box has three of its five notes above the lowest root and
+  // all five above the next.
+  function fullestOctave(octs, rootPc){
+    const held = oct => new Set(oct.map(pcOf)).size;
+    const fromRoot = oct => pcOf(oct.reduce((a, b) => (midiOf(b) < midiOf(a) ? b : a))) === rootPc;
     let best = 0;
     octs.forEach((oct, i) => {
-      if (new Set(oct.map(pcOf)).size > new Set(octs[best].map(pcOf)).size) best = i;
+      const by = held(oct) - held(octs[best]);
+      if (by > 0 || (by === 0 && fromRoot(oct) && !fromRoot(octs[best]))) best = i;
     });
     return best;
   }
@@ -138,7 +152,7 @@
   // what the drill and the tests ask for: one octave, the fullest one
   function oneOctave(cells, rootPc){
     const octs = octavesOf(cells, rootPc);
-    return octs.length ? octs[fullestOctave(octs)] : cells;
+    return octs.length ? octs[fullestOctave(octs, rootPc)] : cells;
   }
 
   // a run up a box is played string by string, low to high, and up each
@@ -342,8 +356,9 @@
   function resetOctave(){
     const shape = shapes[shapeIdx];
     if (mode === 'chord' || !shape){ octaveIdx = 0; return; }
-    const octs = octavesOf(shape.cells, SEMITONE[keyName] % 12);
-    octaveIdx = octs.length ? fullestOctave(octs) : 0;
+    const rootPc = SEMITONE[keyName] % 12;
+    const octs = octavesOf(shape.cells, rootPc);
+    octaveIdx = octs.length ? fullestOctave(octs, rootPc) : 0;
   }
 
   function stepOctave(by){
@@ -483,7 +498,12 @@
     if (quizEl.hidden){ asked = askedCell = null; return; }
     const pool = asked ? notes.filter(n => n.pc !== asked.pc) : notes;
     asked = pick(pool.length ? pool : notes);
-    askedCell = pick(asked.cells);
+    // When the root is the answer and the root has already sounded as the
+    // reference, ask it an octave up rather than at the very pitch just
+    // played: the same note twice is no question at all, where root against
+    // its own octave is one worth being able to hear.
+    const spare = asked.cells.filter(c => c !== rootCell);
+    askedCell = pick(rootFirst.checked && spare.length ? spare : asked.cells);
   }
 
   // every note that sounds lights where it sits, whether it was pressed or

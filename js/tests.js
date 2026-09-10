@@ -694,13 +694,19 @@
 
   // ---- 3g. one octave of a box is one octave of it ----
   // The drill can narrow a box to a single octave, which is the span a player
-  // runs while learning the shape. It has to be a real octave — rooted on one
-  // of the box's own roots and reaching no further than the next — and the
-  // fullest one the box has: a narrowing that dropped a degree it could have
-  // kept would quietly change what the drill is asking about. (Some boxes
-  // can't offer a complete octave at all. The one clipped by the nut in C
-  // Lydian holds six of the seven notes above its lowest root and five above
-  // the next, and six is then the right answer.)
+  // runs while learning the shape. It has to be a real octave — an octave
+  // span with one of the box's own roots at one end of it — and the fullest
+  // one the box has: a narrowing that dropped a degree it could have kept
+  // would quietly change what the drill is asking about. (Some boxes can't
+  // offer a complete octave at all. The one clipped by the nut in C Lydian
+  // holds six of the seven notes above its lowest root and five above the
+  // next, and six is then the right answer.)
+  //
+  // Every octave a box has is one built up from a root, or the tail built
+  // down to its lowest root — the notes below that root belong to nothing
+  // else, and the drill can step to them the same way it can step to the
+  // partial octave at the top. This works those out for itself rather than
+  // asking the module, so the two can disagree.
   function testOneOctaveOfABox(t){
     const { oneOctave, SCALES, PENTAS } = GT.earTraining;
     const bad = [];
@@ -722,15 +728,18 @@
           if (!oct.length){ bad.push(`${where}: nothing left`); return; }
           if (oct.length > b.cells.length) bad.push(`${where}: the octave has more notes than the box`);
           if (!oct.some(c => pcOf(c) === rootPc)){ bad.push(`${where}: no root in the octave`); return; }
-          const low = Math.min(...oct.map(midi));
-          if (Math.max(...oct.map(midi)) - low > 12) bad.push(`${where}: spans more than an octave`);
-          if (!b.cells.some(c => pcOf(c) === rootPc && midi(c) === low))
-            bad.push(`${where}: doesn't start on a root of the box`);
-          // ...and it's the fullest octave the box has to offer
-          const best = Math.max(...b.cells.filter(c => pcOf(c) === rootPc).map(r => {
-            const from = midi(r);
-            return new Set(b.cells.filter(c => midi(c) >= from && midi(c) <= from + 12).map(pcOf)).size;
-          }));
+          const low = Math.min(...oct.map(midi)), high = Math.max(...oct.map(midi));
+          if (high - low > 12) bad.push(`${where}: spans more than an octave`);
+          const onARoot = m => b.cells.some(c => pcOf(c) === rootPc && midi(c) === m);
+          if (!onARoot(low) && !onARoot(high))
+            bad.push(`${where}: neither end of it is a root of the box`);
+          // ...and it's the fullest octave the box has to offer: from each
+          // root upwards, or down to the lowest one
+          const roots = b.cells.filter(c => pcOf(c) === rootPc).map(midi).sort((x, y) => x - y);
+          const spans = roots.map(r => [r, r + 12]);
+          if (roots.length) spans.push([roots[0] - 12, roots[0]]);
+          const best = Math.max(...spans.map(([lo, hi]) =>
+            new Set(b.cells.filter(c => midi(c) >= lo && midi(c) <= hi).map(pcOf)).size));
           const got = new Set(oct.map(pcOf)).size;
           if (got !== best) bad.push(`${where}: ${got} notes where an octave of it holds ${best}`);
         });
