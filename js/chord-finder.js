@@ -955,22 +955,48 @@
   // the shape on its own, or the shape itself, three ways over. `voicingsOf`
   // is the list a card's data-voicing indexes into — the finder draws a
   // gridful of them, the ear trainer one at a time.
-  // `handled` gets first refusal on a click, for whatever else lives on a
-  // card — the finder's own menu sits on one.
+  // The half of it that's about single notes: any container holding .note-hit
+  // groups gets them lit under the pointer and sounded on a click. That's the
+  // dots and names of a chord diagram, and equally the notes of a scale box
+  // drawn across the whole neck.
+  // Sounds one note if that's what was hit, and says whether it was: the
+  // callers below each register exactly one click path, so a note never
+  // plays twice for one press.
+  function strikeNote(e){
+    const hit = e.target.closest && e.target.closest('.note-hit');
+    if (!hit) return false;
+    e.preventDefault();
+    playOne(Number(hit.dataset.string), Number(hit.dataset.fret));
+    flash(hit);
+    return true;
+  }
+
+  function lightNotes(container){
+    container.addEventListener('mouseover', e => litFromEvent(e, true));
+    container.addEventListener('mouseout', e => litFromEvent(e, false));
+  }
+
+  function notesOnClick(container){
+    lightNotes(container);
+    container.addEventListener('click', strikeNote);
+    container.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') strikeNote(e);
+    });
+  }
+
+  // ...and the whole shape on top of it: a click anywhere else on a card
+  // plays the chord three ways over. `handled` gets first refusal, for
+  // whatever else lives on a card — the finder's own menu sits on one.
   function soundOnClick(container, voicingsOf, handled){
+    lightNotes(container);
     const activate = e => {
       const card = e.target.closest('.diagram-card');
-      if (!card) return;
-      if (handled && handled(e, card)) return;
+      if (card && handled && handled(e, card)) return;
+      if (strikeNote(e)) return;        // a note of it, wherever that's drawn
+      if (!card) return;                // ...and the whole thing needs a card
       const v = voicingsOf()[Number(card.dataset.voicing)];
       if (!v) return;
       e.preventDefault();
-      const hit = e.target.closest && e.target.closest('.note-hit');
-      if (hit){
-        playOne(Number(hit.dataset.string), Number(hit.dataset.fret));
-        flash(hit);
-        return;
-      }
       tour(v.cells);
       card.classList.remove('rang');
       void card.offsetWidth;            // restart the flash animation
@@ -980,8 +1006,6 @@
     container.addEventListener('keydown', e => {
       if (e.key === 'Enter' || e.key === ' ') activate(e);
     });
-    container.addEventListener('mouseover', e => litFromEvent(e, true));
-    container.addEventListener('mouseout', e => litFromEvent(e, false));
   }
 
   function flash(hit){
@@ -1050,6 +1074,6 @@
     describeVoicing, FAMILIES,
     // ...and for the ear trainer, which draws the same diagrams, sounds them
     // the same way, and writes a chord's notes with the same words
-    soundOnClick, tour, playOne, degreeNameFor, noteNameFor, voicingTip,
+    soundOnClick, notesOnClick, tour, playOne, degreeNameFor, noteNameFor, voicingTip,
   };
 })();

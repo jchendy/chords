@@ -659,7 +659,87 @@
     t.equal(bad.join('; '), '', 'Every note of a shape is exactly one answer in the drill');
   }
 
-  // ---- 3f. every note the neck can play has a recording behind it ----
+  // ---- 3f. the scales the ear trainer offers have boxes to draw ----
+  // The trainer names its scales by the intervals that define them, and
+  // fretboard.js keys its written-out boxes the same way — which works only
+  // as long as the two lists agree. They meet nowhere else: ask for a scale
+  // whose signature isn't in the table and scaleBoxPlacements quietly hands
+  // back the parallel major or minor instead, and the drill would be showing
+  // one scale while calling it another. So: every scale offered has boxes of
+  // its own, made of its own notes, and a full box holds all of them.
+  function testEveryScaleHasItsBoxes(t){
+    const { SCALES, PENTAS } = GT.earTraining;
+    const bad = [];
+    [...SCALES, ...PENTAS].forEach(scale => {
+      [0, 3, 6, 10].forEach(rootPc => {           // C, Eb, F#, Bb
+        const want = new Set(scale.ivs.map(i => (rootPc + i) % 12));
+        const boxes = scale.ivs.length === 5
+          ? pentaBoxPlacements(rootPc, scale.minor)
+          : scaleBoxPlacements(rootPc, scale.minor, [...want]);
+        if (!boxes.length){ bad.push(`${scale.name} on ${rootPc}: no boxes at all`); return; }
+        const fullest = Math.max(...boxes.map(b => b.cells.length));
+        boxes.forEach(b => {
+          const pcs = new Set(b.cells.map(c => (STRING_TUNING[c.string] + c.fret) % 12));
+          [...pcs].filter(pc => !want.has(pc)).forEach(pc =>
+            bad.push(`${scale.name} on ${rootPc}, ${b.name} box: holds pitch ${pc}, which isn't in the scale`));
+          // a whole box has every note of the scale in it; the stubs at
+          // either end of the neck are allowed to be short
+          if (b.cells.length >= fullest - 2 && pcs.size !== want.size)
+            bad.push(`${scale.name} on ${rootPc}, ${b.name} box: ${pcs.size} of the ${want.size} notes`);
+        });
+      });
+    });
+    t.equal(bad.join('; '), '', `Every scale the drill offers has boxes of its own notes (${SCALES.length + PENTAS.length} scales)`);
+  }
+
+  // ---- 3g. one octave of a box is one octave of it ----
+  // The drill can narrow a box to a single octave, which is the span a player
+  // runs while learning the shape. It has to be a real octave — rooted on one
+  // of the box's own roots and reaching no further than the next — and the
+  // fullest one the box has: a narrowing that dropped a degree it could have
+  // kept would quietly change what the drill is asking about. (Some boxes
+  // can't offer a complete octave at all. The one clipped by the nut in C
+  // Lydian holds six of the seven notes above its lowest root and five above
+  // the next, and six is then the right answer.)
+  function testOneOctaveOfABox(t){
+    const { oneOctave, SCALES, PENTAS } = GT.earTraining;
+    const bad = [];
+    const midi = c => STRING_MIDI[c.string] + c.fret;
+    const pcOf = c => (STRING_TUNING[c.string] + c.fret) % 12;
+    // All twelve roots, because the case this is guarding is rare: of the 582
+    // boxes here, three have a higher root whose octave beats the lowest's —
+    // A major pentatonic's A box holds three of its five notes above the
+    // lowest root and all five above the next. Two roots wouldn't meet one.
+    [...SCALES, ...PENTAS].forEach(scale => {
+      for (let rootPc = 0; rootPc < 12; rootPc++){
+        const boxes = (scale.ivs.length === 5
+          ? pentaBoxPlacements(rootPc, scale.minor)
+          : scaleBoxPlacements(rootPc, scale.minor, scale.ivs.map(i => (rootPc + i) % 12)));
+        const fullest = Math.max(...boxes.map(b => b.cells.length));
+        boxes.filter(b => b.cells.length >= fullest - 2).forEach(b => {
+          const oct = oneOctave(b.cells, rootPc);
+          const where = `${scale.name} on ${rootPc}, ${b.name} box`;
+          if (!oct.length){ bad.push(`${where}: nothing left`); return; }
+          if (oct.length > b.cells.length) bad.push(`${where}: the octave has more notes than the box`);
+          if (!oct.some(c => pcOf(c) === rootPc)){ bad.push(`${where}: no root in the octave`); return; }
+          const low = Math.min(...oct.map(midi));
+          if (Math.max(...oct.map(midi)) - low > 12) bad.push(`${where}: spans more than an octave`);
+          if (!b.cells.some(c => pcOf(c) === rootPc && midi(c) === low))
+            bad.push(`${where}: doesn't start on a root of the box`);
+          // ...and it's the fullest octave the box has to offer
+          const best = Math.max(...b.cells.filter(c => pcOf(c) === rootPc).map(r => {
+            const from = midi(r);
+            return new Set(b.cells.filter(c => midi(c) >= from && midi(c) <= from + 12).map(pcOf)).size;
+          }));
+          const got = new Set(oct.map(pcOf)).size;
+          if (got !== best) bad.push(`${where}: ${got} notes where an octave of it holds ${best}`);
+        });
+      }
+    });
+    t.equal(bad.join('; '), '', 'One octave of a box starts on a root and is the fullest octave it has');
+  }
+
+  // ---- 3h. every note the neck can play has a recording behind it ----
   // Fifteen samples cover the range by being stretched a semitone or three
   // either side of themselves. Stretch one much further and it stops sounding
   // like the guitar it was — a low E played back at double speed is a
@@ -1547,6 +1627,8 @@
       ['Chord finder tells open shapes from movable ones', testTheShapeFilter],
       ['Every chord name the app writes parses back', testEveryChordNameParsesBack],
       ['Ear trainer: every note of a shape is one answer', testTheEarTrainerCoversItsShape],
+      ['Ear trainer: every scale it offers has boxes of its own', testEveryScaleHasItsBoxes],
+      ['Ear trainer: one octave of a box is one octave of it', testOneOctaveOfABox],
       ['Every note the neck can play has a recording near it', testEveryNoteHasARecording],
       ['Theory: naming and identification', testTheory],
       ['Theory: one answer for what degree a note is', testDegreeNamesAgree],

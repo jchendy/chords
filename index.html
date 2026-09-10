@@ -362,7 +362,15 @@
   .ear-shape{ max-width:272px; margin-top:18px; }
   .ear-shape .diagram-card{ cursor:pointer; }
   .ear-quiz{ margin-top:24px; padding-top:18px; border-top:1px solid var(--line); max-width:560px; }
-  .ear-quiz-title{ margin:0 0 12px; font-family:Fraunces,Georgia,serif; font-size:1.15rem; }
+  .ear-quiz-head{ display:flex; align-items:baseline; justify-content:space-between; gap:16px; margin-bottom:12px; }
+  .ear-quiz-title{ margin:0; font-family:Fraunces,Georgia,serif; font-size:1.15rem; }
+  .ear-score{ margin:0; font-size:.82rem; color:var(--muted); font-variant-numeric:tabular-nums; white-space:nowrap; }
+  /* a box lives across the whole neck, so its picture is the whole neck */
+  .ear-shape-neck{ max-width:none; }
+  .ear-shape-neck .fret-scroll{ margin-top:6px; }
+  .box-choices{ display:grid; gap:12px; margin-top:8px; }
+  .box-choices .diagram-card{ padding:6px 10px 8px; }
+  .box-choices .diagram-caption{ text-align:left; }
   .ear-quiz .toolbar{ margin:0; }
   .ear-answers{ display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
   .ear-answer{ display:flex; flex-direction:column; align-items:center; gap:1px; min-width:64px; padding:8px 13px; border:1px solid var(--line2); border-radius:10px; background:var(--panel); color:var(--ink); transition:border-color .12s ease, color .12s ease; }
@@ -848,19 +856,48 @@
 <!-- ================= ear training ======================================== -->
 <div class="tab-page" id="page-ear" hidden>
   <section class="page ear">
-    <div class="finder-head">
+    <div class="toolbar">
+      <div class="tb-group">
+        <span class="tb-lbl">Drill</span>
+        <span class="segmented" id="earModeGroup">
+          <button type="button" class="seg-btn active" data-value="chord">Chord</button>
+          <button type="button" class="seg-btn" data-value="penta">Pentatonic</button>
+          <button type="button" class="seg-btn" data-value="scale">Scale</button>
+        </span>
+      </div>
+    </div>
+    <div class="finder-head" id="earChordRow">
       <label class="tb-lbl" for="earInput">Chord</label>
       <input type="text" id="earInput" class="big-input" placeholder="e.g. Am7, C, G13" autocomplete="off" spellcheck="false" aria-label="Chord to drill">
       <p class="finder-error" id="earError"></p>
     </div>
+    <div class="toolbar" id="earScaleRow" hidden>
+      <div class="tb-group">
+        <span class="tb-lbl">Key</span>
+        <select id="earKey" class="sel" aria-label="Key"></select>
+      </div>
+      <div class="tb-group">
+        <span class="tb-lbl">Scale</span>
+        <select id="earScale" class="sel" aria-label="Scale"></select>
+      </div>
+    </div>
     <div class="toolbar">
-      <button type="button" class="tbtn" id="earRandom">Random chord</button>
+      <button type="button" class="tbtn" id="earRandom">Random</button>
       <!-- a shape is chosen by looking at it, not by stepping past the
            twenty-nine you didn't want -->
       <span class="tb-group" id="earShapeRow">
         <span class="tb-lbl">Shape</span>
         <button type="button" class="tbtn" id="earShapePick" aria-haspopup="dialog" aria-expanded="false"></button>
       </span>
+      <!-- a box holds the same seven notes two or three times over; one
+           octave of it is the span a player actually runs -->
+      <div class="tb-group" id="earOctaveRow" hidden>
+        <span class="tb-lbl">Play</span>
+        <span class="segmented" id="earOctaveGroup">
+          <button type="button" class="seg-btn active" data-value="octave">One octave</button>
+          <button type="button" class="seg-btn" data-value="whole">Whole shape</button>
+        </span>
+      </div>
     </div>
     <!-- the same diagram the chord finder draws, and it sounds the same way:
          the shape three ways over, or one note on its own -->
@@ -868,18 +905,21 @@
     <div class="scrim" id="earScrim" hidden></div>
     <aside class="sheet shape-sheet" id="earShapeSheet" hidden role="dialog" aria-modal="true" aria-label="Choose a shape">
       <div class="sheet-head">
-        <span class="sheet-title">Every way to play <span id="earSheetChord"></span></span>
+        <span class="sheet-title"><span id="earSheetTitle">Every way to play</span> <span id="earSheetChord"></span></span>
         <button type="button" class="tbtn" id="earSheetClose">Done</button>
       </div>
       <div class="diagram-grid" id="earShapeChoices"></div>
     </aside>
     <div class="ear-quiz" id="earQuiz" hidden>
-      <p class="ear-quiz-title">Which note of the chord is this?</p>
+      <div class="ear-quiz-head">
+        <p class="ear-quiz-title" id="earQuizTitle">Which note of the chord is this?</p>
+        <p class="ear-score" id="earScore" role="status" aria-live="polite" aria-label="Score this session"></p>
+      </div>
       <div class="toolbar">
         <button type="button" class="tbtn" id="earPlayNote">Play the note</button>
+        <button type="button" class="tbtn" id="earPlayRoot">Play root</button>
         <button type="button" class="tbtn" id="earPlayChord">Play the chord</button>
         <button type="button" class="tbtn" id="earPlayArp">Play arpeggio</button>
-        <button type="button" class="tbtn" id="earPlayRoot">Play root</button>
       </div>
       <div class="ear-answers" id="earAnswers"></div>
       <p class="ear-verdict" id="earVerdict" role="status" aria-live="polite"></p>

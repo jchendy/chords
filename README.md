@@ -9,8 +9,9 @@ A single-page, dependency-free site with four tabs under one header:
 - **Reverse chord finder** — click frets on an interactive fretboard and
   see what chord name(s) the selected notes could be; hear them together as
   a chord or one at a time as an arpeggio.
-- **Ear training** — one chord shape at a time, and a drill: it sounds a
-  note from somewhere inside the shape, and you say which one it was.
+- **Ear training** — a chord shape, a pentatonic box or a scale box, and a
+  drill: it sounds a note from somewhere inside what's on the neck, and you
+  say which one it was.
 - **Genre examples** — pick a style, then a rhythm or a lead line, and read
   the tab while you hear it played. It's experimental, and lives behind the
   menu at the right end of the header (with a mailto link) rather than among
@@ -463,13 +464,42 @@ uses.
 
 ## Ear training
 
-One chord, one shape, and a drill over the notes in it. The shape is the
-chord finder's own — same search, same diagram, same sounds — so clicking
-it plays the chord three ways over, and clicking a dot or the name beside it
-plays that one note.
+Something on the neck, and a drill over the notes in it. Three things can be
+on the neck — a **chord** shape, a **pentatonic** box or a **scale** box —
+and the drill is the same for all three, which is why everything below the
+picture is shared. Only the picture, the notes it holds and the words for
+them differ.
 
-Below the shape, the drill: it picks a note from the chord and plays it, and
-you say which one it was. **Play the note** repeats it; **Play the chord**,
+A chord is drawn as a chord diagram, because that's how a chord is written
+down; it's the chord finder's own — same search, same diagram, same sounds —
+so clicking it plays the chord three ways over. A box is drawn across the
+whole neck, because that's where it lives and half of learning one is knowing
+where it sits. Either way, clicking a note plays that note, and the notes
+light under the pointer the same way.
+
+The **scale** drill offers the seven modes and the **pentatonic** drill the
+two pentatonics, on any of the twelve roots, in the five CAGED boxes — the
+same written-out boxes the practice tab draws. The scales are named here by
+the intervals that define them, which is also how those boxes are keyed, so
+asking for a scale and getting its shapes is one lookup and no translating.
+
+**Play** narrows a box to a single octave or leaves it whole. A box holds the
+same five or seven notes two or three times over, and one octave — the span
+a player runs while learning the shape — is a fairer drill than eighteen
+notes spread over five frets. Which octave takes a little care: usually the
+one above the box's lowest root, but a box clipped by the nut can have its
+lowest root so high that the octave above it runs off the top of the shape,
+so the fullest octave wins. Of the 582 boxes across every scale and root,
+three are like that — A major pentatonic's A box holds three of its five
+notes above the lowest root and all five above the next.
+
+Below the picture, the drill: it picks a note and plays it, and you say which
+one it was. It keeps score as it goes — right answers, questions asked, and
+the percentage. A question counts once however many times you guess at it:
+three wrong stabs at one note is one question missed, which is the honest
+measure of whether you heard it. The score runs for as long as the tab is
+open, and rolling a new chord or box doesn't reset it, since it's the same
+drill. **Play the note** repeats it; **Play the chord**,
 **Play arpeggio** and **Play root** give it context — the shape struck
 together, rolled one note at a time, or just the root the rest is heard
 against. (A rootless voicing hasn't got one, and there that button goes
@@ -486,12 +516,13 @@ A note sounds where it actually sits in the shape rather than at some
 neutral octave. A 3rd on the top string and a 3rd buried in the middle of
 the chord are different things to hear, and telling them apart is the point.
 
-**Random chord** rolls one — the everyday triads and sevenths plus the
-colours you meet soon after, on any of the twelve roots — and starts it on
-one of the first few shapes rather than the open one every time. You can
-also type a chord name.
+**Random** rolls a new subject — in chord mode, the everyday triads and
+sevenths plus the colours you meet soon after, on any of the twelve roots,
+starting on one of the first few shapes rather than the open one every time;
+in the other two, a key, a scale and a box. In chord mode you can type a
+chord name instead.
 
-**Shape** opens every way of playing that chord at once — the same list the
+**Shape** opens every way of playing it at once — the same list the
 chord finder shows, drawn the same way, with the one you're on marked — and
 you pick by looking rather than by stepping past the twenty-nine you didn't
 want. In there a click is a choice and not a sound: the diagrams are the
@@ -571,7 +602,7 @@ not at all, the whole progression is on the neck, the legend names exactly
 what's drawn, a note two chords share carries a colour for each of them, and
 playing through a progression doesn't walk the hand along the neck.
 
-Two groups are guarded. The first nine run over the pure modules; the first
+Two groups are guarded. The first eleven run over the pure modules; the first
 two of those over a fixed list of chords (C, A, G, E, D, Cm, Am, Gm, Em, Dm,
 Ab, Gb, C#, A9, E9, C7, D7, Cm7, CM7):
 
@@ -616,13 +647,25 @@ Ab, Gb, C#, A9, E9, C7, D7, Cm7, CM7):
    notes, and identification names both a C6 and an Am7 for C E G A — and
    A6/9 first for A E B F♯, a rootless A13 and nothing else for B F♯ C♯ G,
    nothing rootless for E G B or C E G D.
-8. **Every note the neck can play has a recording near it.** Fifteen samples
+8. **Every scale the drill offers has boxes of its own.** The ear trainer
+   names its scales by the intervals that define them and fretboard.js keys
+   its boxes the same way, which works only as long as the two lists agree:
+   ask for a scale whose signature isn't in the table and the boxes quietly
+   come back as the parallel major or minor, and the drill would be showing
+   one scale while calling it another. So every scale offered has boxes made
+   of its own notes, and a full box holds all of them.
+9. **One octave of a box is one octave of it** — rooted on one of the box's
+   own roots, reaching no further than the next, and the fullest octave that
+   box has. Over all twelve roots, because the case it guards is rare: three
+   boxes in 582 have a higher root whose octave beats the lowest's, and two
+   roots wouldn't meet one.
+10. **Every note the neck can play has a recording near it.** Fifteen samples
    cover the range by being stretched a semitone or three either side of
    themselves; stretch one much further and it stops sounding like the guitar
    it was. So every string and fret the app draws has to land inside some
    sample's own range, and the map has to be in order with no gaps and no two
    samples claiming a note.
-9. **The genre library and the presets are well-formed.** Every progression
+11. **The genre library and the presets are well-formed.** Every progression
    has a key and parseable chords, a "twelve-bar" has twelve bars, hits sit
    inside their grid, a six-slot bar declares itself a waltz, every chord can
    be voiced the way its rhythm asks, lead lines stay on the neck and inside
@@ -724,7 +767,7 @@ by what each part does:
 | `stage.js` | The practice tab's chrome: the Set up sheet, the phone's controls toggle, the progression name in the chart head, the beat line, the draggable position window, and the site menu. Reads what the other modules draw; keeps no state. |
 | `chord-finder.js` | Chord finder tab: voicing search, fingering, chord diagrams. |
 | `reverse-finder.js` | Reverse chord finder tab: click targets over the shared neck, and the name lookup. |
-| `ear-training.js` | Ear training tab: the shape on show, and the drill over its notes. Draws and sounds the chord finder's diagrams from the chord finder's own code, so the two tabs can't drift apart. |
+| `ear-training.js` | Ear training tab: what's on the neck — a chord shape, a pentatonic box or a scale box — and the drill over its notes. Draws and sounds chords from the chord finder's own code and boxes from the practice tab's, so no tab can drift from another. |
 | `tooltips.js` | The (i) info bubbles. |
 | `tabs.js` | Tab switching, plus the URL fragment and page title that go with each tab. |
 | `main.js` | Boots each tab and wires the header together. |
