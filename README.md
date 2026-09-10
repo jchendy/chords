@@ -139,7 +139,17 @@ names the tab you're on.
   a settings sheet is never missing a setting. On a phone the site
   name drops out, the tools row scrolls sideways, and a Controls button in
   the transport hides every control on the neck so the picture has the
-  screen. A "Style" picker chooses the backing:
+  screen. Turned sideways it goes further, because that is the shape with the
+least height and the most need of it: the chart sets its chord names small
+and tight, and the controls come off by default. A phone in landscape is
+told apart from a tablet by its height and from a desktop window someone has
+made short by its pointer — it is the only screen that is both short and
+touched — and once you have pressed the Controls button yourself, rotating
+doesn't overrule you. The bar itself can fold away too, from a button at its
+right end, leaving Play floating clear of the page and giving the neck the
+eighty-odd pixels the bar was using; that button is there wherever there's
+room for it, which is everywhere but a phone held upright, where the neck
+already fits and the bar has no space to spare. A "Style" picker chooses the backing:
   Simple — the plain piano voicing, with note value (quarter / half / whole),
   metronome click and a roots-only mode;
   Rock — driving 8th-note piano chords and a basic kit, with a half-time

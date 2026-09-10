@@ -253,6 +253,16 @@
   /* practice.js writes "bar.beat" here and the chart's beat line reads it;
      nothing needs to print it */
   .counter{ display:none; }
+  /* The bar folded away to a single button, floating clear of the page. The
+     neck is what you're reading while you play, so on a short screen the bar
+     is the first thing that should be able to get out of its way. */
+  .mini-transport{ position:fixed; right:16px; bottom:calc(16px + env(safe-area-inset-bottom, 0px)); z-index:20;
+    display:flex; flex-direction:column; align-items:center; gap:8px; }
+  .mini-transport .ib{ background:var(--panel); }
+  .play-mini{ width:48px; height:48px; box-shadow:0 6px 20px rgba(0,0,0,.55); }
+  .play-mini svg{ width:18px; height:18px; }
+  body.transport-collapsed .transport{ display:none; }
+  body.transport-collapsed #page-caged{ padding-bottom:16px; }
 
   /* ---------- set up: a sheet, so the stage never scrolls ---------- */
   .scrim{ position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:30; }
@@ -373,6 +383,11 @@
     .bpm-row .seg-btn{ font-size:.68rem; margin:0 6px 0 0; }
     .tbtn{ padding:7px 11px; font-size:.78rem; }
     .bar-style{ display:none; }        /* no room beside Play; it's in Set up */
+    /* Held upright the neck already fits under the bar, so the one thing the
+       bar can give up is the button that folds it away — there isn't room for
+       it beside the tempo. Sideways it comes back, which is where it earns
+       its place. */
+    #transportCollapse{ display:none; }
     .phone-only{ display:inline-block; }
     .sheet-cols{ grid-template-columns:1fr; gap:6px; }
     .chart-grid{ gap:8px 10px; }
@@ -392,6 +407,37 @@
     .quick{ flex:1 1 100%; flex-wrap:wrap; margin-left:0; padding-left:0; border-left:0; }
     .chord-row{ grid-template-columns:20px 1fr 72px 96px; gap:6px; }
     .big-input{ font-size:1.35rem; }
+  }
+
+  /* ---------- a phone turned sideways ---------- */
+  /* The one case where the neck wants the screen and there is barely any of
+     it: about 390px tall once the browser has taken its share. The chart is
+     what's using it — six bars of large serif type — so here it reads small
+     and tight, the neck keeps its size, and the controls come off by default
+     (stage.js, which also has to keep the Controls button honest). Told apart
+     from a tablet by the height and from a short desktop window by the
+     pointer: a landscape phone is the only thing that is short and touched. */
+  @media (orientation: landscape) and (max-height: 500px) and (pointer: coarse){
+    .chart{ padding:6px 14px 2px; }
+    .chart-head{ gap:10px; }
+    .keyline{ font-size:1.05rem; }
+    .progline{ font-size:.95rem; }
+    .chart-grid{ gap:2px 10px; margin:5px 0 0; }
+    .chart-grid .bar{ padding:5px 4px 2px; }
+    .chart-grid .chord-name{ font-size:clamp(15px, 3vw, 21px); }
+    .chart-grid .chord-numeral{ font-size:.66rem; margin-top:0; }
+    .instrument{ padding-top:2px; gap:2px; }
+    .stage{ margin-top:2px; padding:8px 10px 4px; }
+    .under{ margin-top:4px; }
+    .site{ padding:6px 14px 2px; }
+    /* sideways there is width to spare and height there is not, so the key
+       and the progression go back onto one line rather than stacking the way
+       they do on a phone held upright */
+    .quick{ flex:0 1 auto; margin-left:4px; padding-left:12px; border-left:1px solid var(--line2); }
+    .key-edit, .pick-edit{ min-height:0; padding:4px 6px; margin:-4px -6px; }
+    .play-sm{ width:32px; height:32px; }
+    .play-sm svg{ width:12px; height:12px; }
+    #transportCollapse{ display:inline-flex; }
   }
 </style>
 </head>
@@ -596,7 +642,20 @@
     <span class="sp"></span>
     <button type="button" class="tbtn phone-only" id="controlsToggle" aria-pressed="true" title="Show or hide the controls on the neck">Controls</button>
     <button type="button" class="tbtn" id="setupOpen">Set up</button>
+    <button type="button" class="ib" id="transportCollapse" aria-label="Collapse the playback bar" title="Collapse the playback bar">
+      <svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 8.5L10 13l4.5-4.5"/></svg>
+    </button>
   </footer>
+
+  <!-- The bar collapsed: everything the neck doesn't need gone, and Play kept
+       where a thumb can find it. The button carries .play-btn, so practice.js
+       drives it along with the others without knowing it exists. -->
+  <div class="mini-transport" id="miniTransport" hidden>
+    <button type="button" class="ib" id="transportExpand" aria-label="Show the playback bar" title="Show the playback bar">
+      <svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 11.5L10 7l-4.5 4.5"/></svg>
+    </button>
+    <button class="play-btn play-mini" type="button" aria-label="Play"></button>
+  </div>
 
   <!-- ---------------- set up: a sheet, so the stage never scrolls ---------------- -->
   <div class="scrim" id="scrim" hidden></div>

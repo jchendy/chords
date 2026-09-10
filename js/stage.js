@@ -49,14 +49,46 @@
     $('scrim').addEventListener('click', () => openSheet(false));
     placeHomes();
 
-    // ---- phone: all the controls on the neck, or none of them ----
+    // ---- all the controls on the neck, or none of them ----
+    // A phone turned sideways is the case the width test gets wrong: it is
+    // about as wide as a tablet held upright, so the controls come on when
+    // it's the one screen with no room for them. What tells the two apart is
+    // the height together with the pointer — a landscape phone is short and
+    // touched, a tablet is tall, a desktop is pointed at. This lives here
+    // rather than in the stylesheet because the Controls button carries the
+    // state as well, and CSS alone would leave that button saying the
+    // opposite of what you can see.
     const tog = $('controlsToggle');
     const setControls = on => {
       document.body.classList.toggle('controls-off', !on);
       tog.setAttribute('aria-pressed', String(on));
     };
-    setControls(window.innerWidth >= 700);
-    tog.addEventListener('click', () => setControls(document.body.classList.contains('controls-off')));
+    const phoneSideways = window.matchMedia(
+      '(orientation: landscape) and (max-height: 500px) and (pointer: coarse)');
+    // ...but once you've said which you want, rotating isn't a reason to
+    // overrule you
+    let controlsChosenByHand = false;
+    const defaultControls = () => {
+      if (controlsChosenByHand) return;
+      setControls(window.innerWidth >= 700 && !phoneSideways.matches);
+    };
+    defaultControls();
+    phoneSideways.addEventListener('change', defaultControls);
+    window.addEventListener('resize', defaultControls);
+    tog.addEventListener('click', () => {
+      controlsChosenByHand = true;
+      setControls(document.body.classList.contains('controls-off'));
+    });
+
+    // ---- the bar, or just its Play button ----
+    // Folded away, the transport gives the neck the ~80px it was using and
+    // leaves Play floating where a thumb already is.
+    const setTransport = open => {
+      document.body.classList.toggle('transport-collapsed', !open);
+      $('miniTransport').hidden = open;
+    };
+    $('transportCollapse').addEventListener('click', () => setTransport(false));
+    $('transportExpand').addEventListener('click', () => setTransport(true));
 
     // ---- the progression as text: mirrors whatever the picker says ----
     const prog = $('quickPreset'), progLabel = $('progLabel');
