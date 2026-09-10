@@ -502,6 +502,19 @@ menu, not the instrument.
 Open `index.html` in any modern browser. No build step, no dependencies
 (fonts load from Google Fonts).
 
+To hear the recorded guitar rather than the synthesized fallback, serve the
+folder over http instead — a page opened from disk isn't allowed to read the
+sample files beside it (see **Sound**). Anything will do:
+
+```
+python3 -m http.server 8777 --bind 127.0.0.1
+```
+
+Then <http://127.0.0.1:8777/>, and <http://127.0.0.1:8777/tests.html> for the
+tests. Dropping `--bind 127.0.0.1` opens it to the rest of the network, which
+is how to reach it from a phone on the same wifi — at the price of serving
+the whole folder, `.git` included, to anything on that network.
+
 ## Genre examples
 
 Twenty-two styles, grouped by family: skate punk, ska punk, pop punk and
