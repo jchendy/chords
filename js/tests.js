@@ -522,6 +522,75 @@
     t.equal(bad.join('; '), '', `Shapes are sorted common-first and told what they are (${KINDS.length} named grips)`);
   }
 
+  // ---- 3c. the movable / open filter ----
+  // A shape with no open strings is movable: the grip slides to any root. One
+  // with an open string is tied to where it sits. Asking for either is a
+  // filter on the search rather than on its results, so the list comes back
+  // full of that kind rather than showing the few that survived the general
+  // ranking — which is the whole point of asking.
+  const FILTERED = [
+    ['C',    'x-3-2-0-1-0', 'open'],       // the open C
+    ['F',    '1-3-3-2-1-1', 'movable'],    // the F barre
+    ['G7',   '3-2-0-0-0-1', 'open'],
+    ['A6/9', '5-x-4-4-5-5', 'movable'],
+    ['E5',   '0-2-2-x-x-x', 'open'],
+    ['Am7',  'x-12-14-12-13-12', 'movable'],
+  ];
+  function testTheShapeFilter(t){
+    const bad = [];
+    const opens = v => v.cells.some(c => c.fret === 0);
+    const listed = (name, strings) => {
+      const p = parseChordName(name);
+      return findChordVoicings(p.rootPc, p.formula, { strings, bassPc: p.bassPc });
+    };
+    ['C', 'F', 'Bm', 'G7', 'Cmaj7', 'A6/9', 'E9', 'A5', 'Bb', 'F#m7'].forEach(name => {
+      const open = listed(name, 'open'), movable = listed(name, 'movable');
+      open.filter(v => !opens(v)).forEach(v =>
+        bad.push(`${name}: "open" offered ${grip(v.cells)}, which has no open string`));
+      movable.filter(v => opens(v)).forEach(v =>
+        bad.push(`${name}: "movable" offered ${grip(v.cells)}, which does`));
+      if (!movable.length) bad.push(`${name}: no movable shape at all`);
+      // every shape is still a real shape of the chord, however it was filtered
+      [...open, ...movable].forEach(v => {
+        const pcs = [...new Set(v.cells.map(c => (STRING_TUNING[c.string] + c.fret) % 12))];
+        const p = parseChordName(name);
+        if (!identifyChords(pcs).some(m => m.rootPc === p.rootPc && m.formula.name === p.formula.name)){
+          bad.push(`${name}: ${grip(v.cells)} doesn't read back as ${name}`);
+        }
+      });
+    });
+    // and the filter really is one: an everyday shape shows under its own
+    // heading, under "all", and not under the other
+    FILTERED.forEach(([name, g, strings]) => {
+      const other = strings === 'open' ? 'movable' : 'open';
+      const has = s => listed(name, s).some(v => grip(v.cells) === g);
+      if (!has(strings)) bad.push(`${name} ${g}: missing from "${strings}"`);
+      if (!has('all')) bad.push(`${name} ${g}: missing from "all"`);
+      if (has(other)) bad.push(`${name} ${g}: offered as "${other}"`);
+    });
+    t.equal(bad.join('; '), '', `Open and movable are told apart (${FILTERED.length} named shapes)`);
+  }
+
+  // ---- 3d. a name the app writes can be typed back into the finder ----
+  // The reverse finder's matches are buttons that hand their chord to the
+  // chord finder, so every name it can write has to parse — including the
+  // spellings with a slash inside them (6/9, m/maj7), the symbols (m7♭5,
+  // 7♯9) and the brackets (m(add9)).
+  function testEveryChordNameParsesBack(t){
+    const bad = [];
+    GT.theory.CHORD_FORMULAS.forEach(f => {
+      ['C', 'F#', 'Bb'].forEach(root => {
+        const written = root + f.name;
+        const p = parseChordName(written);
+        if (!p){ bad.push(`"${written}" doesn't parse`); return; }
+        if (p.rootName !== root || p.formula.name !== f.name){
+          bad.push(`"${written}" came back as ${p.rootName}${p.formula.name}`);
+        }
+      });
+    });
+    t.equal(bad.join('; '), '', `Every chord name the app writes reads back (${GT.theory.CHORD_FORMULAS.length} types)`);
+  }
+
   // ---- 4. naming: what the app writes, it can read back ----
   function testTheory(t){
     const parses = (name, formula, root) => {
@@ -1375,6 +1444,8 @@
       ['Chord finder output is identifiable in reverse', testFinderOutputIsIdentifiable],
       ['Chord finder shows the everyday grips', testCanonicalGrips],
       ['Chord finder sorts common first and names the kind', testShapesAreSortedAndNamed],
+      ['Chord finder tells open shapes from movable ones', testTheShapeFilter],
+      ['Every chord name the app writes parses back', testEveryChordNameParsesBack],
       ['Theory: naming and identification', testTheory],
       ['Theory: one answer for what degree a note is', testDegreeNamesAgree],
       ['Fretboard: the pentatonic boxes are unchanged', testPentatonicBoxesAreUnchanged],

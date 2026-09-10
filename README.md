@@ -389,7 +389,21 @@ position (anything within reach of the nut) counts as one position, so a
 shape that happens to be all open strings never sorts ahead of the real open
 chord. Open-position shapes draw a nut, higher ones are labelled with their
 starting fret, and a shape built on a CAGED form says which one.
-Toggles sit above the results: dots can show **finger numbers** or **scale
+Every diagram names each sounding string off the end of the neck: the note
+it plays and what that note is in this chord (`B♭ ♭7`, `E 3`, `A R`), so
+you can see the shape and read the harmony off it at once. Chord tones are
+spelled the way their own degree writes them — the ♭7 of C7 is B♭, not A♯ —
+and a degree with no accidental of its own follows however the root is
+spelled. The cards carry no chord name: the whole page is one chord, so
+printing its name on all thirty diagrams says nothing. What a card does say
+is what's true of that shape alone — the CAGED form it's built on, and
+whether it's rootless.
+
+Toggles sit above the results: **shapes** narrows the list to **open**
+shapes (at least one open string: they ring, they're usually easier to
+hold, and they only work in the one place) or **movable** ones (no open
+strings, so the same grip slides along the neck to any root — the barres
+and the compact jazz grips); dots can show **finger numbers** or **scale
 degrees**; **shell voicings only** narrows the list to shells — the chord
 stripped to the notes that name it (root, the 3rd or the sus note standing in
 for it, and the 7th), dropping the plain 5th but keeping an altered one, with
@@ -412,7 +426,11 @@ selected fret again clears it; picking a different fret on the same string
 replaces the old selection, since a string only sounds one note at a time).
 Once one or more frets are selected, every chord name that fits — trying
 each selected note in turn as the root — is listed below, using the same
-chord-formula table as the chord finder. Then the roots that *aren't* there:
+chord-formula table as the chord finder. Each name is a button: clicking it
+opens that chord in the chord finder, so the two tabs run in a loop — this
+one tells you what the notes under your fingers add up to, that one shows
+every other way to play it. A rootless match hands over the chord itself
+(`A13`, not `A13 (no root)`), which the finder can look up like any other. Then the roots that *aren't* there:
 an extended chord played without its root, the 9th standing in for it, is
 named too and marked "(no root)", after the plainer readings — B F♯ C♯ G is
 A13 (no root) and nothing else, while C♯ E G B is C♯m7♭5 first and A9 (no
@@ -481,7 +499,7 @@ not at all, the whole progression is on the neck, the legend names exactly
 what's drawn, a note two chords share carries a colour for each of them, and
 playing through a progression doesn't walk the hand along the neck.
 
-Two groups are guarded. The first five run over the pure modules; the first
+Two groups are guarded. The first seven run over the pure modules; the first
 two of those over a fixed list of chords (C, A, G, E, D, Cm, Am, Gm, Em, Dm,
 Ab, Gb, C#, A9, E9, C7, D7, Cm7, CM7):
 
@@ -493,8 +511,18 @@ Ab, Gb, C#, A9, E9, C7, D7, Cm7, CM7):
    voicing is fed back through the chord-identification code, which has to
    recognise it as the chord it came from — so the two halves of the app
    can't drift apart.
-
-3. **The chord finder shows the everyday grips.** Some sixty method-book
+3. **Open shapes and movable ones are told apart.** The filter runs inside
+   the search rather than over its results, so asking for open shapes gives a
+   list full of them rather than the two or three that survived the general
+   ranking. Every shape offered under a filter has to belong to it (no open
+   string, or at least one), still read back as the chord it came from, and
+   six named grips must show under their own heading and not the other one.
+4. **Every chord name the app writes parses back.** The reverse finder's
+   matches are buttons that hand their chord to the finder, so each of the
+   thirty chord types, on three roots, has to survive being written out and
+   read again — the slashes (`6/9`, `m/maj7`), the symbols (`m7♭5`, `7♯9`)
+   and the brackets (`m(add9)`) included.
+5. **The chord finder shows the everyday grips.** Some sixty method-book
    shapes — open chords, E- and A-shape barres, the open 7ths, power chords,
    the funk 9ths, the 6/9 shapes with and without their 3rd, the Hendrix
    chord, the jazz grips, the rootless 13th — must come back, and for the
@@ -505,12 +533,12 @@ Ab, Gb, C#, A9, E9, C7, D7, Cm7, CM7):
    the bottom four strings of a barre are not), checks every common shape
    reads before every other, and that the styles a shape claims follow from
    its kind and its chord type.
-4. **Naming round-trips.** What the app writes (`B°`, `CM7`, `Bø`, `CmM7`)
+6. **Naming round-trips.** What the app writes (`B°`, `CM7`, `Bø`, `CmM7`)
    its chord finder can read back, chords built from names keep the right
    notes, and identification names both a C6 and an Am7 for C E G A — and
    A6/9 first for A E B F♯, a rootless A13 and nothing else for B F♯ C♯ G,
    nothing rootless for E G B or C E G D.
-5. **The genre library and the presets are well-formed.** Every progression
+7. **The genre library and the presets are well-formed.** Every progression
    has a key and parseable chords, a "twelve-bar" has twelve bars, hits sit
    inside their grid, a six-slot bar declares itself a waltz, every chord can
    be voiced the way its rhythm asks, lead lines stay on the neck and inside

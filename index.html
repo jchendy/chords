@@ -295,7 +295,7 @@
   .caged-overview{ background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:14px 16px 10px; margin-top:12px; }
   .caged-overview-title{ margin:0 0 6px; font-size:.66rem; text-transform:uppercase; letter-spacing:.1em; color:var(--muted2); font-weight:700; }
   .caged-overview .caged-legend{ margin-top:8px; }
-  .diagram-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:14px; margin-top:16px; }
+  .diagram-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(178px, 1fr)); gap:14px; margin-top:16px; }
   .diagram-card{ background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:10px; text-align:center; cursor:pointer; transition:border-color .12s ease; }
   .diagram-card:hover{ border-color:var(--muted); }
   .diagram-card:focus-visible{ outline:2px solid var(--muted); outline-offset:2px; }
@@ -315,6 +315,9 @@
   .diagram-finger{ fill:var(--bg); font:600 9px Inter,system-ui,sans-serif; }
   .diagram-finger.small{ font-size:7.5px; }
   .diagram-open-degree{ fill:var(--muted); font:600 8px Inter,system-ui,sans-serif; }
+  /* the note each string plays, and what it is in the chord, off the end of the neck */
+  .diagram-note-name{ fill:var(--ink); font:600 8.5px Inter,system-ui,sans-serif; }
+  .diagram-note-degree{ fill:var(--muted); font:500 8px Inter,system-ui,sans-serif; }
   .diagram-mute{ fill:var(--muted); font:500 11px Inter,system-ui,sans-serif; }
   .diagram-open{ fill:none; stroke:#bfb7a8; stroke-width:1.6; }
   .diagram-open.diagram-root{ fill:none; stroke:var(--ink); }
@@ -322,7 +325,10 @@
   /* ---------- reverse chord finder ---------- */
   .selected-notes{ margin:0; font-size:.9rem; color:var(--muted); }
   .chord-match-list{ display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; min-height:28px; }
-  .chord-match{ background:var(--panel); border:1px solid var(--line2); border-radius:8px; padding:6px 14px; font-family:Fraunces,Georgia,serif; font-weight:600; font-size:1.05rem; }
+  /* each match is a button: it opens that chord in the finder */
+  .chord-match{ background:var(--panel); border:1px solid var(--line2); border-radius:8px; padding:6px 14px; font-family:Fraunces,Georgia,serif; font-weight:600; font-size:1.05rem; color:var(--ink); cursor:pointer; transition:border-color .12s ease; }
+  .chord-match:hover{ border-color:var(--muted); }
+  .chord-match:focus-visible{ outline:2px solid var(--muted); outline-offset:2px; }
   .chord-match-list .diagram-empty{ padding:4px 0; text-align:left; }
   .reverse-click-target{ cursor:pointer; }
   .reverse-click-target .rct-hit{ fill:transparent; }
@@ -748,7 +754,16 @@
       </div>
     </div>
     <div class="toolbar">
-      <!-- nothing to label until something is drawn, so this waits for a chord -->
+      <!-- nothing to filter or label until something is drawn, so these wait for a chord -->
+      <div class="tb-group" id="shapesRow" hidden>
+        <span class="tb-lbl">Shapes</span>
+        <span class="segmented" id="shapesGroup">
+          <button type="button" class="seg-btn active" data-value="all">All</button>
+          <button type="button" class="seg-btn" data-value="open">Open</button>
+          <button type="button" class="seg-btn" data-value="movable">Movable</button>
+        </span>
+        <button type="button" class="info-dot" data-tip="A movable shape uses no open strings, so the same grip slides along the neck to any root — the barre chords and the compact jazz grips. An open shape uses at least one, which makes it ring and usually makes it easier to hold, but ties it to the one place on the neck.">i</button>
+      </div>
       <div class="tb-group" id="labelModeRow" hidden>
         <span class="tb-lbl">Dots show</span>
         <span class="segmented" id="labelModeGroup">

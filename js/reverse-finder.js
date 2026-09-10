@@ -70,15 +70,27 @@
       return;
     }
     const seenLabels = new Set();
-    const labels = [];
+    const found = [];
     matches.forEach(m => {
-      const label = NOTE_NAMES_SHARP[m.rootPc] + m.formula.name + (m.rootless ? ' (no root)' : '');
+      const name = NOTE_NAMES_SHARP[m.rootPc] + m.formula.name;
+      const label = name + (m.rootless ? ' (no root)' : '');
       if (seenLabels.has(label)) return;
       seenLabels.add(label);
-      labels.push(label);
+      found.push({ name, label });
     });
-    reverseMatchesEl.innerHTML = labels.map(l => `<span class="chord-match">${l}</span>`).join('');
+    // Each name is a way in to the chord finder: this tab tells you what the
+    // notes under your fingers add up to, and that one every other way to
+    // play it. A rootless match hands over the chord itself — the finder has
+    // that reading too, and shows it alongside the ones with a root.
+    reverseMatchesEl.innerHTML = found.map(f =>
+      `<button type="button" class="chord-match" data-chord="${f.name}"` +
+      ` title="Show every way to play ${f.name}">${f.label}</button>`).join('');
   }
+
+  reverseMatchesEl.addEventListener('click', e => {
+    const btn = e.target.closest('.chord-match');
+    if (btn) GT.chordFinder.show(btn.dataset.chord);
+  });
 
   reverseClearBtn.addEventListener('click', () => {
     reverseSelection = new Array(6).fill(null);

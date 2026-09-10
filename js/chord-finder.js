@@ -4,7 +4,7 @@
   'use strict';
   const GT = (window.GT = window.GT || {});
 
-  const { parseChordName } = GT.theory;
+  const { parseChordName, NOTE_NAMES_SHARP, NOTE_NAMES_FLAT } = GT.theory;
   const { STRING_TUNING, FRET_COUNT, CAGED_COLORS, cagedShapeMatch, cagedTriadBoard } = GT.fretboard;
 
   const chordFinderInput = document.getElementById('chordFinderInput');
@@ -17,7 +17,10 @@
   const shellOnlyToggle = document.getElementById('shellOnlyToggle');
   const labelModeGroup = document.getElementById('labelModeGroup');
   const labelModeRow = document.getElementById('labelModeRow');
+  const shapesGroup = document.getElementById('shapesGroup');
+  const shapesRow = document.getElementById('shapesRow');
   let labelMode = 'fingers';        // 'fingers' | 'degrees'
+  let shapeFilter = 'all';          // 'all' | 'open' | 'movable'
   const MAX_VOICINGS = 16;          // enough for the whole neck plus a few alternatives
   const EXTRA_VOICINGS = 6;         // room for grips the containment rule would otherwise hide
   const EXTRAS_PER_KIND = 4;        // ...and for each kind of everyday grip it hid
@@ -182,6 +185,12 @@
   // every reasonably-common way to play this chord within a 4-fret span,
   // scored by how playable/idiomatic the shape is
   function findChordVoicings(rootPc, formula, opts = {}){
+    // Which shapes to look for at all. A shape with no open strings is
+    // movable — the same grip slides up the neck to any root — and one with
+    // an open string is not, so this is a filter on the search rather than on
+    // its results: asked for open shapes, the list should be full of them
+    // rather than showing the two or three that survived the general ranking.
+    const wantOpen = opts.strings === 'open', wantMovable = opts.strings === 'movable';
     const shell = opts.shellOnly ? shellIntervals(formula) : null;
     const shellPcs = shell ? new Set(shell.map(iv => (rootPc + iv) % 12)) : null;
     const threeNoteOnly = !!opts.threeNoteOnly && !shell;
@@ -275,6 +284,8 @@
           const bassPc = (STRING_TUNING[bass.string] + bass.fret) % 12;
           if (opts.bassPc !== undefined && bassPc !== opts.bassPc) return;   // not the slash chord asked for
           const openCount = cells.filter(c => c.fret === 0).length;
+          if (wantOpen && !openCount) return;
+          if (wantMovable && openCount) return;
           const startFretEarly = frettedOnly.length ? Math.min(...frettedOnly) : 0;
           // open strings only really belong to grips down near the nut —
           // higher up they're a specialty voicing, not an everyday shape
@@ -599,9 +610,18 @@
     return DEGREE_NAMES[interval];
   }
 
+  // Spell a chord tone the way its own degree writes it: the ♭7 of C7 is Bb,
+  // not A#, and the ♭3 of Cm is Eb. A degree with no accidental of its own —
+  // the 6 of a 6/9, the 9 — follows however the root is spelled.
+  function noteNameFor(pc, degree, rootName){
+    const flat = degree.includes('\u266d') || (!degree.includes('\u266f') && (rootName || '').includes('b'));
+    return (flat ? NOTE_NAMES_FLAT : NOTE_NAMES_SHARP)[pc]
+      .replace('#', '\u266f').replace('b', '\u266d');
+  }
+
   // small chord-diagram SVG for one voicing (same visual language as the main fretboard)
   // `labelMode` is 'fingers' (1-4) or 'degrees' (R, 3, 5, ♭7 ...)
-  function buildDiagramSVG(cells, rootPc, fingering, labelMode = 'fingers', formula = null){
+  function buildDiagramSVG(cells, rootPc, fingering, labelMode = 'fingers', formula = null, rootName = ''){
     const frettedPositives = cells.map(c => c.fret).filter(f => f > 0);
     const maxFret = frettedPositives.length ? Math.max(...frettedPositives) : 0;
     const minFret = frettedPositives.length ? Math.min(...frettedPositives) : 0;
@@ -610,8 +630,9 @@
     const numFrets = 4;
     const cellByString = new Map(cells.map(c => [c.string, c]));
 
-    const W = 150, H = 155;
-    const padL = 26, padR = 12, padT = 30, padB = 8;
+    // The right margin is wide because every sounding string is named there.
+    const W = 180, H = 155;
+    const padL = 26, padR = 44, padT = 30, padB = 8;
     const nutX = padL;
     const colW = (W - padL - padR) / numFrets;
     const rowH = (H - padT - padB) / 5;
@@ -669,6 +690,20 @@
       }
     }
 
+    // Every sounding string named off the end of the neck: the note it plays,
+    // and what that note is in this chord. The dots can only carry one of the
+    // two at a time, and which note is under a finger is the thing a chord
+    // diagram otherwise leaves you to work out.
+    for (let s = 0; s < 6; s++){
+      const c = cellByString.get(s);
+      if (!c) continue;
+      const pc = (STRING_TUNING[s] + c.fret) % 12;
+      const degree = degreeNameFor((pc - rootPc + 12) % 12, formula);
+      const y = stringY(s) + 3;
+      els.push(`<text class="diagram-note-name" x="${W - padR + 5}" y="${y}">${noteNameFor(pc, degree, rootName)}</text>`);
+      els.push(`<text class="diagram-note-degree" x="${W - 3}" y="${y}" text-anchor="end">${degree}</text>`);
+    }
+
     return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">${els.join('')}</svg>`;
   }
 
@@ -703,9 +738,11 @@
       triadOnlyRow.hidden = true;
       shellOnlyRow.hidden = true;
       labelModeRow.hidden = true;
+      shapesRow.hidden = true;
       return;
     }
     labelModeRow.hidden = false;
+    shapesRow.hidden = false;
     const parsed = parseChordName(raw);
     if (!parsed){
       chordFinderError.textContent = `Couldn't recognize "${raw.trim()}" as a chord name.`;
@@ -713,6 +750,7 @@
       cagedOverviewEl.innerHTML = '';
       triadOnlyRow.hidden = true;
       shellOnlyRow.hidden = true;
+      shapesRow.hidden = true;
       return;
     }
     chordFinderError.textContent = '';
@@ -729,24 +767,33 @@
     const voicings = findChordVoicings(parsed.rootPc, parsed.formula, {
       threeNoteOnly: isTriad && triadOnlyToggle.checked,
       shellOnly,
+      strings: shapeFilter,
       bassPc: parsed.bassPc,
     });
     const chordLabel = parsed.rootName + parsed.formula.name + (parsed.bassName ? '/' + parsed.bassName : '');
     if (!voicings.length){
-      const what = shellOnly ? `shell voicing for ${chordLabel}` : `shape for ${chordLabel}`;
-      chordFinderResults.innerHTML = `<p class="diagram-empty">No playable ${what} within a comfortable stretch.</p>`;
+      const what = shellOnly ? 'shell voicing'
+        : shapeFilter === 'open' ? 'shape using open strings'
+        : shapeFilter === 'movable' ? 'movable shape' : 'shape';
+      chordFinderResults.innerHTML =
+        `<p class="diagram-empty">No playable ${what} for ${chordLabel} within a comfortable stretch.</p>`;
       return;
     }
     shownVoicings = voicings;
     // Two sections: the common ways to play this chord, then the rest. The
     // list is already sorted that way, so the headings go in where the
     // sections meet; a section nobody is in gets no heading.
-    const card = (v, i) => `
+    // The card says only what's true of this shape and not of the others —
+    // the whole page is one chord, so its name on every diagram is noise.
+    const card = (v, i) => {
+      const notes = [v.caged ? `${v.caged} shape` : '', v.rootless ? 'no root' : ''].filter(Boolean);
+      return `
       <div class="diagram-card" role="button" tabindex="0" data-voicing="${i}"
            aria-label="Play ${chordLabel}, shape ${i + 1}" title="${voicingTip(v)}">
-        ${buildDiagramSVG(v.cells, parsed.rootPc, v.fingering, labelMode, parsed.formula)}
-        <p class="diagram-caption">${chordLabel}${v.caged ? `<span class="diagram-shape">${v.caged} shape</span>` : ''}${v.rootless ? '<span class="diagram-shape">no root</span>' : ''}</p>
+        ${buildDiagramSVG(v.cells, parsed.rootPc, v.fingering, labelMode, parsed.formula, parsed.rootName)}
+        ${notes.length ? `<p class="diagram-caption">${notes.map(n => `<span class="diagram-shape">${n}</span>`).join('')}</p>` : ''}
       </div>`;
+    };
     const heading = (text, n) => `<h3 class="diagram-section">${text} <span>${n}</span></h3>`;
     const common = voicings.filter(v => v.common), rare = voicings.filter(v => !v.common);
     chordFinderResults.innerHTML =
@@ -814,18 +861,28 @@
       chordFinderResults.addEventListener('keydown', e => {
         if (e.key === 'Enter' || e.key === ' ') onCardActivate(e);
       });
-      labelModeGroup.querySelectorAll('.seg-btn').forEach(btn => {
+      const segmented = (group, set) => group.querySelectorAll('.seg-btn').forEach(btn => {
         btn.addEventListener('click', () => {
-          labelModeGroup.querySelectorAll('.seg-btn').forEach(b => b.classList.toggle('active', b === btn));
-          labelMode = btn.dataset.value;
+          group.querySelectorAll('.seg-btn').forEach(b => b.classList.toggle('active', b === btn));
+          set(btn.dataset.value);
           runChordFinder();
         });
       });
+      segmented(labelModeGroup, v => { labelMode = v; });
+      segmented(shapesGroup, v => { shapeFilter = v; });
     },
     // Arriving on the tab with nothing typed, the field is the only thing to
     // do — so put the cursor in it. A field with a chord in it is left alone.
     focus(){
       if (!chordFinderInput.value.trim()) chordFinderInput.focus();
+    },
+    // Somewhere else has named a chord — the reverse finder, where you've just
+    // been told what the notes you picked add up to — and wants this tab to
+    // show every way of playing it.
+    show(name){
+      chordFinderInput.value = name;
+      GT.tabs.goTo('finder');
+      runChordFinder();
     },
     // exposed for reuse and for checking shapes outside the UI
     computeFingering, findChordVoicings, buildDiagramSVG, shellIntervals, strum, ARPEGGIO_GAP,
