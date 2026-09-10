@@ -602,10 +602,13 @@
   // What to call an interval above the root, in the context of this chord —
   // a 9th chord's 2nd is a "9", a plain sus2's is just a "2".
   const DEGREE_NAMES = ['R', '\u266d9', '2', '\u266d3', '3', '4', '\u266d5', '5', '\u266f5', '6', '\u266d7', '7'];
+  // A chord named for one extension carries the ones under it: an 11 chord
+  // has a 9 in it, a 13 has both. So the 2nd of a B♭13 is its 9th and reads
+  // that way, where the 2nd of a plain sus2 is a 2.
   function degreeNameFor(interval, formula){
     const n = formula ? formula.name : '';
-    if (interval === 2 && n.includes('9')) return '9';
-    if (interval === 5 && n.includes('11')) return '11';
+    if (interval === 2 && /9|11|13/.test(n)) return '9';
+    if (interval === 5 && /11|13/.test(n)) return '11';
     if (interval === 9 && n.includes('13')) return '13';
     return DEGREE_NAMES[interval];
   }
@@ -746,8 +749,10 @@
   }
 
   // What the last search drew, in the order the cards show it — runChordFinder
-  // fills it and a click on a card reads it back to strum the right shape.
+  // fills these and a click on a card reads them back, to sound the right
+  // shape or to hand it to another tab.
   let shownVoicings = [];
+  let shownChord = '';
 
   function runChordFinder(){
     const raw = chordFinderInput.value;
@@ -800,6 +805,7 @@
       return;
     }
     shownVoicings = voicings;
+    shownChord = chordLabel;
     // Two sections: the common ways to play this chord, then the rest. The
     // list is already sorted that way, so the headings go in where the
     // sections meet; a section nobody is in gets no heading.
@@ -810,6 +816,10 @@
       return `
       <div class="diagram-card" role="button" tabindex="0" data-voicing="${i}"
            aria-label="Play ${chordLabel}, shape ${i + 1}" title="${voicingTip(v)}">
+        <button type="button" class="card-menu-btn" aria-label="More for this shape" aria-expanded="false">⋮</button>
+        <div class="card-menu" hidden>
+          <button type="button" class="card-menu-item" data-act="ear">Open in ear training</button>
+        </div>
         ${buildDiagramSVG(v.cells, parsed.rootPc, v.fingering, labelMode, parsed.formula, parsed.rootName)}
         ${notes.length ? `<p class="diagram-caption">${notes.map(n => `<span class="diagram-shape">${n}</span>`).join('')}</p>` : ''}
       </div>`;
@@ -898,27 +908,80 @@
     if (hit) twinsOf(hit).forEach(g => g.classList.toggle('lit', on));
   }
 
-  function onCardActivate(e){
-    const card = e.target.closest('.diagram-card');
-    if (!card) return;
+  // ---- the menu on a card -------------------------------------------------
+  // One shape's worth of things that aren't "play it": for now, handing it to
+  // the ear trainer. It lives on the card rather than in a row of its own
+  // because what it acts on is this shape and no other.
+  let openMenu = null;
+  function closeCardMenu(){
+    if (!openMenu) return;
+    openMenu.hidden = true;
+    const btn = openMenu.previousElementSibling;
+    if (btn) btn.setAttribute('aria-expanded', 'false');
+    openMenu = null;
+  }
+  function toggleCardMenu(btn){
+    const menu = btn.nextElementSibling;
+    const wasOpen = menu === openMenu;
+    closeCardMenu();
+    if (wasOpen) return;
+    menu.hidden = false;
+    btn.setAttribute('aria-expanded', 'true');
+    openMenu = menu;
+  }
+
+  // Diagrams sound when you click them, wherever they are drawn: one note of
+  // the shape on its own, or the shape itself, three ways over. `voicingsOf`
+  // is the list a card's data-voicing indexes into — the finder draws a
+  // gridful of them, the ear trainer one at a time.
+  // `handled` gets first refusal on a click, for whatever else lives on a
+  // card — the finder's own menu sits on one.
+  function soundOnClick(container, voicingsOf, handled){
+    const activate = e => {
+      const card = e.target.closest('.diagram-card');
+      if (!card) return;
+      if (handled && handled(e, card)) return;
+      const v = voicingsOf()[Number(card.dataset.voicing)];
+      if (!v) return;
+      e.preventDefault();
+      const hit = e.target.closest && e.target.closest('.note-hit');
+      if (hit){
+        playOne(Number(hit.dataset.string), Number(hit.dataset.fret));
+        flash(hit);
+        return;
+      }
+      tour(v.cells);
+      card.classList.remove('rang');
+      void card.offsetWidth;            // restart the flash animation
+      card.classList.add('rang');
+    };
+    container.addEventListener('click', activate);
+    container.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') activate(e);
+    });
+    container.addEventListener('mouseover', e => litFromEvent(e, true));
+    container.addEventListener('mouseout', e => litFromEvent(e, false));
+  }
+
+  function flash(hit){
+    twinsOf(hit).forEach(g => {
+      g.classList.remove('struck');
+      void g.getBoundingClientRect();     // restart the flash
+      g.classList.add('struck');
+    });
+  }
+
+  // the card's menu, before the card itself gets to sound
+  function onCardMenu(e, card){
+    const menuBtn = e.target.closest('.card-menu-btn');
+    if (menuBtn){ e.stopPropagation(); toggleCardMenu(menuBtn); return true; }
+    const item = e.target.closest('.card-menu-item');
+    if (!item) return false;
+    e.stopPropagation();
+    closeCardMenu();
     const v = shownVoicings[Number(card.dataset.voicing)];
-    if (!v) return;
-    e.preventDefault();
-    // a note of the shape, if that's what was pressed — otherwise the shape
-    const hit = e.target.closest && e.target.closest('.note-hit');
-    if (hit){
-      playOne(Number(hit.dataset.string), Number(hit.dataset.fret));
-      twinsOf(hit).forEach(g => {
-        g.classList.remove('struck');
-        void g.getBoundingClientRect();     // restart the flash
-        g.classList.add('struck');
-      });
-      return;
-    }
-    tour(v.cells);
-    card.classList.remove('rang');
-    void card.offsetWidth;            // restart the flash animation
-    card.classList.add('rang');
+    if (item.dataset.act === 'ear' && v) GT.earTraining.show(shownChord, v);
+    return true;
   }
 
   GT.chordFinder = {
@@ -934,12 +997,10 @@
       runChordFinder();          // draw the empty state
       triadOnlyToggle.addEventListener('change', runChordFinder);
       shellOnlyToggle.addEventListener('change', runChordFinder);
-      chordFinderResults.addEventListener('click', onCardActivate);
-      chordFinderResults.addEventListener('mouseover', e => litFromEvent(e, true));
-      chordFinderResults.addEventListener('mouseout', e => litFromEvent(e, false));
-      chordFinderResults.addEventListener('keydown', e => {
-        if (e.key === 'Enter' || e.key === ' ') onCardActivate(e);
-      });
+      soundOnClick(chordFinderResults, () => shownVoicings, onCardMenu);
+      // a menu closes on anything else, the way the site menu does
+      document.addEventListener('click', closeCardMenu);
+      document.addEventListener('keydown', e => { if (e.key === 'Escape') closeCardMenu(); });
       const segmented = (group, set) => group.querySelectorAll('.seg-btn').forEach(btn => {
         btn.addEventListener('click', () => {
           group.querySelectorAll('.seg-btn').forEach(b => b.classList.toggle('active', b === btn));
@@ -966,5 +1027,8 @@
     // exposed for reuse and for checking shapes outside the UI
     computeFingering, findChordVoicings, buildDiagramSVG, shellIntervals, strum, ARPEGGIO_GAP,
     describeVoicing, FAMILIES,
+    // ...and for the ear trainer, which draws the same diagrams, sounds them
+    // the same way, and writes a chord's notes with the same words
+    soundOnClick, tour, playOne, degreeNameFor, noteNameFor, voicingTip,
   };
 })();

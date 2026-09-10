@@ -7,15 +7,18 @@
   GT.stage.init();
   GT.chordFinder.init();
   GT.reverseFinder.init();
+  GT.earTraining.init();
   GT.genreExamples.init();
   GT.tabs.init({
     // whichever tab you're leaving, don't let it keep playing
-    onSwitch: () => { GT.practice.stop(); GT.genreExamples.stop(); },
+    onSwitch: () => { GT.practice.stop(); GT.genreExamples.stop(); GT.earTraining.stop(); },
     // neither of the finders' necks can measure itself while its page is
-    // hidden, and an empty chord finder wants the cursor in its field
+    // hidden, an empty chord finder wants the cursor in its field, and the
+    // ear trainer has nothing to drill until it rolls something
     onShow: {
       finder: () => GT.chordFinder.focus(),
       reverse: () => GT.reverseFinder.refresh(),
+      ear: () => GT.earTraining.refresh(),
       genres: () => GT.genreExamples.refresh(),
     },
   });

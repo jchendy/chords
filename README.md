@@ -1,6 +1,6 @@
 # Jeff's Guitar Tools
 
-A single-page, dependency-free site with three tabs under one header:
+A single-page, dependency-free site with four tabs under one header:
 
 - **CAGED practice** — generates random diatonic chord progressions and
   plays them back with a synthesized piano and optional hi-hat click.
@@ -9,6 +9,8 @@ A single-page, dependency-free site with three tabs under one header:
 - **Reverse chord finder** — click frets on an interactive fretboard and
   see what chord name(s) the selected notes could be; hear them together as
   a chord or one at a time as an arpeggio.
+- **Ear training** — one chord shape at a time, and a drill: it sounds a
+  note from somewhere inside the shape, and you say which one it was.
 - **Genre examples** — pick a style, then a rhythm or a lead line, and read
   the tab while you hear it played. It's experimental, and lives behind the
   menu at the right end of the header (with a mailto link) rather than among
@@ -432,6 +434,12 @@ the named note underneath, so only shapes with that note on their lowest
 sounding string are offered — and the note can be one from outside the
 chord, as in `C/D`.
 
+Each card carries a **⋮** menu, for the things you'd do to one shape rather
+than to the chord: at the moment that's "Open in ear training", which hands
+that exact grip to the drill. The button only appears on hover, since thirty
+of them showing at once would be thirty things competing with the diagrams —
+except on a touch screen, where nothing hovers and it always shows.
+
 ## Reverse chord finder
 
 Click frets on the interactive fretboard to select notes (clicking a
@@ -451,6 +459,34 @@ root) after. Only chords of five tones or more are read that way, since a
 rootless 7th is just a triad. "Play chord" strums what you've picked and
 "Play arpeggio" rolls it, both on the same piano voice the chord finder
 uses.
+
+## Ear training
+
+One chord, one shape, and a drill over the notes in it. The shape is the
+chord finder's own — same search, same diagram, same sounds — so clicking
+it plays the chord three ways over, and clicking a dot or the name beside it
+plays that one note.
+
+Below the shape, the drill: it picks a note from the chord and plays it, and
+you say which one it was. **Play the note** repeats it, **Play the chord**
+strums the whole shape for context, and the answer buttons are the notes of
+the chord, each with its name and what it is in the chord (`C` / `R`, `E♭` /
+`♭3`). One button per note rather than per string — a shape with its root on
+two strings is still one answer. Get it right and it says so, then picks the
+next note and plays it, so a drill keeps going without a press in between;
+get it wrong and it says that instead and leaves the same note running. The
+next note is never the one you just answered: hearing the same note twice
+running teaches nothing, and reads as though the drill has stalled.
+
+A note sounds where it actually sits in the shape rather than at some
+neutral octave. A 3rd on the top string and a 3rd buried in the middle of
+the chord are different things to hear, and telling them apart is the point.
+
+**Random chord** rolls one — the everyday triads and sevenths plus the
+colours you meet soon after, on any of the twelve roots — and starts it on
+one of the first few shapes rather than the open one every time. You can
+also type a chord name, and the **Shape** arrows walk through every way of
+playing it, the same list the chord finder shows.
 
 ## Usage
 
@@ -513,7 +549,7 @@ not at all, the whole progression is on the neck, the legend names exactly
 what's drawn, a note two chords share carries a colour for each of them, and
 playing through a progression doesn't walk the hand along the neck.
 
-Two groups are guarded. The first seven run over the pure modules; the first
+Two groups are guarded. The first eight run over the pure modules; the first
 two of those over a fixed list of chords (C, A, G, E, D, Cm, Am, Gm, Em, Dm,
 Ab, Gb, C#, A9, E9, C7, D7, Cm7, CM7):
 
@@ -547,12 +583,18 @@ Ab, Gb, C#, A9, E9, C7, D7, Cm7, CM7):
    the bottom four strings of a barre are not), checks every common shape
    reads before every other, and that the styles a shape claims follow from
    its kind and its chord type.
-6. **Naming round-trips.** What the app writes (`B°`, `CM7`, `Bø`, `CmM7`)
+6. **The ear trainer's answers cover its shape.** The drill offers one
+   button per note and sounds a note from somewhere inside the shape, so the
+   two halves have to agree: every note is answerable, none is offered
+   twice, the row reads root upwards, and each answer says what the diagram
+   says beside the same string. It also pins the open C's three answers, and
+   that a 13th chord's 2nd reads as its 9th.
+7. **Naming round-trips.** What the app writes (`B°`, `CM7`, `Bø`, `CmM7`)
    its chord finder can read back, chords built from names keep the right
    notes, and identification names both a C6 and an Am7 for C E G A — and
    A6/9 first for A E B F♯, a rootless A13 and nothing else for B F♯ C♯ G,
    nothing rootless for E G B or C E G D.
-7. **The genre library and the presets are well-formed.** Every progression
+8. **The genre library and the presets are well-formed.** Every progression
    has a key and parseable chords, a "twelve-bar" has twelve bars, hits sit
    inside their grid, a six-slot bar declares itself a waltz, every chord can
    be voiced the way its rhythm asks, lead lines stay on the neck and inside
@@ -633,6 +675,7 @@ by what each part does:
 | `stage.js` | The practice tab's chrome: the Set up sheet, the phone's controls toggle, the progression name in the chart head, the beat line, the draggable position window, and the site menu. Reads what the other modules draw; keeps no state. |
 | `chord-finder.js` | Chord finder tab: voicing search, fingering, chord diagrams. |
 | `reverse-finder.js` | Reverse chord finder tab: click targets over the shared neck, and the name lookup. |
+| `ear-training.js` | Ear training tab: the shape on show, and the drill over its notes. Draws and sounds the chord finder's diagrams from the chord finder's own code, so the two tabs can't drift apart. |
 | `tooltips.js` | The (i) info bubbles. |
 | `tabs.js` | Tab switching, plus the URL fragment and page title that go with each tab. |
 | `main.js` | Boots each tab and wires the header together. |

@@ -591,6 +591,74 @@
     t.equal(bad.join('; '), '', `Every chord name the app writes reads back (${GT.theory.CHORD_FORMULAS.length} types)`);
   }
 
+  // ---- 3e. the ear trainer's answers cover its shape ----
+  // The drill offers one button per note of the shape and sounds a note from
+  // somewhere inside it, so the two halves have to agree: every note is
+  // answerable, none is offered twice, the row reads root upwards, and every
+  // answer says what the diagram says beside the same string.
+  function testTheEarTrainerCoversItsShape(t){
+    const bad = [];
+    const { notesOf } = GT.earTraining;
+    const { degreeNameFor } = GT.chordFinder;
+    const pcOf = c => (STRING_TUNING[c.string] + c.fret) % 12;
+    ['C', 'Am7', 'G7', 'F', 'A6/9', 'E5', 'Bb', 'D13', 'A13'].forEach(name => {
+      const p = parseChordName(name);
+      findChordVoicings(p.rootPc, p.formula).slice(0, 8).forEach(v => {
+        const g = grip(v.cells);
+        const notes = notesOf(v.cells, p.rootPc, p.formula, p.rootName);
+        const pcs = new Set(v.cells.map(pcOf));
+        if (notes.length !== pcs.size) bad.push(`${name} ${g}: ${notes.length} answers for ${pcs.size} notes`);
+        if (new Set(notes.map(n => n.pc)).size !== notes.length) bad.push(`${name} ${g}: a note is offered twice`);
+        pcs.forEach(pc => { if (!notes.some(n => n.pc === pc)) bad.push(`${name} ${g}: no answer for pitch ${pc}`); });
+        // the row reads as the chord is spelled: root, then the tones in
+        // order, then whatever sits above the octave
+        if (notes.some(n => n.interval === 0) && notes[0].interval !== 0)
+          bad.push(`${name} ${g}: the root doesn't read first`);
+        const ext = n => /^(9|11|13)$/.test(n.degree);
+        for (let i = 1; i < notes.length; i++){
+          const a = notes[i - 1], b = notes[i];
+          if (ext(a) && !ext(b)) bad.push(`${name} ${g}: the ${b.degree} reads after the ${a.degree}`);
+          else if (ext(a) === ext(b) && b.interval < a.interval) bad.push(`${name} ${g}: ${b.degree} reads before ${a.degree}`);
+        }
+        const root = notes.find(n => n.interval === 0);
+        if (root && root.degree !== 'R') bad.push(`${name} ${g}: the root reads "${root.degree}"`);
+        notes.forEach(n => {
+          if (!n.cells.length){ bad.push(`${name} ${g}: ${n.name} has nowhere to sound from`); return; }
+          n.cells.forEach(c => {
+            if (pcOf(c) !== n.pc) bad.push(`${name} ${g}: ${n.name} points at a fret that isn't it`);
+          });
+          if (n.degree !== degreeNameFor(n.interval, p.formula)) bad.push(`${name} ${g}: ${n.name} is labelled ${n.degree}`);
+        });
+        // and every string of the shape is inside one of the answers, so the
+        // note the drill sounds is always one you can name
+        v.cells.forEach(c => {
+          if (!notes.some(n => n.cells.some(x => x.string === c.string && x.fret === c.fret)))
+            bad.push(`${name} ${g}: string ${c.string} belongs to no answer`);
+        });
+      });
+    });
+    // An extension names the ones below it: the 2nd of a 13th chord is its
+    // 9th, and reading it as a 2 made a B♭13 offer "C 2" beside "G 13".
+    const spelled = name => {
+      const p = parseChordName(name);
+      const v = findChordVoicings(p.rootPc, p.formula)[0];
+      return v ? notesOf(v.cells, p.rootPc, p.formula, p.rootName).map(n => n.degree).join(' ') : '(none)';
+    };
+    const thirteenth = spelled('Bb13');
+    if (thirteenth.includes(' 2')) bad.push(`Bb13 reads its 9th as a 2 ("${thirteenth}")`);
+    if (spelled('Csus2') !== 'R 2 5') bad.push(`Csus2 reads "${spelled('Csus2')}", not its plain 2`);
+    // ...and the 9th of a 9th chord reads last, not second
+    if (spelled('C9') !== 'R 3 ♭7 9') bad.push(`C9 reads "${spelled('C9')}"`);
+
+    // the shape everyone knows, spelled out
+    const c = parseChordName('C');
+    const open = findChordVoicings(c.rootPc, c.formula).find(v => grip(v.cells) === 'x-3-2-0-1-0');
+    const answers = open ? notesOf(open.cells, c.rootPc, c.formula, c.rootName)
+      .map(n => `${n.name} ${n.degree}`).join(', ') : '(no open C)';
+    if (answers !== 'C R, E 3, G 5') bad.push(`the open C offers "${answers}"`);
+    t.equal(bad.join('; '), '', 'Every note of a shape is exactly one answer in the drill');
+  }
+
   // ---- 4. naming: what the app writes, it can read back ----
   function testTheory(t){
     const parses = (name, formula, root) => {
@@ -1446,6 +1514,7 @@
       ['Chord finder sorts common first and names the kind', testShapesAreSortedAndNamed],
       ['Chord finder tells open shapes from movable ones', testTheShapeFilter],
       ['Every chord name the app writes parses back', testEveryChordNameParsesBack],
+      ['Ear trainer: every note of a shape is one answer', testTheEarTrainerCoversItsShape],
       ['Theory: naming and identification', testTheory],
       ['Theory: one answer for what degree a note is', testDegreeNamesAgree],
       ['Fretboard: the pentatonic boxes are unchanged', testPentatonicBoxesAreUnchanged],

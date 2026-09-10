@@ -27,6 +27,7 @@
     color-scheme: dark;
     --bg:#0c0b0a; --panel:#141312; --panel2:#1b1a18; --line:#2a2724; --line2:#3a3631;
     --ink:#f2efe8; --muted:#8f877a; --muted2:#5f584f;
+    --good:#7fd18f; --bad:#e07a7a;
     --c:#2fbccb; --a:#e0a13a; --g:#d84c8c; --e:#5b7fe0; --d:#8ccf4a;
   }
   *{ box-sizing:border-box; }
@@ -290,7 +291,7 @@
   .big-input{ font-family:Fraunces,Georgia,serif; font-weight:500; font-size:1.6rem; color:var(--ink); background:transparent; border:0; border-bottom:1px solid var(--line2); border-radius:0; padding:4px 0; width:100%; max-width:360px; }
   .big-input:focus{ outline:none; border-bottom-color:var(--ink); }
   .big-input::placeholder{ color:var(--muted2); font-style:italic; }
-  .finder-error{ margin:0; font-size:.82rem; color:#e07a7a; }
+  .finder-error{ margin:0; font-size:.82rem; color:var(--bad); }
   .finder-error:empty{ display:none; }
   .caged-overview{ background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:14px 16px 10px; margin-top:12px; }
   .caged-overview-title{ margin:0 0 6px; font-size:.66rem; text-transform:uppercase; letter-spacing:.1em; color:var(--muted2); font-weight:700; }
@@ -345,6 +346,35 @@
   .reverse-click-target.selected .rct-ring{ opacity:0; }
   .reverse-selected-dot{ pointer-events:none; }
   .reverse-note-label{ fill:var(--bg); font:600 8px Inter,system-ui,sans-serif; }
+
+  /* ---------- a shape's own menu ---------- */
+  .diagram-card{ position:relative; }
+  .card-menu-btn{ position:absolute; top:2px; right:3px; width:22px; height:22px; border-radius:6px; color:var(--muted2); font-size:1rem; line-height:1; opacity:0; transition:opacity .12s ease; }
+  .diagram-card:hover .card-menu-btn, .card-menu-btn[aria-expanded="true"]{ opacity:1; }
+  .card-menu-btn:hover{ color:var(--ink); background:var(--line); }
+  /* a pointer that can't hover can't discover it, so there it always shows */
+  @media (pointer: coarse){ .card-menu-btn{ opacity:.75; } }
+  .card-menu{ position:absolute; top:24px; right:3px; z-index:5; background:var(--panel2); border:1px solid var(--line2); border-radius:9px; padding:4px; min-width:172px; box-shadow:0 10px 24px rgba(0,0,0,.5); }
+  .card-menu-item{ display:block; width:100%; text-align:left; padding:7px 10px; border-radius:6px; color:var(--ink); font-size:.8rem; }
+  .card-menu-item:hover{ background:var(--line); }
+
+  /* ---------- ear training ---------- */
+  .ear-shape{ max-width:272px; margin-top:18px; }
+  .ear-shape .diagram-card{ cursor:pointer; }
+  .ear-quiz{ margin-top:24px; padding-top:18px; border-top:1px solid var(--line); max-width:560px; }
+  .ear-quiz-title{ margin:0 0 12px; font-family:Fraunces,Georgia,serif; font-size:1.15rem; }
+  .ear-quiz .toolbar{ margin:0; }
+  .ear-answers{ display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
+  .ear-answer{ display:flex; flex-direction:column; align-items:center; gap:1px; min-width:64px; padding:8px 13px; border:1px solid var(--line2); border-radius:10px; background:var(--panel); color:var(--ink); transition:border-color .12s ease, color .12s ease; }
+  .ear-answer:hover{ border-color:var(--muted); }
+  .ear-answer-name{ font-family:Fraunces,Georgia,serif; font-weight:600; font-size:1.1rem; }
+  .ear-answer-degree{ font-size:.72rem; color:var(--muted); }
+  .ear-answer.right{ border-color:var(--good); color:var(--good); }
+  .ear-answer.right .ear-answer-degree{ color:var(--good); }
+  .ear-answer.wrong{ border-color:var(--bad); }
+  .ear-verdict{ margin:14px 0 0; min-height:1.3em; font-size:.88rem; color:var(--muted); }
+  .ear-verdict.good{ color:var(--good); }
+  .ear-shape-count{ font-size:.82rem; color:var(--muted); font-variant-numeric:tabular-nums; min-width:56px; text-align:center; }
 
   /* ---------- genre examples ---------- */
   .page-title{ margin:0; font-family:Fraunces,Georgia,serif; font-style:italic; font-weight:500; font-size:1.5rem; line-height:1; display:flex; align-items:center; gap:10px; }
@@ -470,6 +500,7 @@
     <button type="button" class="seg-btn site-tab active" data-tab="caged">CAGED practice</button>
     <button type="button" class="seg-btn site-tab" data-tab="finder">Chord finder</button>
     <button type="button" class="seg-btn site-tab" data-tab="reverse">Reverse chord finder</button>
+    <button type="button" class="seg-btn site-tab" data-tab="ear">Ear training</button>
   </nav>
   <span class="sp"></span>
   <!-- the rest of the site: the things that aren't a tool you'd switch to
@@ -809,6 +840,40 @@
   </section>
 </div>
 
+<!-- ================= ear training ======================================== -->
+<div class="tab-page" id="page-ear" hidden>
+  <section class="page ear">
+    <div class="finder-head">
+      <label class="tb-lbl" for="earInput">Chord</label>
+      <input type="text" id="earInput" class="big-input" placeholder="e.g. Am7, C, G13" autocomplete="off" spellcheck="false" aria-label="Chord to drill">
+      <p class="finder-error" id="earError"></p>
+    </div>
+    <div class="toolbar">
+      <button type="button" class="tbtn" id="earRandom">Random chord</button>
+      <span class="tb-group" id="earShapeRow">
+        <span class="tb-lbl">Shape</span>
+        <span class="pair">
+          <button type="button" class="seg-btn arrow" id="earShapePrev" aria-label="Previous shape">‹</button>
+          <button type="button" class="seg-btn arrow" id="earShapeNext" aria-label="Next shape">›</button>
+        </span>
+        <span class="ear-shape-count" id="earShapeLabel"></span>
+      </span>
+    </div>
+    <!-- the same diagram the chord finder draws, and it sounds the same way:
+         the shape three ways over, or one note on its own -->
+    <div class="ear-shape" id="earShape"></div>
+    <div class="ear-quiz" id="earQuiz" hidden>
+      <p class="ear-quiz-title">Which note of the chord is this?</p>
+      <div class="toolbar">
+        <button type="button" class="tbtn" id="earPlayNote">Play the note</button>
+        <button type="button" class="tbtn" id="earPlayChord">Play the chord</button>
+      </div>
+      <div class="ear-answers" id="earAnswers"></div>
+      <p class="ear-verdict" id="earVerdict" role="status" aria-live="polite"></p>
+    </div>
+  </section>
+</div>
+
 <!-- ================= genre examples ====================================== -->
 <div class="tab-page" id="page-genres" hidden>
   <section class="page genres">
@@ -868,6 +933,7 @@
 <script src="js/genres.js"></script>
 <script src="js/genre-data.js"></script>
 <script src="js/tab.js"></script>
+<script src="js/ear-training.js"></script>
 <script src="js/genre-examples.js"></script>
 <script src="js/reverse-finder.js"></script>
 <script src="js/main.js"></script>
