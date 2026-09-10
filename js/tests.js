@@ -659,6 +659,38 @@
     t.equal(bad.join('; '), '', 'Every note of a shape is exactly one answer in the drill');
   }
 
+  // ---- 3f. every note the neck can play has a recording behind it ----
+  // Fifteen samples cover the range by being stretched a semitone or three
+  // either side of themselves. Stretch one much further and it stops sounding
+  // like the guitar it was — a low E played back at double speed is a
+  // different instrument — so this holds the map to what it claims: every
+  // string and fret the app draws lands inside some sample's own range, and
+  // near enough to it to still be that note played on that guitar.
+  function testEveryNoteHasARecording(t){
+    const { GUITAR_SAMPLES, sampleFor } = GT.audio;
+    const bad = [];
+    const OPEN_MIDI = [64, 59, 55, 50, 45, 40];       // high e down to low E
+    for (let s = 0; s < 6; s++){
+      for (let f = 0; f <= FRET_COUNT; f++){
+        const midi = OPEN_MIDI[s] + f;
+        const spec = sampleFor(midi);
+        if (!spec){ bad.push(`MIDI ${midi} has no sample at all`); continue; }
+        if (midi < spec.lo || midi > spec.hi) bad.push(`MIDI ${midi} got ${spec.file}, whose range is ${spec.lo}-${spec.hi}`);
+        const shift = Math.abs(midi - spec.key);
+        if (shift > 3) bad.push(`MIDI ${midi} is ${shift} semitones from ${spec.file}`);
+      }
+    }
+    // and the map itself: in order, no gaps, no two samples claiming a note
+    GUITAR_SAMPLES.forEach((spec, i) => {
+      if (spec.lo > spec.key || spec.key > spec.hi) bad.push(`${spec.file} sits outside its own range`);
+      const next = GUITAR_SAMPLES[i + 1];
+      if (!next) return;
+      if (next.key <= spec.key) bad.push(`${next.file} is out of order`);
+      if (next.lo !== spec.hi + 1) bad.push(`${spec.file} and ${next.file} ${next.lo > spec.hi + 1 ? 'leave a gap' : 'overlap'}`);
+    });
+    t.equal(bad.join('; '), '', `Every note the neck can play has a recording near it (${6 * (FRET_COUNT + 1)} checked)`);
+  }
+
   // ---- 4. naming: what the app writes, it can read back ----
   function testTheory(t){
     const parses = (name, formula, root) => {
@@ -1515,6 +1547,7 @@
       ['Chord finder tells open shapes from movable ones', testTheShapeFilter],
       ['Every chord name the app writes parses back', testEveryChordNameParsesBack],
       ['Ear trainer: every note of a shape is one answer', testTheEarTrainerCoversItsShape],
+      ['Every note the neck can play has a recording near it', testEveryNoteHasARecording],
       ['Theory: naming and identification', testTheory],
       ['Theory: one answer for what degree a note is', testDegreeNamesAgree],
       ['Fretboard: the pentatonic boxes are unchanged', testPentatonicBoxesAreUnchanged],

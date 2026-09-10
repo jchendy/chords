@@ -845,19 +845,34 @@
   const OPEN_MIDI = [64, 59, 55, 50, 45, 40];     // high e down to low E
   const freqOf = (string, fret) => 440 * Math.pow(2, (OPEN_MIDI[string] + fret - 69) / 12);
 
-  // The piano voice, not the guitar one. Six guitar strings struck together
-  // are six sawtooth pairs through one clipping stage, and a chord with a
-  // 9th and a 13th in it turns to mud there; the piano's notes are cleaner
-  // and stay separate however many of them land at once. It's the voice the
-  // practice tab plays chords with, so the two tabs now sound the same.
-  function beginSound(){
+  // A real guitar where the page can reach the recordings, and the piano
+  // voice where it can't — see audio.js for whose guitar it is and why we may
+  // use it. The synthesized guitar isn't the fallback: six of its strings
+  // struck together are six sawtooth pairs through one clipping stage, and a
+  // chord with a 9th and a 13th in it turns to mud there, where the piano's
+  // notes stay separate however many land at once.
+  //
+  // Waking the audio has to happen in the click itself — a context first
+  // resumed after an await is a context the browser may refuse to start — so
+  // it's split from the scheduling that follows the samples arriving.
+  function wake(){
     const audio = GT.audio;
     audio.ensureAudio();
     if (audio.ctx().state === 'suspended') audio.ctx().resume();
-    // a second click calls off whatever the first one still had coming
-    audio.cancelScheduled();
-    return audio.ctx().currentTime + 0.03;
   }
+
+  function beginSound(){
+    wake();
+    // a second click calls off whatever the first one still had coming
+    GT.audio.cancelScheduled();
+    return GT.audio.ctx().currentTime + 0.03;
+  }
+
+  const voice = (freq, time, duration, velocity) =>
+    GT.audio.playPluck(freq, time, duration, velocity);
+
+  // the recordings these cells need, fetched once and then held
+  const ready = cells => GT.audio.readyForPluck(cells.map(c => freqOf(c.string, c.fret)));
 
   // Sound the shape low string to high, starting at `t0`. The gap between the
   // notes is the difference between a chord and an arpeggio: a pick's sweep
@@ -865,11 +880,13 @@
   // same notes heard one at a time.
   function sound(cells, t0, gap, hold){
     const ordered = cells.slice().sort((a, b) => b.string - a.string);
-    ordered.forEach((c, i) => GT.audio.playNote(freqOf(c.string, c.fret), t0 + i * gap, hold, 0.9));
+    ordered.forEach((c, i) => voice(freqOf(c.string, c.fret), t0 + i * gap, hold, 0.9));
     return t0 + gap * Math.max(0, ordered.length - 1);
   }
 
-  function strum(cells, gap = 0.018){
+  async function strum(cells, gap = 0.018){
+    wake();
+    await ready(cells);
     // an arpeggio's notes have to ring past the ones after them to add up to
     // the chord, so a slower roll holds each note longer
     sound(cells, beginSound(), gap, Math.max(1.6, 0.9 + gap * cells.length * 1.6));
@@ -882,19 +899,23 @@
   // The top note isn't struck twice at the turn, so the run reads as one
   // line rather than stalling at the top.
   const TOUR_GAP = 0.28;      // as slow as the reverse finder's own arpeggio
-  function tour(cells){
+  async function tour(cells){
+    wake();
+    await ready(cells);
     const t0 = beginSound();
     const low = cells.slice().sort((a, b) => b.string - a.string);
     const run = low.concat(low.slice(0, -1).reverse());
     const arpAt = t0 + 0.85;
-    run.forEach((c, i) => GT.audio.playNote(freqOf(c.string, c.fret), arpAt + i * TOUR_GAP, 1.3, 0.85));
+    run.forEach((c, i) => voice(freqOf(c.string, c.fret), arpAt + i * TOUR_GAP, 1.3, 0.85));
     sound(cells, t0, 0.018, 1.7);
     sound(cells, arpAt + run.length * TOUR_GAP + 0.08, 0.018, 2.4);
   }
 
   // one note of the shape, on its own
-  function playOne(string, fret){
-    GT.audio.playNote(freqOf(string, fret), beginSound(), 1.8, 0.95);
+  async function playOne(string, fret){
+    wake();
+    await ready([{ string, fret }]);
+    voice(freqOf(string, fret), beginSound(), 1.8, 0.95);
   }
 
   // Lighting a note lights every way in to it — the dot on the neck and the

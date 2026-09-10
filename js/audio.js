@@ -324,6 +324,114 @@
     hammer.stop(time + 0.02);
   }
 
+  // ---- a real guitar, when the page can reach the recordings --------------
+  //
+  // Fifteen notes of a 2017 Martin HD-28, one every two or three semitones
+  // from E2 to B5, pitched up or down to reach the notes in between — the
+  // mapping is the one the original .sfz specifies, key range and all.
+  //
+  // WHERE THEY CAME FROM. Recorded and mapped by Jeff Learman for Kinwie's
+  // Discord SFZ GM bank, and taken from the sfzinstruments fork of it:
+  // https://github.com/sfzinstruments/Discord-SFZ-GM-Bank — the folder
+  // "Discord GM/Melodic/026-Acoustic Guitar (steel)".
+  //
+  // WHY WE THINK WE MAY USE THEM. They are CC0 — a public domain dedication,
+  // which waives copyright as far as the law allows, so there is no condition
+  // to meet and not even attribution is required. We credit the author
+  // anyway: it is his guitar and his work. The licence is stated by the
+  // author himself in the header of the .sfz that maps these very samples —
+  //
+  //     // GM Acoustic Guitar
+  //     // 2017 Martin HD28 Vintage Series
+  //     // Author: Jeff Learman, for Kinwie's Discord SFZ GM
+  //     // License: Creative Commons CC0
+  //
+  // — identically in the upstream repository and in the fork, repeated in a
+  // second .sfz beside the samples, under a bank whose README says "Each
+  // instrument is licensed by its creator... Only CC0, CC-BY, and equivalent
+  // licences are allowed." Checked 2026-09-10. audio/guitar/SOURCE.md keeps
+  // the full reasoning, and what was rejected and why.
+  //
+  // The samples are a bonus rather than a requirement: opened from a file://
+  // URL the browser gives the page an opaque origin and refuses to let it
+  // read its own neighbours, so the fetch fails and the synthesized voice
+  // below plays instead. Nothing about the app depends on them arriving.
+  const GUITAR_DIR = 'audio/guitar/';
+  const GUITAR_SAMPLES = [
+    { file: 'MartinGM2_040__E2_1.wav', key: 40, lo: 35, hi: 41 },
+    { file: 'MartinGM2_043__G2_1.wav', key: 43, lo: 42, hi: 44 },
+    { file: 'MartinGM2_046_Bb2_1.wav', key: 46, lo: 45, hi: 47 },
+    { file: 'MartinGM2_049_Db3_1.wav', key: 49, lo: 48, hi: 50 },
+    { file: 'MartinGM2_052__E3_1.wav', key: 52, lo: 51, hi: 53 },
+    { file: 'MartinGM2_055__G3_1.wav', key: 55, lo: 54, hi: 56 },
+    { file: 'MartinGM2_058_Bb3_1.wav', key: 58, lo: 57, hi: 59 },
+    { file: 'MartinGM2_061_Db4_1.wav', key: 61, lo: 60, hi: 62 },
+    { file: 'MartinGM2_064__E4_1.wav', key: 64, lo: 63, hi: 66 },
+    { file: 'MartinGM2_068_Ab4_1.wav', key: 68, lo: 67, hi: 69 },
+    { file: 'MartinGM2_071__B4_1.wav', key: 71, lo: 70, hi: 72 },
+    { file: 'MartinGM2_074__D5_1.wav', key: 74, lo: 73, hi: 75 },
+    { file: 'MartinGM2_077__F5_1.wav', key: 77, lo: 76, hi: 78 },
+    { file: 'MartinGM2_080_Ab5_1.wav', key: 80, lo: 79, hi: 81 },
+    { file: 'MartinGM2_083__B5_1.wav', key: 83, lo: 82, hi: 88 },
+  ];
+  const guitarBuffers = new Map();       // file name -> decoded AudioBuffer
+  const guitarLoading = new Map();       // ...and the promise while it's on its way
+  let guitarReachable = true;            // until a fetch says otherwise
+
+  const midiOf = freq => Math.round(69 + 12 * Math.log2(freq / 440));
+  const sampleFor = midi => GUITAR_SAMPLES.find(s => midi >= s.lo && midi <= s.hi)
+    || (midi < GUITAR_SAMPLES[0].key ? GUITAR_SAMPLES[0] : GUITAR_SAMPLES[GUITAR_SAMPLES.length - 1]);
+
+  function loadSample(spec){
+    if (guitarBuffers.has(spec.file)) return Promise.resolve(true);
+    if (guitarLoading.has(spec.file)) return guitarLoading.get(spec.file);
+    const job = fetch(GUITAR_DIR + spec.file)
+      .then(r => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
+      .then(bytes => audioCtx.decodeAudioData(bytes))
+      .then(buf => { guitarBuffers.set(spec.file, buf); return true; })
+      .catch(() => { guitarReachable = false; return false; })
+      .finally(() => guitarLoading.delete(spec.file));
+    guitarLoading.set(spec.file, job);
+    return job;
+  }
+
+  // Have the recordings for these notes on hand, if they can be had at all.
+  // Resolves false rather than throwing: a page that can't reach them plays
+  // the synthesized voice and says nothing about it.
+  function readyForPluck(freqs){
+    if (!guitarReachable || !audioCtx) return Promise.resolve(false);
+    const wanted = [...new Set(freqs.map(f => sampleFor(midiOf(f))))];
+    return Promise.all(wanted.map(loadSample)).then(all => all.every(Boolean));
+  }
+
+  const pluckReady = freq => guitarBuffers.has(sampleFor(midiOf(freq)).file);
+
+  // One note of the real guitar. The sample is a whole pluck with its own
+  // decay, so the envelope here only fades it out when the note's time is up
+  // rather than shaping it from scratch.
+  function playPluck(freq, time, duration, velocity = 1){
+    const spec = sampleFor(midiOf(freq));
+    const buffer = guitarBuffers.get(spec.file);
+    if (!buffer) return playNote(freq, time, duration, velocity);   // not here yet
+    const src = audioCtx.createBufferSource();
+    src.buffer = buffer;
+    // the sample's own pitch, moved to the note asked for
+    src.playbackRate.value = freq / (440 * Math.pow(2, (spec.key - 69) / 12));
+
+    const env = audioCtx.createGain();
+    const level = 0.9 * velocity;
+    env.gain.setValueAtTime(level, time);
+    const fade = Math.min(0.35, duration * 0.3);
+    env.gain.setValueAtTime(level, time + Math.max(0.02, duration - fade));
+    env.gain.exponentialRampToValueAtTime(0.0001, time + duration + 0.02);
+
+    src.connect(env);
+    env.connect(masterGain);
+    env.connect(reverbSends.clean);
+    startVoice(src, time);
+    src.stop(time + duration + 0.06);
+  }
+
   function playChord(chord, time, duration, velocity){
     chordFrequencies(chord).forEach(freq => playNote(freq, time, duration, velocity));
   }
@@ -743,8 +851,10 @@
   GT.audio = {
     ctx: () => audioCtx,               // live handle; null until ensureAudio() runs
     pianoWaveFor, PIANO_PARTIALS,      // exposed so the tests can render a note offline
+    GUITAR_SAMPLES, sampleFor,         // ...and to check every note has a recording behind it
     ensureAudio, keepAwake, cancelScheduled, stepsToSkip, noteFreq, chordFrequencies, pcFreq, bassFreqAt, walkBassFreq, ROOT_OCTAVE,
     playNote, playChord, playChord7, playBass, playGuitar,
+    playPluck, readyForPluck, pluckReady,
     playHiHat, playRide, playKick, playSnare, playStyleVoice,
     STYLES,
   };

@@ -415,7 +415,7 @@ only**. A major or minor triad also gets the whole-neck CAGED
 picture at the top — the same five shapes the practice tab draws, from the
 same code, so the two always agree.
 
-Click any shape and you hear it three ways over: the chord, then its notes
+Click any shape and you hear it three ways over, on a recorded guitar: the chord, then its notes
 one at a time up and back down, then the chord again — how it sounds, what's
 in it, then how it sounds with those notes in your ear. (The top note isn't
 struck twice at the turn, so the run reads as one line instead of stalling
@@ -424,10 +424,11 @@ just that note; pointing at either lights both, so it's plain they're the
 same string and that either will play it. A second click calls off whatever
 the first still had coming.
 
-All of it is the piano voice, the one the practice tab plays chords with.
-Six guitar strings struck together are six sawtooth pairs through one
-clipping stage, and a chord with a 9th and a 13th in it turns to mud there;
-the piano's notes stay separate however many land at once.
+All of it plays on the recorded Martin described under **Sound** — and, on a
+page that can't reach those recordings, on the synthesized piano. Not on the
+synthesized guitar: six of its strings struck together are six sawtooth pairs
+through one clipping stage, and a chord with a 9th and a 13th in it turns to
+mud there, where the piano's notes stay separate however many land at once.
 
 A slash chord (`D/F#`, `C/E`, `Am/G`) works too: the same chord with
 the named note underneath, so only shapes with that note on their lowest
@@ -557,7 +558,7 @@ not at all, the whole progression is on the neck, the legend names exactly
 what's drawn, a note two chords share carries a colour for each of them, and
 playing through a progression doesn't walk the hand along the neck.
 
-Two groups are guarded. The first eight run over the pure modules; the first
+Two groups are guarded. The first nine run over the pure modules; the first
 two of those over a fixed list of chords (C, A, G, E, D, Cm, Am, Gm, Em, Dm,
 Ab, Gb, C#, A9, E9, C7, D7, Cm7, CM7):
 
@@ -602,7 +603,13 @@ Ab, Gb, C#, A9, E9, C7, D7, Cm7, CM7):
    notes, and identification names both a C6 and an Am7 for C E G A — and
    A6/9 first for A E B F♯, a rootless A13 and nothing else for B F♯ C♯ G,
    nothing rootless for E G B or C E G D.
-8. **The genre library and the presets are well-formed.** Every progression
+8. **Every note the neck can play has a recording near it.** Fifteen samples
+   cover the range by being stretched a semitone or three either side of
+   themselves; stretch one much further and it stops sounding like the guitar
+   it was. So every string and fret the app draws has to land inside some
+   sample's own range, and the map has to be in order with no gaps and no two
+   samples claiming a note.
+9. **The genre library and the presets are well-formed.** Every progression
    has a key and parseable chords, a "twelve-bar" has twelve bars, hits sit
    inside their grid, a six-slot bar declares itself a waltz, every chord can
    be voiced the way its rhythm asks, lead lines stay on the neck and inside
@@ -614,8 +621,8 @@ shapes, regenerate it deliberately rather than editing it to match.
 
 ## Sound
 
-Everything is synthesized live in the Web Audio API — no MIDI, no samples,
-nothing to download. The piano is a single periodic wave (five harmonics
+Almost everything is synthesized live in the Web Audio API — no MIDI, no
+plugins, nothing to install. The piano is a single periodic wave (five harmonics
 baked into one oscillator, doubled and detuned a few cents) through a
 per-note lowpass that opens with velocity and closes as the note rings, a
 two-stage decay so a note drops quickly then sustains quietly, a few
@@ -637,6 +644,27 @@ seventh when it has one (a `D7` set on the ii is a real dominant) and only
 fall back to the style's implied seventh for a plain triad. Notes are
 scheduled against the audio clock by a 25 ms lookahead loop, so timing
 doesn't drift when the main thread is busy.
+
+The chord finder, the reverse finder and the ear trainer are the exception:
+they play a **real guitar**, fifteen notes of a 2017 Martin HD-28 recorded by
+Jeff Learman and released CC0, one sample every two or three semitones with
+the notes between reached by pitching the nearest one. They sit in
+`audio/guitar/`, and `audio/guitar/SOURCE.md` records where they came from
+and why we believe we may use them, along with two libraries that were
+rejected and the reason — the Philharmonia's, whose terms forbid making the
+samples available as-is, which is what a public repository does; and VCSL,
+which is genuinely CC0 but has no guitar in it.
+
+They are a bonus rather than a requirement. Each sample is fetched the first
+time a note needs it (about 30 ms on a local server, nothing after that), and
+when it can't be fetched the synthesized piano plays instead and says nothing
+about it. That matters for one case in particular: opened straight from disk
+as a `file://` URL, a browser gives the page an opaque origin and won't let
+it read its own neighbours — Firefox and Chrome both closed that door after
+[CVE-2019-11730](https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CORS/Errors/CORSRequestNotHttp)
+— so the recordings are for pages served over http, and double-clicking
+`index.html` still works, just synthesized. The practice tab keeps its piano
+either way: a progression is a piano part here.
 
 That loop queues the notes 0.4 s ahead of the sound, and steps over any beat
 whose moment has already passed. Both matter for the same reason: a browser
