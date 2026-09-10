@@ -128,21 +128,29 @@
     setMode('chord');
     const before = read() || { right: 0, of: 0 };
 
-    // one answered first time
-    let btns = answers();
-    let hits = 0;
-    btns.forEach(b => { b.click(); if (b.classList.contains('right')) hits++; });
-    q('#earRandom').click();
-
-    // ...and one answered after every other button has been tried
-    btns = answers();
-    btns.forEach(b => b.click());
+    // Answer two questions by pressing buttons until one is accepted, and
+    // watch which of them came right on the first press. Which that is can't
+    // be known in advance — the answer moves — so the test counts what
+    // actually happened rather than assuming, or it passes and fails by luck.
+    let firstTime = 0;
+    for (let i = 0; i < 2; i++){
+      const btns = answers();
+      let pressed = 0, won = false;
+      for (const b of btns){
+        pressed++;
+        b.click();
+        if (b.classList.contains('right')){ won = true; if (pressed === 1) firstTime++; break; }
+      }
+      if (!won) bad.push('a question had no right answer among its buttons');
+      q('#earRandom').click();
+    }
     const after = read();
     if (!after){ bad.push('the score never appeared'); }
     else {
       if (after.of !== before.of + 2) bad.push(`two questions moved the count by ${after.of - before.of}`);
-      // the second was got wrong first, so at most one of the two counts
-      if (after.right > before.right + 1) bad.push('a question got wrong first still counted as right');
+      if (after.right !== before.right + firstTime){
+        bad.push(`${firstTime} were right first time but the score moved by ${after.right - before.right}`);
+      }
     }
     GT.earTraining.stop();
     t.equal(bad.join('; '), '', 'The score counts questions asked and questions got right first time');

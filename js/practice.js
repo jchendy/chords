@@ -34,6 +34,11 @@
   let currentTonic = 'C';
   let currentDiatonic = [];             // the chord choices available for the current key
 
+  // The chords play on the piano unless you ask for the guitar. The piano is
+  // the default because a progression is accompaniment: it keeps out of the
+  // way of the guitar you're playing over it, where a second guitar competes.
+  let chordVoice = 'piano';
+
   const keySelect = document.getElementById('keySelect');
   // The chart carries a copy of the two pickers you reach for while playing.
   // They're views onto the same state, not a second copy of it: each mirrors
@@ -544,7 +549,7 @@
     if (!isPlaying) view.selectChord(idx);
     ensureAudio();
     if (audio.ctx().state === 'suspended') audio.ctx().resume();
-    playChord(chord, audio.ctx().currentTime + 0.02, 1.8, 0.85);
+    playChord(chord, audio.ctx().currentTime + 0.02, 1.8, 0.85, chordVoice);
     bar.classList.remove('rang');
     void bar.offsetWidth;            // restart the flash
     bar.classList.add('rang');
@@ -968,7 +973,7 @@
         // boost the lone root so it sits at a similar loudness to a full triad
         playNote(noteFreq(chord.note, ROOT_OCTAVE), nextNoteTime, duration, velocity * 1.9);
       } else {
-        playChord(chord, nextNoteTime, duration, velocity);
+        playChord(chord, nextNoteTime, duration, velocity, chordVoice);
       }
     }
     if (clickToggle.checked) playHiHat(nextNoteTime);
@@ -1097,6 +1102,10 @@
   function togglePlay(){
     ensureAudio();
     if (audio.ctx().state === 'suspended') audio.ctx().resume();
+    // A progression plays to a clock and can't wait for a recording mid-bar,
+    // so they're all fetched at the press rather than one chord at a time.
+    // Nothing waits on it: until they land the piano plays.
+    if (chordVoice === 'guitar') audio.warmGuitar();
 
     if (!isPlaying){
       isPlaying = true;
@@ -1161,6 +1170,7 @@
     }
     p.set('t', String(getTempo()));
     if (currentStyle !== 'simple') p.set('s', `${currentStyle}.${currentVariant}`);
+    if (chordVoice !== 'piano') p.set('v', chordVoice);
     return p;
   }
 
@@ -1172,6 +1182,9 @@
     const table = mode === 'major' ? MAJOR_KEYS : mode === 'minor' ? MINOR_KEYS : null;
     if (!table || !table[tonic]) return false;
     setKey(mode, tonic);
+    chordVoice = p.get('v') === 'guitar' ? 'guitar' : 'piano';
+    voiceGroup.querySelectorAll('.seg-btn')
+      .forEach(b => b.classList.toggle('active', b.dataset.value === chordVoice));
 
     if (p.get('t')){
       tempoInput.value = p.get('t');
@@ -1211,6 +1224,15 @@
     renderAll();
     return true;
   }
+
+  const voiceGroup = document.getElementById('voiceGroup');
+  voiceGroup.querySelectorAll('.seg-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      voiceGroup.querySelectorAll('.seg-btn').forEach(b => b.classList.toggle('active', b === btn));
+      chordVoice = btn.dataset.value;
+      if (chordVoice === 'guitar'){ ensureAudio(); audio.warmGuitar(); }
+    });
+  });
 
   const shareBtn = document.getElementById('shareBtn');
   const shareOut = document.getElementById('shareOut');

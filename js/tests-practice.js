@@ -68,6 +68,7 @@
     root.appendChild(g);
   };
   segGroup('noteValueGroup', ['1', '2', '4'], 'seg-btn');
+  segGroup('voiceGroup', ['piano', 'guitar'], 'seg-btn');
   segGroup('styleGroup', Object.keys(GT.audio.STYLES), 'genre-btn');
   document.body.appendChild(root);
 

@@ -3,7 +3,8 @@
 A single-page, dependency-free site with four tabs under one header:
 
 - **CAGED practice** — generates random diatonic chord progressions and
-  plays them back with a synthesized piano and optional hi-hat click.
+  plays them back on a piano or a recorded guitar, with an optional hi-hat
+  click.
 - **Chord finder** — type a chord name (e.g. `G#9`, `Cmaj7`, `Dm7b5`), or
   pick one of the examples, and see the common places to play it on the neck.
 - **Reverse chord finder** — click frets on an interactive fretboard and
@@ -117,6 +118,15 @@ names the tab you're on.
   (there the space bar means "hear this chord" rather than play/pause)
 - Space bar starts and stops playback (here and in the genre examples), as
   long as you're not typing in a field
+- "Voice" plays the chords on the synthesized piano or on the recorded
+  guitar the finders use (see **Sound**). The piano is the default because
+  it stays out of the way of the guitar you are playing over it; the guitar
+  is there for hearing a voicing the way it would actually sound, and strums
+  its notes 16 ms apart rather than striking them together. Pressing Play
+  fetches the whole sample set at once, since a chord lands on a beat and
+  can't wait for a download; any chord whose notes haven't arrived — or that
+  are out of reach, as they are on a `file://` page — is played on the piano
+  instead, so choosing the guitar can never leave you with silence
 - "Copy link to this progression" writes the key, every chord's degree, bar
   count and shape, the tempo and the style into the page's URL and copies it,
   so a progression can be bookmarked or sent to someone; opening the link
@@ -757,7 +767,11 @@ Ab, Gb, C#, A9, E9, C7, D7, Cm7, CM7):
    themselves; stretch one much further and it stops sounding like the guitar
    it was. So every string and fret the app draws has to land inside some
    sample's own range, and the map has to be in order with no gaps and no two
-   samples claiming a note.
+   samples claiming a note. The practice tab's chords are held to the same
+   line from the other end: all twelve roots in all twelve qualities are
+   written out, voiced, and checked note by note against the map, because a
+   voicing that reaches past it would drop to the piano mid-progression and
+   the only sign would be that one bar sounded different.
 12. **The genre library and the presets are well-formed.** Every progression
    has a key and parseable chords, a "twelve-bar" has twelve bars, hits sit
    inside their grid, a six-slot bar declares itself a waltz, every chord can
@@ -826,8 +840,13 @@ as a `file://` URL, a browser gives the page an opaque origin and won't let
 it read its own neighbours — Firefox and Chrome both closed that door after
 [CVE-2019-11730](https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CORS/Errors/CORSRequestNotHttp)
 — so the recordings are for pages served over http, and double-clicking
-`index.html` still works, just synthesized. The practice tab keeps its piano
-either way: a progression is a piano part here.
+`index.html` still works, just synthesized. The practice tab can use them
+too, under Voice, and falls back the same way: the piano is what you get
+until the samples are resident, and all that happens on a page that can't
+reach them is that the fallback is permanent. Its bass and its genre styles
+stay synthesized — a strum, a palm-muted chug and a walking bass are
+different articulations rather than one note pitched about, and fifteen
+notes of one dreadnought can't play them.
 
 That loop queues the notes 0.4 s ahead of the sound, and steps over any beat
 whose moment has already passed. Both matter for the same reason: a browser

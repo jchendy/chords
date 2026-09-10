@@ -775,7 +775,38 @@
     t.equal(bad.join('; '), '', `Every quality the drill can ask can be played (${QUALITIES.length} qualities)`);
   }
 
-  // ---- 3i. every note the neck can play has a recording behind it ----
+  // ---- 3i. every chord the practice tab plays is inside the recordings ----
+  // The piano has no range to run out of; fifteen recordings do. The practice
+  // tab stacks a chord upward from the third octave, so a 13th in a high key
+  // reaches further than anything the neck can play — and a note past the top
+  // sample would come out pitched a long way from anything a guitar sounds
+  // like. So every note of every chord it can build has to land inside the
+  // map, and near enough to a sample to still be that instrument.
+  function testEveryChordFitsTheRecordings(t){
+    const { GUITAR_SAMPLES, sampleFor, chordFrequencies } = GT.audio;
+    const bad = [];
+    const midiOf = f => Math.round(69 + 12 * Math.log2(f / 440));
+    const roots = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'];
+    const suffixes = ['', 'm', '7', 'maj7', 'm7', 'm7b5', 'dim7', '6', '9', '13', 'sus4', 'add9'];
+    let checked = 0;
+    roots.forEach(root => suffixes.forEach(suffix => {
+      const chord = chordFromName(root + suffix);
+      if (!chord){ bad.push(`${root}${suffix} doesn't build`); return; }
+      chordFrequencies(chord).forEach(freq => {
+        checked++;
+        const midi = midiOf(freq);
+        const spec = sampleFor(midi);
+        if (midi < GUITAR_SAMPLES[0].lo || midi > GUITAR_SAMPLES[GUITAR_SAMPLES.length - 1].hi){
+          bad.push(`${root}${suffix}: MIDI ${midi} is outside every sample's range`);
+        } else if (Math.abs(midi - spec.key) > 3){
+          bad.push(`${root}${suffix}: MIDI ${midi} is ${Math.abs(midi - spec.key)} semitones from ${spec.file}`);
+        }
+      });
+    }));
+    t.equal(bad.join('; '), '', `Every chord the practice tab plays has recordings for it (${checked} notes)`);
+  }
+
+  // ---- 3j. every note the neck can play has a recording behind it ----
   // Fifteen samples cover the range by being stretched a semitone or three
   // either side of themselves. Stretch one much further and it stops sounding
   // like the guitar it was — a low E played back at double speed is a
@@ -1667,6 +1698,7 @@
       ['Ear trainer: one octave of a box is one octave of it', testOneOctaveOfABox],
       ['Ear trainer: every chord quality it can ask, it can play', testEveryQualityCanBeAsked],
       ['Every note the neck can play has a recording near it', testEveryNoteHasARecording],
+      ['Every chord the practice tab plays has recordings for it', testEveryChordFitsTheRecordings],
       ['Theory: naming and identification', testTheory],
       ['Theory: one answer for what degree a note is', testDegreeNamesAgree],
       ['Fretboard: the pentatonic boxes are unchanged', testPentatonicBoxesAreUnchanged],

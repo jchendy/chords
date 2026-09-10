@@ -432,8 +432,32 @@
     src.stop(time + duration + 0.06);
   }
 
-  function playChord(chord, time, duration, velocity){
-    chordFrequencies(chord).forEach(freq => playNote(freq, time, duration, velocity));
+  // The chords of a progression, on the piano by default and on the recorded
+  // guitar when asked for. A guitar's strings don't arrive together, so its
+  // notes are spread by a pick's sweep rather than struck at once — a chord
+  // played dead flat is the thing that stops sounding like a guitar first.
+  //
+  // The voice falls back per chord rather than per session: a sample that
+  // hasn't arrived plays as piano, which is a chord in the wrong voice
+  // instead of a hole in the beat. warmGuitar() before playback makes that
+  // rare — the practice tab calls it when you press Play.
+  const STRUM_GAP = 0.016;
+
+  function playChord(chord, time, duration, velocity, voice){
+    const freqs = chordFrequencies(chord);
+    if (voice === 'guitar' && freqs.every(pluckReady)){
+      freqs.forEach((freq, i) => playPluck(freq, time + i * STRUM_GAP, duration, velocity));
+      return;
+    }
+    freqs.forEach(freq => playNote(freq, time, duration, velocity));
+  }
+
+  // Every recording at once, for a tab that plays to a clock and can't wait
+  // for one mid-bar. Silent about failure, like everything else here: a page
+  // that can't reach them simply stays on the piano.
+  function warmGuitar(){
+    if (!audioCtx || !guitarReachable) return Promise.resolve(false);
+    return Promise.all(GUITAR_SAMPLES.map(loadSample)).then(all => all.every(Boolean));
   }
 
   // ---- extra voices for the genre styles ----
@@ -854,7 +878,7 @@
     GUITAR_SAMPLES, sampleFor,         // ...and to check every note has a recording behind it
     ensureAudio, keepAwake, cancelScheduled, stepsToSkip, noteFreq, chordFrequencies, pcFreq, bassFreqAt, walkBassFreq, ROOT_OCTAVE,
     playNote, playChord, playChord7, playBass, playGuitar,
-    playPluck, readyForPluck, pluckReady,
+    playPluck, readyForPluck, pluckReady, warmGuitar,
     playHiHat, playRide, playKick, playSnare, playStyleVoice,
     STYLES,
   };
