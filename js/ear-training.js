@@ -21,6 +21,7 @@
   const input = $('earInput'), errorEl = $('earError');
   const keySelect = $('earKey'), scaleSelect = $('earScale'), octaveGroup = $('earOctaveGroup');
   const shapeEl = $('earShape'), shapeRow = $('earShapeRow'), shapePick = $('earShapePick');
+  const octaveStep = $('earOctaveStep');
   const sheet = $('earShapeSheet'), scrim = $('earScrim'), choicesEl = $('earShapeChoices');
   const quizEl = $('earQuiz'), answersEl = $('earAnswers'), verdictEl = $('earVerdict');
   const scoreEl = $('earScore');
@@ -58,6 +59,7 @@
   let keyName = 'C';             // in the other two: the root, spelled
   let scaleId = 'minorpenta';
   let wholeShape = false;        // one octave of the box, or all of it
+  let octaveIdx = 0;             // ...and which octave, when it's one of them
   let shapes = [];               // voicings, or box placements
   let shapeIdx = 0;
   let subject = null;            // what's on show: cells, root, notes, names
@@ -101,28 +103,41 @@
                     - (b.interval + (aboveTheOctave(b.degree) ? 12 : 0)));
   }
 
-  // One octave of a box: from one of its roots up to the next. That's the span
-  // a player runs while they're learning a shape, and eight notes at a time is
-  // a fairer drill than eighteen spread over five frets and three octaves.
-  //
-  // Which root, though. The lowest is the obvious answer and usually the right
-  // one, but not always: a box clipped by the nut can have its lowest root so
-  // high that the octave above it runs off the top of the shape, while the
-  // octave above the next root is complete. So try each root and keep the
-  // octave that holds the most of the scale — the lowest of them where two are
-  // equal. A box with no root in it at all, which the partial ones at either
-  // end of the neck can be, has no octave to take and stays whole.
-  function oneOctave(cells, rootPc){
-    const roots = cells.filter(c => pcOf(c) === rootPc).sort((a, b) => midiOf(a) - midiOf(b));
-    if (!roots.length) return cells;
-    let best = null;
-    roots.forEach(r => {
-      const low = midiOf(r);
-      const within = cells.filter(c => midiOf(c) >= low && midiOf(c) <= low + 12);
-      const notes = new Set(within.map(pcOf)).size;
-      if (!best || notes > best.notes) best = { notes, within };
+  // The octaves a box holds: one from each of its roots up to the next. An
+  // octave is the span a player runs while they're learning a shape, and
+  // eight notes at a time is a fairer drill than eighteen spread over five
+  // frets and three octaves. A box with no root in it at all — the partial
+  // ones at either end of the neck can be like that — holds no octave, and
+  // the whole thing is played instead.
+  function octavesOf(cells, rootPc){
+    return cells.filter(c => pcOf(c) === rootPc)
+      .sort((a, b) => midiOf(a) - midiOf(b))
+      .map(r => {
+        const low = midiOf(r);
+        return cells.filter(c => midiOf(c) >= low && midiOf(c) <= low + 12);
+      })
+      .filter(oct => oct.length > 2);
+  }
+
+  // Which one to start on. The lowest is the obvious answer and usually the
+  // right one, but not always: a box clipped by the nut can have its lowest
+  // root so high that the octave above it runs off the top of the shape,
+  // while the octave above the next root is whole. So take the one holding
+  // the most of the scale, the lowest of them where two are equal. Three
+  // boxes in 582 turn on this; A major pentatonic's A box has three of its
+  // five notes above the lowest root and all five above the next.
+  function fullestOctave(octs){
+    let best = 0;
+    octs.forEach((oct, i) => {
+      if (new Set(oct.map(pcOf)).size > new Set(octs[best].map(pcOf)).size) best = i;
     });
-    return best.within.length > 2 ? best.within : cells;
+    return best;
+  }
+
+  // what the drill and the tests ask for: one octave, the fullest one
+  function oneOctave(cells, rootPc){
+    const octs = octavesOf(cells, rootPc);
+    return octs.length ? octs[fullestOctave(octs)] : cells;
   }
 
   // a run up a box is played string by string, low to high, and up each
@@ -161,6 +176,8 @@
         shape,
         label: chord.label,
         cells: shape.cells,
+        shown: shape.cells,
+        octaves: 0,
         rootPc: chord.rootPc,
         rootName: chord.rootName,
         notes: notesOf(shape.cells, chord.rootPc, chord.formula, chord.rootName, false),
@@ -170,12 +187,19 @@
     }
     const scale = scaleById(scaleId);
     const rootPc = SEMITONE[keyName] % 12;
-    const cells = wholeShape ? shape.cells : oneOctave(shape.cells, rootPc);
-    const frets = cells.map(c => c.fret);
+    const octs = octavesOf(shape.cells, rootPc);
+    // The whole box is always drawn — a box is a shape you're learning the
+    // look of, and cutting five frets out of the picture to show one octave
+    // would teach the wrong thing. Only what's in play narrows.
+    const cells = (wholeShape || !octs.length) ? shape.cells
+      : octs[Math.min(octaveIdx, octs.length - 1)];
+    const frets = shape.cells.map(c => c.fret);
     return {
       shape,
       label: `${keyName} ${scale.name.toLowerCase()}`,
       cells,
+      shown: shape.cells,
+      octaves: octs.length,
       rootPc,
       rootName: keyName,
       notes: notesOf(cells, rootPc, null, keyName, true),
@@ -203,15 +227,23 @@
 
   function neckSVG(s){
     const degreeAt = new Map(s.notes.map(n => [n.pc, n.degree]));
-    const markers = s.cells.map(c => ({
-      string: c.string, fret: c.fret,
-      label: degreeAt.get(pcOf(c)) || '',
-      color: '#bfb7a8',
-      isRoot: pcOf(c) === s.rootPc,
-    }));
+    const inPlay = new Set(s.cells.map(c => `${c.string}:${c.fret}`));
+    // Every note of the box is drawn; the ones outside the octave in play are
+    // drawn quiet, the way the practice tab draws a passing note. You can see
+    // the whole shape, and see which part of it you're being asked about.
+    const markers = s.shown.map(c => {
+      const playing = inPlay.has(`${c.string}:${c.fret}`);
+      return {
+        string: c.string, fret: c.fret,
+        label: playing ? (degreeAt.get(pcOf(c)) || '') : '',
+        color: '#bfb7a8',
+        passing: !playing,
+        isRoot: playing && pcOf(c) === s.rootPc,
+      };
+    });
     // the click targets go over the drawing, one per note, in the same groups
     // a chord diagram uses so they light and sound the same way
-    const hits = s.cells.map(c => {
+    const hits = s.shown.map(c => {
       const x = GT.neck.fretX(c.fret), y = GT.neck.stringY(c.string);
       return `<g class="note-hit" data-string="${c.string}" data-fret="${c.fret}">`
         + `<circle class="note-ring" cx="${x}" cy="${y}" r="10.5"/>`
@@ -230,7 +262,13 @@
       return;
     }
     shapeRow.hidden = shapes.length < 2;
-    shapePick.textContent = `${shapeIdx + 1} of ${shapes.length}`;
+    // which of the five it is, not just where it is in the list: the CAGED
+    // letter is how a player knows a box, and "3 of 6" says nothing about it
+    shapePick.textContent = (subject.shapeName ? `${subject.shapeName} · ` : '')
+      + `${shapeIdx + 1} of ${shapes.length}`;
+    octaveStep.hidden = wholeShape || subject.octaves < 2;
+    $('earOctaveDown').disabled = octaveIdx <= 0;
+    $('earOctaveUp').disabled = octaveIdx >= subject.octaves - 1;
     shapeEl.className = 'ear-shape' + (mode === 'chord' ? '' : ' ear-shape-neck');
     shapeEl.innerHTML = drawSubject(subject);
 
@@ -280,6 +318,7 @@
     } else if (opts.rollShape && shapes.length > 1){
       shapeIdx = Math.floor(Math.random() * Math.min(5, shapes.length));
     }
+    octaveIdx = 0;
     input.value = chord.label;
     asked = null;                       // a new subject asks a fresh question
     render();
@@ -289,6 +328,26 @@
   function loadScale(opts = {}){
     rebuild();
     shapeIdx = opts.rollShape && shapes.length > 1 ? Math.floor(Math.random() * shapes.length) : 0;
+    asked = null;
+    resetOctave();
+    render();
+  }
+
+  // a new box starts on its fullest octave; stepping from there is by hand
+  function resetOctave(){
+    const shape = shapes[shapeIdx];
+    if (mode === 'chord' || !shape){ octaveIdx = 0; return; }
+    const octs = octavesOf(shape.cells, SEMITONE[keyName] % 12);
+    octaveIdx = octs.length ? fullestOctave(octs) : 0;
+  }
+
+  function stepOctave(by){
+    const shape = shapes[shapeIdx];
+    if (!shape) return;
+    const octs = octavesOf(shape.cells, SEMITONE[keyName] % 12);
+    const next = octaveIdx + by;
+    if (next < 0 || next >= octs.length) return;
+    octaveIdx = next;
     asked = null;
     render();
   }
@@ -375,8 +434,16 @@
   function choose(i){
     if (!shapes[i]) return;
     shapeIdx = i;
+    resetOctave();
     openSheet(false);
     render();
+  }
+
+  // the arrows: the same list the sheet shows, one step at a time, for when
+  // you want the next box rather than a particular one
+  function stepShape(by){
+    if (shapes.length < 2) return;
+    choose((shapeIdx + by + shapes.length) % shapes.length);
   }
 
   // ---- the drill ----------------------------------------------------------
@@ -414,7 +481,11 @@
     askedCell = pick(asked.cells);
   }
 
-  const playAsked = () => { if (askedCell) GT.chordFinder.playOne(askedCell.string, askedCell.fret); };
+  // every note that sounds lights where it sits, whether it was pressed or
+  // played for you
+  const lightUp = c => GT.chordFinder.flashAt(shapeEl, c.string, c.fret);
+
+  const playAsked = () => { if (askedCell) GT.chordFinder.playOne(askedCell.string, askedCell.fret, lightUp); };
 
   function answer(btn){
     if (!asked || nextRound) return;         // the round is won; the next one is coming
@@ -444,6 +515,10 @@
       modeGroup.querySelectorAll('.seg-btn').forEach(btn =>
         btn.addEventListener('click', () => setMode(btn.dataset.value)));
       $('earRandom').addEventListener('click', randomSubject);
+      $('earShapePrev').addEventListener('click', () => stepShape(-1));
+      $('earShapeNext').addEventListener('click', () => stepShape(1));
+      $('earOctaveDown').addEventListener('click', () => stepOctave(-1));
+      $('earOctaveUp').addEventListener('click', () => stepOctave(1));
       shapePick.addEventListener('click', () => openSheet(sheet.hidden));
       $('earSheetClose').addEventListener('click', () => openSheet(false));
       scrim.addEventListener('click', () => openSheet(false));
@@ -465,22 +540,23 @@
         octaveGroup.querySelectorAll('.seg-btn').forEach(b => b.classList.toggle('active', b === btn));
         wholeShape = btn.dataset.value === 'whole';
         asked = null;
+        resetOctave();
         render();
       }));
 
       $('earPlayNote').addEventListener('click', playAsked);
       $('earPlayRoot').addEventListener('click', () => {
-        if (rootCell) GT.chordFinder.playOne(rootCell.string, rootCell.fret);
+        if (rootCell) GT.chordFinder.playOne(rootCell.string, rootCell.fret, lightUp);
       });
       // the chord struck, or the scale run up — the plain version of either;
       // the diagram is there for the long one
       $('earPlayChord').addEventListener('click', () => {
         if (!subject) return;
-        if (mode === 'chord') GT.chordFinder.strum(subject.cells);
-        else GT.chordFinder.strum(upTheBox(subject.cells), 0.19);
+        if (mode === 'chord') GT.chordFinder.strum(subject.cells, 0.018, lightUp);
+        else GT.chordFinder.strum(upTheBox(subject.cells), 0.19, lightUp);
       });
       $('earPlayArp').addEventListener('click', () => {
-        if (subject) GT.chordFinder.strum(subject.cells, GT.chordFinder.ARPEGGIO_GAP);
+        if (subject) GT.chordFinder.strum(subject.cells, GT.chordFinder.ARPEGGIO_GAP, lightUp);
       });
       answersEl.addEventListener('click', e => {
         const btn = e.target.closest('.ear-answer');
@@ -507,6 +583,6 @@
       loadChord(name, { voicing: v });
     },
     // exposed for the tests, which have no page to click
-    notesOf, oneOctave, SCALES, PENTAS, SCALE_DEGREES,
+    notesOf, oneOctave, octavesOf, fullestOctave, SCALES, PENTAS, SCALE_DEGREES,
   };
 })();

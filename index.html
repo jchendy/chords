@@ -188,6 +188,7 @@
   .arrow{ width:38px; height:32px; margin:0; padding:0; border:0; border-radius:0; background:var(--panel2); color:var(--ink);
     font-size:1.3rem; font-weight:700; line-height:1; display:flex; align-items:center; justify-content:center; }
   .arrow + .arrow{ border-left:1px solid var(--line2); }
+  .arrow:disabled{ opacity:.35; pointer-events:none; }
   .arrow:hover{ background:var(--line2); }
   #boxStep.locked .arrow{ opacity:.4; pointer-events:none; }
 
@@ -887,6 +888,10 @@
            twenty-nine you didn't want -->
       <span class="tb-group" id="earShapeRow">
         <span class="tb-lbl">Shape</span>
+        <span class="pair">
+          <button type="button" class="seg-btn arrow" id="earShapePrev" aria-label="Previous shape">‹</button>
+          <button type="button" class="seg-btn arrow" id="earShapeNext" aria-label="Next shape">›</button>
+        </span>
         <button type="button" class="tbtn" id="earShapePick" aria-haspopup="dialog" aria-expanded="false"></button>
       </span>
       <!-- a box holds the same seven notes two or three times over; one
@@ -896,6 +901,11 @@
         <span class="segmented" id="earOctaveGroup">
           <button type="button" class="seg-btn active" data-value="octave">One octave</button>
           <button type="button" class="seg-btn" data-value="whole">Whole shape</button>
+        </span>
+        <!-- a box can hold two or three octaves; these move which one is in play -->
+        <span class="pair" id="earOctaveStep" hidden>
+          <button type="button" class="seg-btn arrow" id="earOctaveDown" aria-label="The octave below">↓</button>
+          <button type="button" class="seg-btn arrow" id="earOctaveUp" aria-label="The octave above">↑</button>
         </span>
       </div>
     </div>

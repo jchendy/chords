@@ -486,12 +486,17 @@ asking for a scale and getting its shapes is one lookup and no translating.
 **Play** narrows a box to a single octave or leaves it whole. A box holds the
 same five or seven notes two or three times over, and one octave — the span
 a player runs while learning the shape — is a fairer drill than eighteen
-notes spread over five frets. Which octave takes a little care: usually the
-one above the box's lowest root, but a box clipped by the nut can have its
-lowest root so high that the octave above it runs off the top of the shape,
-so the fullest octave wins. Of the 582 boxes across every scale and root,
-three are like that — A major pentatonic's A box holds three of its five
-notes above the lowest root and all five above the next.
+notes spread over five frets. The whole box is still drawn either way; the
+notes outside the octave in play just go quiet, so you can see the shape and
+see which part of it you're being asked about. **↓ ↑** move the octave, and
+stop at the ends rather than wrapping.
+
+Which octave it starts on takes a little care: usually the one above the
+box's lowest root, but a box clipped by the nut can have its lowest root so
+high that the octave above it runs off the top of the shape, so the fullest
+octave wins. Of the 582 boxes across every scale and root, three are like
+that — A major pentatonic's A box holds three of its five notes above the
+lowest root and all five above the next.
 
 Below the picture, the drill: it picks a note and plays it, and you say which
 one it was. It keeps score as it goes — right answers, questions asked, and
@@ -526,7 +531,15 @@ chord name instead.
 chord finder shows, drawn the same way, with the one you're on marked — and
 you pick by looking rather than by stepping past the twenty-nine you didn't
 want. In there a click is a choice and not a sound: the diagrams are the
-menu, not the instrument.
+menu, not the instrument. The **‹ ›** arrows beside it step through the same
+list for when you just want the next one, and the button itself names the
+CAGED shape you're on as well as its place in the list (`A shape · 2 of 6`),
+since the letter is how a player knows a box.
+
+Every note that sounds lights up where it sits — the note you're being
+asked, the root, the chord, the run up the scale — so you can see what
+you're hearing and where it is. The chord finder's diagrams do the same as
+their shapes play.
 
 ## Usage
 

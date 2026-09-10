@@ -878,18 +878,25 @@
   // notes is the difference between a chord and an arpeggio: a pick's sweep
   // is fast enough that the notes arrive as one, and spacing them out is the
   // same notes heard one at a time.
-  function sound(cells, t0, gap, hold){
+  // `onNote` is told when each note lands, so a picture can light up with the
+  // sound. It's timed off the same offsets the notes were scheduled at,
+  // counted from the audio clock, so the two can't drift apart.
+  function sound(cells, t0, gap, hold, onNote){
     const ordered = cells.slice().sort((a, b) => b.string - a.string);
-    ordered.forEach((c, i) => voice(freqOf(c.string, c.fret), t0 + i * gap, hold, 0.9));
+    ordered.forEach((c, i) => {
+      const at = t0 + i * gap;
+      voice(freqOf(c.string, c.fret), at, hold, 0.9);
+      if (onNote) setTimeout(() => onNote(c), Math.max(0, (at - GT.audio.ctx().currentTime) * 1000));
+    });
     return t0 + gap * Math.max(0, ordered.length - 1);
   }
 
-  async function strum(cells, gap = 0.018){
+  async function strum(cells, gap = 0.018, onNote){
     wake();
     await ready(cells);
     // an arpeggio's notes have to ring past the ones after them to add up to
     // the chord, so a slower roll holds each note longer
-    sound(cells, beginSound(), gap, Math.max(1.6, 0.9 + gap * cells.length * 1.6));
+    sound(cells, beginSound(), gap, Math.max(1.6, 0.9 + gap * cells.length * 1.6), onNote);
   }
   const ARPEGGIO_GAP = 0.28;
 
@@ -899,30 +906,40 @@
   // The top note isn't struck twice at the turn, so the run reads as one
   // line rather than stalling at the top.
   const TOUR_GAP = 0.28;      // as slow as the reverse finder's own arpeggio
-  async function tour(cells){
+  async function tour(cells, onNote){
     wake();
     await ready(cells);
     const t0 = beginSound();
     const low = cells.slice().sort((a, b) => b.string - a.string);
     const run = low.concat(low.slice(0, -1).reverse());
     const arpAt = t0 + 0.85;
-    run.forEach((c, i) => voice(freqOf(c.string, c.fret), arpAt + i * TOUR_GAP, 1.3, 0.85));
-    sound(cells, t0, 0.018, 1.7);
-    sound(cells, arpAt + run.length * TOUR_GAP + 0.08, 0.018, 2.4);
+    run.forEach((c, i) => {
+      const at = arpAt + i * TOUR_GAP;
+      voice(freqOf(c.string, c.fret), at, 1.3, 0.85);
+      if (onNote) setTimeout(() => onNote(c), Math.max(0, (at - GT.audio.ctx().currentTime) * 1000));
+    });
+    sound(cells, t0, 0.018, 1.7, onNote);
+    sound(cells, arpAt + run.length * TOUR_GAP + 0.08, 0.018, 2.4, onNote);
   }
 
   // one note of the shape, on its own
-  async function playOne(string, fret){
+  async function playOne(string, fret, onNote){
     wake();
     await ready([{ string, fret }]);
     voice(freqOf(string, fret), beginSound(), 1.8, 0.95);
+    if (onNote) onNote({ string, fret });
   }
 
   // Lighting a note lights every way in to it — the dot on the neck and the
   // name beside it — so it's plain they're the same note and that either
   // will sound it.
-  const twinsOf = hit => [...hit.closest('svg')
-    .querySelectorAll(`.note-hit[data-string="${hit.dataset.string}"]`)];
+  // By string *and* fret. On a chord diagram the two ways in to a note — the
+  // dot on the neck and the name beside it — are the same string and the same
+  // fret, so this pairs them; on a scale box drawn across the whole neck a
+  // string carries three or four notes, and matching by string alone lit the
+  // lot of them.
+  const twinsOf = hit => [...hit.closest('svg').querySelectorAll(
+    `.note-hit[data-string="${hit.dataset.string}"][data-fret="${hit.dataset.fret}"]`)];
 
   function litFromEvent(e, on){
     const hit = e.target.closest && e.target.closest('.note-hit');
@@ -997,7 +1014,7 @@
       const v = voicingsOf()[Number(card.dataset.voicing)];
       if (!v) return;
       e.preventDefault();
-      tour(v.cells);
+      tour(v.cells, c => flashAt(card, c.string, c.fret));
       card.classList.remove('rang');
       void card.offsetWidth;            // restart the flash animation
       card.classList.add('rang');
@@ -1006,6 +1023,13 @@
     container.addEventListener('keydown', e => {
       if (e.key === 'Enter' || e.key === ' ') activate(e);
     });
+  }
+
+  // Light a note as though it had been clicked, from wherever the sound came
+  // from — a note that plays without being pressed still ought to show.
+  function flashAt(container, string, fret){
+    const hit = container.querySelector(`.note-hit[data-string="${string}"][data-fret="${fret}"]`);
+    if (hit) flash(hit);
   }
 
   function flash(hit){
@@ -1074,6 +1098,6 @@
     describeVoicing, FAMILIES,
     // ...and for the ear trainer, which draws the same diagrams, sounds them
     // the same way, and writes a chord's notes with the same words
-    soundOnClick, notesOnClick, tour, playOne, degreeNameFor, noteNameFor, voicingTip,
+    soundOnClick, notesOnClick, tour, playOne, flashAt, degreeNameFor, noteNameFor, voicingTip,
   };
 })();
