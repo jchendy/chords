@@ -316,8 +316,16 @@
   .diagram-finger.small{ font-size:7.5px; }
   .diagram-open-degree{ fill:var(--muted); font:600 8px Inter,system-ui,sans-serif; }
   /* the note each string plays, and what it is in the chord, off the end of the neck */
-  .diagram-note-name{ fill:var(--ink); font:600 8.5px Inter,system-ui,sans-serif; }
-  .diagram-note-degree{ fill:var(--muted); font:500 8px Inter,system-ui,sans-serif; }
+  .diagram-note-name{ fill:var(--ink); font:600 10.5px Inter,system-ui,sans-serif; }
+  .diagram-note-degree{ fill:var(--muted); font:500 9.5px Inter,system-ui,sans-serif; }
+  /* Every note is a target of its own: clicking a dot, or the name beside it,
+     sounds just that note. Pointing at either lights both. */
+  .note-tap{ fill:transparent; }
+  .note-ring{ fill:none; stroke:var(--muted); stroke-width:1.4; opacity:0; transition:opacity .12s ease; }
+  .note-hit.lit .note-ring{ opacity:.9; }
+  .note-hit.lit .diagram-note-name, .note-hit.lit .diagram-note-degree{ fill:#fff; }
+  .note-hit.struck .note-ring{ animation:noteRang .45s ease-out; }
+  @keyframes noteRang{ from{ opacity:1; stroke:#fff; stroke-width:3; } to{ opacity:0; stroke-width:1.4; } }
   .diagram-mute{ fill:var(--muted); font:500 11px Inter,system-ui,sans-serif; }
   .diagram-open{ fill:none; stroke:#bfb7a8; stroke-width:1.6; }
   .diagram-open.diagram-root{ fill:none; stroke:var(--ink); }
@@ -365,8 +373,8 @@
   .tab-playhead{ fill:var(--ink); opacity:.12; }
 
   @media (prefers-reduced-motion: reduce){
-    .chart-grid .bar.rang, .diagram-card.rang{ animation:none; }
-    .note-dot, .shape-line{ transition:none; }
+    .chart-grid .bar.rang, .diagram-card.rang, .note-hit.struck .note-ring{ animation:none; }
+    .note-dot, .shape-line, .note-ring{ transition:none; }
   }
 
   /* ---------- phone ---------- */

@@ -621,6 +621,11 @@
 
   // small chord-diagram SVG for one voicing (same visual language as the main fretboard)
   // `labelMode` is 'fingers' (1-4) or 'degrees' (R, 3, 5, ♭7 ...)
+  // Anything you can click to hear one note: the dot on the neck and the name
+  // beside it are two ways at the same string, and carry the same handle.
+  const noteHit = (string, fret, inner) =>
+    `<g class="note-hit" data-string="${string}" data-fret="${fret}">${inner}</g>`;
+
   function buildDiagramSVG(cells, rootPc, fingering, labelMode = 'fingers', formula = null, rootName = ''){
     const frettedPositives = cells.map(c => c.fret).filter(f => f > 0);
     const maxFret = frettedPositives.length ? Math.max(...frettedPositives) : 0;
@@ -632,7 +637,11 @@
 
     // The right margin is wide because every sounding string is named there.
     const W = 180, H = 155;
-    const padL = 26, padR = 44, padT = 30, padB = 8;
+    const padL = 26, padR = 40, padT = 30, padB = 8;
+    // The name ends where the degree begins, five units apart, so the pair
+    // reads as one label however long either half is — "C R" sits as close
+    // together as "B♭ ♭7".
+    const nameX = 156, degreeX = nameX + 5;
     const nutX = padL;
     const colW = (W - padL - padR) / numFrets;
     const rowH = (H - padT - padB) / 5;
@@ -674,34 +683,45 @@
       const pc = (STRING_TUNING[s] + c.fret) % 12;
       const isRoot = pc === rootPc;
       const degree = degreeNameFor((pc - rootPc + 12) % 12, formula);
-      if (c.fret === 0){
-        els.push(`<circle class="diagram-open${isRoot ? ' diagram-root' : ''}" cx="${openX}" cy="${stringY(s)}" r="6"/>`);
+      const open = c.fret === 0;
+      const cx = open ? openX : colX(c.fret), cy = stringY(s), r = open ? 9 : 11;
+      const dot = [];
+      if (open){
+        dot.push(`<circle class="diagram-open${isRoot ? ' diagram-root' : ''}" cx="${cx}" cy="${cy}" r="6"/>`);
         if (labelMode === 'degrees'){
-          els.push(`<text class="diagram-open-degree" x="${openX}" y="${stringY(s) - 9}" text-anchor="middle">${degree}</text>`);
+          dot.push(`<text class="diagram-open-degree" x="${cx}" y="${cy - 9}" text-anchor="middle">${degree}</text>`);
         }
-        continue;
+      } else {
+        dot.push(`<circle class="${isRoot ? 'diagram-root' : 'diagram-note'}" cx="${cx}" cy="${cy}" r="8"/>`);
+        const label = labelMode === 'degrees' ? degree : fingerByString[s];
+        if (label){
+          const small = String(label).length > 1;
+          dot.push(`<text class="diagram-finger${small ? ' small' : ''}" x="${cx}" y="${cy + 3.2}" text-anchor="middle">${label}</text>`);
+        }
       }
-      const cx = colX(c.fret), cy = stringY(s);
-      els.push(`<circle class="${isRoot ? 'diagram-root' : 'diagram-note'}" cx="${cx}" cy="${cy}" r="8"/>`);
-      const label = labelMode === 'degrees' ? degree : fingerByString[s];
-      if (label){
-        const small = String(label).length > 1;
-        els.push(`<text class="diagram-finger${small ? ' small' : ''}" x="${cx}" y="${cy + 3.2}" text-anchor="middle">${label}</text>`);
-      }
+      // the ring first, so it sits behind the dot; the tap circle last, so it
+      // catches the click wherever in the dot it lands
+      els.push(noteHit(s, c.fret,
+        `<circle class="note-ring" cx="${cx}" cy="${cy}" r="${r}"/>`
+        + dot.join('')
+        + `<circle class="note-tap" cx="${cx}" cy="${cy}" r="${r}"/>`));
     }
 
     // Every sounding string named off the end of the neck: the note it plays,
     // and what that note is in this chord. The dots can only carry one of the
     // two at a time, and which note is under a finger is the thing a chord
-    // diagram otherwise leaves you to work out.
+    // diagram otherwise leaves you to work out. Each label is a target of its
+    // own — clicking it sounds that one note — and lights up with its dot.
     for (let s = 0; s < 6; s++){
       const c = cellByString.get(s);
       if (!c) continue;
       const pc = (STRING_TUNING[s] + c.fret) % 12;
       const degree = degreeNameFor((pc - rootPc + 12) % 12, formula);
-      const y = stringY(s) + 3;
-      els.push(`<text class="diagram-note-name" x="${W - padR + 5}" y="${y}">${noteNameFor(pc, degree, rootName)}</text>`);
-      els.push(`<text class="diagram-note-degree" x="${W - 3}" y="${y}" text-anchor="end">${degree}</text>`);
+      const y = stringY(s) + 3.5;
+      els.push(noteHit(s, c.fret,
+        `<text class="diagram-note-name" x="${nameX}" y="${y}" text-anchor="end">${noteNameFor(pc, degree, rootName)}</text>`
+        + `<text class="diagram-note-degree" x="${degreeX}" y="${y}">${degree}</text>`
+        + `<rect class="note-tap" x="${W - padR - 2}" y="${stringY(s) - 9}" width="${padR + 2}" height="18"/>`));
     }
 
     return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">${els.join('')}</svg>`;
@@ -815,22 +835,68 @@
   const OPEN_MIDI = [64, 59, 55, 50, 45, 40];     // high e down to low E
   const freqOf = (string, fret) => 440 * Math.pow(2, (OPEN_MIDI[string] + fret - 69) / 12);
 
-  // Sound the shape low string to high. The gap between the notes is the
-  // difference between a chord and an arpeggio: a pick's sweep is fast enough
-  // that the notes arrive as one, and spacing them out is the same notes heard
-  // one at a time.
-  function strum(cells, gap = 0.018){
+  // The piano voice, not the guitar one. Six guitar strings struck together
+  // are six sawtooth pairs through one clipping stage, and a chord with a
+  // 9th and a 13th in it turns to mud there; the piano's notes are cleaner
+  // and stay separate however many of them land at once. It's the voice the
+  // practice tab plays chords with, so the two tabs now sound the same.
+  function beginSound(){
     const audio = GT.audio;
     audio.ensureAudio();
     if (audio.ctx().state === 'suspended') audio.ctx().resume();
-    const t0 = audio.ctx().currentTime + 0.03;
+    // a second click calls off whatever the first one still had coming
+    audio.cancelScheduled();
+    return audio.ctx().currentTime + 0.03;
+  }
+
+  // Sound the shape low string to high, starting at `t0`. The gap between the
+  // notes is the difference between a chord and an arpeggio: a pick's sweep
+  // is fast enough that the notes arrive as one, and spacing them out is the
+  // same notes heard one at a time.
+  function sound(cells, t0, gap, hold){
     const ordered = cells.slice().sort((a, b) => b.string - a.string);
+    ordered.forEach((c, i) => GT.audio.playNote(freqOf(c.string, c.fret), t0 + i * gap, hold, 0.9));
+    return t0 + gap * Math.max(0, ordered.length - 1);
+  }
+
+  function strum(cells, gap = 0.018){
     // an arpeggio's notes have to ring past the ones after them to add up to
     // the chord, so a slower roll holds each note longer
-    const hold = Math.max(1.6, 0.9 + gap * ordered.length * 1.6);
-    ordered.forEach((c, i) => audio.playGuitar(freqOf(c.string, c.fret), t0 + i * gap, hold, 0.9, 'clean'));
+    sound(cells, beginSound(), gap, Math.max(1.6, 0.9 + gap * cells.length * 1.6));
   }
   const ARPEGGIO_GAP = 0.28;
+
+  // What you want to hear when you point at a shape: the chord, then its
+  // notes one at a time up and back down, then the chord again — how it
+  // sounds, what's in it, then how it sounds with those notes in your ear.
+  // The top note isn't struck twice at the turn, so the run reads as one
+  // line rather than stalling at the top.
+  const TOUR_GAP = 0.16;
+  function tour(cells){
+    const t0 = beginSound();
+    const low = cells.slice().sort((a, b) => b.string - a.string);
+    const run = low.concat(low.slice(0, -1).reverse());
+    const arpAt = t0 + 0.85;
+    run.forEach((c, i) => GT.audio.playNote(freqOf(c.string, c.fret), arpAt + i * TOUR_GAP, 1.3, 0.85));
+    sound(cells, t0, 0.018, 1.7);
+    sound(cells, arpAt + run.length * TOUR_GAP + 0.08, 0.018, 2.4);
+  }
+
+  // one note of the shape, on its own
+  function playOne(string, fret){
+    GT.audio.playNote(freqOf(string, fret), beginSound(), 1.8, 0.95);
+  }
+
+  // Lighting a note lights every way in to it — the dot on the neck and the
+  // name beside it — so it's plain they're the same note and that either
+  // will sound it.
+  const twinsOf = hit => [...hit.closest('svg')
+    .querySelectorAll(`.note-hit[data-string="${hit.dataset.string}"]`)];
+
+  function litFromEvent(e, on){
+    const hit = e.target.closest && e.target.closest('.note-hit');
+    if (hit) twinsOf(hit).forEach(g => g.classList.toggle('lit', on));
+  }
 
   function onCardActivate(e){
     const card = e.target.closest('.diagram-card');
@@ -838,7 +904,18 @@
     const v = shownVoicings[Number(card.dataset.voicing)];
     if (!v) return;
     e.preventDefault();
-    strum(v.cells);
+    // a note of the shape, if that's what was pressed — otherwise the shape
+    const hit = e.target.closest && e.target.closest('.note-hit');
+    if (hit){
+      playOne(Number(hit.dataset.string), Number(hit.dataset.fret));
+      twinsOf(hit).forEach(g => {
+        g.classList.remove('struck');
+        void g.getBoundingClientRect();     // restart the flash
+        g.classList.add('struck');
+      });
+      return;
+    }
+    tour(v.cells);
     card.classList.remove('rang');
     void card.offsetWidth;            // restart the flash animation
     card.classList.add('rang');
@@ -858,6 +935,8 @@
       triadOnlyToggle.addEventListener('change', runChordFinder);
       shellOnlyToggle.addEventListener('change', runChordFinder);
       chordFinderResults.addEventListener('click', onCardActivate);
+      chordFinderResults.addEventListener('mouseover', e => litFromEvent(e, true));
+      chordFinderResults.addEventListener('mouseout', e => litFromEvent(e, false));
       chordFinderResults.addEventListener('keydown', e => {
         if (e.key === 'Enter' || e.key === ' ') onCardActivate(e);
       });

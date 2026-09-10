@@ -413,8 +413,21 @@ only**. A major or minor triad also gets the whole-neck CAGED
 picture at the top — the same five shapes the practice tab draws, from the
 same code, so the two always agree.
 
-Click any shape to hear it strummed, low string to high, on the clean guitar
-voice. A slash chord (`D/F#`, `C/E`, `Am/G`) works too: the same chord with
+Click any shape and you hear it three ways over: the chord, then its notes
+one at a time up and back down, then the chord again — how it sounds, what's
+in it, then how it sounds with those notes in your ear. (The top note isn't
+struck twice at the turn, so the run reads as one line instead of stalling
+at the top.) Clicking a single dot, or the note's name beside it, sounds
+just that note; pointing at either lights both, so it's plain they're the
+same string and that either will play it. A second click calls off whatever
+the first still had coming.
+
+All of it is the piano voice, the one the practice tab plays chords with.
+Six guitar strings struck together are six sawtooth pairs through one
+clipping stage, and a chord with a 9th and a 13th in it turns to mud there;
+the piano's notes stay separate however many land at once.
+
+A slash chord (`D/F#`, `C/E`, `Am/G`) works too: the same chord with
 the named note underneath, so only shapes with that note on their lowest
 sounding string are offered — and the note can be one from outside the
 chord, as in `C/D`.
@@ -436,7 +449,8 @@ named too and marked "(no root)", after the plainer readings — B F♯ C♯ G i
 A13 (no root) and nothing else, while C♯ E G B is C♯m7♭5 first and A9 (no
 root) after. Only chords of five tones or more are read that way, since a
 rootless 7th is just a triad. "Play chord" strums what you've picked and
-"Play arpeggio" rolls it.
+"Play arpeggio" rolls it, both on the same piano voice the chord finder
+uses.
 
 ## Usage
 
