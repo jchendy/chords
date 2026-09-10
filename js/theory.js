@@ -115,6 +115,9 @@
   };
 
   const NOTE_NAMES_SHARP = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+  // the same twelve spelled the other way, for a note a flat numeral names —
+  // the ♭VII of C is Bb, not A#
+  const NOTE_NAMES_FLAT = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
 
   // every chord type this app knows how to name/find, in a fixed rank order
   // (used as a tiebreaker so simpler chords are preferred when several match)
@@ -270,7 +273,7 @@
 
   GT.theory = {
     MAJOR_KEYS, MINOR_KEYS, MAJOR_QUALITY, MAJOR_NUMERALS, MINOR_QUALITY, MINOR_NUMERALS,
-    SUFFIX, LEADING_TONE, MAJOR_COMMON, MINOR_COMMON, SEMITONE, NOTE_NAMES_SHARP, CHORD_FORMULAS,
+    SUFFIX, LEADING_TONE, MAJOR_COMMON, MINOR_COMMON, SEMITONE, NOTE_NAMES_SHARP, NOTE_NAMES_FLAT, CHORD_FORMULAS,
     pick, shuffle, buildDiatonicChords, seventhSuffix, displayName, degreeLabel,
     parseChordName, identifyChords, chordFromName, numeralFor,
   };

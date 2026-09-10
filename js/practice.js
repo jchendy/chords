@@ -7,7 +7,8 @@
 
   const {
     MAJOR_KEYS, MINOR_KEYS, MAJOR_COMMON, MINOR_COMMON, LEADING_TONE, SEMITONE,
-    pick, buildDiatonicChords, displayName, chordFromName, parseChordName, NOTE_NAMES_SHARP, SUFFIX,
+    pick, buildDiatonicChords, displayName, chordFromName, parseChordName, numeralFor,
+    NOTE_NAMES_SHARP, NOTE_NAMES_FLAT, SUFFIX,
   } = GT.theory;
   const audio = GT.audio;
   const {
@@ -21,10 +22,11 @@
   const MAX_CHORDS = 12;        // enough to hold a twelve-bar blues once repeats are merged
   // The key and every chord are always something concrete you can read off the
   // pickers; randomness is a button you press, not a state a slot sits in. A
-  // slot holds the scale degree it's on — or null, which means only that this
-  // chord isn't a degree of the key at all (one loaded from a genre example),
-  // and its picker names the chord itself instead.
-  let slotChoices = [0, 0, 0];          // per slot: the diatonic degree it's on
+  // slot holds the scale degree it's on, or a root outside the key written as
+  // the semitones above the tonic ('c3' is a ♭III) — or null, which means only
+  // that this chord isn't a root you picked at all (one loaded from a genre
+  // example), and its picker names the chord itself instead.
+  let slotChoices = [0, 0, 0];          // per slot: the root it's on
   let slotMeasures = [];                // per slot: how many measures that chord lasts
   let slotShapes = [];                // per slot: the shape you chose, or null to follow the key
   let loadedLabel = null;               // set when a progression came in from elsewhere
@@ -56,6 +58,37 @@
     return base;
   }
 
+  // ---- roots outside the key ----------------------------------------------
+  // A slot can sit on any of the twelve, not just the seven the key hands you:
+  // a ♭VII to fall off the end of a major progression, a ♯IV under a
+  // secondary V, the borrowed ♭VI. Such a root is stored as 'c' + the
+  // semitones above the tonic rather than as a note name, for the same reason
+  // a degree is: written that way it moves with the key, so a progression
+  // built here transposes whole.
+  const chromaticOf = deg =>
+    typeof deg === 'string' && /^c\d+$/.test(deg) ? Number(deg.slice(1)) % 12 : null;
+
+  // The chord a root gives before any shape asks for something else: the key's
+  // own chord on a degree, or a plain major triad on a root the key doesn't
+  // own. Either way it carries the seventh "Use 7ths" would put on it, which
+  // chordForDegree strips again unless a shape wants it.
+  function baseChordFor(deg){
+    const semis = chromaticOf(deg);
+    if (semis == null) return currentDiatonic.find(x => x.deg === deg) || currentDiatonic[0];
+    const tonicPc = SEMITONE[currentTonic] % 12;
+    const rootPc = (tonicPc + semis) % 12;
+    // The numeral table already spells these the way musicians write them —
+    // ♭VII in major, ♯IV in either — so take the accidental from the numeral
+    // and name the notes to match: the ♭VII of C is Bb, not A#.
+    const numeral = numeralFor(rootPc, tonicPc, 'maj', currentMode);
+    const names = numeral.includes('\u266d') ? NOTE_NAMES_FLAT : NOTE_NAMES_SHARP;
+    const at = iv => names[(rootPc + iv) % 12];
+    return {
+      note: at(0), third: at(4), fifth: at(7), seventh: at(10),
+      quality: 'maj', numeral, name: at(0) + SUFFIX.maj, deg,
+    };
+  }
+
   function randomDegreePool(){
     const common = currentMode === 'major' ? MAJOR_COMMON : MINOR_COMMON;
     return commonToggle.checked ? common.slice() : [0, 1, 2, 3, 4, 5, 6];
@@ -81,8 +114,7 @@
   // The seventh a key's own scale puts on a degree — what "use 7ths" rolls.
   // Read from the diatonic list, since a chord built as a triad has none.
   function diatonicSeventhFor(deg){
-    const c = currentDiatonic.find(x => x.deg === deg) || currentDiatonic[0];
-    return shapeOf(c);
+    return shapeOf(baseChordFor(deg));
   }
 
   // the flat-7 that keeps the triad it's built on
@@ -113,6 +145,11 @@
             ...(dim ? ['m7♭5', 'dim7'] : [])];
   }
 
+  // every shape there is, for a root the key has nothing to say about. Written
+  // out rather than read off CHORD_SHAPES, whose '7' would come first: an
+  // object enumerates its number-like keys ahead of the rest.
+  const ALL_SHAPES = ['maj', 'min', 'dim', '7', 'maj7', 'm7', 'm7♭5', 'dim7'];
+
   const triadShapeOf = quality => quality === 'min' ? 'min' : quality === 'dim' ? 'dim' : 'maj';
 
   // The shape a slot should take: whatever you set it to, otherwise the key's
@@ -141,11 +178,16 @@
     return null;
   }
 
-  // the two shapes the key itself puts on a degree: its triad and its 7th
+  // the two shapes the key itself puts on a degree: its triad and its 7th.
+  // A root the key doesn't own gets none — nothing about the key says what a
+  // borrowed chord should be, which is the whole point of borrowing it.
   function diatonicShapesFor(deg){
-    const c = currentDiatonic.find(x => x.deg === deg) || currentDiatonic[0] || {};
-    return [triadShapeOf(c.quality), diatonicSeventhFor(deg)];
+    if (chromaticOf(deg) != null) return [];
+    return [triadShapeOf(baseChordFor(deg).quality), diatonicSeventhFor(deg)];
   }
+
+  // what a slot shows before you touch its shape picker
+  const defaultShapeFor = deg => triadShapeOf(baseChordFor(deg).quality);
 
   // Re-cast a roman numeral for a quality the key doesn't give that degree —
   // a borrowed iv, a secondary V7 sitting on the ii, a diminished vii°.
@@ -160,13 +202,16 @@
   // nothing gives the key's own triad, which is what lets an untouched slot
   // follow along when the key or the mode changes.
   function chordForDegree(deg, shape){
-    const c = currentDiatonic.find(x => x.deg === deg) || currentDiatonic[0];
+    const c = baseChordFor(deg);
     const chord = { ...c, _deg: c.deg, _shape: shape || null };
     const spec = CHORD_SHAPES[shape];
 
     if (!spec){ chord.seventh = null; return chord; }
 
-    const at = semis => NOTE_NAMES_SHARP[((SEMITONE[chord.note] + semis) % 12 + 12) % 12];
+    // spell the chord tones the way its root is spelled, so a borrowed Bbm
+    // gets a Db third rather than a C#
+    const names = chord.note.includes('b') ? NOTE_NAMES_FLAT : NOTE_NAMES_SHARP;
+    const at = semis => names[((SEMITONE[chord.note] + semis) % 12 + 12) % 12];
     if (spec.triad !== chord.quality){
       chord.third = at(spec.triad === 'maj' ? 4 : 3);
       chord.fifth = at(spec.triad === 'dim' ? 6 : 7);
@@ -367,9 +412,10 @@
   const genBtn = document.getElementById('genBtn');
   const randomKeyBtn = document.getElementById('randomKeyBtn');
 
-  // Which degree of the current key a slot is sitting on. Chords generated
-  // here carry their degree; one loaded from a genre example doesn't, so match
-  // it by root and fall back to the tonic.
+  // Which root of the current key a slot is sitting on — a degree, or one of
+  // the chromatic ids. Chords generated here carry their root; one loaded from
+  // a genre example doesn't, so match it by pitch: to a degree if the key has
+  // one there, and otherwise to the root outside the key that it is.
   function degreeOf(i){
     if (slotChoices[i] != null) return slotChoices[i];
     const chord = currentProgression[i];
@@ -377,7 +423,8 @@
     if (chord._deg != null) return chord._deg;
     const rootPc = SEMITONE[chord.note] % 12;
     const match = currentDiatonic.find(c => SEMITONE[c.note] % 12 === rootPc);
-    return match ? match.deg : currentDiatonic[0].deg;
+    if (match) return match.deg;
+    return 'c' + ((rootPc - SEMITONE[currentTonic]) % 12 + 12) % 12;
   }
 
   function renderChordSlots(){
@@ -394,23 +441,34 @@
       const sel = document.createElement('select');
       sel.className = 'mini-select chord-degree';
       sel.setAttribute('aria-label', `Chord ${i + 1}`);
-      // Just which degree of the key this is — the shape picker beside it says
+      // Just which root this chord is on — the shape picker beside it says
       // whether it's a triad or a seventh, so naming one here would only
       // contradict the other. There's no "Random" entry: the picker always
       // names the chord that's actually sounding, and the dice roll the whole
       // progression at once.
-      const degOptions = currentDiatonic
+      // All twelve roots are on the list, in two groups: the ones the key owns
+      // read as their degree (D · ii), and the five it doesn't read as what
+      // they are (Bb · ♭VII) under a heading that says you've stepped outside.
+      const inKeyOpts = currentDiatonic
         .map(o => `<option value="${o.deg}">${o.name} · ${o.numeral}</option>`);
-      // a chord loaded from a genre example may be no degree of this key at
-      // all; it still gets to name itself, and picking anything else replaces it
-      if (slotChoices[i] == null && currentProgression[i]){
-        degOptions.unshift(`<option value="off">${displayName(currentProgression[i])}</option>`);
+      const owned = new Set(currentDiatonic.map(c => SEMITONE[c.note] % 12));
+      const outsideOpts = [];
+      for (let semis = 1; semis < 12; semis++){
+        if (owned.has((SEMITONE[currentTonic] + semis) % 12)) continue;
+        const c = baseChordFor('c' + semis);
+        outsideOpts.push(`<option value="c${semis}">${c.note} · ${c.numeral}</option>`);
       }
-      sel.innerHTML = degOptions.join('');
+      // a chord loaded from a genre example is on no root you picked; it still
+      // gets to name itself, and picking anything else replaces it
+      const offOpt = (slotChoices[i] == null && currentProgression[i])
+        ? `<option value="off">${displayName(currentProgression[i])}</option>` : '';
+      sel.innerHTML = offOpt
+        + `<optgroup label="In this key">${inKeyOpts.join('')}</optgroup>`
+        + `<optgroup label="Outside the key">${outsideOpts.join('')}</optgroup>`;
       sel.value = slotChoices[i] == null ? 'off' : String(slotChoices[i]);
       sel.addEventListener('change', () => {
         if (sel.value === 'off') return;         // it's already that chord
-        slotChoices[i] = Number(sel.value);
+        slotChoices[i] = chromaticOf(sel.value) == null ? Number(sel.value) : sel.value;
         // a chord picked by hand starts from the key's own shape for it,
         // unless a shape was already set on this slot
         currentProgression[i] = chordForDegree(slotChoices[i], shapeFor(i, slotChoices[i]));
@@ -443,9 +501,12 @@
       sev.setAttribute('aria-label', `Chord quality for chord ${i + 1}`);
       sev.title = '✓ marks the shapes this key gives that degree';
       const deg = degreeOf(i);
-      const dia = currentDiatonic.find(x => x.deg === deg) || currentDiatonic[0] || {};
       const inKey = diatonicShapesFor(deg);
-      const options = shapeOptions(dia.quality);
+      // A root the key owns is offered the shapes that fit it; a root outside
+      // the key is offered all of them, since there's no scale to narrow it.
+      const options = chromaticOf(deg) == null
+        ? shapeOptions(baseChordFor(deg).quality)
+        : ALL_SHAPES.slice();
       // whatever is actually sounding is always on the list, even a shape a
       // key change carried in from the other mode
       const sounding = shapeFor(i, deg);
@@ -454,8 +515,9 @@
         `<option value="${tok}">${CHORD_SHAPES[tok].label}${inKey.includes(tok) ? ' ✓' : ''}</option>`
       ).join('');
       // what this slot would be showing if you'd never touched it
-      const implied = randomSeventhsToggle.checked ? diatonicSeventhFor(deg) : inKey[0];
-      sev.value = shapeFor(i, deg) || inKey[0];
+      const plain = defaultShapeFor(deg);
+      const implied = randomSeventhsToggle.checked ? diatonicSeventhFor(deg) : plain;
+      sev.value = shapeFor(i, deg) || plain;
       sev.addEventListener('change', () => {
         // leaving the untouched choice unrecorded is what lets a slot follow
         // the key when you transpose or flip Major/Minor
@@ -609,6 +671,17 @@
     const validDegs = new Set(currentDiatonic.map(c => c.deg));
 
     currentProgression = currentProgression.map((chord, i) => {
+      const semis = chromaticOf(chord._deg);
+      if (semis != null){
+        // A root stored as an interval above the tonic moves with the key on
+        // its own. It stops being outside the key only when the mode changes
+        // under it — a ♭III is no degree of C major but is the III of C minor
+        // — so hand it back to that degree when the new key has one for it.
+        const pc = (SEMITONE[tonic] + semis) % 12;
+        const match = currentDiatonic.find(c => SEMITONE[c.note] % 12 === pc);
+        slotChoices[i] = match ? match.deg : chord._deg;
+        return chordForDegree(slotChoices[i], shapeFor(i, slotChoices[i]));
+      }
       if (chord._deg != null && validDegs.has(chord._deg)){
         return chordForDegree(chord._deg, shapeFor(i, chord._deg));
       }
@@ -633,7 +706,8 @@
 
     // a degree the new key has no chord for is re-pinned above, or else the
     // chord stays as a plain transposition and its picker names it
-    slotChoices = slotChoices.map(s => (s == null || validDegs.has(s)) ? s : null);
+    slotChoices = slotChoices.map(s =>
+      (s == null || validDegs.has(s) || chromaticOf(s) != null) ? s : null);
     loadedLabel = null;      // it's no longer the key that progression came in
     buildKeySelect();        // the picker always names the key you're in
     renderAll();
@@ -1071,7 +1145,8 @@
   // ---- sharing a progression by link ---------------------------------------
   // The state rides in the URL fragment after the tab name:
   //   #caged-practice?k=major:C&c=0.2.maj7,3.1,4.1.7&t=90&s=blues.0
-  // k = mode:tonic; c = one entry per chord as degree.bars.shape (shape blank
+  // k = mode:tonic; c = one entry per chord as root.bars.shape, where a root is
+  // a scale degree or a 'c'-prefixed interval above the tonic (shape blank
   // for the key's own triad); t = tempo; s = style.variant. A progression that
   // came in as chord names (from a genre example) is written as n = name.bars
   // instead, since its chords aren't degrees of anything.
@@ -1121,13 +1196,18 @@
     }
     const entries = p.get('c').split(',').map(e => e.split('.'));
     const valid = new Set(currentDiatonic.map(c => c.deg));
-    const kept = entries.filter(([deg]) => valid.has(Number(deg))).slice(0, MAX_CHORDS);
+    // a root is a degree of the key, or one of the twelve written as an
+    // interval above the tonic — which every key has, so it needs no checking
+    const rootOf = deg => chromaticOf(deg) == null ? Number(deg) : deg;
+    const kept = entries
+      .filter(([deg]) => valid.has(Number(deg)) || chromaticOf(deg) != null)
+      .slice(0, MAX_CHORDS);
     if (!kept.length) return false;
     setSlotCount(kept.length);
-    slotChoices = kept.map(([deg]) => Number(deg));
+    slotChoices = kept.map(([deg]) => rootOf(deg));
     slotMeasures = kept.map(([, bars]) => Math.max(1, Number(bars) || 1));
     slotShapes = kept.map(([, , shape]) => CHORD_SHAPES[shape] ? shape : null);
-    currentProgression = kept.map(([deg], i) => chordForDegree(Number(deg), slotShapes[i]));
+    currentProgression = kept.map(([deg], i) => chordForDegree(rootOf(deg), slotShapes[i]));
     renderAll();
     return true;
   }

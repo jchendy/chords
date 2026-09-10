@@ -65,16 +65,27 @@ names the tab you're on.
 - Per-slot chord selection — one row per chord, with the columns named once
   at the top (Chord / Bars / Quality) so which picker does what is readable
   rather than something you learn by clicking. Every chord picker always names
-  a real chord of the key, and the dice beside the count stepper rolls the
+  a real chord, and the dice beside the count stepper rolls the
   whole set at once. Randomness
   is an action rather than a state a slot sits in, so what you see in the
   pickers is always what's sounding. A chord loaded from a genre example that
-  isn't a degree of the key names itself instead. The presets sit above these,
+  isn't a root you picked names itself instead. The presets sit above these,
   so you can drop a shape in and then edit it
+- All twelve roots, in two groups — the seven the key owns read as their
+  degree (`Dm · ii`) under "In this key", and the five it doesn't read as
+  what they are (`Bb · ♭VII`) under "Outside the key", so stepping outside is
+  plain rather than something you have to work out from the letters. A
+  borrowed root is held as an interval above the tonic rather than as a note,
+  which is what lets it survive everything a degree survives: transposing
+  takes it along (the ♭VII of C becomes the ♭VII of D), a shared link brings
+  it back, and a mode that turns out to own it — the ♭III of C major is the
+  III of C minor — hands it back to that degree. It's spelled the way its
+  numeral writes it, so a ♭VII reads `Bb`, not `A#`
 - Per-slot chord quality — the degree picker names the degree and nothing
   else (`Dm · ii`); a second picker beside it sets the shape, and offers
   Major, Minor, 7, maj7 and m7 on any degree, with dim, m7♭5 and dim7 added
-  on the one degree whose own chord is diminished. A **✓** marks the two
+  on the one degree whose own chord is diminished — and every shape at once on
+  a root outside the key, which the key says nothing about. A **✓** marks the two
   shapes the key itself gives that degree, so leaving the key is a choice you
   can see yourself making — a secondary dominant on the ii, a borrowed minor
   iv, a major III. The numeral follows: pick Major on the ii and it reads

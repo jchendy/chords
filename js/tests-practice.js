@@ -237,8 +237,126 @@
     t.equal(bad.join('; '), '', 'Playback can be called off without waiting for the queue');
   }
 
+  // T41 — a progression isn't limited to the seven chords the key hands you:
+  // the ♭VII a rock song falls off the end into, the borrowed ♭VI, the ♯IV
+  // under a secondary dominant. All twelve roots are on the picker, and the
+  // two kinds have to stay told apart: a root the key owns reads as its
+  // degree, and one it doesn't reads as itself under a heading that says so.
+  function testEveryRootIsOnThePicker(t){
+    start();
+    const bad = [];
+    const rootOf = txt => (txt.match(/^[A-G][b#]?/) || [''])[0];
+    const pcOf = txt => GT.theory.SEMITONE[rootOf(txt)];
+    ['major:C', 'minor:A', 'major:Eb', 'minor:F#'].forEach(key => {
+      setKey(key);
+      const sel = q('#chordSlots .chord-degree');
+      const groups = [...sel.querySelectorAll('optgroup')];
+      if (groups.length !== 2){ bad.push(`${key}: ${groups.length} option groups, not 2`); return; }
+      const [inKey, outside] = groups;
+      if (!/outside/i.test(outside.label)) bad.push(`${key}: the second group is labelled "${outside.label}"`);
+      const pcs = g => [...g.children].map(o => pcOf(o.textContent));
+      const own = new Set(pcs(inKey)), out = new Set(pcs(outside));
+      // the two together are the twelve, with nothing in both
+      if (own.size + out.size !== 12){
+        bad.push(`${key}: ${own.size} in the key and ${out.size} outside it`);
+      }
+      [...own].filter(pc => out.has(pc)).forEach(pc =>
+        bad.push(`${key}: pitch ${pc} is offered both inside and outside the key`));
+      // ...and every option, either side, names a chord and the degree it is
+      [...inKey.children, ...outside.children].forEach(o => {
+        const [name, numeral] = o.textContent.split(' · ');
+        if (!numeral) bad.push(`${key}: "${o.textContent}" doesn't say which degree it is`);
+        if (pcOf(name) === undefined) bad.push(`${key}: "${o.textContent}" doesn't name a chord`);
+      });
+      // A root outside the key is always an altered degree, and where it needs
+      // an accidental at all it takes the one its own numeral gives it: the
+      // ♭VII of C is Bb, never A#. (Plenty of them need none — the ♭II of Eb
+      // is a plain E, and no one writes Fb.)
+      [...outside.children].forEach(o => {
+        const [name, numeral] = o.textContent.split(' · ');
+        if (!/[\u266d\u266f]/.test(numeral || '')){
+          bad.push(`${key}: "${o.textContent}" sits outside the key with a plain numeral`);
+          return;
+        }
+        const wrong = numeral.includes('\u266d') ? '#' : 'b';
+        if (rootOf(name).slice(1) === wrong) bad.push(`${key}: ${numeral} is spelled "${rootOf(name)}"`);
+      });
+    });
+    t.equal(bad.join('; '), '', 'All twelve roots are offered, and the key\'s own are still named as degrees');
+  }
+
+  // A root outside the key is held as an interval above the tonic, like a
+  // degree is, so that everything a degree survives it survives too: moving
+  // the key takes it along, a mode that turns out to own it hands it back to
+  // that degree, and a shared link brings it home.
+  function testAnOutsideRootTravels(t){
+    start();
+    const bad = [];
+    const bar = () => chart().split(' | ')[0];
+    // What the slot's own picker says it's on. A chord that's merely sounding
+    // isn't the same as one the picker is still holding: the first survives a
+    // key change by accident, the second is what "Use 7ths", a shared link and
+    // the next key change all read.
+    const pinned = () => {
+      const sel = q('#chordSlots .chord-degree');
+      const opt = sel.selectedOptions[0];
+      if (!opt) return 'nothing';
+      const group = opt.parentElement.tagName === 'OPTGROUP' ? opt.parentElement.label : 'no group';
+      return `${opt.textContent} (${group})`;
+    };
+    const outsideOption = numeral => {
+      const sel = q('#chordSlots .chord-degree');
+      const outside = [...sel.querySelectorAll('optgroup')][1];
+      const opt = [...outside.children].find(o => o.textContent.split(' · ')[1] === numeral);
+      if (opt) setSel(sel, opt.value);
+      return !!opt;
+    };
+
+    setKey('major:C');
+    if (!outsideOption('\u266dVII')) bad.push('C major offers no ♭VII');
+    if (bar() !== 'Bb \u266dVII') bad.push(`the ♭VII of C came out "${bar()}"`);
+    // nothing about the key narrows a borrowed chord, so it's offered every
+    // shape — plain major first, as everywhere else
+    const shapes = [...q('#chordSlots .seventh-select').options].map(o => o.textContent);
+    if (shapes.length !== 8 || shapes[0] !== 'Major')
+      bad.push(`a borrowed root is offered ${shapes.length} shapes, starting "${shapes[0]}"`);
+
+    // the same chord in another key: still the ♭VII, now spelled from D, and
+    // still held as the ♭VII rather than left behind as a chord of no degree
+    setKey('major:D');
+    if (bar() !== 'C \u266dVII') bad.push(`moved to D major, the ♭VII came out "${bar()}"`);
+    if (pinned() !== 'C · \u266dVII (Outside the key)')
+      bad.push(`moved to D major, the picker holds ${pinned()}`);
+
+    // a link brings it back rather than dropping it for a diatonic chord
+    q('#shareBtn').click();
+    const link = location.hash;
+    setKey('minor:G');
+    location.hash = '#practice-elsewhere';
+    location.hash = link;
+    if (bar() !== 'C \u266dVII') bad.push(`a shared ♭VII came back as "${bar()}"`);
+    if (pinned() !== 'C · \u266dVII (Outside the key)')
+      bad.push(`a shared ♭VII came back held as ${pinned()}`);
+
+    // a mode that does own the root takes it back as a degree
+    setKey('major:C');
+    if (!outsideOption('\u266dIII')) bad.push('C major offers no ♭III');
+    if (bar() !== 'Eb \u266dIII') bad.push(`the ♭III of C came out "${bar()}"`);
+    setKey('minor:C');
+    if (bar() !== 'Eb III') bad.push(`in C minor the same chord reads "${bar()}", not its degree III`);
+    if (pinned() !== 'Eb · III (In this key)')
+      bad.push(`in C minor the picker holds ${pinned()}, not the degree the key owns`);
+
+    // don't leave a link in the address bar: reloading the page would boot the
+    // tab into this progression rather than a fresh one
+    location.hash = '';
+    t.equal(bad.join('; '), '', 'A root outside the key moves with the key, and is given back when a key owns it');
+  }
+
   GT.practiceSuites = [
     ['Practice: a shared link round-trips', testShareLinkRoundTrips],
+    ['Practice: every root is on the picker', testEveryRootIsOnThePicker],
+    ['Practice: a root outside the key travels with it', testAnOutsideRootTravels],
     ['Practice: a variant the mode drops takes its preset with it', testModeLockedVariantDropsItsPreset],
     ['Practice: a hidden variant row is empty', testHiddenVariantRowIsEmpty],
     ['Practice: the transports stay in step', testTransportsStayInStep],
