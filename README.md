@@ -832,7 +832,18 @@ rejected and the reason — the Philharmonia's, whose terms forbid making the
 samples available as-is, which is what a public repository does; and VCSL,
 which is genuinely CC0 but has no guitar in it.
 
-They are a bonus rather than a requirement. Each sample is fetched the first
+Two more CC0 sets sit beside them, recorded for the FreePats project and
+taken whole rather than in the slice we need: a Kawai upright piano
+(`audio/piano/`, 66 samples, two velocity layers) and a Yamaha RBX bass
+guitar (`audio/bass/`, finger and picked, chromatic through its first
+octave). Nothing plays them yet — they are on hand for the day the practice
+tab's piano and its walking bass stop being synthesized, and each folder's
+`SOURCE.md` records who recorded them, where the CC0 dedication is stated,
+and what the set does and doesn't cover. The bass, in particular, stops at
+A2 while the walking line can ask for a D♯4, which is a decision waiting to
+be made rather than a download waiting to happen.
+
+The recordings are a bonus rather than a requirement. Each sample is fetched the first
 time a note needs it (about 30 ms on a local server, nothing after that), and
 when it can't be fetched the synthesized piano plays instead and says nothing
 about it. That matters for one case in particular: opened straight from disk
