@@ -24,6 +24,7 @@
   const octaveStep = $('earOctaveStep');
   const sheet = $('earShapeSheet'), scrim = $('earScrim'), choicesEl = $('earShapeChoices');
   const quizEl = $('earQuiz'), answersEl = $('earAnswers'), verdictEl = $('earVerdict');
+  const rootFirst = $('earRootFirst');
   const scoreEl = $('earScore');
 
   // The chords worth drilling: the everyday triads and sevenths, and the
@@ -226,16 +227,19 @@
   }
 
   function neckSVG(s){
-    const degreeAt = new Map(s.notes.map(n => [n.pc, n.degree]));
     const inPlay = new Set(s.cells.map(c => `${c.string}:${c.fret}`));
-    // Every note of the box is drawn; the ones outside the octave in play are
-    // drawn quiet, the way the practice tab draws a passing note. You can see
-    // the whole shape, and see which part of it you're being asked about.
+    // Every note of the box is drawn, and every one says which degree it is —
+    // reading the shape is half of what a box is for. The ones outside the
+    // octave in play are drawn quiet, the way the practice tab draws a
+    // passing note, so you can see the whole shape and see which part of it
+    // you're being asked about. Their degrees come from the pitch class
+    // rather than from the notes in play, which on a partial octave don't
+    // cover every one.
     const markers = s.shown.map(c => {
       const playing = inPlay.has(`${c.string}:${c.fret}`);
       return {
         string: c.string, fret: c.fret,
-        label: playing ? (degreeAt.get(pcOf(c)) || '') : '',
+        label: SCALE_DEGREES[(pcOf(c) - s.rootPc + 12) % 12] || '',
         color: '#bfb7a8',
         passing: !playing,
         isRoot: playing && pcOf(c) === s.rootPc,
@@ -279,6 +283,7 @@
     const root = subject.notes.find(n => n.interval === 0);
     rootCell = root ? root.cells.slice().sort((a, b) => b.string - a.string)[0] : null;
     $('earPlayRoot').hidden = !rootCell;
+    rootFirst.parentElement.hidden = !rootCell;
     $('earPlayChord').textContent = mode === 'chord' ? 'Play the chord' : 'Play the scale';
     $('earPlayArp').hidden = mode !== 'chord';
     $('earQuizTitle').textContent = mode === 'chord'
@@ -485,7 +490,31 @@
   // played for you
   const lightUp = c => GT.chordFinder.flashAt(shapeEl, c.string, c.fret);
 
-  const playAsked = () => { if (askedCell) GT.chordFinder.playOne(askedCell.string, askedCell.fret, lightUp); };
+  // A note on its own is a hard thing to place; heard against the root it's
+  // an interval, which is the thing the ear can actually learn. So the drill
+  // sounds the root first by default, and the toggle turns that off once you
+  // don't want the help.
+  //
+  // The root plays even when the root *is* the answer. It would be easier to
+  // skip it there, and it would also give the game away: a question that
+  // played one note instead of two could only ever be the root.
+  const ROOT_GAP = 0.75;         // long enough to hear the root land and settle
+
+  // The note being asked never lights. Everything else that sounds does —
+  // the root, the chord, the run up the scale — but lighting the question
+  // would be answering it. Only the root of the pair gets a light, and it
+  // gets one whichever note follows it, so a question where the answer is
+  // the root looks like every other question.
+  function playAsked(){
+    if (!askedCell) return;
+    if (rootFirst.checked && rootCell){
+      let first = true;
+      GT.chordFinder.playRun([rootCell, askedCell], ROOT_GAP,
+        c => { if (first){ lightUp(c); first = false; } });
+    } else {
+      GT.chordFinder.playOne(askedCell.string, askedCell.fret);
+    }
+  }
 
   function answer(btn){
     if (!asked || nextRound) return;         // the round is won; the next one is coming
@@ -498,6 +527,9 @@
     }
     btn.classList.add('right');
     scored(!missed);
+    // now it can light: the round is over, and where the note was is the
+    // thing worth taking away from it
+    lightUp(askedCell);
     say(`Yes — ${asked.name} · ${asked.degree}`, 'good');
     // the next note plays itself, so the drill keeps going without a button
     // press between every question
@@ -553,7 +585,7 @@
       $('earPlayChord').addEventListener('click', () => {
         if (!subject) return;
         if (mode === 'chord') GT.chordFinder.strum(subject.cells, 0.018, lightUp);
-        else GT.chordFinder.strum(upTheBox(subject.cells), 0.19, lightUp);
+        else GT.chordFinder.playRun(upTheBox(subject.cells), 0.19, lightUp);
       });
       $('earPlayArp').addEventListener('click', () => {
         if (subject) GT.chordFinder.strum(subject.cells, GT.chordFinder.ARPEGGIO_GAP, lightUp);

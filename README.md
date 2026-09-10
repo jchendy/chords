@@ -487,8 +487,9 @@ asking for a scale and getting its shapes is one lookup and no translating.
 same five or seven notes two or three times over, and one octave — the span
 a player runs while learning the shape — is a fairer drill than eighteen
 notes spread over five frets. The whole box is still drawn either way; the
-notes outside the octave in play just go quiet, so you can see the shape and
-see which part of it you're being asked about. **↓ ↑** move the octave, and
+notes outside the octave in play just go quiet — still labelled with their
+degree, since reading the shape is half of what a box is for — so you can
+see the whole thing and see which part of it you're being asked about. **↓ ↑** move the octave, and
 stop at the ends rather than wrapping.
 
 Which octave it starts on takes a little care: usually the one above the
@@ -536,10 +537,20 @@ list for when you just want the next one, and the button itself names the
 CAGED shape you're on as well as its place in the list (`A shape · 2 of 6`),
 since the letter is how a player knows a box.
 
-Every note that sounds lights up where it sits — the note you're being
-asked, the root, the chord, the run up the scale — so you can see what
-you're hearing and where it is. The chord finder's diagrams do the same as
-their shapes play.
+Every note that sounds lights up where it sits — the root, the chord, the
+run up the scale — so you can see what you're hearing and where it is. With
+one exception, which is the point of the tab: the note you're being asked
+never lights, because lighting the question would be answering it. It lights
+once you've placed it, where knowing where it was is the thing worth taking
+away. The chord finder's diagrams light the same way as their shapes play.
+
+**Root first**, on by default, sounds the root before the note you're being
+asked to place. A note on its own is a hard thing to place; heard against
+the root it's an interval, which is the thing an ear can actually learn.
+Turn it off when you don't want the help. The root plays even when the root
+*is* the answer — skipping it there would be easier, and would also give the
+game away, since a question that played one note instead of two could only
+ever be the root.
 
 ## Usage
 

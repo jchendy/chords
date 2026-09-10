@@ -882,21 +882,33 @@
   // sound. It's timed off the same offsets the notes were scheduled at,
   // counted from the audio clock, so the two can't drift apart.
   function sound(cells, t0, gap, hold, onNote){
-    const ordered = cells.slice().sort((a, b) => b.string - a.string);
-    ordered.forEach((c, i) => {
+    cells.forEach((c, i) => {
       const at = t0 + i * gap;
       voice(freqOf(c.string, c.fret), at, hold, 0.9);
       if (onNote) setTimeout(() => onNote(c), Math.max(0, (at - GT.audio.ctx().currentTime) * 1000));
     });
-    return t0 + gap * Math.max(0, ordered.length - 1);
+    return t0 + gap * Math.max(0, cells.length - 1);
   }
+
+  // low string to high, which is the way a hand crosses them
+  const lowFirst = cells => cells.slice().sort((a, b) => b.string - a.string);
+  // an arpeggio's notes have to ring past the ones after them to add up to
+  // the chord, so a slower roll holds each note longer
+  const holdFor = (gap, n) => Math.max(1.6, 0.9 + gap * n * 1.6);
 
   async function strum(cells, gap = 0.018, onNote){
     wake();
     await ready(cells);
-    // an arpeggio's notes have to ring past the ones after them to add up to
-    // the chord, so a slower roll holds each note longer
-    sound(cells, beginSound(), gap, Math.max(1.6, 0.9 + gap * cells.length * 1.6), onNote);
+    sound(lowFirst(cells), beginSound(), gap, holdFor(gap, cells.length), onNote);
+  }
+
+  // The same notes, in the order given rather than the order a hand would
+  // cross them: a run up a scale box, or a root sounded before the note
+  // you're being asked to place.
+  async function playRun(cells, gap, onNote){
+    wake();
+    await ready(cells);
+    sound(cells, beginSound(), gap, holdFor(gap, cells.length), onNote);
   }
   const ARPEGGIO_GAP = 0.28;
 
@@ -918,8 +930,8 @@
       voice(freqOf(c.string, c.fret), at, 1.3, 0.85);
       if (onNote) setTimeout(() => onNote(c), Math.max(0, (at - GT.audio.ctx().currentTime) * 1000));
     });
-    sound(cells, t0, 0.018, 1.7, onNote);
-    sound(cells, arpAt + run.length * TOUR_GAP + 0.08, 0.018, 2.4, onNote);
+    sound(lowFirst(cells), t0, 0.018, 1.7, onNote);
+    sound(lowFirst(cells), arpAt + run.length * TOUR_GAP + 0.08, 0.018, 2.4, onNote);
   }
 
   // one note of the shape, on its own
@@ -1098,6 +1110,7 @@
     describeVoicing, FAMILIES,
     // ...and for the ear trainer, which draws the same diagrams, sounds them
     // the same way, and writes a chord's notes with the same words
-    soundOnClick, notesOnClick, tour, playOne, flashAt, degreeNameFor, noteNameFor, voicingTip,
+    soundOnClick, notesOnClick, tour, playOne, playRun, flashAt,
+    degreeNameFor, noteNameFor, voicingTip,
   };
 })();
