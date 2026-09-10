@@ -386,6 +386,7 @@
   .ear-answer.right{ border-color:var(--good); color:var(--good); }
   .ear-answer.right .ear-answer-degree{ color:var(--good); }
   .ear-answer.wrong{ border-color:var(--bad); }
+  .ear-back-row{ margin-top:12px; }
   .ear-verdict{ margin:14px 0 0; min-height:1.3em; font-size:.88rem; color:var(--muted); }
   .ear-verdict.good{ color:var(--good); }
   /* the shape picker: every grip at once, the current one marked */
@@ -944,11 +945,14 @@
         <button type="button" class="tbtn" id="earPlayRoot">Play root</button>
         <button type="button" class="tbtn" id="earPlayChord">Play the chord</button>
         <button type="button" class="tbtn" id="earPlayArp">Play arpeggio</button>
-        <!-- for when one went past before you'd placed it -->
-        <button type="button" class="tbtn" id="earBack" disabled aria-label="The question before this one">Back</button>
         <label class="check"><input type="checkbox" id="earRootFirst" checked><span>Root first</span></label>
       </div>
       <div class="ear-answers" id="earAnswers"></div>
+      <!-- under the answers, where you'd reach for it: for when one went past
+           before you'd placed it -->
+      <div class="toolbar ear-back-row">
+        <button type="button" class="tbtn" id="earBack" disabled aria-label="The question before this one">Back</button>
+      </div>
       <p class="ear-verdict" id="earVerdict" role="status" aria-live="polite"></p>
     </div>
   </section>

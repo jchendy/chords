@@ -176,9 +176,98 @@
     t.equal(bad.join('; '), '', 'Back puts the whole question on again, neck and all');
   }
 
+  // An exercise has to survive being written into the address bar and read
+  // back out of it, or a bookmark is a lie. The setup only: which drill and
+  // what it's drilling, never the question it happened to be asking, since a
+  // bookmark should reopen the exercise rather than one moment of it.
+  //
+  // This stubs the two ends of tabs.js rather than touching the real URL —
+  // what it's testing is the encoding, which is where the mistakes live.
+  function testTheExerciseSurvivesTheUrl(t){
+    start();
+    const bad = [];
+    const realSet = GT.tabs.setState, realParams = GT.tabs.stateParams;
+    let written = '';
+    GT.tabs.setState = (name, params) => { written = String(params || ''); };
+
+    // The detour has to actually disturb what's being restored, or the test
+    // proves nothing: a field left out of the URL would still read back
+    // correctly from the variable nobody had touched.
+    const roundTrip = (what, setUp, read, disturb) => {
+      setUp();
+      const url = written, before = read();
+      disturb();
+      if (read() === before){ bad.push(`${what}: the detour left it as it was, so the trip proves nothing`); return; }
+      GT.tabs.stateParams = () => new URLSearchParams(url);
+      GT.earTraining.refresh();
+      const after = read();
+      if (after !== before) bad.push(`${what}: came back as ${after}, not ${before}`);
+      if (written !== url) bad.push(`${what}: wrote ${written} after reading ${url}`);
+    };
+
+    roundTrip('a scale box',
+      () => {
+        setMode('scale');
+        q('#earKey').value = 'Eb';
+        q('#earKey').dispatchEvent(new Event('change', { bubbles: true }));
+        q('#earScale').value = 'dorian';
+        q('#earScale').dispatchEvent(new Event('change', { bubbles: true }));
+        q('#earShapeNext').click();
+        q('#earOctaveGroup .seg-btn[data-value="whole"]').click();
+      },
+      () => [q('#earModeGroup .seg-btn.active').dataset.value, q('#earKey').value,
+             q('#earScale').value, q('#earShapePick').textContent,
+             q('#earOctaveGroup .seg-btn.active').dataset.value].join('|'),
+      () => {
+        setMode('penta');
+        q('#earKey').value = 'A';
+        q('#earKey').dispatchEvent(new Event('change', { bubbles: true }));
+        q('#earScale').value = 'minorpenta';
+        q('#earScale').dispatchEvent(new Event('change', { bubbles: true }));
+        q('#earOctaveGroup .seg-btn[data-value="octave"]').click();
+      });
+
+    roundTrip('a chord shape',
+      () => {
+        setMode('chord');
+        q('#earInput').value = 'Am7';
+        q('#earInput').dispatchEvent(new Event('change', { bubbles: true }));
+        q('#earShapeNext').click();
+        q('#earShapeNext').click();
+      },
+      () => [q('#earInput').value, q('#earShapePick').textContent].join('|'),
+      () => {
+        q('#earInput').value = 'G7';
+        q('#earInput').dispatchEvent(new Event('change', { bubbles: true }));
+      });
+
+    roundTrip('the qualities on offer',
+      () => {
+        setMode('quality');
+        q('#earQualityGroup .quality-btn[data-value="13"]').click();
+        q('#earQualityGroup .quality-btn[data-value="m7"]').click();
+        q('#earRootFirst').checked = false;
+        q('#earRootFirst').dispatchEvent(new Event('change', { bubbles: true }));
+      },
+      () => [...document.querySelectorAll('#earQualityGroup .quality-btn.active')]
+        .map(b => b.dataset.value).join(',') + '|' + q('#earRootFirst').checked,
+      () => {
+        q('#earQualityGroup .quality-btn[data-value="dim7"]').click();
+        q('#earQualityGroup .quality-btn[data-value="7"]').click();
+        q('#earRootFirst').checked = true;
+        q('#earRootFirst').dispatchEvent(new Event('change', { bubbles: true }));
+      });
+
+    GT.tabs.setState = realSet;
+    GT.tabs.stateParams = realParams;
+    GT.earTraining.stop();
+    t.equal(bad.join('; '), '', 'An exercise survives being written to the URL and read back');
+  }
+
   GT.earSuites = [
     ['Ear trainer: every question has exactly one answer', testEveryQuestionHasExactlyOneAnswer],
     ['Ear trainer: the score counts questions', testTheScoreCountsQuestions],
     ['Ear trainer: Back restores the question', testBackRestoresTheQuestion],
+    ['Ear trainer: an exercise survives the URL', testTheExerciseSurvivesTheUrl],
   ];
 })();

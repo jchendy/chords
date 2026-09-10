@@ -182,6 +182,38 @@
     tabSvg = document.getElementById('genreTab');
   }
 
+  // Which example is on screen, so one can be bookmarked: the style, whether
+  // it's the rhythm or the solo line, and which pattern and progression.
+  function writeState(){
+    if (!genre) return;
+    const p = new URLSearchParams();
+    p.set('g', genre.id);
+    if (role !== 'rhythm') p.set('r', role);
+    if (patternIdx) p.set('p', patternIdx);
+    if (progIdx) p.set('c', progIdx);
+    GT.tabs.setState('genres', p);
+  }
+
+  function readState(){
+    const p = GT.tabs.stateParams();
+    const g = GT.genreData.find(x => x.id === p.get('g'));
+    if (!g) return false;
+    stop();
+    genre = g;
+    role = p.get('r') === 'lead' ? 'lead' : 'rhythm';
+    roleGroup.querySelectorAll('.seg-btn')
+      .forEach(b => b.classList.toggle('active', b.dataset.value === role));
+    genreGroup.querySelectorAll('.genre-pick')
+      .forEach(b => b.classList.toggle('active', b.dataset.genre === g.id));
+    genreBlurb.textContent = g.blurb;
+    progIdx = Math.max(0, Math.min(Number(p.get('c')) || 0, g.progressions.length - 1));
+    patternIdx = Math.max(0, Number(p.get('p')) || 0);
+    renderProgressions();
+    renderPatterns();
+    rebuildExample();
+    return true;
+  }
+
   function rebuildExample(){
     // a new pattern can have a different grid or bar count, so a run in
     // progress starts again rather than carrying on at the old slot rate
@@ -196,6 +228,7 @@
     example.tempo = pattern.tempo || genre.tempo;
     tempoOut.textContent = `${example.tempo} BPM`;
     drawTab();
+    writeState();
     if (wasPlaying) play();
   }
 
@@ -266,8 +299,9 @@
   }
 
   GT.genreExamples = {
-    // the page has no width until it's shown, so lay the tab out again then
-    refresh(){ drawTab(); },
+    // the page has no width until it's shown, so lay the tab out again then —
+    // and a link to a particular example puts it back first
+    refresh(){ if (!readState()) drawTab(); },
     init(){
       renderGenres();
       roleGroup.querySelectorAll('.seg-btn').forEach(btn => {

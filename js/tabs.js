@@ -56,6 +56,25 @@
     window.addEventListener('hashchange', onUrlChange);
     window.addEventListener('popstate', onUrlChange);
 
+    // A tab's own state rides in the fragment after its slug, so a particular
+    // chord, box or drill can be bookmarked or sent to someone. Only the tab
+    // on show may write — a hidden one has no business owning the address bar
+    // — and it goes in with replaceState: a control you twiddled is not a
+    // place you navigated to, and forty of them would leave the back button
+    // useless.
+    GT.tabs.setState = (name, params) => {
+      const btn = buttons.find(b => b.dataset.tab === name);
+      if (!btn || !btn.classList.contains('active')) return;
+      const query = String(params || '');
+      const hash = '#' + slugify(btn.textContent) + (query ? '?' + query : '');
+      if (location.hash === hash) return;
+      try {
+        history.replaceState(null, '', hash);
+      } catch (e) {
+        location.hash = hash.slice(1);      // some browsers refuse on file://
+      }
+    };
+
     // let the rest of the app move between tabs (a genre example handing its
     // progression to the practice tab, say)
     GT.tabs.goTo = name => {
@@ -76,7 +95,8 @@
     return new URLSearchParams(q || '');
   }
 
-  GT.tabs = { init, goTo(){}, stateParams };   // goTo is wired up once init() has the buttons
+  // goTo and setState are wired up once init() has the buttons
+  GT.tabs = { init, goTo(){}, setState(){}, stateParams };
 
   // Shared by every tab with a transport: is the keyboard busy with a text
   // field or a picker, where a space bar means a space and not "play"?

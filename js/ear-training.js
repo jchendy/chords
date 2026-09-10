@@ -428,6 +428,7 @@
       + `</button>`).join('');
     if (keep) resetRound();      // the same question, put back as it was
     else ask();
+    writeState();
   }
 
   // ---- choosing what to drill ---------------------------------------------
@@ -589,6 +590,72 @@
   function stepShape(by){
     if (shapes.length < 2) return;
     choose((shapeIdx + by + shapes.length) % shapes.length);
+  }
+
+  // ---- the exercise in the address bar ------------------------------------
+  // The setup, not the question: which drill, and what it's drilling. Pinning
+  // the note being asked would make a bookmark a single question rather than
+  // an exercise, and there's a Random button for wanting another one anyway.
+  function writeState(){
+    const p = new URLSearchParams();
+    p.set('m', mode);
+    if (mode === 'chord'){
+      if (!chord) return;
+      p.set('c', chord.label);
+      if (shapeIdx) p.set('i', shapeIdx);
+    } else if (mode === 'quality'){
+      p.set('q', QUALITIES.filter(q => allowedQualities.has(q.id)).map(q => q.id || 'maj').join('.'));
+    } else {
+      p.set('k', keyName);
+      p.set('s', scaleId);
+      if (shapeIdx) p.set('i', shapeIdx);
+      if (wholeShape) p.set('w', '1');
+      else if (octaveIdx) p.set('o', octaveIdx);
+    }
+    if (!rootFirst.checked) p.set('r', '0');
+    GT.tabs.setState('ear', p);
+  }
+
+  function readState(){
+    const p = GT.tabs.stateParams();
+    const want = p.get('m');
+    if (!['chord', 'quality', 'penta', 'scale'].includes(want)) return false;
+    mode = want;
+    rootFirst.checked = p.get('r') !== '0';
+    syncMode();
+    if (mode === 'chord'){
+      if (!loadChord(p.get('c') || 'C')) return false;
+    } else if (mode === 'quality'){
+      const ids = (p.get('q') || '').split('.').map(id => (id === 'maj' ? '' : id))
+        .filter(id => QUALITIES.some(q => q.id === id));
+      if (ids.length){
+        allowedQualities.clear();
+        ids.forEach(id => allowedQualities.add(id));
+        qualityGroup.querySelectorAll('.quality-btn')
+          .forEach(b => b.classList.toggle('active', allowedQualities.has(b.dataset.value)));
+      }
+      rollQuality();
+      render();
+      return true;
+    } else {
+      if (p.get('k')) keyName = p.get('k');
+      if (p.get('s')) scaleId = p.get('s');
+      keySelect.value = keyName;
+      scaleSelect.value = scaleId;
+      wholeShape = p.get('w') === '1';
+      octaveGroup.querySelectorAll('.seg-btn').forEach(b =>
+        b.classList.toggle('active', (b.dataset.value === 'whole') === wholeShape));
+      rebuild();
+      shapeIdx = Math.min(Number(p.get('i')) || 0, Math.max(0, shapes.length - 1));
+      resetOctave();
+      if (!wholeShape && p.get('o')) octaveIdx = Number(p.get('o')) || octaveIdx;
+      render();
+      return true;
+    }
+    // a chord drill's shape, once its list exists
+    const i = Number(p.get('i')) || 0;
+    if (i && i < shapes.length){ shapeIdx = i; render(); }
+    return true;
   }
 
   // ---- what came before ---------------------------------------------------
@@ -806,6 +873,7 @@
         // no longer a fair question
         if (mode === 'quality' && (!quiz || !allowedQualities.has(quiz.quality.id))) nextQuestion();
         else if (mode === 'quality') render();
+        else writeState();
       });
 
       keySelect.innerHTML = ROOTS.map(r => `<option value="${r}">${r}</option>`).join('');
@@ -821,6 +889,7 @@
       }));
 
       backBtn.addEventListener('click', goBack);
+      rootFirst.addEventListener('change', writeState);
       $('earPlayNote').addEventListener('click', playAsked);
       $('earPlayRoot').addEventListener('click', () => {
         if (rootCell) GT.chordFinder.playOne(rootCell.string, rootCell.fret, lightUp);
@@ -850,7 +919,10 @@
     },
     // Arriving with nothing on: roll something rather than showing an empty
     // page. Coming back to a drill already in progress leaves it alone.
-    refresh(){ if (!subject) randomSubject(); },
+    refresh(){
+      if (readState()) return;
+      if (!subject) randomSubject();
+    },
     QUALITIES,
     // leaving the tab shouldn't leave a question about to answer itself, or a
     // sheet open over a page you can't see

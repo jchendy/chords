@@ -50,8 +50,37 @@
         reverseSelection[s] = reverseSelection[s] === f ? null : f;
         renderReverseFretboard();
         updateReverseMatches();
+        writeState();
       });
     });
+  }
+
+  // The notes you've picked, so a set of them can be bookmarked — written the
+  // way this app writes a grip everywhere else, low E first with an x for a
+  // string that isn't sounding: x-x-5-6-7-7.
+  const ORDER = [5, 4, 3, 2, 1, 0];
+
+  function writeState(){
+    const any = reverseSelection.some(f => f !== null);
+    GT.tabs.setState('reverse', any
+      ? 'n=' + ORDER.map(s => reverseSelection[s] === null ? 'x' : reverseSelection[s]).join('-') : '');
+  }
+
+  function readState(){
+    const n = GT.tabs.stateParams().get('n');
+    if (!n) return false;
+    const parts = n.split('-');
+    if (parts.length !== 6) return false;
+    reverseSelection = new Array(6).fill(null);
+    parts.forEach((v, i) => {
+      const fret = Number(v);
+      if (v !== 'x' && Number.isInteger(fret) && fret >= 0 && fret <= FRET_COUNT){
+        reverseSelection[ORDER[i]] = fret;
+      }
+    });
+    renderReverseFretboard();
+    updateReverseMatches();
+    return true;
   }
 
   function updateReverseMatches(){
@@ -96,6 +125,7 @@
     reverseSelection = new Array(6).fill(null);
     renderReverseFretboard();
     updateReverseMatches();
+    writeState();
   });
 
   // hear the notes you've picked: together as a chord, or one at a time
@@ -112,6 +142,8 @@
 
   GT.reverseFinder = {
     init(){ renderReverseFretboard(); updateReverseMatches(); },
-    refresh(){ renderReverseFretboard(); },
+    // the neck can't measure itself while its page is hidden, so it redraws
+    // on the way in — and a link to a set of notes puts them back first
+    refresh(){ if (!readState()) renderReverseFretboard(); },
   };
 })();

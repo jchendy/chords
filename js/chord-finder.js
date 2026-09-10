@@ -764,6 +764,7 @@
       shellOnlyRow.hidden = true;
       labelModeRow.hidden = true;
       shapesRow.hidden = true;
+      writeState();
       return;
     }
     labelModeRow.hidden = false;
@@ -806,6 +807,7 @@
     }
     shownVoicings = voicings;
     shownChord = chordLabel;
+    writeState();
     // Two sections: the common ways to play this chord, then the rest. The
     // list is already sorted that way, so the headings go in where the
     // sections meet; a section nobody is in gets no heading.
@@ -839,6 +841,37 @@
     const kind = v.rootless ? `Rootless ${label.charAt(0).toLowerCase()}${label.slice(1)}` : label;
     if (!v.genres.length) return `${kind} \u2014 not a shape any style reaches for by habit`;
     return `${kind} \u2014 common in ${v.genres.join(', ')}`;
+  }
+
+  // ---- the search in the address bar --------------------------------------
+  // What you typed and how you asked to see it, so a search can be bookmarked
+  // or sent. Not which shape you clicked: that's a thing you did, not a thing
+  // you set up.
+  function writeState(){
+    const p = new URLSearchParams();
+    if (!chordFinderInput.value.trim()) { GT.tabs.setState('finder', ''); return; }
+    p.set('c', chordFinderInput.value.trim());
+    if (shapeFilter !== 'all') p.set('s', shapeFilter);
+    if (labelMode !== 'fingers') p.set('d', labelMode);
+    if (shellOnlyToggle.checked && !shellOnlyRow.hidden) p.set('shell', '1');
+    if (triadOnlyToggle.checked && !triadOnlyRow.hidden) p.set('triad', '1');
+    GT.tabs.setState('finder', p);
+  }
+
+  function readState(){
+    const p = GT.tabs.stateParams();
+    const chord = p.get('c');
+    if (!chord) return false;
+    chordFinderInput.value = chord;
+    shapeFilter = ['open', 'movable'].includes(p.get('s')) ? p.get('s') : 'all';
+    labelMode = p.get('d') === 'degrees' ? 'degrees' : 'fingers';
+    shellOnlyToggle.checked = p.get('shell') === '1';
+    triadOnlyToggle.checked = p.get('triad') === '1';
+    [[shapesGroup, shapeFilter], [labelModeGroup, labelMode]].forEach(([group, value]) => {
+      group.querySelectorAll('.seg-btn').forEach(b => b.classList.toggle('active', b.dataset.value === value));
+    });
+    runChordFinder();
+    return true;
   }
 
   // ---- hearing a shape ----------------------------------------------------
@@ -1095,6 +1128,8 @@
     // Arriving on the tab with nothing typed, the field is the only thing to
     // do — so put the cursor in it. A field with a chord in it is left alone.
     focus(){
+      // a link to a particular search puts it back before anything else
+      if (readState()) return;
       if (!chordFinderInput.value.trim()) chordFinderInput.focus();
     },
     // Somewhere else has named a chord — the reverse finder, where you've just

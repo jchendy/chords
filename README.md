@@ -580,6 +580,29 @@ ever be the root. When the root *is* the answer it's asked an octave up from
 the reference wherever the shape has one: the same note twice is no question
 at all, where a root against its own octave is one worth being able to hear.
 
+## Bookmarking an exercise
+
+Every tool keeps its state in the address bar, so a particular chord, box,
+drill or example can be bookmarked or sent to someone:
+
+| | |
+|---|---|
+| `#chord-finder?c=Bb13&s=movable&d=degrees` | that chord, movable shapes only, dots showing degrees |
+| `#reverse-chord-finder?n=x-x-5-6-7-7` | those notes picked, written the way this app writes a grip |
+| `#ear-training?m=scale&k=Eb&s=dorian&i=2&o=1` | that drill, that box, that octave |
+| `#ear-training?m=quality&q=maj.m.7.9.13` | the quality drill, asking about those five |
+| `#genre-examples?g=hardcore&r=lead` | that style's solo line |
+| `#caged-practice?k=major:C&c=0.2.,4.2.&t=120` | the practice tab's own share link |
+
+It's the exercise that's saved, not the question it happens to be asking: a
+bookmark should reopen the drill rather than one moment of it, and Random is
+there for wanting another. The state is written as you go, with
+`replaceState` — a control you twiddled is not a place you navigated to, and
+forty of them would leave the back button useless — except in the practice
+tab, which keeps its explicit **Copy link**: its state is a whole
+progression, and rewriting twelve chords into the URL on every twiddle would
+be noise.
+
 ## Usage
 
 Open `index.html` in any modern browser. No build step, no dependencies
@@ -841,7 +864,7 @@ by what each part does:
 | `reverse-finder.js` | Reverse chord finder tab: click targets over the shared neck, and the name lookup. |
 | `ear-training.js` | Ear training tab: what's on the neck — a chord shape, a pentatonic box or a scale box — and the drill over its notes. Draws and sounds chords from the chord finder's own code and boxes from the practice tab's, so no tab can drift from another. |
 | `tooltips.js` | The (i) info bubbles. |
-| `tabs.js` | Tab switching, plus the URL fragment and page title that go with each tab. |
+| `tabs.js` | Tab switching, plus the URL fragment and page title that go with each tab — including `setState`, which lets a tab write its own state after the slug so an exercise can be bookmarked. |
 | `main.js` | Boots each tab and wires the header together. |
 | `tests.js` | The regression tests, run by `tests.html`. |
 | `tests-ear.js` | The ear trainer's drill, pressed rather than reasoned about: builds the controls it binds to, then answers questions. Loads before `ear-training.js`. |
