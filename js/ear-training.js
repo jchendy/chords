@@ -22,6 +22,7 @@
   const input = $('earInput'), errorEl = $('earError');
   const keySelect = $('earKey'), scaleSelect = $('earScale'), octaveGroup = $('earOctaveGroup');
   const shapeEl = $('earShape'), shapeRow = $('earShapeRow'), shapePick = $('earShapePick');
+  const qualityRow = $('earQualityRow'), qualityGroup = $('earQualityGroup');
   const octaveStep = $('earOctaveStep');
   const sheet = $('earShapeSheet'), scrim = $('earScrim'), choicesEl = $('earShapeChoices');
   const quizEl = $('earQuiz'), answersEl = $('earAnswers'), verdictEl = $('earVerdict');
@@ -56,7 +57,36 @@
   // its root: the 2nd of a scale is a 2, not the 9th it would be over a chord.
   const SCALE_DEGREES = ['1', '♭2', '2', '♭3', '3', '4', '♭5', '5', '♭6', '6', '♭7', '7'];
 
-  let mode = 'chord';            // 'chord' | 'penta' | 'scale'
+  // What the quality drill can ask. The five on by default are the ones you
+  // have to be able to tell apart before any of the others are worth trying;
+  // the rest are there to be switched on as they become worth it. `id` is the
+  // suffix as the chord finder parses it, so a quality is a chord name away
+  // from being a shape.
+  const QUALITIES = [
+    { id: '',     name: 'Major', on: true },
+    { id: 'm',    name: 'Minor', on: true },
+    { id: 'maj7', name: 'maj7',  on: true },
+    { id: 'm7',   name: 'm7',    on: true },
+    { id: '7',    name: '7',     on: true },
+    { id: '6',    name: '6' },
+    { id: 'm6',   name: 'm6' },
+    { id: 'sus2', name: 'sus2' },
+    { id: 'sus4', name: 'sus4' },
+    { id: 'dim',  name: 'dim' },
+    { id: 'aug',  name: 'aug' },
+    { id: 'm7b5', name: 'm7♭5' },
+    { id: 'dim7', name: 'dim7' },
+    { id: 'add9', name: 'add9' },
+    { id: '9',    name: '9' },
+    { id: 'm9',   name: 'm9' },
+    { id: 'maj9', name: 'maj9' },
+    { id: '13',   name: '13' },
+    { id: '69',   name: '6/9' },
+  ];
+  const allowedQualities = new Set(QUALITIES.filter(q => q.on).map(q => q.id));
+
+  let mode = 'chord';            // 'chord' | 'quality' | 'penta' | 'scale'
+  let quiz = null;               // in quality mode: the chord you're placing
   let chord = null;              // in chord mode: what parseChordName gave back
   let keyName = 'C';             // in the other two: the root, spelled
   let scaleId = 'minorpenta';
@@ -160,6 +190,33 @@
   // string as you cross it — which is also the order strum() sounds cells in
   const upTheBox = cells => cells.slice().sort((a, b) => b.string - a.string || a.fret - b.fret);
 
+  // ---- a chord to place by ear --------------------------------------------
+  // Root, quality and shape all rolled: the root is shown, the quality is the
+  // question, and the shape is rolled too so the same quality doesn't arrive
+  // sounding identical every time — voicing is part of what you have to hear
+  // past.
+  function rollQuality(){
+    const pool = QUALITIES.filter(q => allowedQualities.has(q.id));
+    let parsed = null, quality = null, voicing = null;
+    for (let tries = 0; tries < 12 && !voicing; tries++){
+      quality = pick(pool);
+      parsed = parseChordName(pick(ROOTS) + quality.id);
+      if (!parsed) continue;
+      const shapes = GT.chordFinder.findChordVoicings(parsed.rootPc, parsed.formula)
+        .filter(v => v.cells.some(c => pcOf(c) === parsed.rootPc));   // the root has to be in it to be shown
+      if (shapes.length) voicing = shapes[Math.floor(Math.random() * Math.min(6, shapes.length))];
+    }
+    if (!voicing) return;
+    // the lowest root of the shape: the one note the drill gives you
+    const rootCell = voicing.cells.filter(c => pcOf(c) === parsed.rootPc)
+      .sort((a, b) => b.string - a.string)[0];
+    // "Eb major" rather than the bare "Eb" a major chord is written as: the
+    // verdict is naming the thing you were asked to hear, and the answer you
+    // pressed said Major.
+    quiz = { parsed, quality, voicing, rootCell,
+             label: parsed.rootName + (parsed.formula.name || ' major') };
+  }
+
   // ---- what's on show -----------------------------------------------------
   function rebuild(){
     if (mode === 'chord'){
@@ -185,6 +242,23 @@
   // The thing being drilled, whichever of the three it is. Everything past
   // this point works from what it returns and never asks which mode is on.
   function describe(i){
+    if (mode === 'quality'){
+      if (!quiz) return null;
+      return {
+        kind: 'quality',
+        label: quiz.label,
+        cells: quiz.voicing.cells,          // what sounds
+        shown: [quiz.rootCell],             // ...and all you get to see of it
+        rootPc: quiz.parsed.rootPc,
+        rootName: quiz.parsed.rootName,
+        notes: [],
+        choices: QUALITIES.filter(q => allowedQualities.has(q.id))
+          .map(q => ({ key: q.id, name: q.name, degree: '' })),
+        answer: quiz.quality.id,
+        shapeName: '',
+        tip: 'The root is all you get to see — the rest is the question',
+      };
+    }
     const shape = shapes[i];
     if (!shape) return null;
     if (mode === 'chord'){
@@ -224,12 +298,21 @@
     };
   }
 
+  // The buttons the drill offers. A note mode answers with the notes of what's
+  // on the neck; the quality mode answers with the qualities you've switched
+  // on. Same shape of thing either way, so the drill below never asks which.
+  const choicesOf = s => s.choices
+    || s.notes.map(n => ({ key: String(n.pc), name: n.name, degree: n.degree }));
+
   // ---- drawing ------------------------------------------------------------
   // A chord shape is drawn as a chord diagram, because that's how a chord is
   // written down. A box is drawn across the whole neck, because that's where
   // it lives and half of learning one is knowing where it sits. Both carry
   // the same clickable notes.
   function drawSubject(s){
+    if (s.kind === 'quality'){
+      return `<div class="fret-scroll">${rootOnlySVG(s)}</div>`;
+    }
     if (mode === 'chord'){
       return `
         <div class="diagram-card" role="button" tabindex="0" data-voicing="0"
@@ -268,16 +351,29 @@
     // the filter says so without being told.
     const lines = gripOutlines(s.rootPc, scaleById(scaleId).minor)
       .filter(ln => ln.cells.every(c => inBox.has(key(c))));
-    // the click targets go over the drawing, one per note, in the same groups
-    // a chord diagram uses so they light and sound the same way
-    const hits = s.shown.map(c => {
+    return `<svg viewBox="${GT.neck.viewBox}" role="img" aria-label="${s.label}, ${s.shapeName}">`
+      + GT.neck.buildSVG(markers, lines) + hitsFor(s.shown) + '</svg>';
+  }
+
+  // All you get to see: where the root is, and what it's called. The quality
+  // is the question, so nothing else of the chord is drawn.
+  function rootOnlySVG(s){
+    const c = s.shown[0];
+    const markers = [{ string: c.string, fret: c.fret, label: s.rootName,
+                       color: '#bfb7a8', isRoot: true }];
+    return `<svg viewBox="${GT.neck.viewBox}" role="img" aria-label="The root, ${s.rootName}">`
+      + GT.neck.buildSVG(markers, []) + hitsFor(s.shown) + '</svg>';
+  }
+
+  // the click targets that go over a drawing, one per note, in the same
+  // groups a chord diagram uses so they light and sound the same way
+  function hitsFor(cells){
+    return cells.map(c => {
       const x = GT.neck.fretX(c.fret), y = GT.neck.stringY(c.string);
       return `<g class="note-hit" data-string="${c.string}" data-fret="${c.fret}">`
         + `<circle class="note-ring" cx="${x}" cy="${y}" r="10.5"/>`
         + `<circle class="note-tap" cx="${x}" cy="${y}" r="10.5"/></g>`;
     }).join('');
-    return `<svg viewBox="${GT.neck.viewBox}" role="img" aria-label="${s.label}, ${s.shapeName}">`
-      + GT.neck.buildSVG(markers, lines) + hits + '</svg>';
   }
 
   function render(){
@@ -288,11 +384,13 @@
       quizEl.hidden = true;
       return;
     }
-    shapeRow.hidden = shapes.length < 2;
+    shapeRow.hidden = mode === 'quality' || shapes.length < 2;
     // which of the five it is, not just where it is in the list: the CAGED
     // letter is how a player knows a box, and "3 of 6" says nothing about it
-    shapePick.textContent = (subject.shapeName ? `${subject.shapeName} · ` : '')
-      + `${shapeIdx + 1} of ${shapes.length}`;
+    if (!shapeRow.hidden){
+      shapePick.textContent = (subject.shapeName ? `${subject.shapeName} · ` : '')
+        + `${shapeIdx + 1} of ${shapes.length}`;
+    }
     octaveStep.hidden = wholeShape || subject.octaves < 2;
     $('earOctaveDown').disabled = octaveIdx <= 0;
     $('earOctaveUp').disabled = octaveIdx >= subject.octaves - 1;
@@ -303,19 +401,28 @@
     // else is heard against, so it's worth a button of its own. A rootless
     // chord voicing hasn't got one, and there the button goes rather than
     // sounding a root the shape doesn't contain.
-    const root = subject.notes.find(n => n.interval === 0);
+    const root = subject.kind === 'quality'
+      ? { cells: subject.shown }
+      : subject.notes.find(n => n.interval === 0);
     rootCell = root ? root.cells.slice().sort((a, b) => b.string - a.string)[0] : null;
     $('earPlayRoot').hidden = !rootCell;
-    rootFirst.parentElement.hidden = !rootCell;
-    $('earPlayChord').textContent = mode === 'chord' ? 'Play the chord' : 'Play the scale';
-    $('earPlayArp').hidden = mode !== 'chord';
-    $('earQuizTitle').textContent = mode === 'chord'
-      ? 'Which note of the chord is this?' : 'Which note of the scale is this?';
+    // sounding the root before the question only means something when the
+    // question is a note; a chord already has its root in it
+    rootFirst.parentElement.hidden = !rootCell || subject.kind === 'quality';
+    $('earPlayNote').hidden = subject.kind === 'quality';
+    $('earPlayChord').hidden = false;
+    $('earPlayChord').textContent = mode === 'scale' || mode === 'penta'
+      ? 'Play the scale' : 'Play the chord';
+    $('earPlayArp').hidden = mode === 'scale' || mode === 'penta';
+    $('earQuizTitle').textContent = subject.kind === 'quality'
+      ? 'What kind of chord is this?'
+      : mode === 'chord' ? 'Which note of the chord is this?' : 'Which note of the scale is this?';
 
-    answersEl.innerHTML = subject.notes.map(n =>
-      `<button type="button" class="ear-answer" data-pc="${n.pc}">`
-      + `<span class="ear-answer-name">${n.name}</span>`
-      + `<span class="ear-answer-degree">${n.degree}</span></button>`).join('');
+    answersEl.innerHTML = choicesOf(subject).map(c =>
+      `<button type="button" class="ear-answer" data-key="${c.key}">`
+      + `<span class="ear-answer-name">${c.name}</span>`
+      + (c.degree ? `<span class="ear-answer-degree">${c.degree}</span>` : '')
+      + `</button>`).join('');
     ask();
   }
 
@@ -382,6 +489,7 @@
   }
 
   function randomSubject(){
+    if (mode === 'quality'){ nextQuestion(); playAsked(); return; }
     if (mode === 'chord'){
       let name;
       do { name = pick(ROOTS) + pick(TYPES); } while (chord && name === chord.label);
@@ -401,9 +509,10 @@
     modeGroup.querySelectorAll('.seg-btn')
       .forEach(b => b.classList.toggle('active', b.dataset.value === mode));
     chordRow.hidden = mode !== 'chord';
-    scaleRow.hidden = mode === 'chord';
-    octaveRow.hidden = mode === 'chord';
-    if (mode === 'chord') return;
+    scaleRow.hidden = mode === 'chord' || mode === 'quality';
+    octaveRow.hidden = mode === 'chord' || mode === 'quality';
+    qualityRow.hidden = mode !== 'quality';
+    if (mode === 'chord' || mode === 'quality') return;
     const pool = mode === 'penta' ? PENTAS : SCALES;
     if (!pool.some(s => s.id === scaleId)) scaleId = pool[0].id;
     scaleSelect.innerHTML = pool.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
@@ -417,6 +526,9 @@
     if (mode === 'chord'){
       if (chord) loadChord(chord.label);
       else randomSubject();
+    } else if (mode === 'quality'){
+      rollQuality();
+      render();
     } else {
       loadScale({ rollShape: true });
     }
@@ -500,6 +612,13 @@
     missed = false;
     answersEl.querySelectorAll('.ear-answer').forEach(b => b.classList.remove('right', 'wrong'));
     say('', '');
+    if (subject && subject.kind === 'quality'){
+      // the chord was rolled before it was drawn; the question is what it is
+      asked = { key: subject.answer, name: subject.label, degree: '' };
+      askedCell = null;
+      quizEl.hidden = false;
+      return;
+    }
     const notes = subject ? subject.notes : [];
     // two notes is the fewest that can be told apart; below that there's no
     // question to ask
@@ -534,7 +653,18 @@
   // would be answering it. Only the root of the pair gets a light, and it
   // gets one whichever note follows it, so a question where the answer is
   // the root looks like every other question.
+  // a fresh question: in the note drills another note of the same shape, in
+  // the quality drill another chord altogether
+  function nextQuestion(){
+    if (mode === 'quality'){ rollQuality(); render(); }
+    else ask();
+  }
+
   function playAsked(){
+    if (mode === 'quality'){
+      if (subject) GT.chordFinder.strum(subject.cells, 0.018, lightUp);
+      return;
+    }
     if (!askedCell) return;
     if (rootFirst.checked && rootCell){
       let first = true;
@@ -547,7 +677,7 @@
 
   function answer(btn){
     if (!asked || nextRound) return;         // the round is won; the next one is coming
-    if (Number(btn.dataset.pc) !== asked.pc){
+    if (btn.dataset.key !== String(asked.key)){
       btn.classList.add('wrong');
       setTimeout(() => btn.classList.remove('wrong'), 700);
       say('Not that one — listen again', '');
@@ -558,11 +688,11 @@
     scored(!missed);
     // now it can light: the round is over, and where the note was is the
     // thing worth taking away from it
-    lightUp(askedCell);
-    say(`Yes — ${asked.name} · ${asked.degree}`, 'good');
-    // the next note plays itself, so the drill keeps going without a button
-    // press between every question
-    nextRound = setTimeout(() => { nextRound = null; ask(); playAsked(); }, 1300);
+    if (askedCell) lightUp(askedCell);
+    say(`Yes — ${asked.name}${asked.degree ? ' · ' + asked.degree : ''}`, 'good');
+    // the next question plays itself, so the drill keeps going without a
+    // button press between every one
+    nextRound = setTimeout(() => { nextRound = null; nextQuestion(); playAsked(); }, 1300);
   }
 
   GT.earTraining = {
@@ -593,6 +723,28 @@
         if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); pickFrom(e); }
       });
 
+      // Which qualities the drill may ask. At least one has to stay on, so the
+      // last one can't be switched off — a drill with nothing to ask is not a
+      // state worth being able to reach.
+      qualityGroup.innerHTML = QUALITIES.map(q =>
+        `<button type="button" class="seg-btn quality-btn${q.on ? ' active' : ''}" data-value="${q.id}">${q.name}</button>`).join('');
+      qualityGroup.addEventListener('click', e => {
+        const btn = e.target.closest('.quality-btn');
+        if (!btn) return;
+        const id = btn.dataset.value;
+        if (allowedQualities.has(id)){
+          if (allowedQualities.size < 2) return;
+          allowedQualities.delete(id);
+        } else {
+          allowedQualities.add(id);
+        }
+        btn.classList.toggle('active', allowedQualities.has(id));
+        // a chord already rolled from a quality you've just switched off is
+        // no longer a fair question
+        if (mode === 'quality' && (!quiz || !allowedQualities.has(quiz.quality.id))) nextQuestion();
+        else if (mode === 'quality') render();
+      });
+
       keySelect.innerHTML = ROOTS.map(r => `<option value="${r}">${r}</option>`).join('');
       keySelect.value = keyName;
       keySelect.addEventListener('change', () => { keyName = keySelect.value; loadScale(); });
@@ -613,8 +765,8 @@
       // the diagram is there for the long one
       $('earPlayChord').addEventListener('click', () => {
         if (!subject) return;
-        if (mode === 'chord') GT.chordFinder.strum(subject.cells, 0.018, lightUp);
-        else GT.chordFinder.playRun(upTheBox(subject.cells), 0.19, lightUp);
+        if (mode === 'scale' || mode === 'penta') GT.chordFinder.playRun(upTheBox(subject.cells), 0.19, lightUp);
+        else GT.chordFinder.strum(subject.cells, 0.018, lightUp);
       });
       $('earPlayArp').addEventListener('click', () => {
         if (subject) GT.chordFinder.strum(subject.cells, GT.chordFinder.ARPEGGIO_GAP, lightUp);
@@ -635,6 +787,7 @@
     // Arriving with nothing on: roll something rather than showing an empty
     // page. Coming back to a drill already in progress leaves it alone.
     refresh(){ if (!subject) randomSubject(); },
+    QUALITIES,
     // leaving the tab shouldn't leave a question about to answer itself, or a
     // sheet open over a page you can't see
     stop(){ clearTimeout(nextRound); nextRound = null; openSheet(false); },

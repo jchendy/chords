@@ -748,7 +748,34 @@
     t.equal(bad.join('; '), '', 'One octave of a box starts on a root and is the fullest octave it has');
   }
 
-  // ---- 3h. every note the neck can play has a recording behind it ----
+  // ---- 3h. every chord quality the drill can ask is one it can play ----
+  // The quality drill rolls a root and a quality and needs a shape to sound
+  // and a root to show. A quality whose suffix the finder can't parse, or one
+  // with no shape holding its own root, would leave the drill rolling in
+  // silence — so each has to survive being written out, found, and voiced
+  // with its root in the voicing. Three roots rather than twelve: each one is
+  // a full search of the neck, and a quality that works on C, F# and Bb isn't
+  // going to fail on D.
+  function testEveryQualityCanBeAsked(t){
+    const { QUALITIES } = GT.earTraining;
+    const bad = [];
+    const defaults = QUALITIES.filter(q => q.on).map(q => q.name).join(', ');
+    if (defaults !== 'Major, Minor, maj7, m7, 7') bad.push(`the drill starts on "${defaults}"`);
+    if (new Set(QUALITIES.map(q => q.id)).size !== QUALITIES.length) bad.push('two qualities share an id');
+    if (new Set(QUALITIES.map(q => q.name)).size !== QUALITIES.length) bad.push('two qualities share a name');
+    QUALITIES.forEach(q => {
+      ['C', 'F#', 'Bb'].forEach(root => {
+        const p = parseChordName(root + q.id);
+        if (!p){ bad.push(`"${root}${q.id}" doesn't parse`); return; }
+        const rooted = findChordVoicings(p.rootPc, p.formula)
+          .filter(v => v.cells.some(c => (STRING_TUNING[c.string] + c.fret) % 12 === p.rootPc));
+        if (!rooted.length) bad.push(`${root}${q.id}: no shape with its own root in it`);
+      });
+    });
+    t.equal(bad.join('; '), '', `Every quality the drill can ask can be played (${QUALITIES.length} qualities)`);
+  }
+
+  // ---- 3i. every note the neck can play has a recording behind it ----
   // Fifteen samples cover the range by being stretched a semitone or three
   // either side of themselves. Stretch one much further and it stops sounding
   // like the guitar it was — a low E played back at double speed is a
@@ -1638,6 +1665,7 @@
       ['Ear trainer: every note of a shape is one answer', testTheEarTrainerCoversItsShape],
       ['Ear trainer: every scale it offers has boxes of its own', testEveryScaleHasItsBoxes],
       ['Ear trainer: one octave of a box is one octave of it', testOneOctaveOfABox],
+      ['Ear trainer: every chord quality it can ask, it can play', testEveryQualityCanBeAsked],
       ['Every note the neck can play has a recording near it', testEveryNoteHasARecording],
       ['Theory: naming and identification', testTheory],
       ['Theory: one answer for what degree a note is', testDegreeNamesAgree],

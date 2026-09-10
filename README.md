@@ -9,9 +9,10 @@ A single-page, dependency-free site with four tabs under one header:
 - **Reverse chord finder** — click frets on an interactive fretboard and
   see what chord name(s) the selected notes could be; hear them together as
   a chord or one at a time as an arpeggio.
-- **Ear training** — a chord shape, a pentatonic box or a scale box, and a
-  drill: it sounds a note from somewhere inside what's on the neck, and you
-  say which one it was.
+- **Ear training** — four drills. Three put a chord shape, a pentatonic box
+  or a scale box on the neck and sound a note from inside it for you to
+  place; the fourth plays a whole chord, shows you only its root, and asks
+  what kind of chord it is.
 - **Genre examples** — pick a style, then a rhythm or a lead line, and read
   the tab while you hear it played. It's experimental, and lives behind the
   menu at the right end of the header (with a mailto link) rather than among
@@ -464,11 +465,11 @@ uses.
 
 ## Ear training
 
-Something on the neck, and a drill over the notes in it. Three things can be
-on the neck — a **chord** shape, a **pentatonic** box or a **scale** box —
-and the drill is the same for all three, which is why everything below the
-picture is shared. Only the picture, the notes it holds and the words for
-them differ.
+Something on the neck, and a drill over it. Three of the four drills put a
+shape there and ask you to place its notes — a **chord** shape, a
+**pentatonic** box or a **scale** box — and the fourth, **chord quality**,
+plays a whole chord and asks what kind it is. They share everything below
+the picture: only the picture, what it holds and the words for it differ.
 
 A chord is drawn as a chord diagram, because that's how a chord is written
 down; it's the chord finder's own — same search, same diagram, same sounds —
@@ -529,6 +530,17 @@ running teaches nothing, and reads as though the drill has stalled.
 A note sounds where it actually sits in the shape rather than at some
 neutral octave. A 3rd on the top string and a 3rd buried in the middle of
 the chord are different things to hear, and telling them apart is the point.
+
+**Chord quality** is the odd one out: it rolls a root, a quality and a shape,
+plays the chord, and shows you nothing but the root on the neck — the root is
+what you'd know from the bass, the quality is the question. The shape is
+rolled too, so the same quality doesn't arrive sounding identical every time;
+hearing past the voicing is part of it. **Ask about** says which qualities it
+may pick, starting on the five you have to tell apart before any of the rest
+are worth trying — major, minor, maj7, m7 and 7 — with everything from 6 and
+sus4 through 9, 13 and 6/9 there to switch on as they become worth it. The
+last one on can't be switched off, and switching off the quality of the chord
+currently sounding rolls a new one, since it's no longer a fair question.
 
 **Random** rolls a new subject — in chord mode, the everyday triads and
 sevenths plus the colours you meet soon after, on any of the twelve roots,
@@ -636,7 +648,7 @@ not at all, the whole progression is on the neck, the legend names exactly
 what's drawn, a note two chords share carries a colour for each of them, and
 playing through a progression doesn't walk the hand along the neck.
 
-Two groups are guarded. The first eleven run over the pure modules; the first
+Two groups are guarded. The first twelve run over the pure modules; the first
 two of those over a fixed list of chords (C, A, G, E, D, Cm, Am, Gm, Em, Dm,
 Ab, Gb, C#, A9, E9, C7, D7, Cm7, CM7):
 
@@ -694,13 +706,18 @@ Ab, Gb, C#, A9, E9, C7, D7, Cm7, CM7):
    the lowest one. Over all twelve roots, because the case it guards is rare:
    three boxes in 582 have a higher root whose octave beats the lowest's, and
    two roots wouldn't meet one.
-10. **Every note the neck can play has a recording near it.** Fifteen samples
+10. **Every chord quality the drill can ask is one it can play.** A quality
+    whose suffix the finder can't parse, or one with no shape holding its own
+    root, would leave the drill rolling in silence — so each has to survive
+    being written out, found and voiced, on three roots. It also pins the
+    five it starts on.
+11. **Every note the neck can play has a recording near it.** Fifteen samples
    cover the range by being stretched a semitone or three either side of
    themselves; stretch one much further and it stops sounding like the guitar
    it was. So every string and fret the app draws has to land inside some
    sample's own range, and the map has to be in order with no gaps and no two
    samples claiming a note.
-11. **The genre library and the presets are well-formed.** Every progression
+12. **The genre library and the presets are well-formed.** Every progression
    has a key and parseable chords, a "twelve-bar" has twelve bars, hits sit
    inside their grid, a six-slot bar declares itself a waltz, every chord can
    be voiced the way its rhythm asks, lead lines stay on the neck and inside

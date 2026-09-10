@@ -363,6 +363,10 @@
   .ear-shape{ max-width:272px; margin-top:18px; }
   .ear-shape .diagram-card{ cursor:pointer; }
   .ear-quiz{ margin-top:24px; padding-top:18px; border-top:1px solid var(--line); max-width:560px; }
+  /* the quality switches: many, small, and multi-select rather than one-of */
+  .quality-set{ display:flex; flex-wrap:wrap; gap:2px 0; }
+  .quality-btn{ border-bottom-color:transparent; opacity:.45; }
+  .quality-btn.active{ color:var(--ink); border-bottom-color:var(--ink); opacity:1; }
   .ear-quiz-head{ display:flex; align-items:baseline; justify-content:space-between; gap:16px; margin-bottom:12px; }
   .ear-quiz-title{ margin:0; font-family:Fraunces,Georgia,serif; font-size:1.15rem; }
   .ear-score{ margin:0; font-size:.82rem; color:var(--muted); font-variant-numeric:tabular-nums; white-space:nowrap; }
@@ -862,6 +866,7 @@
         <span class="tb-lbl">Drill</span>
         <span class="segmented" id="earModeGroup">
           <button type="button" class="seg-btn active" data-value="chord">Chord</button>
+          <button type="button" class="seg-btn" data-value="quality">Chord quality</button>
           <button type="button" class="seg-btn" data-value="penta">Pentatonic</button>
           <button type="button" class="seg-btn" data-value="scale">Scale</button>
         </span>
@@ -871,6 +876,14 @@
       <label class="tb-lbl" for="earInput">Chord</label>
       <input type="text" id="earInput" class="big-input" placeholder="e.g. Am7, C, G13" autocomplete="off" spellcheck="false" aria-label="Chord to drill">
       <p class="finder-error" id="earError"></p>
+    </div>
+    <!-- which qualities the drill may ask; the five on by default are the ones
+         to be able to tell apart before any of the rest are worth trying -->
+    <div class="toolbar" id="earQualityRow" hidden>
+      <div class="tb-group">
+        <span class="tb-lbl">Ask about</span>
+        <span class="segmented quality-set" id="earQualityGroup"></span>
+      </div>
     </div>
     <div class="toolbar" id="earScaleRow" hidden>
       <div class="tb-group">
