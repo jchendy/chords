@@ -9,10 +9,10 @@ A single-page, dependency-free site with four tabs under one header:
 - **Reverse chord finder** — click frets on an interactive fretboard and
   see what chord name(s) the selected notes could be; hear them together as
   a chord or one at a time as an arpeggio.
-- **Ear training** — four drills. Three put a chord shape, a pentatonic box
-  or a scale box on the neck and sound a note from inside it for you to
-  place; the fourth plays a whole chord, shows you only its root, and asks
-  what kind of chord it is.
+- **Ear training** — four drills, run ten questions at a time. Three put a
+  chord shape, a pentatonic box or a scale box on the neck and sound a note
+  from inside it for you to place; the fourth plays a whole chord, shows you
+  only its root, and asks what kind of chord it is.
 - **Genre examples** — pick a style, then a rhythm or a lead line, and read
   the tab while you hear it played. It's experimental, and lives behind the
   menu at the right end of the header (with a mailto link) rather than among
@@ -508,13 +508,25 @@ octave wins. Of the 582 boxes across every scale and root, three are like
 that — A major pentatonic's A box holds three of its five notes above the
 lowest root and all five above the next.
 
-Below the picture, the drill: it picks a note and plays it, and you say which
-one it was. It keeps score as it goes — right answers, questions asked, and
-the percentage. A question counts once however many times you guess at it:
-three wrong stabs at one note is one question missed, which is the honest
-measure of whether you heard it. The score runs for as long as the tab is
-open, and rolling a new chord or box doesn't reset it, since it's the same
-drill. **Play the note** repeats it; **Play the chord**,
+Setting up an exercise and doing one are different jobs, so the tab is in one
+state or the other. The setup — drill, subject, shape, octave — is the whole
+page until you press **Start a run of 10**, and one line of summary once you
+have, which is what makes room for the drill: on a 375×667 phone the answer
+buttons used to begin at y=702 in a 667-tall viewport, so you couldn't see
+the question and the answers at once. They start at 450 now.
+
+A run is ten questions and then a result: how many you got, and what you went
+wrong on (`Went wrong on ♭7 (3×), 4`). It's the thing that makes the drill
+something you can finish, and therefore something you can do well or badly
+at, which an endless tally never was. **Go again** runs another ten of the
+same; **Change the exercise** puts the setup back. **Just practise** is the
+endless version for when you only want to noodle, and keeps the running
+tally instead of a run.
+
+Either way the drill picks a note and plays it, and you say which one it was.
+A question counts once however many times you guess at it: three wrong stabs
+at one note is one question missed, which is the honest measure of whether
+you heard it. **Play the note** repeats it; **Play the chord**,
 **Play arpeggio** and **Play root** give it context — the shape struck
 together, rolled one note at a time, or just the root the rest is heard
 against. (A rootless voicing hasn't got one, and there that button goes

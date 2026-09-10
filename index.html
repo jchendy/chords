@@ -361,6 +361,34 @@
   .card-menu-item:hover{ background:var(--line); }
 
   /* ---------- ear training ---------- */
+  /* setting up an exercise is one job; doing one is another. The setup reads
+     as a single panel of rows rather than four strips of toolbar. */
+  .ear-setup{ border:1px solid var(--line); border-radius:12px; padding:4px 16px 14px; margin-top:16px; }
+  .setup-row{ display:flex; align-items:center; flex-wrap:wrap; gap:10px 16px; padding:10px 0; }
+  .setup-row + .setup-row{ border-top:1px solid var(--line); }
+  .setup-row > .tb-lbl:first-child{ min-width:52px; }
+  .setup-row .segmented{ display:inline-flex; flex-wrap:wrap; align-items:center; }
+  .setup-field{ display:inline-flex; align-items:center; gap:8px; }
+  .setup-split{ display:inline-flex; align-items:center; gap:10px; margin-left:auto; }
+  @media (max-width:760px){ .setup-split{ margin-left:0; } }
+  .mid-input{ font-family:Fraunces,Georgia,serif; font-weight:500; font-size:1.15rem; color:var(--ink); background:transparent; border:0; border-bottom:1px solid var(--line2); padding:2px 0; width:170px; }
+  .ear-go{ margin-top:18px; }
+  .ear-go .toolbar{ margin-top:10px; }
+  .ear-brief{ margin:0; color:var(--muted); font-size:.92rem; max-width:62ch; }
+  .tbtn.primary{ background:var(--ink); color:var(--bg); border-color:var(--ink); }
+  .tbtn.primary:hover{ opacity:.88; }
+  /* the run header: what you're doing, how far in, and the way out */
+  .ear-run{ display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-top:16px; padding:10px 14px; border:1px solid var(--line); border-radius:12px; }
+  .ear-run-what{ margin:0; font-family:Fraunces,Georgia,serif; font-size:1.02rem; }
+  .ear-run-progress{ display:flex; gap:4px; flex:1 1 120px; min-width:90px; }
+  .ear-run-progress i{ height:5px; flex:1 1 auto; border-radius:3px; background:var(--line2); }
+  .ear-run-progress i.hit{ background:var(--good); }
+  .ear-run-progress i.miss{ background:var(--bad); opacity:.7; }
+  .ear-run-progress i.now{ background:var(--muted); }
+  .ear-result{ margin-top:22px; padding-top:18px; border-top:1px solid var(--line); max-width:560px; }
+  .ear-result-score{ margin:0; font-family:Fraunces,Georgia,serif; font-size:1.9rem; }
+  .ear-result-detail{ margin:6px 0 0; color:var(--muted); font-size:.92rem; }
+  .ear-result .toolbar{ margin-top:16px; }
   .ear-shape{ max-width:272px; margin-top:18px; }
   .ear-shape .diagram-card{ cursor:pointer; }
   .ear-quiz{ margin-top:24px; padding-top:18px; border-top:1px solid var(--line); max-width:560px; }
@@ -378,8 +406,9 @@
   .box-choices .diagram-card{ padding:6px 10px 8px; }
   .box-choices .diagram-caption{ text-align:left; }
   .ear-quiz .toolbar{ margin:0; }
-  .ear-answers{ display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
-  .ear-answer{ display:flex; flex-direction:column; align-items:center; gap:1px; min-width:64px; padding:8px 13px; border:1px solid var(--line2); border-radius:10px; background:var(--panel); color:var(--ink); transition:border-color .12s ease, color .12s ease; }
+  /* a grid rather than a wrap: five answers used to break four-and-one */
+  .ear-answers{ display:grid; grid-template-columns:repeat(auto-fit, minmax(72px, 1fr)); gap:8px; margin-top:14px; max-width:560px; }
+  .ear-answer{ display:flex; flex-direction:column; align-items:center; gap:1px; padding:8px 6px; border:1px solid var(--line2); border-radius:10px; background:var(--panel); color:var(--ink); transition:border-color .12s ease, color .12s ease; }
   .ear-answer:hover{ border-color:var(--muted); }
   .ear-answer-name{ font-family:Fraunces,Georgia,serif; font-weight:600; font-size:1.1rem; }
   .ear-answer-degree{ font-size:.72rem; color:var(--muted); }
@@ -863,8 +892,11 @@
 <!-- ================= ear training ======================================== -->
 <div class="tab-page" id="page-ear" hidden>
   <section class="page ear">
-    <div class="toolbar">
-      <div class="tb-group">
+    <!-- Setting up an exercise and doing one are different jobs, so the tab is
+         in one state or the other: the setup is the whole page until you press
+         Start, and a line of summary once you have. -->
+    <div class="ear-setup" id="earSetup">
+      <div class="setup-row">
         <span class="tb-lbl">Drill</span>
         <span class="segmented" id="earModeGroup">
           <button type="button" class="seg-btn active" data-value="chord">Chord</button>
@@ -873,60 +905,65 @@
           <button type="button" class="seg-btn" data-value="scale">Scale</button>
         </span>
       </div>
-    </div>
-    <div class="finder-head" id="earChordRow">
-      <label class="tb-lbl" for="earInput">Chord</label>
-      <input type="text" id="earInput" class="big-input" placeholder="e.g. Am7, C, G13" autocomplete="off" spellcheck="false" aria-label="Chord to drill">
-      <p class="finder-error" id="earError"></p>
-    </div>
-    <!-- which qualities the drill may ask; the five on by default are the ones
-         to be able to tell apart before any of the rest are worth trying -->
-    <div class="toolbar" id="earQualityRow" hidden>
-      <div class="tb-group">
+      <div class="setup-row" id="earChordRow">
+        <label class="tb-lbl" for="earInput">Chord</label>
+        <input type="text" id="earInput" class="mid-input" placeholder="e.g. Am7, C, G13" autocomplete="off" spellcheck="false" aria-label="Chord to drill">
+        <button type="button" class="tbtn" id="earRandom">Random</button>
+        <p class="finder-error" id="earError"></p>
+      </div>
+      <div class="setup-row" id="earScaleRow" hidden>
+        <span class="setup-field"><span class="tb-lbl">Key</span>
+          <select id="earKey" class="sel" aria-label="Key"></select></span>
+        <span class="setup-field"><span class="tb-lbl">Scale</span>
+          <select id="earScale" class="sel" aria-label="Scale"></select></span>
+        <button type="button" class="tbtn" id="earRandomScale">Random</button>
+      </div>
+      <!-- which qualities the drill may ask; the five on by default are the ones
+           to be able to tell apart before any of the rest are worth trying -->
+      <div class="setup-row" id="earQualityRow" hidden>
         <span class="tb-lbl">Ask about</span>
         <span class="segmented quality-set" id="earQualityGroup"></span>
       </div>
-    </div>
-    <div class="toolbar" id="earScaleRow" hidden>
-      <div class="tb-group">
-        <span class="tb-lbl">Key</span>
-        <select id="earKey" class="sel" aria-label="Key"></select>
-      </div>
-      <div class="tb-group">
-        <span class="tb-lbl">Scale</span>
-        <select id="earScale" class="sel" aria-label="Scale"></select>
-      </div>
-    </div>
-    <div class="toolbar">
-      <button type="button" class="tbtn" id="earRandom">Random</button>
       <!-- a shape is chosen by looking at it, not by stepping past the
-           twenty-nine you didn't want -->
-      <span class="tb-group" id="earShapeRow">
+           twenty-nine you didn't want; and a box holds the same notes two or
+           three times over, so one octave of it is the span a player runs -->
+      <div class="setup-row" id="earShapeRow">
         <span class="tb-lbl">Shape</span>
         <span class="pair">
           <button type="button" class="seg-btn arrow" id="earShapePrev" aria-label="Previous shape">‹</button>
           <button type="button" class="seg-btn arrow" id="earShapeNext" aria-label="Next shape">›</button>
         </span>
         <button type="button" class="tbtn" id="earShapePick" aria-haspopup="dialog" aria-expanded="false"></button>
-      </span>
-      <!-- a box holds the same seven notes two or three times over; one
-           octave of it is the span a player actually runs -->
-      <div class="tb-group" id="earOctaveRow" hidden>
-        <span class="tb-lbl">Play</span>
-        <span class="segmented" id="earOctaveGroup">
-          <button type="button" class="seg-btn active" data-value="octave">One octave</button>
-          <button type="button" class="seg-btn" data-value="whole">Whole shape</button>
-        </span>
-        <!-- a box can hold two or three octaves; these move which one is in play -->
-        <span class="pair" id="earOctaveStep" hidden>
-          <button type="button" class="seg-btn arrow" id="earOctaveDown" aria-label="The octave below">↓</button>
-          <button type="button" class="seg-btn arrow" id="earOctaveUp" aria-label="The octave above">↑</button>
+        <span class="setup-split" id="earOctaveRow" hidden>
+          <span class="tb-lbl">Play</span>
+          <span class="segmented" id="earOctaveGroup">
+            <button type="button" class="seg-btn active" data-value="octave">One octave</button>
+            <button type="button" class="seg-btn" data-value="whole">Whole shape</button>
+          </span>
+          <span class="pair" id="earOctaveStep" hidden>
+            <button type="button" class="seg-btn arrow" id="earOctaveDown" aria-label="The octave below">↓</button>
+            <button type="button" class="seg-btn arrow" id="earOctaveUp" aria-label="The octave above">↑</button>
+          </span>
         </span>
       </div>
+    </div>
+    <!-- ...and once it has begun, the setup in one line, with a way out -->
+    <div class="ear-run" id="earRunBar" hidden>
+      <p class="ear-run-what" id="earRunWhat"></p>
+      <div class="ear-run-progress" id="earRunDots" aria-hidden="true"></div>
+      <button type="button" class="tbtn" id="earStop">Stop</button>
     </div>
     <!-- the same diagram the chord finder draws, and it sounds the same way:
          the shape three ways over, or one note on its own -->
     <div class="ear-shape" id="earShape"></div>
+    <!-- what the drill will do, and the two ways to begin it -->
+    <div class="ear-go" id="earGo">
+      <p class="ear-brief" id="earBrief"></p>
+      <div class="toolbar">
+        <button type="button" class="tbtn primary" id="earStart">Start a run of 10</button>
+        <button type="button" class="tbtn" id="earPractice">Just practise</button>
+      </div>
+    </div>
     <div class="scrim" id="earScrim" hidden></div>
     <aside class="sheet shape-sheet" id="earShapeSheet" hidden role="dialog" aria-modal="true" aria-label="Choose a shape">
       <div class="sheet-head">
@@ -954,6 +991,15 @@
         <button type="button" class="tbtn" id="earBack" disabled aria-label="The question before this one">Back</button>
       </div>
       <p class="ear-verdict" id="earVerdict" role="status" aria-live="polite"></p>
+    </div>
+    <!-- how the run went, and what to do about it -->
+    <div class="ear-result" id="earResult" hidden role="status" aria-live="polite">
+      <p class="ear-result-score" id="earResultScore"></p>
+      <p class="ear-result-detail" id="earResultDetail"></p>
+      <div class="toolbar">
+        <button type="button" class="tbtn primary" id="earAgain">Go again</button>
+        <button type="button" class="tbtn" id="earChange">Change the exercise</button>
+      </div>
     </div>
   </section>
 </div>

@@ -39,12 +39,14 @@
   add('span', 'earQualityGroup', 'segmented');
   ['earChordRow', 'earScaleRow', 'earOctaveRow', 'earQualityRow', 'earShapeRow',
    'earOctaveStep', 'earShape', 'earShapeSheet', 'earScrim', 'earShapeChoices',
-   'earQuiz', 'earAnswers'].forEach(id => add('div', id));
-  ['earError', 'earVerdict', 'earScore', 'earQuizTitle', 'earSheetTitle', 'earSheetChord']
-    .forEach(id => add('p', id));
-  ['earRandom', 'earShapePick', 'earShapePrev', 'earShapeNext', 'earOctaveDown',
-   'earOctaveUp', 'earSheetClose', 'earPlayNote', 'earPlayRoot', 'earPlayChord',
-   'earPlayArp', 'earBack'].forEach(id => {
+   'earQuiz', 'earAnswers', 'earSetup', 'earGo', 'earRunBar', 'earRunDots',
+   'earResult'].forEach(id => add('div', id));
+  ['earError', 'earVerdict', 'earScore', 'earQuizTitle', 'earSheetTitle', 'earSheetChord',
+   'earBrief', 'earRunWhat', 'earResultScore', 'earResultDetail'].forEach(id => add('p', id));
+  ['earRandom', 'earRandomScale', 'earShapePick', 'earShapePrev', 'earShapeNext',
+   'earOctaveDown', 'earOctaveUp', 'earSheetClose', 'earPlayNote', 'earPlayRoot',
+   'earPlayChord', 'earPlayArp', 'earBack', 'earStart', 'earPractice', 'earStop',
+   'earAgain', 'earChange'].forEach(id => {
     const b = add('button', id);
     b.type = 'button';
   });
@@ -59,7 +61,9 @@
 
   const q = s => document.querySelector(s);
   const answers = () => [...document.querySelectorAll('#earAnswers .ear-answer')];
-  const setMode = m => q(`#earModeGroup .seg-btn[data-value="${m}"]`).click();
+  // The tab sets up an exercise and then does one, so a test that wants to
+  // answer questions has to start something first — as a player does.
+  const setMode = m => { q(`#earModeGroup .seg-btn[data-value="${m}"]`).click(); q('#earPractice').click(); };
 
   let started = false;
   function start(){
@@ -67,6 +71,7 @@
     started = true;
     GT.earTraining.init();
     GT.earTraining.refresh();
+    q('#earPractice').click();      // endless, so a test isn't cut off at ten
   }
 
   // ---- the suites ----------------------------------------------------------
@@ -167,10 +172,14 @@
     q('#earRandom').click();
     q('#earBack').click();
     if (shown() !== qualityNeck) bad.push('Back did not put the rolled chord back');
-    // back through the drills it came from
-    q('#earBack').click();
-    if (q('#earModeGroup .seg-btn.active').dataset.value !== 'scale')
-      bad.push('Back did not return to the drill the question came from');
+    // ...and far enough back it crosses into the drill the questions came
+    // from, however many of them were asked in this one
+    let crossed = false;
+    for (let i = 0; i < 8 && !crossed; i++){
+      q('#earBack').click();
+      crossed = q('#earModeGroup .seg-btn.active').dataset.value === 'scale';
+    }
+    if (!crossed) bad.push('Back never returned to the drill the questions came from');
 
     GT.earTraining.stop();
     t.equal(bad.join('; '), '', 'Back puts the whole question on again, neck and all');
@@ -195,11 +204,13 @@
     // correctly from the variable nobody had touched.
     const roundTrip = (what, setUp, read, disturb) => {
       setUp();
+      q('#earPractice').click();
       const url = written, before = read();
       disturb();
       if (read() === before){ bad.push(`${what}: the detour left it as it was, so the trip proves nothing`); return; }
       GT.tabs.stateParams = () => new URLSearchParams(url);
       GT.earTraining.refresh();
+      q('#earPractice').click();
       const after = read();
       if (after !== before) bad.push(`${what}: came back as ${after}, not ${before}`);
       if (written !== url) bad.push(`${what}: wrote ${written} after reading ${url}`);
@@ -264,10 +275,48 @@
     t.equal(bad.join('; '), '', 'An exercise survives being written to the URL and read back');
   }
 
+  // A run is ten questions and then a result — the thing that makes the drill
+  // something you can finish rather than a tally that only ever grows. The
+  // count has to hold whatever you do inside it: get one wrong first and it
+  // still costs one question, not two.
+  function testARunIsTenQuestions(t){
+    start();
+    const bad = [];
+    q('#earModeGroup .seg-btn[data-value="scale"]').click();
+    q('#earStart').click();
+    if (!q('#earSetup').hidden) bad.push('the setup stayed put once the run began');
+    if (q('#earRunBar').hidden) bad.push('the run bar never appeared');
+    if (q('#earQuiz').hidden) bad.push('the quiz never appeared');
+
+    let answered = 0;
+    for (let i = 0; i < 14 && q('#earResult').hidden; i++){
+      const btns = answers();
+      if (!btns.length) break;
+      // get the first one wrong on purpose every other time
+      if (i % 2) btns.forEach(b => b.click());
+      else for (const b of btns){ b.click(); if (b.classList.contains('right')) break; }
+      answered++;
+      GT.earTraining.tick();        // stand in for the pause between questions
+    }
+    if (q('#earResult').hidden) bad.push(`no result after ${answered} questions`);
+    else if (answered !== 10) bad.push(`the run ended after ${answered} questions, not 10`);
+    const score = q('#earResultScore').textContent;
+    if (!/^\d+ of 10$/.test(score)) bad.push(`the result reads "${score}"`);
+    if (!q('#earRunBar').hidden) bad.push('the run bar stayed up after the result');
+
+    // and going again starts another ten from nothing
+    q('#earAgain').click();
+    if (!q('#earResult').hidden) bad.push('Go again left the result up');
+    if (q('#earScore').textContent !== '1 of 10') bad.push(`a fresh run opens on "${q('#earScore').textContent}"`);
+    GT.earTraining.stop();
+    t.equal(bad.join('; '), '', 'A run is ten questions and then a result');
+  }
+
   GT.earSuites = [
     ['Ear trainer: every question has exactly one answer', testEveryQuestionHasExactlyOneAnswer],
     ['Ear trainer: the score counts questions', testTheScoreCountsQuestions],
     ['Ear trainer: Back restores the question', testBackRestoresTheQuestion],
     ['Ear trainer: an exercise survives the URL', testTheExerciseSurvivesTheUrl],
+    ['Ear trainer: a run is ten questions', testARunIsTenQuestions],
   ];
 })();

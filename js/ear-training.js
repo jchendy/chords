@@ -23,6 +23,9 @@
   const keySelect = $('earKey'), scaleSelect = $('earScale'), octaveGroup = $('earOctaveGroup');
   const shapeEl = $('earShape'), shapeRow = $('earShapeRow'), shapePick = $('earShapePick');
   const backBtn = $('earBack');
+  const setupEl = $('earSetup'), goEl = $('earGo'), briefEl = $('earBrief');
+  const runBar = $('earRunBar'), runWhat = $('earRunWhat'), runDots = $('earRunDots');
+  const resultEl = $('earResult'), resultScore = $('earResultScore'), resultDetail = $('earResultDetail');
   const qualityRow = $('earQualityRow'), qualityGroup = $('earQualityGroup');
   const octaveStep = $('earOctaveStep');
   const sheet = $('earShapeSheet'), scrim = $('earScrim'), choicesEl = $('earShapeChoices');
@@ -99,7 +102,19 @@
   let asked = null, askedCell = null, rootCell = null;
   let missed = false;            // has this question been got wrong already?
   let nextRound = null;          // the pause between a right answer and the next note
-  let right = 0, tries = 0;      // this session's score
+  let right = 0, tries = 0;      // the running tally, while practising
+
+  // Setting up an exercise and doing one are different jobs, and the tab is
+  // in one state or the other. A run is ten questions with a result at the
+  // end — something you can finish, and therefore something you can do well
+  // or badly at, which an endless tally never was. Practice keeps the endless
+  // version, because sometimes you do just want to noodle.
+  const RUN_LENGTH = 10;
+  let phase = 'ready';           // 'ready' | 'running' | 'done'
+  let runLength = RUN_LENGTH;    // 0 while practising
+  let runAsked = 0, runRight = 0;
+  let runMarks = [];             // true/false per question answered
+  let runMisses = new Map();     // what was got wrong, and how often
 
   const grip = cells => {
     const at = new Map(cells.map(c => [c.string, c.fret]));
@@ -428,7 +443,25 @@
       + `</button>`).join('');
     if (keep) resetRound();      // the same question, put back as it was
     else ask();
+    showPhase();
+    scrollToShape();
     writeState();
+  }
+
+  // A neck is wider than a phone and what's drawn on it can be anywhere along
+  // it — a box at the twelfth fret, or the single root the quality drill
+  // shows, which was landing off the right-hand edge of the scroller. Put the
+  // middle of what's drawn in the middle of what can be seen.
+  function scrollToShape(){
+    const scroller = shapeEl.querySelector('.fret-scroll');
+    const dots = scroller && scroller.querySelectorAll('.note-dot');
+    if (!dots || !dots.length || scroller.scrollWidth <= scroller.clientWidth) return;
+    const rects = [...dots].map(d => d.getBoundingClientRect());
+    const left = Math.min(...rects.map(r => r.left));
+    const right = Math.max(...rects.map(r => r.right));
+    if (right <= left) return;                       // hidden page: nothing measured
+    const mid = (left + right) / 2 - scroller.getBoundingClientRect().left + scroller.scrollLeft;
+    scroller.scrollLeft = Math.max(0, mid - scroller.clientWidth / 2);
   }
 
   // ---- choosing what to drill ---------------------------------------------
@@ -494,7 +527,7 @@
   }
 
   function randomSubject(){
-    if (mode === 'quality'){ nextQuestion(); playAsked(); return; }
+    if (mode === 'quality' && phase === 'running'){ nextQuestion(); playAsked(); return; }
     if (mode === 'chord'){
       let name;
       do { name = pick(ROOTS) + pick(TYPES); } while (chord && name === chord.label);
@@ -527,6 +560,7 @@
   function setMode(next){
     if (next === mode) return;
     mode = next;
+    phase = 'ready';
     syncMode();
     if (mode === 'chord'){
       if (chord) loadChord(chord.label);
@@ -626,7 +660,10 @@
     if (mode === 'chord'){
       if (!loadChord(p.get('c') || 'C')) return false;
     } else if (mode === 'quality'){
-      const ids = (p.get('q') || '').split('.').map(id => (id === 'maj' ? '' : id))
+      // Only when the link actually carries a list. Splitting an absent one
+      // gives a single empty string, which is the id of Major — a link with
+      // no qualities in it switched every other quality off.
+      const ids = (p.get('q') ? p.get('q').split('.') : []).map(id => (id === 'maj' ? '' : id))
         .filter(id => QUALITIES.some(q => q.id === id));
       if (ids.length){
         allowedQualities.clear();
@@ -656,6 +693,80 @@
     const i = Number(p.get('i')) || 0;
     if (i && i < shapes.length){ shapeIdx = i; render(); }
     return true;
+  }
+
+  // ---- the three states ---------------------------------------------------
+  // What each drill is for, in a sentence, because the tab used to open
+  // mid-exercise with nothing anywhere saying what it wanted from you.
+  const BRIEFS = {
+    chord: 'One note of the shape sounds; say which note of the chord it was.',
+    quality: 'A whole chord sounds and you see only its root; say what kind of chord it was.',
+    penta: 'One note of the box sounds; say which note of the pentatonic it was.',
+    scale: 'One note of the box sounds; say which note of the scale it was.',
+  };
+
+  function showPhase(){
+    const running = phase === 'running';
+    // The setup is the whole page until you start, a line while you're going,
+    // and out of the way while you're reading how it went — the result is
+    // what that screen is for, and Change the exercise brings it back.
+    setupEl.hidden = phase !== 'ready';
+    goEl.hidden = phase !== 'ready';
+    runBar.hidden = !running;
+    quizEl.hidden = !running || !asked;
+    resultEl.hidden = phase !== 'done';
+    briefEl.textContent = BRIEFS[mode] || '';
+    if (running){
+      // What you're drilling, not what's currently sounding: in the quality
+      // drill the subject's own label is the chord, answer and all, and the
+      // header would have been giving the game away every question.
+      runWhat.textContent = mode === 'quality'
+        ? `Chord quality · ${allowedQualities.size} kinds`
+        : subject ? subject.label + (subject.shapeName ? ` · ${subject.shapeName}` : '') : '';
+      drawProgress();
+    }
+  }
+
+  // A run's shape, drawn as it fills: what you got, what you missed, and how
+  // much is left. While practising there's nothing to fill, so the tally
+  // stands in its place.
+  function drawProgress(){
+    if (!runLength){
+      runDots.innerHTML = '';
+      scoreEl.textContent = tries ? `${right} of ${tries} · ${Math.round(right / tries * 100)}%` : '';
+      return;
+    }
+    runDots.innerHTML = Array.from({ length: runLength }, (_, i) => {
+      const cls = i < runMarks.length ? (runMarks[i] ? 'hit' : 'miss') : (i === runMarks.length ? 'now' : '');
+      return `<i class="${cls}"></i>`;
+    }).join('');
+    scoreEl.textContent = `${runAsked + 1} of ${runLength}`;
+  }
+
+  function begin(length){
+    runLength = length;
+    runAsked = 0; runRight = 0; runMarks = []; runMisses = new Map();
+    if (!length){ right = 0; tries = 0; }
+    phase = 'running';
+    render();
+    playAsked();
+  }
+
+  function finish(){
+    phase = 'done';
+    const missed = [...runMisses.entries()].sort((a, b) => b[1] - a[1]);
+    resultScore.textContent = `${runRight} of ${runLength}`;
+    resultDetail.textContent = !missed.length
+      ? 'Every one first time.'
+      : 'Went wrong on ' + missed.map(([name, n]) => n > 1 ? `${name} (${n}×)` : name).join(', ') + '.';
+    showPhase();
+  }
+
+  function stopRun(){
+    phase = 'ready';
+    clearTimeout(nextRound);
+    nextRound = null;
+    showPhase();
   }
 
   // ---- what came before ---------------------------------------------------
@@ -702,7 +813,7 @@
       askedCell = was.askedCell;
     }
     backBtn.disabled = history.length < 2;
-    quizEl.hidden = !asked;
+    showPhase();
     playAsked();
   }
 
@@ -718,9 +829,16 @@
   // rolling a new chord or box doesn't reset it, since it's the same drill
   // and a run you can't interrupt isn't a run worth keeping.
   function scored(won){
-    tries++;
-    if (won) right++;
-    scoreEl.textContent = `${right} of ${tries} · ${Math.round(right / tries * 100)}%`;
+    if (runLength){
+      runAsked++;
+      runMarks.push(won);
+      if (won) runRight++;
+      else runMisses.set(asked.name, (runMisses.get(asked.name) || 0) + 1);
+    } else {
+      tries++;
+      if (won) right++;
+    }
+    drawProgress();
   }
 
   // A note to find. Never the one just answered: hearing the same note twice
@@ -745,14 +863,12 @@
       const choice = choices.find(c => c.key === subject.answer);
       asked = choice ? Object.assign({}, choice, { says: subject.label }) : null;
       askedCell = null;
-      quizEl.hidden = !asked;
       if (asked) remember();
       return;
     }
     // two notes is the fewest that can be told apart; below that there's no
     // question to ask
-    quizEl.hidden = choices.length < 2;
-    if (quizEl.hidden){ asked = askedCell = null; return; }
+    if (choices.length < 2){ asked = askedCell = null; return; }
     const pool = asked ? choices.filter(c => c.key !== asked.key) : choices;
     asked = pick(pool.length ? pool : choices);
     // When the root is the answer and the root has already sounded as the
@@ -783,6 +899,14 @@
   // would be answering it. Only the root of the pair gets a light, and it
   // gets one whichever note follows it, so a question where the answer is
   // the root looks like every other question.
+  // What happens after a right answer: the next question, or the result if
+  // that was the tenth. One path, whether the pause ran it or a test did.
+  function advance(sound){
+    if (runLength && runAsked >= runLength){ finish(); return; }
+    nextQuestion();
+    if (sound) playAsked();
+  }
+
   // a fresh question: in the note drills another note of the same shape, in
   // the quality drill another chord altogether
   function nextQuestion(){
@@ -821,8 +945,9 @@
     if (askedCell) lightUp(askedCell);
     say(`Yes — ${asked.says}`, 'good');
     // the next question plays itself, so the drill keeps going without a
-    // button press between every one
-    nextRound = setTimeout(() => { nextRound = null; nextQuestion(); playAsked(); }, 1300);
+    // button press between every one — unless that was the tenth, and there
+    // is a result to look at instead
+    nextRound = setTimeout(() => { nextRound = null; advance(true); }, 1300);
   }
 
   GT.earTraining = {
@@ -889,6 +1014,12 @@
       }));
 
       backBtn.addEventListener('click', goBack);
+      $('earStart').addEventListener('click', () => begin(RUN_LENGTH));
+      $('earPractice').addEventListener('click', () => begin(0));
+      $('earStop').addEventListener('click', stopRun);
+      $('earAgain').addEventListener('click', () => begin(runLength || RUN_LENGTH));
+      $('earChange').addEventListener('click', stopRun);
+      $('earRandomScale').addEventListener('click', randomSubject);
       rootFirst.addEventListener('change', writeState);
       $('earPlayNote').addEventListener('click', playAsked);
       $('earPlayRoot').addEventListener('click', () => {
@@ -922,11 +1053,16 @@
     refresh(){
       if (readState()) return;
       if (!subject) randomSubject();
+      else { showPhase(); scrollToShape(); }
     },
     QUALITIES,
     // leaving the tab shouldn't leave a question about to answer itself, or a
     // sheet open over a page you can't see
     stop(){ clearTimeout(nextRound); nextRound = null; openSheet(false); },
+    // exposed so a link can drop you straight into a run
+    begin,
+    // ...and so the tests need no patience for the pause between questions
+    tick(){ if (nextRound){ clearTimeout(nextRound); nextRound = null; advance(false); } },
     // the chord finder handing over one of its shapes
     show(name, v){
       GT.tabs.goTo('ear');
