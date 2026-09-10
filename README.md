@@ -474,7 +474,12 @@ A chord is drawn as a chord diagram, because that's how a chord is written
 down; it's the chord finder's own — same search, same diagram, same sounds —
 so clicking it plays the chord three ways over. A box is drawn across the
 whole neck, because that's where it lives and half of learning one is knowing
-where it sits. Either way, clicking a note plays that note, and the notes
+where it sits — and it's drawn by the practice tab's own code, coloured by
+the CAGED box it belongs to with the chord shape inside it traced through,
+since knowing which chord a box sits on is most of what makes it worth
+learning. (A scale with no perfect 5th has no such grip, and Locrian
+accordingly gets no line: the filter that keeps only grips the box wholly
+holds says so without being told.) Either way, clicking a note plays that note, and the notes
 light under the pointer the same way.
 
 The **scale** drill offers the seven modes and the **pentatonic** drill the
@@ -784,7 +789,7 @@ by what each part does:
 | File | Responsibility |
 | --- | --- |
 | `theory.js` | Keys, scale degrees, chord formulas, chord naming, chord identification. Pure — no DOM, no audio, no app state. |
-| `fretboard.js` | Tuning, CAGED and pentatonic shape templates, the maths that places them on the neck, and CAGED shape matching. Also pure. |
+| `fretboard.js` | Tuning, CAGED and pentatonic shape templates, the maths that places them on the neck, CAGED shape matching, and the two pieces of box drawing every view shares — `boxColouredNotes`, which colours a note by the box that owns it, and `gripOutlines`, which traces the chord shape underneath. Also pure. |
 | `neck.js` | Draws a full 15-fret neck as SVG from markers and shape outlines — shared by the practice fretboard, the chord finder's CAGED overview and the reverse finder, so all three necks are one drawing. A fret is close to twice as wide as the gap between two strings, near enough the shape of the real thing to read a grip off, and a note sits close up behind its fret wire where the finger goes rather than in the middle of the gap; the inlays and the fret numbers stay centred, since that's where they are on a guitar. The label and the dot are sized against each other: a single character is set as large as the dot will hold without running into a root's ring, and a longer one ("♭3") a size down so it fits — which is what lets the dots be small enough for the strings to sit that close together. A full neck is wide, so it wants most of a laptop's width — hence the wider cap on how large the drawing may render. |
 | `progressions.js` | The preset progressions, written as scale degrees. Pure data. |
 | `genres.js` | Voicing templates and the code that turns a progression × rhythm into notes. Pure. |

@@ -307,6 +307,73 @@
     return out;
   }
 
+  function nearestByAnchor(boxes, fret){
+    let best = null, bd = Infinity;
+    boxes.forEach(b => { const d = Math.abs(fret - b.anchor); if (d < bd){ bd = d; best = b; } });
+    return best;
+  }
+
+  // Every note a view draws, coloured by the CAGED box that owns it: a note two
+  // adjacent boxes share gets a split dot (lower box on the left, higher on the
+  // right), a note in one box takes that box's colour, and a note in none takes
+  // the nearest box's — an arpeggio note just outside a box still reads as
+  // belonging to it.
+  //
+  // The practice tab's Chords, Pentatonic and Scales views all draw this same
+  // picture, and so does the ear trainer's box. Each used to carry its own copy
+  // of the loop; the copies had drifted. What actually differs between them is
+  // only which notes they draw and what they call them, which is all `labelOf`
+  // is — the degree to write on a pitch class, or nothing for a note this view
+  // leaves out.
+  function boxColouredNotes(boxes, { labelOf, rootPc, passingOf }){
+    const markers = [];
+    for (let s = 0; s < 6; s++){
+      for (let f = 0; f <= FRET_COUNT; f++){
+        const pc = (STRING_TUNING[s] + f) % 12;
+        const label = labelOf(pc);
+        if (label == null) continue;
+        // Owners by name, each kept at its nearest placement. Two boxes share
+        // a note or they don't; one box reaching the same note twice isn't
+        // sharing it with anyone, and shouldn't split the dot with itself.
+        const byName = new Map();
+        boxes.forEach(b => {
+          if (!b.cells.some(c => c.string === s && c.fret === f)) return;
+          const held = byName.get(b.name);
+          if (!held || Math.abs(f - b.anchor) < Math.abs(f - held.anchor)) byName.set(b.name, b);
+        });
+        const owners = [...byName.values()];
+        const base = { string: s, fret: f, label, isRoot: pc === rootPc,
+                       shapes: owners.map(o => o.name) };
+        if (passingOf) base.passing = passingOf(pc);
+        if (owners.length >= 2){
+          const two = owners.slice()
+            .sort((a, b) => Math.abs(f - a.anchor) - Math.abs(f - b.anchor))
+            .slice(0, 2)
+            .sort((a, b) => a.anchor - b.anchor);
+          markers.push({ ...base, split: [CAGED_COLORS[two[0].name], CAGED_COLORS[two[1].name]] });
+        } else if (owners.length === 1){
+          markers.push({ ...base, color: CAGED_COLORS[owners[0].name] });
+        } else {
+          const near = nearestByAnchor(boxes, f);
+          markers.push({ ...base, shapes: near ? [near.name] : [],
+                         color: near ? CAGED_COLORS[near.name] : '#6b655b' });
+        }
+      }
+    }
+    return markers;
+  }
+
+  // The CAGED grips traced through, whatever else is drawn on top of them —
+  // the chord shape you already know, under the scale or the arpeggio.
+  // `allowed` narrows it to a set of shape letters, for a view that is working
+  // on a few of the five at a time.
+  function gripOutlines(rootPc, isMinor, allowed = null){
+    return cagedPlacements(rootPc, isMinor ? CAGED_MINOR : CAGED_MAJOR)
+      .filter(p => (!allowed || allowed.has(p.name)) && p.cells.length > 1)
+      .map(p => ({ color: CAGED_COLORS[p.name], shape: p.name,
+                   cells: p.cells.map(c => ({ string: c.string, fret: c.fret })) }));
+  }
+
   // The five CAGED shapes for one triad, laid out across the whole neck and
   // coloured by shape (notes two shapes share get a split dot). This is the
   // data behind the practice tab's Chords view; the chord finder draws
@@ -423,7 +490,7 @@
     STRING_TUNING, STRING_MIDI, STRING_LABELS, FRET_COUNT,
     CAGED_MAJOR, CAGED_MINOR, CAGED_ORDER, CAGED_COLORS, ROOT_PALETTE,
     cagedPlacements, seventhCells, arpeggioCells, cagedArpeggioBoxes, stringSetTriads,
-    pentaBoxPlacements, scaleBoxPlacements,
+    pentaBoxPlacements, scaleBoxPlacements, boxColouredNotes, gripOutlines, nearestByAnchor,
     cagedTriadBoard, identifyCagedShape, cagedShapeMatch, closeTriadShape,
   };
 })();

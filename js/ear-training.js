@@ -13,7 +13,8 @@
   'use strict';
   const GT = (window.GT = window.GT || {});
   const { parseChordName, pick, SEMITONE } = GT.theory;
-  const { STRING_TUNING, STRING_MIDI, pentaBoxPlacements, scaleBoxPlacements } = GT.fretboard;
+  const { STRING_TUNING, STRING_MIDI, pentaBoxPlacements, scaleBoxPlacements,
+          boxColouredNotes, gripOutlines } = GT.fretboard;
 
   const $ = id => document.getElementById(id);
   const modeGroup = $('earModeGroup');
@@ -240,25 +241,33 @@
     return `<div class="fret-scroll">${neckSVG(s)}</div>`;
   }
 
+  // The picture the practice tab draws, from the code the practice tab draws
+  // it with: every note coloured by the CAGED box it belongs to, and the chord
+  // shape inside that box traced through it. Knowing which chord shape a box
+  // sits on is most of what makes a box worth learning, so it's drawn rather
+  // than described.
   function neckSVG(s){
-    const inPlay = new Set(s.cells.map(c => `${c.string}:${c.fret}`));
-    // Every note of the box is drawn, and every one says which degree it is —
-    // reading the shape is half of what a box is for. The ones outside the
-    // octave in play are drawn quiet, the way the practice tab draws a
-    // passing note, so you can see the whole shape and see which part of it
-    // you're being asked about. Their degrees come from the pitch class
-    // rather than from the notes in play, which on a partial octave don't
-    // cover every one.
-    const markers = s.shown.map(c => {
-      const playing = inPlay.has(`${c.string}:${c.fret}`);
-      return {
-        string: c.string, fret: c.fret,
-        label: SCALE_DEGREES[(pcOf(c) - s.rootPc + 12) % 12] || '',
-        color: '#bfb7a8',
-        passing: !playing,
-        isRoot: playing && pcOf(c) === s.rootPc,
-      };
-    });
+    const key = c => `${c.string}:${c.fret}`;
+    const inPlay = new Set(s.cells.map(key));
+    const inBox = new Set(s.shown.map(key));
+    const scalePcs = new Set(s.shown.map(pcOf));
+    const degreeFor = pc => SCALE_DEGREES[(pc - s.rootPc + 12) % 12];
+    // Every note of the box says which degree it is — reading the shape is
+    // half of what a box is for — and the ones outside the octave in play are
+    // drawn quiet, so you can see the whole shape and see which part of it
+    // you're being asked about. boxColouredNotes draws a pitch class wherever
+    // it falls on the neck, which for one box means everywhere the scale
+    // reaches; this is the box, so it keeps the box's own cells.
+    const markers = boxColouredNotes([s.shape], {
+      labelOf: pc => (scalePcs.has(pc) ? degreeFor(pc) : null),
+      rootPc: s.rootPc,
+    }).filter(m => inBox.has(key(m)))
+      .map(m => Object.assign({}, m, { passing: !inPlay.has(key(m)) }));
+    // ...and the grips whose every note this box holds, which is the one it's
+    // built on. A scale with no perfect 5th — Locrian — has no such grip, and
+    // the filter says so without being told.
+    const lines = gripOutlines(s.rootPc, scaleById(scaleId).minor)
+      .filter(ln => ln.cells.every(c => inBox.has(key(c))));
     // the click targets go over the drawing, one per note, in the same groups
     // a chord diagram uses so they light and sound the same way
     const hits = s.shown.map(c => {
@@ -268,7 +277,7 @@
         + `<circle class="note-tap" cx="${x}" cy="${y}" r="10.5"/></g>`;
     }).join('');
     return `<svg viewBox="${GT.neck.viewBox}" role="img" aria-label="${s.label}, ${s.shapeName}">`
-      + GT.neck.buildSVG(markers, []) + hits + '</svg>';
+      + GT.neck.buildSVG(markers, lines) + hits + '</svg>';
   }
 
   function render(){

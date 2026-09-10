@@ -11,6 +11,7 @@
     CAGED_MAJOR, CAGED_MINOR, CAGED_ORDER, CAGED_COLORS, ROOT_PALETTE,
     cagedPlacements, seventhCells, arpeggioCells, cagedArpeggioBoxes, stringSetTriads,
     pentaBoxPlacements, scaleBoxPlacements, cagedTriadBoard, closeTriadShape,
+    boxColouredNotes, gripOutlines, nearestByAnchor,
   } = GT.fretboard;
 
   // Which chord tone is underneath a three-string triad — the thing that
@@ -459,63 +460,6 @@
   // which measures from a shape's middle to work out where a hand is: this one
   // answers "which box does a stray note read as belonging to", and the two
   // want different metrics. Keep them apart.
-  function nearestByAnchor(boxes, fret){
-    let best = null, bd = Infinity;
-    boxes.forEach(b => { const d = Math.abs(fret - b.anchor); if (d < bd){ bd = d; best = b; } });
-    return best;
-  }
-
-  // Every note a view draws, coloured by the CAGED box that owns it: a note two
-  // adjacent boxes share gets a split dot (lower box on the left, higher on the
-  // right), a note in one box takes that box's colour, and a note in none takes
-  // the nearest box's — an arpeggio note just outside a box still reads as
-  // belonging to it.
-  //
-  // Chords with the shapes opened out, Pentatonic and Scales all draw this same
-  // picture, and each used to carry its own copy of this loop. The copies had
-  // drifted: one counted raw owners where the others counted distinct box
-  // names, and B5 was one of them colouring from a box list the others had
-  // already filtered. What actually differs between the three is only which
-  // notes they draw and what they call them, which is all `labelOf` is — the
-  // degree to write on a pitch class, or nothing for a note this view leaves out.
-  function boxColouredNotes(boxes, { labelOf, rootPc, passingOf }){
-    const markers = [];
-    for (let s = 0; s < 6; s++){
-      for (let f = 0; f <= FRET_COUNT; f++){
-        const pc = (STRING_TUNING[s] + f) % 12;
-        const label = labelOf(pc);
-        if (label == null) continue;
-        // Owners by name, each kept at its nearest placement. Two boxes share
-        // a note or they don't; one box reaching the same note twice isn't
-        // sharing it with anyone, and shouldn't split the dot with itself.
-        const byName = new Map();
-        boxes.forEach(b => {
-          if (!b.cells.some(c => c.string === s && c.fret === f)) return;
-          const held = byName.get(b.name);
-          if (!held || Math.abs(f - b.anchor) < Math.abs(f - held.anchor)) byName.set(b.name, b);
-        });
-        const owners = [...byName.values()];
-        const base = { string: s, fret: f, label, isRoot: pc === rootPc,
-                       shapes: owners.map(o => o.name) };
-        if (passingOf) base.passing = passingOf(pc);
-        if (owners.length >= 2){
-          const two = owners.slice()
-            .sort((a, b) => Math.abs(f - a.anchor) - Math.abs(f - b.anchor))
-            .slice(0, 2)
-            .sort((a, b) => a.anchor - b.anchor);
-          markers.push({ ...base, split: [CAGED_COLORS[two[0].name], CAGED_COLORS[two[1].name]] });
-        } else if (owners.length === 1){
-          markers.push({ ...base, color: CAGED_COLORS[owners[0].name] });
-        } else {
-          const near = nearestByAnchor(boxes, f);
-          markers.push({ ...base, shapes: near ? [near.name] : [],
-                         color: near ? CAGED_COLORS[near.name] : '#6b655b' });
-        }
-      }
-    }
-    return markers;
-  }
-
   // A nearest shape can sit a fret or two outside the box it was measured
   // against, so the position readout covers what's actually on the neck rather
   // than the window it started from.
@@ -523,17 +467,6 @@
     if (!shownWindow || !markers.length) return;
     const frets = markers.map(m => m.fret);
     shownWindow = { min: Math.min(shownWindow.min, ...frets), max: Math.max(shownWindow.max, ...frets) };
-  }
-
-  // The CAGED grips traced through, whatever else a view is drawing on top of
-  // them — the shape you already know, under the scale or the arpeggio. Only
-  // the ones you're working on: a shape switched off leaves the outlines along
-  // with everything else.
-  function gripOutlines(rootPc, isMinor){
-    return cagedPlacements(rootPc, isMinor ? CAGED_MINOR : CAGED_MAJOR)
-      .filter(p => shapeOn(p.name) && p.cells.length > 1)
-      .map(p => ({ color: CAGED_COLORS[p.name], shape: p.name,
-                   cells: p.cells.map(c => ({ string: c.string, fret: c.fret })) }));
   }
 
   // the notes of the chord itself, so the scale views can set the rest back
@@ -1067,7 +1000,7 @@
 
       // lines trace each CAGED chord shape (root / 3rd / 5th), one note per
       // string, following the actual fingering — same as Chords mode
-      const lines = gripOutlines(rootPc, isMinor);
+      const lines = gripOutlines(rootPc, isMinor, enabledShapes());
 
       // every pentatonic note is coloured by the CAGED box(es) that actually
       // contain it: notes shared by two adjacent boxes get a split dot
@@ -1121,7 +1054,7 @@
       cagedShapesShown = CAGED_ORDER.filter(n => boxes.some(b => b.name === n));
       const tones = chordTonePcs(chord);
 
-      const lines = gripOutlines(rootPc, isMinor);
+      const lines = gripOutlines(rootPc, isMinor, enabledShapes());
 
       const markers = boxColouredNotes(boxes, {
         labelOf: pc => degByPc[pc], rootPc, passingOf: pc => !tones.has(pc),
