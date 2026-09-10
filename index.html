@@ -305,6 +305,9 @@
   .diagram-caption{ margin:6px 0 0; font-size:.78rem; color:var(--ink); font-family:Fraunces,Georgia,serif; font-weight:600; }
   .diagram-shape{ display:block; margin-top:2px; font-family:Inter,system-ui,sans-serif; font-weight:500; font-size:.66rem; color:var(--muted); letter-spacing:.02em; }
   .diagram-empty{ grid-column:1 / -1; text-align:center; color:var(--muted); font-size:.88rem; padding:12px 0; }
+  /* the Common / Less common headings run the full width of the grid */
+  .diagram-section{ grid-column:1 / -1; margin:6px 0 -4px; font-size:.66rem; text-transform:uppercase; letter-spacing:.1em; color:var(--muted2); font-weight:700; }
+  .diagram-section span{ color:var(--muted); font-weight:500; letter-spacing:0; margin-left:4px; }
   /* the diagram's dots: root in ink, the other tones a step back */
   .diagram-note{ fill:#bfb7a8; }
   .diagram-root{ fill:var(--ink); }

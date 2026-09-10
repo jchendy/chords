@@ -23,6 +23,10 @@
     return [5, 4, 3, 2, 1, 0].map(s => byString.has(s) ? byString.get(s) : 'x').join('-');
   }
 
+  // One entry has been changed by hand since the snapshot was taken: Cm7's
+  // 8-6-8-8-8-6 became 8-x-8-8-8-6, the same hand with the 5th string muted
+  // instead of barred, when the finder learned to show one of two shapes
+  // that are one hand and to prefer the one that's a recognised grip.
   const BASELINE = {
       "C": [
           "x-3-2-0-1-0",
@@ -337,7 +341,7 @@
           "6-6-5-5-4-6",
           "8-6-5-0-x-6",
           "8-6-5-5-x-6",
-          "8-6-8-8-8-6",
+          "8-x-8-8-8-6",
           "8-6-8-8-8-8",
           "8-10-8-8-8-8",
           "8-10-8-8-11-8",
@@ -416,6 +420,12 @@
     'Cadd9': 'x-3-2-0-3-0', 'A9': 'x-0-2-4-2-3', 'E9': 'x-7-6-7-7-7', 'C9': 'x-3-2-3-3-3', 'D9': 'x-5-4-5-5-5',
     'Bdim': 'x-2-3-4-3-x', 'Bm7b5': 'x-2-3-2-3-x', 'Bdim7': 'x-2-3-1-3-x', 'Eaug': '0-3-2-1-1-0',
     'F#m7': '2-4-2-2-2-2', 'Gm7': '3-5-3-3-3-3', 'Bbmaj7': 'x-1-3-2-3-1', 'C#m7': 'x-4-6-4-5-4', 'Eb7': 'x-6-8-6-8-6',
+    // the 6/9 shapes every chart shows, third or no third; the Hendrix
+    // chord, which is x-3-2-3-4-x and not x-3-2-3-4-0; the jazz grips; and
+    // the rootless 13th (x-x-5-6-7-7 has no A in it — the bass has that)
+    'A6/9': 'x-x-4-4-5-5', 'G6/9': 'x-x-2-2-3-3', 'C6/9': 'x-3-2-2-3-3', 'F6/9': 'x-x-3-2-3-3',
+    'C7#9': 'x-3-2-3-4-x', 'Cmaj7': 'x-3-5-4-5-x', 'G7': '3-x-3-4-3-x',
+    'A13': 'x-x-5-6-7-7', 'D13': 'x-5-x-5-7-7',
   };
   function testCanonicalGrips(t){
     const shown = name => {
@@ -447,6 +457,69 @@
       const grips = shown(name);
       t.ok(grips.includes(canon), `${name}: ${canon} is shown` + (grips.includes(canon) ? '' : ` (got ${grips.slice(0, 4).join(' ')} …)`));
     });
+  }
+
+  // ---- 3b. every shape says what kind of grip it is, and the common ones
+  // read first ----
+  // The finder sorts its shapes into the common ways to play a chord and the
+  // rest, and each carries the family it belongs to and the styles it's at
+  // home in. What "common" means depends on the chord: the barre for a
+  // triad, the root-6 and root-5 grips for a seventh, the top-string shape
+  // for anything extended. These are the calls a method book would make.
+  const KINDS = [
+    // chord, grip, family, common?
+    ['C',     'x-3-2-0-1-0', 'open',  true],
+    ['G7',    '3-2-0-0-0-1', 'open',  true],
+    ['F',     '1-3-3-2-1-1', 'barre', true],
+    ['Bm',    'x-2-4-4-3-2', 'barre', true],
+    ['E5',    '0-2-2-x-x-x', 'power', true],
+    ['Cmaj7', 'x-3-5-4-5-x', 'grip',  true],
+    ['G7',    '3-x-3-4-3-x', 'grip',  true],
+    ['E9',    'x-7-6-7-7-7', 'grip',  true],
+    ['D13',   'x-5-x-5-7-7', 'grip',  true],
+    ['A6/9',  'x-x-4-4-5-5', 'upper', true],
+    ['A13',   'x-x-5-6-7-7', 'upper', true],     // rootless
+    ['C',     'x-x-x-5-5-3', 'triad', false],
+    ['G7',    '3-x-3-4-x-x', 'shell', false],
+    ['C',     '8-7-5-5-5-8', 'caged', false],    // the G-form barre
+    ['C',     'x-x-10-12-13-12', 'upper', false], // a top-string triad is not the everyday C
+    ['A6/9',  '5-4-4-4-x-x', 'other', false],    // the bottom of a barre is not a grip
+  ];
+  function testShapesAreSortedAndNamed(t){
+    const { describeVoicing, FAMILIES } = GT.chordFinder;
+    const bad = [];
+    const seen = new Map();
+    const voicingsOf = name => {
+      if (!seen.has(name)){ const p = parseChordName(name); seen.set(name, findChordVoicings(p.rootPc, p.formula)); }
+      return seen.get(name);
+    };
+    KINDS.forEach(([name, g, family, common]) => {
+      const v = voicingsOf(name).find(x => grip(x.cells) === g);
+      if (!v){ bad.push(`${name} ${g}: not offered`); return; }
+      if (v.family !== family) bad.push(`${name} ${g}: called ${v.family}, not ${family}`);
+      if (!!v.common !== common) bad.push(`${name} ${g}: ${v.common ? 'common' : 'less common'}, expected ${common ? 'common' : 'less common'}`);
+    });
+    // the split is real: every common shape reads before every other one
+    [...seen.entries()].concat(CHORDS.map(n => [n, voicingsOf(n)])).forEach(([name, vs]) => {
+      const firstRare = vs.findIndex(v => !v.common);
+      if (firstRare !== -1 && vs.slice(firstRare).some(v => v.common)) bad.push(`${name}: a common shape sits after a less common one`);
+      vs.forEach(v => {
+        if (!FAMILIES[v.family]) bad.push(`${name} ${grip(v.cells)}: unknown family "${v.family}"`);
+        if (!Array.isArray(v.genres)) bad.push(`${name} ${grip(v.cells)}: no genres`);
+        // a rootless shape says so, and is only ever an extended chord
+        if (v.rootless && parseChordName(name).formula.intervals.length < 5) bad.push(`${name} ${grip(v.cells)}: rootless, for a chord with no extension`);
+      });
+      // the common section stays a short list, or it isn't a list of common shapes
+      const n = vs.filter(v => v.common).length;
+      if (n > 18) bad.push(`${name}: ${n} shapes called common`);
+    });
+    // the styles come from the kind of grip and the kind of chord
+    const tip = (name, g) => { const v = voicingsOf(name).find(x => grip(x.cells) === g); return v ? v.genres : []; };
+    if (!tip('F', '1-3-3-2-1-1').includes('rock')) bad.push('the F barre is not at home in rock');
+    if (!tip('G7', '3-2-0-0-0-1').includes('blues')) bad.push('the open G7 is not at home in the blues');
+    if (!tip('Cmaj7', 'x-3-5-4-5-x').includes('jazz')) bad.push('the Cmaj7 grip is not at home in jazz');
+    if (!tip('A13', 'x-x-5-6-7-7').includes('funk')) bad.push('the rootless A13 is not at home in funk');
+    t.equal(bad.join('; '), '', `Shapes are sorted common-first and told what they are (${KINDS.length} named grips)`);
   }
 
   // ---- 4. naming: what the app writes, it can read back ----
@@ -497,10 +570,34 @@
     t.equal(seventhSuffix({ note: 'B', quality: 'dim', seventh: 'G#' }), 'dim7', 'B + dim + G# is a dim7');
     t.equal(seventhSuffix({ note: 'B', quality: 'dim', seventh: 'A' }), 'm7♭5', 'B + dim + A is an m7♭5');
 
-    const names = pcs => identifyChords(pcs).map(m => NOTE_NAMES_SHARP[m.rootPc] + m.formula.name);
+    const names = pcs => identifyChords(pcs).map(m => NOTE_NAMES_SHARP[m.rootPc] + m.formula.name + (m.rootless ? ' (no root)' : ''));
     t.equal(names([0, 4, 7])[0], 'C', 'C E G reads as C first');
     t.ok(names([0, 3, 7, 10]).includes('Cm7'), 'C D# G A# includes Cm7');
     t.ok(names([0, 4, 7, 9]).includes('Am7') && names([0, 4, 7, 9]).includes('C6'), 'C E G A reads as both C6 and Am7');
+
+    // The 6/9 is named without its 3rd as a matter of course: x-x-4-4-5-5 is
+    // A E B F#, and every chord chart calls it A6/9. It used to come back as
+    // B7sus4 — true, but not what anyone playing it would say.
+    t.equal(names([9, 4, 11, 6])[0], 'A6/9', 'A E B F# (x-x-4-4-5-5) reads as A6/9 first');
+    t.ok(names([9, 4, 11, 6]).includes('B7sus4'), '...and B7sus4 is still on the list');
+    t.equal(names([9, 11, 6]).filter(n => n.includes('6/9')).join(' '), '', 'A B F# alone — no 3rd and no 5th — is not a 6/9');
+    t.ok(names([0, 4, 9, 2]).includes('C6/9'), 'C E A D — the 6/9 without its 5th — is still C6/9');
+
+    // A rootless voicing: an extended chord played without its root, which
+    // the bass has. x-x-5-6-7-7 is G C# F# B — the b7, 3, 13 and 9 of A — and
+    // came back as no chord at all.
+    t.equal(names([11, 6, 1, 7]).join(' '), 'A13 (no root)', 'B F# C# G (x-x-5-6-7-7) is a rootless A13, and nothing else');
+    t.equal(names([1, 4, 7, 11]).slice(-1)[0], 'A9 (no root)', 'C# E G B is a C#m7b5 first and a rootless A9 after');
+    t.equal(names([4, 7, 11]).filter(n => n.includes('no root')).join(' '), '', 'E G B is Em, never a rootless Cmaj7: only extended chords lose their root');
+    t.equal(names([0, 4, 7, 2]).filter(n => n.includes('no root')).join(' '), '', 'C E G D is Cadd9, not a rootless anything');
+
+    // spellings a chart uses that a strict parser rejects
+    parses('C7(#9)', '7♯9', 'C');
+    parses('Cm7(b5)', 'm7♭5', 'C');
+    parses('C(add9)', 'add9', 'C');
+    parses('Cadd2', 'add9', 'C');
+    parses('D9sus4', '9sus4', 'D');
+    parses('G6add9', '6/9', 'G');
 
     // the open C7 in Progression: the dropped root would fall below the
     // nut, so the 5th is raised instead
@@ -1277,6 +1374,7 @@
       ['Chord finder keeps its known shapes', testBaselineShapesSurvive],
       ['Chord finder output is identifiable in reverse', testFinderOutputIsIdentifiable],
       ['Chord finder shows the everyday grips', testCanonicalGrips],
+      ['Chord finder sorts common first and names the kind', testShapesAreSortedAndNamed],
       ['Theory: naming and identification', testTheory],
       ['Theory: one answer for what degree a note is', testDegreeNamesAgree],
       ['Fretboard: the pentatonic boxes are unchanged', testPentatonicBoxesAreUnchanged],

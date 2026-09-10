@@ -72,7 +72,7 @@
     const seenLabels = new Set();
     const labels = [];
     matches.forEach(m => {
-      const label = NOTE_NAMES_SHARP[m.rootPc] + m.formula.name;
+      const label = NOTE_NAMES_SHARP[m.rootPc] + m.formula.name + (m.rootless ? ' (no root)' : '');
       if (seenLabels.has(label)) return;
       seenLabels.add(label);
       labels.push(label);

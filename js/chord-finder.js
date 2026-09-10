@@ -20,6 +20,7 @@
   let labelMode = 'fingers';        // 'fingers' | 'degrees'
   const MAX_VOICINGS = 16;          // enough for the whole neck plus a few alternatives
   const EXTRA_VOICINGS = 6;         // room for grips the containment rule would otherwise hide
+  const EXTRAS_PER_KIND = 4;        // ...and for each kind of everyday grip it hid
 
   // Work out a left-hand fingering for a voicing, or null when there isn't a
   // playable one. Fingers run 1 (index) to 4 (pinky); open and muted strings
@@ -188,6 +189,11 @@
     // the chord's own 5th — flat for a diminished chord, sharp for augmented
     const fifthPc = (rootPc + ([6, 7, 8].find(iv => formula.intervals.includes(iv)) || 7)) % 12;
     const essentialPcs = new Set(formula.essential.map(iv => (rootPc + iv) % 12));
+    // the notes that name the chord without its root — what a rootless voicing has to carry
+    const guide = shellIntervals(formula);
+    const guidePcs = guide ? new Set(guide.filter(iv => iv !== 0).map(iv => (rootPc + iv) % 12)) : null;
+    const chordThird = [3, 4].find(iv => formula.intervals.includes(iv));
+    const ninthPcs = formula.intervals.filter(iv => iv >= 1 && iv <= 3 && iv !== chordThird).map(iv => (rootPc + iv) % 12);
     const allowedPcs = shellPcs || new Set(formula.intervals.map(iv => (rootPc + iv) % 12));
     // a slash chord names the note that has to be underneath — usually one of
     // the chord's own (D/F#), occasionally not (C/D), so it's allowed either way
@@ -226,12 +232,28 @@
             const low = played.reduce((a, b) => (b.string > a.string ? b : a));
             if (low.pc !== rootPc || low.string < 4) return;
           } else {
-            for (const pc of essentialPcs) if (!playedPcs.has(pc)) return;
+            // An extended chord may go without its root — the bass has it —
+            // in the one form that's meant: four different notes on the top
+            // four strings, under the hand, with the guide tones (the 3rd
+            // and the 7th) among them and the 9th standing in for the root.
+            // x-x-5-6-7-7 is the A13 a jazz or funk player reaches for;
+            // identifyChords names such shapes by the same rule, so what's
+            // drawn can be read back.
+            const rootless = !playedPcs.has(rootPc) && formula.intervals.length >= 5;
+            if (rootless){
+              if (played.length !== 4 || playedPcs.size !== 4 || played.some(p => p.string > 3 || p.fret === 0)) return;
+              if (!guidePcs || ![...guidePcs].every(pc => playedPcs.has(pc))) return;
+              if (!ninthPcs.some(pc => playedPcs.has(pc))) return;
+            }
+            for (const pc of essentialPcs) if (!playedPcs.has(pc) && !(rootless && pc === rootPc)) return;
+            // the 6/9's rule: its 3rd is optional, but not both the 3rd and the 5th
+            if (formula.anyOf && !formula.anyOf.some(iv => playedPcs.has((rootPc + iv) % 12))) return;
           }
           const frettedOnly = played.map(p => p.fret).filter(f => f > 0);
           const maxFret = frettedOnly.length ? Math.max(...frettedOnly) : 0;
           const span = frettedOnly.length ? maxFret - Math.min(...frettedOnly) : 0;
           if (span > 3) return;
+          if (!playedPcs.has(rootPc) && span > 2) return;    // a rootless grip sits under the hand
 
           let cells = played.map(p => ({ string: p.string, fret: p.fret }));
           const fingering = computeFingering(cells, allowedPcs);
@@ -293,7 +315,8 @@
             - zigzag * 0.5
             - maxFret * 0.1;                 // all else equal, the hand nearer the nut
           results.push({ cells, fingering, score: score + shapeBonus, rank, startFret, key,
-                         caged: match ? match.name : null,
+                         caged: match ? match.name : null, cagedExact: !!(match && match.exact),
+                         rootless: !allPcs.has(rootPc),
                          rootInBass: bassPc === wantBass, innerMutes, innerOpens, openCount,
                          bassString: bass.string,
                          // the power-chord layout: root on the bottom string, the 5th right above it
@@ -304,6 +327,12 @@
         for (const opt of options[i]){ combo[i] = opt; rec(i + 1); }
       })(0);
     }
+
+    // Each shape is told what kind of grip it is — an open chord, a barre, a
+    // jazz grip, a top-string voicing — and whether that's a common way to
+    // play this chord. The selection below leans on it, and the tab shows
+    // the common ones in their own section.
+    results.forEach(r => Object.assign(r, describeVoicing(r, formula)));
 
     // The best shape at each position on the neck, walking up from the nut —
     // so every place you could actually play this chord gets a look in, rather
@@ -316,9 +345,14 @@
     // — but only if what it leaves out is open strings. Dropping a *fretted*
     // note changes the hand: the three-string power chord and the four-string
     // Fmaj7 are their own grips, not cut-down versions of the six-string ones
-    // that happen to contain them.
+    // that happen to contain them. And a shape left with no open strings at
+    // all is a different animal from the one it came out of: it can slide to
+    // any root, where the open-string version works at one fret only. The
+    // Hendrix chord is x-3-2-3-4-x, not x-3-2-3-4-0 with the top string
+    // thrown in because it happens to be in the chord.
     const isThinnerCopyOf = (a, b) => {
       if (!isSubsetOf(a, b)) return false;
+      if (!a.openCount && a.cells.length >= 4) return false;
       const inA = cellKeys(a);
       return b.cells.every(c => inA.has(`${c.string}:${c.fret}`) || c.fret === 0);
     };
@@ -332,6 +366,9 @@
     const perPosition = shell ? Infinity : 2;
     const best = [], runnersUp = [], passedOver = [], taken = new Map();
     for (const r of results){
+      // rootless voicings have a place of their own in pass two; letting
+      // them take positions here would push the everyday shapes about
+      if (r.rootless){ passedOver.push(r); continue; }
       const count = taken.get(r.startFret) || 0;
       const swallowed = [...best, ...runnersUp].some(c => isSubsetOf(r, c) || isSubsetOf(c, r));
       if (swallowed || count >= perPosition){ passedOver.push(r); continue; }
@@ -345,35 +382,210 @@
     // four-string Fmaj7 and the three-string power chord because a bigger
     // shape happens to contain them, and two slots per fret isn't enough at
     // the nut, where an A9 has a dozen variants. Let a few compact grips back
-    // in, as long as they're grips in their own right: root underneath, no
-    // string skipped or left open in the middle, and not merely a picked
-    // shape with open strings left off. A power chord is exempt from that
-    // last test — its cut-down form *is* the grip.
+    // in, as long as they're grips in their own right. A movable shape of a
+    // known kind — a barre, a root-6 or root-5 grip, a top-string voicing, a
+    // shell — is one by definition, skipped string or no: 5-x-4-4-5-5 is how
+    // a 6/9 is played, and x-x-4-4-5-5 is the same chord with the root on
+    // top. Anything else has to have its root underneath and no string
+    // skipped or left open in the middle, and not merely be a picked shape
+    // with open strings left off. A power chord is exempt from that last
+    // test — its cut-down form *is* the grip.
+    // The same hand, with a string left off — the E-shape barre minus its
+    // top string — is not a grip of its own, whichever note went. What makes
+    // a cut-down shape its own grip is that the fingers change (the
+    // four-string Fmaj7 is fingered nothing like the six-string one) or that
+    // it becomes movable where its parent wasn't (the Hendrix chord).
+    // A barre across the neck and a single finger are different hands too:
+    // x-3-5-4-5-x is the four-finger Cmaj7 grip, not the A-shape barre with
+    // a string off. A finger laid over two strings inside a shape isn't
+    // that kind of difference — 5-x-4-4-5-5 and 5-x-4-4-5-x are one hand.
+    const wideBarre = r => r.fingering.barres.some(b => Math.abs(b.toString - b.fromString) >= 2);
+    const sameHand = (a, b) => {
+      if (!isSubsetOf(a, b) || !a.openCount !== !b.openCount) return false;
+      if (wideBarre(a) !== wideBarre(b)) return false;
+      const fa = a.fingering.fingerByString, fb = b.fingering.fingerByString;
+      return a.cells.every(c => c.fret === 0 || fa[c.string] === fb[c.string]);
+    };
     const isPower = formula.name === '5';
     if (!shell){
       const extras = [];
-      // compact ones first — those are what the rules above hide
-      passedOver.sort((a, b) => a.cells.length - b.cells.length || b.rank - a.rank);
-      for (const r of passedOver){
-        if (extras.length >= EXTRA_VOICINGS) break;
-        if (!r.rootInBass || r.innerMutes || r.innerOpens || r.cells.length > 5) continue;
+      const knownKind = r => ['barre', 'grip', 'upper', 'triad', 'shell'].includes(r.family);
+      const admit = r => {
+        if (!knownKind(r) && (!r.rootInBass || r.innerMutes || r.innerOpens || r.cells.length > 5)) return;
         const all = chosen.concat(extras);
-        if (!isPower && all.some(c => isThinnerCopyOf(r, c) || isThinnerCopyOf(c, r))) continue;
+        if (!isPower && all.some(c => isThinnerCopyOf(r, c) || isThinnerCopyOf(c, r))) return;
+        // Of two shapes that are one hand, show one: the one that's a known
+        // grip, and between two of those the fuller — the E-shape barre with
+        // all six strings, not with the top one off. A grip is the exception:
+        // it wants one string per note of the chord, no more, so the
+        // four-note 3-x-3-4-3-x is the G7 grip and 3-x-3-4-3-3 the variant,
+        // while for a 6/9, a chord of five notes, it's five-string
+        // 5-x-4-4-5-5 that's the grip and 5-x-4-4-5-x that's the variant.
+        const twin = isPower ? null : all.find(c => sameHand(r, c) || sameHand(c, r));
+        if (twin){
+          const tones = formula.intervals.length;
+          const fuller = r.family === 'grip' && twin.family === 'grip'
+            ? Math.abs(r.cells.length - tones) < Math.abs(twin.cells.length - tones)
+            : r.cells.length > twin.cells.length;
+          const better = r.common && !twin.common || (r.common === twin.common && fuller);
+          if (!better) return;
+          const pool = chosen.includes(twin) ? chosen : extras;
+          pool.splice(pool.indexOf(twin), 1, r);
+          return;
+        }
         extras.push(r);
-      }
+      };
+      // The everyday grips the rules hid come back first: the kinds in the
+      // order a player meets them, and within a kind the fullest shape — a
+      // 6/9's five-string barre lost its slot to two open-string variants of
+      // itself, and would lose again to anything with fewer strings, so this
+      // goes by the score that chose shapes rather than the rank that orders
+      // them. A power chord has no such problem — its cut-down form is the
+      // grip, so the compact ones lead as they always did.
+      // Each kind gets a few places of its own rather than sharing one
+      // budget, or the barres would use it all before a top-string shape
+      // got a look in. What makes a shape the best of its kind differs too:
+      // a barre is the fuller the better, so it goes by the score that
+      // chose shapes; a grip is a four-note thing, so it goes by the rank
+      // that orders them, which asks for nothing past four strings; and a
+      // top-string voicing is judged without the credit for a root in the
+      // bass, since putting the root on top is what those are for.
+      const everyday = isPower ? [] : passedOver.filter(r => r.common && !r.rootless);
+      const worth = r => r.family === 'barre' ? r.score
+        : r.family === 'upper' ? r.rank - (r.rootInBass ? 8 : 0) : r.rank;
+      const byKind = new Map();
+      everyday.forEach(r => byKind.set(r.family, (byKind.get(r.family) || []).concat(r)));
+      [...byKind.keys()].sort((a, b) => FAMILY_TIER[a] - FAMILY_TIER[b]).forEach(kind => {
+        let placed = 0;
+        for (const r of byKind.get(kind).sort((a, b) => worth(b) - worth(a))){
+          if (placed >= EXTRAS_PER_KIND) break;
+          const before = extras.length;
+          admit(r);
+          if (extras.length > before) placed++;
+        }
+      });
+      // and the two best rootless voicings, which are all of a kind — by
+      // rank, since what separates them is the hand rather than the sound
+      const rootless = passedOver.filter(r => r.rootless).sort((a, b) => b.rank - a.rank).slice(0, 2);
+      rootless.forEach(admit);
+      // then the compact ones — those are what the rules above hide
+      const others = passedOver.filter(r => !everyday.includes(r) && !r.rootless)
+        .sort((a, b) => a.cells.length - b.cells.length || b.rank - a.rank);
+      const room = extras.length + EXTRA_VOICINGS;
+      others.forEach(r => { if (extras.length < room) admit(r); });
       chosen.push(...extras);
     }
 
-    // Walk up the neck, everyday grip first within each position. Everything
-    // within reach of the nut counts as one position — otherwise a shape
-    // that happens to be all open strings sorts ahead of the real open chord.
-    // A power chord is all about its bottom: fewest strings, root and 5th on
-    // the two lowest of them, as low as they go, fretted rather than open.
+    // Common shapes first, and within that the kinds of grip in the order a
+    // player meets them — the open chord before the barre before the jazz
+    // grip. Then walk up the neck, everyday grip first within each position.
+    // Everything within reach of the nut counts as one position — otherwise
+    // a shape that happens to be all open strings sorts ahead of the real
+    // open chord. A power chord is all about its bottom: fewest strings,
+    // root and 5th on the two lowest of them, as low as they go, fretted
+    // rather than open.
     const position = r => r.startFret <= 3 ? 0 : r.startFret;
-    return chosen.sort((a, b) => position(a) - position(b)
+    return chosen.sort((a, b) => b.common - a.common
+      || FAMILY_TIER[a.family] - FAMILY_TIER[b.family]
+      || position(a) - position(b)
       || (isPower && (a.cells.length - b.cells.length || b.powerShape - a.powerShape
                       || b.bassString - a.bassString || a.openCount - b.openCount))
       || b.rank - a.rank);
+  }
+
+  // ---- what kind of grip a shape is -----------------------------------------
+  // Chord shapes come in families that players know by feel — the open
+  // chords of a first songbook, the E- and A-shape barres, the four-note
+  // grips with the root on the 6th or 5th string that jazz is comped with,
+  // the top-string voicings funk and reggae are played on. The family says
+  // which genres a shape is at home in, and whether it's a common way to play
+  // this particular chord: a barre is the common way to play a triad, and a
+  // top-four-string shape is the common way to play a 6/9 or a 13th.
+  //
+  // Each family is a test on the shape's geometry, tried in order; the first
+  // that fits names it. Genres are the family's own plus the chord type's —
+  // a dominant 7th belongs to the blues whichever shape it's in.
+  const FAMILIES = {
+    power: { label: 'Power chord',        genres: ['rock', 'punk', 'metal'] },
+    open:  { label: 'Open chord',         genres: ['folk', 'country', 'pop', 'rock'] },
+    barre: { label: 'Barre chord',        genres: ['rock', 'pop', 'punk', 'reggae'] },
+    grip:  { label: 'Compact grip',       genres: ['jazz', 'blues', 'bossa nova'] },
+    upper: { label: 'Top-string voicing', genres: ['funk', 'R&B', 'reggae', 'neo-soul'] },
+    triad: { label: 'Three-note triad',   genres: ['R&B', 'gospel', 'neo-soul', 'country'] },
+    shell: { label: 'Shell voicing',      genres: ['jazz', 'bossa nova', 'swing'] },
+    caged: { label: 'CAGED form',         genres: ['country', 'pop', 'rock'] },
+    other: { label: 'Alternative voicing', genres: [] },
+  };
+  // The order the kinds read in. Open and barre chords share a tier: which
+  // of the two is the everyday grip for a chord is the ranking's call (the
+  // open C, but the barre Bb), and a tier of their own would overrule it.
+  const FAMILY_TIER = { power: 0, open: 1, barre: 1, grip: 2, upper: 3, triad: 4, shell: 5, caged: 6, other: 7 };
+
+  // the genres a chord type carries with it, whatever the shape
+  function typeGenres(formula){
+    const n = formula.name;
+    if (n === '7') return ['blues', "rock 'n' roll", 'country'];
+    if (['maj7', 'm7', 'm(maj7)', '6', 'm6', 'm7\u266d5', 'dim7', 'aug'].includes(n)) return ['jazz', 'bossa nova'];
+    if (/9|11|13/.test(n)) return n.startsWith('add') || n.startsWith('m(add') ? ['pop', 'rock', 'folk'] : ['funk', 'soul', 'jazz'];
+    if (/sus/.test(n)) return ['pop', 'rock', 'folk'];
+    if (n === '7\u266f5' || n === '7\u266d5') return ['jazz', 'blues'];
+    return [];
+  }
+
+  function describeVoicing(v, formula){
+    const cells = v.cells;
+    const strings = cells.map(c => c.string);
+    const n = cells.length;
+    const maxFret = Math.max(...cells.map(c => c.fret));
+    const tones = formula.intervals.length;      // 2 power, 3 triad, 4 seventh, 5+ extended
+    // the barre chord's barre: the index across the strings from the bass
+    // note up — not a first finger laid across two strings somewhere inside
+    // a shape
+    const fullBarre = v.fingering.barres.some(b => b.finger === 1 && b.toString === v.bassString);
+    const onTop = Math.max(...strings) <= 3;     // nothing below the D string
+    const rootLow = v.rootInBass && v.bassString >= 4;   // root on the 6th or 5th string
+    const movable = !v.openCount;                // a shape that can slide to any root
+    const hasSeventh = [9, 10, 11].some(iv => formula.intervals.includes(iv)) && tones >= 4;
+    const fretted = cells.map(c => c.fret).filter(f => f > 0);
+    const span = fretted.length ? maxFret - Math.min(...fretted) : 0;
+    // one skipped string, the one right above the bass note
+    const skipsAboveBass = v.innerMutes === 1 && !strings.includes(v.bassString - 1);
+
+    let family;
+    if (formula.name === '5') family = 'power';
+    // an open chord in the songbook sense: down at the nut, four strings or
+    // more ringing all the way up to the top string, root underneath, no
+    // open string buried between fretted ones, every finger its own — not
+    // merely a shape with an open string somewhere in it
+    else if (v.openCount && maxFret <= 4 && n >= 4 && v.rootInBass && !v.innerMutes && !v.innerOpens
+             && Math.min(...strings) === 0 && !v.fingering.barres.length) family = 'open';
+    else if (rootLow && fullBarre && !v.innerMutes && n >= 4 && span <= 2) family = 'barre';
+    // the movable four- and five-note grips with the root on the 6th or 5th
+    // string — x-3-5-4-5-x, 1-x-2-2-1-x, x-7-6-7-7-7 — one skipped string at most
+    // — within two frets, since those grips sit under the hand, and with the
+    // skipped string, if any, right above the root: from the 6th string the
+    // grip always skips the 5th (3-x-3-4-3-x, 5-x-4-4-5-5), from the 5th it
+    // skips the 4th or nothing (x-5-x-5-7-7, x-3-5-4-5-x). The bottom four
+    // strings of a barre chord are the barre chord, not a grip.
+    else if (rootLow && movable && n >= 4 && n <= 5 && hasSeventh && span <= 2
+             && ((v.bassString === 5 && skipsAboveBass) || (v.bassString === 4 && (skipsAboveBass || !v.innerMutes)))) family = 'grip';
+    else if (rootLow && movable && n === 3 && hasSeventh && skipsAboveBass && span <= 2) family = 'shell';
+    else if (onTop && movable && n === 3 && tones === 3) family = 'triad';
+    else if (onTop && movable && n <= 4) family = 'upper';
+    else if (v.cagedExact) family = 'caged';
+    else family = 'other';
+
+    // A common way to play *this* chord: the shapes a method book teaches for
+    // a triad, the root-6 and root-5 grips for a seventh, and the compact
+    // top-string shape for anything extended past the 7th, which is how a
+    // 6/9 or a 13th is nearly always played.
+    const common = family === 'power' || family === 'open' || family === 'barre'
+      || (family === 'grip' && tones >= 4)
+      || (family === 'upper' && tones >= 5);
+
+    // a rootless voicing belongs to the styles that leave the root to the bass
+    const genres = [...new Set([...(v.rootless ? ['jazz', 'funk'] : []), ...FAMILIES[family].genres, ...typeGenres(formula)])].slice(0, 5);
+    return { family, common, genres };
   }
 
   // What to call an interval above the root, in the context of this chord —
@@ -526,12 +738,30 @@
       return;
     }
     shownVoicings = voicings;
-    chordFinderResults.innerHTML = voicings.map((v, i) => `
-      <div class="diagram-card" role="button" tabindex="0" data-voicing="${i}" aria-label="Play ${chordLabel}, shape ${i + 1}">
+    // Two sections: the common ways to play this chord, then the rest. The
+    // list is already sorted that way, so the headings go in where the
+    // sections meet; a section nobody is in gets no heading.
+    const card = (v, i) => `
+      <div class="diagram-card" role="button" tabindex="0" data-voicing="${i}"
+           aria-label="Play ${chordLabel}, shape ${i + 1}" title="${voicingTip(v)}">
         ${buildDiagramSVG(v.cells, parsed.rootPc, v.fingering, labelMode, parsed.formula)}
-        <p class="diagram-caption">${chordLabel}${v.caged ? `<span class="diagram-shape">${v.caged} shape</span>` : ''}</p>
-      </div>
-    `).join('');
+        <p class="diagram-caption">${chordLabel}${v.caged ? `<span class="diagram-shape">${v.caged} shape</span>` : ''}${v.rootless ? '<span class="diagram-shape">no root</span>' : ''}</p>
+      </div>`;
+    const heading = (text, n) => `<h3 class="diagram-section">${text} <span>${n}</span></h3>`;
+    const common = voicings.filter(v => v.common), rare = voicings.filter(v => !v.common);
+    chordFinderResults.innerHTML =
+      (common.length ? heading('Common', common.length) : '')
+      + voicings.map((v, i) => v.common ? card(v, i) : '').join('')
+      + (rare.length ? heading('Less common', rare.length) : '')
+      + voicings.map((v, i) => v.common ? '' : card(v, i)).join('');
+  }
+
+  // the tooltip on a shape: what kind of grip it is, and where it's at home
+  function voicingTip(v){
+    const label = FAMILIES[v.family].label;
+    const kind = v.rootless ? `Rootless ${label.charAt(0).toLowerCase()}${label.slice(1)}` : label;
+    if (!v.genres.length) return `${kind} \u2014 not a shape any style reaches for by habit`;
+    return `${kind} \u2014 common in ${v.genres.join(', ')}`;
   }
 
   // ---- hearing a shape ----------------------------------------------------
@@ -599,5 +829,6 @@
     },
     // exposed for reuse and for checking shapes outside the UI
     computeFingering, findChordVoicings, buildDiagramSVG, shellIntervals, strum, ARPEGGIO_GAP,
+    describeVoicing, FAMILIES,
   };
 })();

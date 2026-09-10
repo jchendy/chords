@@ -326,10 +326,19 @@ already fits and the bar has no space to spare. A "Style" picker chooses the bac
 
 Type a chord name — root note plus an optional accidental (`#`/`b`) and a
 quality/extension suffix (`m`, `7`, `maj7`, `m7b5`, `dim7`, `sus4`, `9`,
-`13`, `7#9`, and around two dozen others) — and the tab searches every
+`13`, `7#9`, `9sus4`, `6/9`, and around two dozen others; chart spellings
+like `C7(#9)`, `Cadd2` and `G6add9` read too) — and the tab searches every
 string/fret combination within a comfortable 4-fret stretch for shapes that
 sound all of that chord's defining tones (the plain 5th is treated as
-optional, same as real players drop it).
+optional, same as real players drop it). Two chords bend that rule the way
+players do. The 6/9's 3rd is optional: x-x-4-4-5-5 is A E B F♯, no C♯
+anywhere, and every chart calls it A6/9 — though a bare root, 6th and 9th
+isn't one yet, so the 3rd or the 5th has to be there. And an extended chord
+(a 9th, 13th, 6/9 …) may be played **rootless**, the way jazz and funk
+players do when the bass has the root: four different notes on the top four
+strings, the 3rd and 7th among them and the 9th standing in for the root.
+x-x-5-6-7-7 is G C♯ F♯ B — the ♭7, 3, 13 and 9 of A — and is offered for
+A13 with a "no root" note under it.
 
 Every shape is then handed to a fingering pass, which either works out a
 playable left hand for it or throws it out. Fingers are numbered 1 (index)
@@ -347,14 +356,34 @@ notes on one fret, the same shape as Em — is A major with the ring taken off
 and keeps A major's index and middle. Nothing about the geometry separates
 those two, so they can't both come out of a rule.
 
-The results walk up the neck, showing the best grips at each position, so
-every place the chord can be played gets a look in. Choosing and ordering
-are separate judgements: a score decides which shapes make the cut (fuller
-chords, small stretches, root in the bass), and a second pass makes sure the
-compact everyday grips — the four-string Fmaj7, the three-string power
-chord, the A9 that lost out to a dozen six-string variants at the nut —
-aren't hidden behind bigger shapes that merely contain them. Within a
-position the everyday grip reads first: extra strings past four count for
+The results come in two sections, **Common** and **Less common**, most
+common first within each. Every shape is told what kind of grip it is from
+its geometry — an open chord, a barre chord, a power chord, a compact
+root-6 or root-5 grip (x-3-5-4-5-x, 1-x-2-2-1-x, x-7-6-7-7-7), a
+top-string voicing, a three-note triad, a shell, one of the other CAGED
+forms — and whether that kind is a common way to play *this* chord: the
+open chord and the barre for a triad, those plus the root-6 and root-5 grips
+for a seventh, and the compact top-string shape as well for anything
+extended past the 7th, which is how a 6/9 or a 13th is nearly always
+played. Hover a shape for a tooltip naming the kind and the styles it's at
+home in — the family's own (folk, country and pop for an open chord; jazz,
+blues and bossa nova for a grip; funk, R&B and reggae for a top-string
+voicing) plus the chord type's (a dominant 7th belongs to the blues in any
+shape, a 9th to funk and soul, a maj7 to jazz).
+
+Choosing and ordering are separate judgements: a score decides which shapes
+make the cut (fuller chords, small stretches, root in the bass), and a
+second pass brings back the everyday grips the first pass hid — the
+four-string Fmaj7, the three-string power chord, the A9 that lost out to a
+dozen six-string variants at the nut, the 6/9's five-string barre that lost
+its place to two open-string variants of itself, the Hendrix chord
+(x-3-2-3-4-x, which is not x-3-2-3-4-0 with a string thrown in because it
+happens to be in the chord). Each kind of grip gets a few places of its own,
+so the barres can't use up the room before a top-string shape gets a look
+in, and two shapes that are one hand — the E-shape barre with its top string
+off, the 6/9 grip with the 5th string fretted as well — show as one. Within
+a section the kinds read in the order a player meets them, open chord before
+barre before grip, and then up the neck; extra strings past four count for
 little, a barre costs, and so does a hand that zigzags between frets. Open
 position (anything within reach of the nut) counts as one position, so a
 shape that happens to be all open strings never sorts ahead of the real open
@@ -383,8 +412,13 @@ selected fret again clears it; picking a different fret on the same string
 replaces the old selection, since a string only sounds one note at a time).
 Once one or more frets are selected, every chord name that fits — trying
 each selected note in turn as the root — is listed below, using the same
-chord-formula table as the chord finder. "Play notes" strums what you've
-picked.
+chord-formula table as the chord finder. Then the roots that *aren't* there:
+an extended chord played without its root, the 9th standing in for it, is
+named too and marked "(no root)", after the plainer readings — B F♯ C♯ G is
+A13 (no root) and nothing else, while C♯ E G B is C♯m7♭5 first and A9 (no
+root) after. Only chords of five tones or more are read that way, since a
+rootless 7th is just a triad. "Play chord" strums what you've picked and
+"Play arpeggio" rolls it.
 
 ## Usage
 
@@ -460,14 +494,22 @@ Ab, Gb, C#, A9, E9, C7, D7, Cm7, CM7):
    recognise it as the chord it came from — so the two halves of the app
    can't drift apart.
 
-3. **The chord finder shows the everyday grips.** Some fifty method-book
+3. **The chord finder shows the everyday grips.** Some sixty method-book
    shapes — open chords, E- and A-shape barres, the open 7ths, power chords,
-   the funk 9ths — must come back, and for the unambiguous ones (open C, F
-   barre, A7 …) must read first. The snapshot keeps old shapes from
-   vanishing; this keeps the textbook ones from being buried.
+   the funk 9ths, the 6/9 shapes with and without their 3rd, the Hendrix
+   chord, the jazz grips, the rootless 13th — must come back, and for the
+   unambiguous ones (open C, F barre, A7 …) must read first. The snapshot
+   keeps old shapes from vanishing; this keeps the textbook ones from being
+   buried. A companion test holds a table of shapes with the kind of grip
+   each is and whether it's common (the F barre is; a top-string C triad and
+   the bottom four strings of a barre are not), checks every common shape
+   reads before every other, and that the styles a shape claims follow from
+   its kind and its chord type.
 4. **Naming round-trips.** What the app writes (`B°`, `CM7`, `Bø`, `CmM7`)
    its chord finder can read back, chords built from names keep the right
-   notes, and identification names both a C6 and an Am7 for C E G A.
+   notes, and identification names both a C6 and an Am7 for C E G A — and
+   A6/9 first for A E B F♯, a rootless A13 and nothing else for B F♯ C♯ G,
+   nothing rootless for E G B or C E G D.
 5. **The genre library and the presets are well-formed.** Every progression
    has a key and parseable chords, a "twelve-bar" has twelve bars, hits sit
    inside their grid, a six-slot bar declares itself a waltz, every chord can

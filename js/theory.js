@@ -119,8 +119,13 @@
   // the ♭VII of C is Bb, not A#
   const NOTE_NAMES_FLAT = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
 
-  // every chord type this app knows how to name/find, in a fixed rank order
-  // (used as a tiebreaker so simpler chords are preferred when several match)
+  // Every chord type this app knows how to name/find, in a fixed rank order
+  // (used as a tiebreaker so simpler chords are preferred when several match).
+  // `intervals` is the whole chord; `essential` is what a shape has to sound
+  // to still deserve the name — the plain 5th is nearly always optional, the
+  // way players drop it. `anyOf`, where present, asks for at least one of the
+  // listed tones on top of that: a rule for the one chord whose 3rd is
+  // optional but whose bare skeleton isn't enough on its own.
   const CHORD_FORMULAS = [
     { aliases: ['', 'maj', 'major'],                 name: '',        intervals: [0,4,7],        essential: [0,4] },
     { aliases: ['m', 'min', '-', 'minor'],            name: 'm',       intervals: [0,3,7],        essential: [0,3] },
@@ -136,7 +141,13 @@
     { aliases: ['sus4', 'sus'],                       name: 'sus4',    intervals: [0,5,7],        essential: [0,5,7] },
     { aliases: ['6', 'maj6'],                         name: '6',       intervals: [0,4,7,9],      essential: [0,4,9] },
     { aliases: ['m6', 'min6'],                        name: 'm6',      intervals: [0,3,7,9],      essential: [0,3,9] },
-    { aliases: ['69', '6/9'],                         name: '6/9',     intervals: [0,4,7,9,2],    essential: [0,4,9,2] },
+    // The 6/9 is the one chord guitarists name without its 3rd as a matter of
+    // course: x-x-2-2-3-3 is "G6/9" on every chord chart and in every method
+    // book, third or no third, and the top-four-string shape it comes from is
+    // the everyday way to play the chord. So the 3rd is optional here — but a
+    // bare root, 6th and 9th (A, F#, B) isn't a 6/9 yet, so one of the 3rd
+    // and the 5th has to be there to fill it out.
+    { aliases: ['69', '6/9', '6add9', 'add6/9'],       name: '6/9',     intervals: [0,4,7,9,2],    essential: [0,9,2], anyOf: [4,7] },
     { aliases: ['7', 'dom7'],                         name: '7',       intervals: [0,4,7,10],     essential: [0,4,10] },
     { aliases: ['maj7', 'ma7', 'major7'],             name: 'maj7',    intervals: [0,4,7,11],     essential: [0,4,11] },
     { aliases: ['m7', 'min7', '-7'],                  name: 'm7',      intervals: [0,3,7,10],     essential: [0,3,10] },
@@ -148,9 +159,14 @@
     { aliases: ['9', 'dom9'],                         name: '9',       intervals: [0,4,7,10,2],   essential: [0,4,10,2] },
     { aliases: ['maj9', 'ma9'],                       name: 'maj9',    intervals: [0,4,7,11,2],   essential: [0,4,11,2] },
     { aliases: ['m9', 'min9'],                        name: 'm9',      intervals: [0,3,7,10,2],   essential: [0,3,10,2] },
-    { aliases: ['add9'],                              name: 'add9',    intervals: [0,4,7,2],      essential: [0,4,2] },
-    { aliases: ['madd9', 'minadd9'],                  name: 'm(add9)', intervals: [0,3,7,2],      essential: [0,3,2] },
+    // add2 and add9 are the same chord on a chart — the 2nd sits an octave up
+    // in nearly every guitar shape anyway
+    { aliases: ['add9', 'add2'],                      name: 'add9',    intervals: [0,4,7,2],      essential: [0,4,2] },
+    { aliases: ['madd9', 'minadd9', 'madd2'],         name: 'm(add9)', intervals: [0,3,7,2],      essential: [0,3,2] },
     { aliases: ['7sus4', '7sus'],                     name: '7sus4',   intervals: [0,5,7,10],     essential: [0,5,10] },
+    // a 7sus4 with the 9th on top — what a chart writes for the shape an 11
+    // chord is nearly always played as, once the 3rd is left out
+    { aliases: ['9sus4', '9sus'],                     name: '9sus4',   intervals: [0,5,7,10,2],   essential: [0,5,10,2] },
     { aliases: ['7b9'],                                name: '7♭9',    intervals: [0,4,7,10,1],   essential: [0,4,10,1] },
     { aliases: ['7#9', '7+9'],                         name: '7♯9',    intervals: [0,4,7,10,3],   essential: [0,4,10,3] },
     { aliases: ['7#5', '7+5', 'aug7'],                 name: '7♯5',    intervals: [0,4,8,10],     essential: [0,4,8,10] },
@@ -171,6 +187,7 @@
       .replace(/^mM(?=\d)/, 'mmaj')
       .replace(/^M(?=\d|$)/, 'maj')
       .toLowerCase().replace(/\s+/g, '')
+      .replace(/[()]/g, '')        // C7(#9), Cm7(b5), C(add9): the brackets are punctuation
       .replace(/♭/g, 'b').replace(/♯/g, '#').replace(/δ/g, 'maj')
       .replace(/°/g, 'dim');       // the app writes diminished chords this way itself
   }
@@ -208,19 +225,48 @@
              bassPc: bass.pc, bassName: bass.name };
   }
 
+  // Name a set of notes. Every note is tried as the root; a match is a
+  // formula whose essential tones are all there and which accounts for every
+  // note played. Then the roots that *aren't* there: an extended chord is
+  // routinely played without its root, which the bass has — x-x-5-6-7-7 is
+  // G C♯ F♯ B, the ♭7, 3, 13 and 9 of A, and any jazz or funk player calls
+  // it A13. Such a match is flagged `rootless`, and listed after the chords
+  // that do contain their root, since those are the plainer reading. Only
+  // chords of five tones or more are named that way, and only when the 9th
+  // is sounding — that's what a rootless voicing is, the 9th standing in
+  // for the root. A rootless 7th would be just a triad, and would name
+  // every Em a Cmaj7; and C E G D is Cadd9, not an Am11 with two notes gone.
   function identifyChords(pcs){
     const matches = [];
-    pcs.forEach(rootPc => {
+    const fits = (rootPc, formula, rootless) => {
       const intervals = new Set(pcs.map(pc => (pc - rootPc + 12) % 12));
+      const full = new Set(formula.intervals);
+      const essential = rootless ? formula.essential.filter(iv => iv !== 0) : formula.essential;
+      const hasAllEssential = essential.every(iv => intervals.has(iv));
+      const hasOneOf = !formula.anyOf || formula.anyOf.some(iv => intervals.has(iv));
+      const noForeignTones = [...intervals].every(iv => full.has(iv));
+      // the 9th, flat or sharp — but not a minor 3rd wearing a ♯9's clothes
+      const third = [3, 4].find(iv => full.has(iv));
+      const hasNinth = !rootless || [1, 2, 3].some(iv => iv !== third && full.has(iv) && intervals.has(iv));
+      return hasAllEssential && hasOneOf && noForeignTones && hasNinth;
+    };
+    pcs.forEach(rootPc => {
       CHORD_FORMULAS.forEach(formula => {
-        const full = new Set(formula.intervals);
-        const hasAllEssential = formula.essential.every(iv => intervals.has(iv));
-        const noForeignTones = [...intervals].every(iv => full.has(iv));
-        if (hasAllEssential && noForeignTones) matches.push({ rootPc, formula });
+        if (fits(rootPc, formula, false)) matches.push({ rootPc, formula, rootless: false });
       });
     });
     matches.sort((a, b) => a.formula.rank - b.formula.rank);
-    return matches;
+    const rootless = [];
+    if (pcs.length >= 4){
+      for (let rootPc = 0; rootPc < 12; rootPc++){
+        if (pcs.includes(rootPc)) continue;
+        CHORD_FORMULAS.forEach(formula => {
+          if (formula.intervals.length >= 5 && fits(rootPc, formula, true)) rootless.push({ rootPc, formula, rootless: true });
+        });
+      }
+    }
+    rootless.sort((a, b) => a.formula.rank - b.formula.rank);
+    return matches.concat(rootless);
   }
 
   // Roman numeral for a chord sitting some interval above a tonic — used when a
