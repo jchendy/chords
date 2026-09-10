@@ -468,10 +468,13 @@ it plays the chord three ways over, and clicking a dot or the name beside it
 plays that one note.
 
 Below the shape, the drill: it picks a note from the chord and plays it, and
-you say which one it was. **Play the note** repeats it, **Play the chord**
-strums the whole shape for context, and the answer buttons are the notes of
-the chord, each with its name and what it is in the chord (`C` / `R`, `E♭` /
-`♭3`). One button per note rather than per string — a shape with its root on
+you say which one it was. **Play the note** repeats it; **Play the chord**,
+**Play arpeggio** and **Play root** give it context — the shape struck
+together, rolled one note at a time, or just the root the rest is heard
+against. (A rootless voicing hasn't got one, and there that button goes
+rather than sounding a root the shape doesn't contain.) The answer buttons
+are the notes of the chord, each with its name and what it is in the chord
+(`C` / `R`, `E♭` / `♭3`). One button per note rather than per string — a shape with its root on
 two strings is still one answer. Get it right and it says so, then picks the
 next note and plays it, so a drill keeps going without a press in between;
 get it wrong and it says that instead and leaves the same note running. The
@@ -485,8 +488,13 @@ the chord are different things to hear, and telling them apart is the point.
 **Random chord** rolls one — the everyday triads and sevenths plus the
 colours you meet soon after, on any of the twelve roots — and starts it on
 one of the first few shapes rather than the open one every time. You can
-also type a chord name, and the **Shape** arrows walk through every way of
-playing it, the same list the chord finder shows.
+also type a chord name.
+
+**Shape** opens every way of playing that chord at once — the same list the
+chord finder shows, drawn the same way, with the one you're on marked — and
+you pick by looking rather than by stepping past the twenty-nine you didn't
+want. In there a click is a choice and not a sound: the diagrams are the
+menu, not the instrument.
 
 ## Usage
 

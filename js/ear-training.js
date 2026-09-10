@@ -12,7 +12,8 @@
 
   const $ = id => document.getElementById(id);
   const input = $('earInput'), errorEl = $('earError');
-  const shapeEl = $('earShape'), shapeRow = $('earShapeRow'), shapeLabel = $('earShapeLabel');
+  const shapeEl = $('earShape'), shapeRow = $('earShapeRow'), shapePick = $('earShapePick');
+  const sheet = $('earShapeSheet'), scrim = $('earScrim'), choicesEl = $('earShapeChoices');
   const quizEl = $('earQuiz'), answersEl = $('earAnswers'), verdictEl = $('earVerdict');
 
   // The chords worth drilling: the everyday triads and sevenths, and the
@@ -30,6 +31,7 @@
   let notes = [];            // one answer per note of the shape
   let asked = null;          // the note being asked
   let askedCell = null;      // and where on the neck it's sounding from
+  let rootCell = null;       // the shape's own root, to hear the rest against
   let nextRound = null;      // the pause between a right answer and the next note
 
   const voicing = () => voicings[shapeIdx];
@@ -105,7 +107,7 @@
       return;
     }
     shapeRow.hidden = voicings.length < 2;
-    shapeLabel.textContent = `${shapeIdx + 1} of ${voicings.length}`;
+    shapePick.textContent = `${shapeIdx + 1} of ${voicings.length}`;
     // one card, indexed like the finder's so it can share the same wiring
     shapeEl.innerHTML = `
       <div class="diagram-card" role="button" tabindex="0" data-voicing="0"
@@ -114,6 +116,13 @@
         <p class="diagram-caption">${chord.label}${v.caged ? `<span class="diagram-shape">${v.caged} shape</span>` : ''}</p>
       </div>`;
     notes = notesOf(v.cells, chord.rootPc, chord.formula, chord.rootName);
+    // The root as this shape plays it, lowest first: it's the note everything
+    // else is heard against, so it's worth a button of its own. A rootless
+    // voicing hasn't got one — the bass would be holding it — and there the
+    // button goes rather than sounding a root that isn't in the shape.
+    const root = notes.find(n => n.interval === 0);
+    rootCell = root ? root.cells.slice().sort((a, b) => b.string - a.string)[0] : null;
+    $('earPlayRoot').hidden = !rootCell;
     answersEl.innerHTML = notes.map(n =>
       `<button type="button" class="ear-answer" data-pc="${n.pc}">`
       + `<span class="ear-answer-name">${n.name}</span>`
@@ -121,9 +130,41 @@
     ask();
   }
 
-  function step(by){
-    if (!voicings.length) return;
-    shapeIdx = (shapeIdx + by + voicings.length) % voicings.length;
+  // ---- picking a shape ----------------------------------------------------
+  // Stepping through thirty grips one arrow-press at a time is no way to find
+  // the one you want, and the thing that tells them apart is the picture. So
+  // the picker is the pictures: every shape at once, the one on show marked,
+  // and a click is a choice rather than a sound — in here the diagrams aren't
+  // instruments, they're the menu.
+  function openSheet(on){
+    sheet.hidden = !on;
+    scrim.hidden = !on;
+    shapePick.setAttribute('aria-expanded', String(on));
+    if (!on) return;
+    $('earSheetChord').textContent = chord ? chord.label : '';
+    choicesEl.innerHTML = voicings.map((v, i) => `
+      <div class="diagram-card${i === shapeIdx ? ' current' : ''}" role="button" tabindex="0"
+           data-choice="${i}" aria-label="Shape ${i + 1} of ${voicings.length}"
+           aria-current="${i === shapeIdx}" title="${GT.chordFinder.voicingTip(v)}">
+        ${GT.chordFinder.buildDiagramSVG(v.cells, chord.rootPc, v.fingering, 'fingers', chord.formula, chord.rootName)}
+        <p class="diagram-caption">${v.caged ? `${v.caged} shape` : '&nbsp;'}<span class="shape-choice-num">${i + 1} of ${voicings.length}</span></p>
+      </div>`).join('');
+    // Open at the top, and only scroll if the shape on show is below the fold.
+    // Focusing the Done button has to be told not to scroll: it's sticky, so
+    // the browser scrolls to where it would sit unstuck, which is not where
+    // it is — that alone had the sheet opening a row down.
+    $('earSheetClose').focus({ preventScroll: true });
+    sheet.scrollTop = 0;
+    const current = choicesEl.querySelector('.current');
+    if (current && current.offsetTop + current.offsetHeight > sheet.clientHeight){
+      current.scrollIntoView({ block: 'center' });
+    }
+  }
+
+  function choose(i){
+    if (!voicings[i]) return;
+    shapeIdx = i;
+    openSheet(false);
     render();
   }
 
@@ -177,12 +218,29 @@
       // the diagram plays like the finder's, from the finder's own code
       GT.chordFinder.soundOnClick(shapeEl, () => [voicing()]);
       $('earRandom').addEventListener('click', randomChord);
-      $('earShapePrev').addEventListener('click', () => step(-1));
-      $('earShapeNext').addEventListener('click', () => step(1));
+      shapePick.addEventListener('click', () => openSheet(sheet.hidden));
+      $('earSheetClose').addEventListener('click', () => openSheet(false));
+      scrim.addEventListener('click', () => openSheet(false));
+      document.addEventListener('keydown', e => { if (e.key === 'Escape') openSheet(false); });
+      const pickFrom = e => {
+        const card = e.target.closest('.diagram-card');
+        if (card) choose(Number(card.dataset.choice));
+      };
+      choicesEl.addEventListener('click', pickFrom);
+      choicesEl.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); pickFrom(e); }
+      });
       $('earPlayNote').addEventListener('click', playAsked);
       // the chord itself, plainly — the diagram is there for the long version
       $('earPlayChord').addEventListener('click', () => {
         if (voicing()) GT.chordFinder.strum(voicing().cells);
+      });
+      // the same notes one at a time, low string to high
+      $('earPlayArp').addEventListener('click', () => {
+        if (voicing()) GT.chordFinder.strum(voicing().cells, GT.chordFinder.ARPEGGIO_GAP);
+      });
+      $('earPlayRoot').addEventListener('click', () => {
+        if (rootCell) GT.chordFinder.playOne(rootCell.string, rootCell.fret);
       });
       answersEl.addEventListener('click', e => {
         const btn = e.target.closest('.ear-answer');
@@ -199,8 +257,9 @@
     // Arriving with nothing on: roll something rather than showing an empty
     // page. Coming back to a drill already in progress leaves it alone.
     refresh(){ if (!chord) randomChord(); },
-    // leaving the tab shouldn't leave a question about to answer itself
-    stop(){ clearTimeout(nextRound); nextRound = null; },
+    // leaving the tab shouldn't leave a question about to answer itself, or a
+    // sheet open over a page you can't see
+    stop(){ clearTimeout(nextRound); nextRound = null; openSheet(false); },
     // the chord finder handing over one of its shapes
     show(name, v){
       GT.tabs.goTo('ear');
