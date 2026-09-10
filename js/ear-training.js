@@ -22,6 +22,7 @@
   const input = $('earInput'), errorEl = $('earError');
   const keySelect = $('earKey'), scaleSelect = $('earScale'), octaveGroup = $('earOctaveGroup');
   const shapeEl = $('earShape'), shapeRow = $('earShapeRow'), shapePick = $('earShapePick');
+  const backBtn = $('earBack');
   const qualityRow = $('earQualityRow'), qualityGroup = $('earQualityGroup');
   const octaveStep = $('earOctaveStep');
   const sheet = $('earShapeSheet'), scrim = $('earScrim'), choicesEl = $('earShapeChoices');
@@ -301,8 +302,10 @@
   // The buttons the drill offers. A note mode answers with the notes of what's
   // on the neck; the quality mode answers with the qualities you've switched
   // on. Same shape of thing either way, so the drill below never asks which.
-  const choicesOf = s => s.choices
-    || s.notes.map(n => ({ key: String(n.pc), name: n.name, degree: n.degree }));
+  const choicesOf = s => s.choices || s.notes.map(n => ({
+    key: String(n.pc), name: n.name, degree: n.degree, note: n,
+    says: `${n.name} · ${n.degree}`,
+  }));
 
   // ---- drawing ------------------------------------------------------------
   // A chord shape is drawn as a chord diagram, because that's how a chord is
@@ -376,7 +379,7 @@
     }).join('');
   }
 
-  function render(){
+  function render(keep){
     subject = describe(shapeIdx);
     if (!subject){
       shapeEl.innerHTML = '<p class="diagram-empty">Nothing playable here within a comfortable stretch.</p>';
@@ -423,7 +426,8 @@
       + `<span class="ear-answer-name">${c.name}</span>`
       + (c.degree ? `<span class="ear-answer-degree">${c.degree}</span>` : '')
       + `</button>`).join('');
-    ask();
+    if (keep) resetRound();      // the same question, put back as it was
+    else ask();
   }
 
   // ---- choosing what to drill ---------------------------------------------
@@ -587,6 +591,54 @@
     choose((shapeIdx + by + shapes.length) % shapes.length);
   }
 
+  // ---- what came before ---------------------------------------------------
+  // Back puts the last question on again and plays it, for when a chord went
+  // past before you'd placed it. A question is remembered as everything it
+  // takes to restore it, not just the note asked: the drill moves on to
+  // another chord or another box as readily as to another note of the same
+  // one, so the thing on the neck is part of the question.
+  const HISTORY = 40;
+  const history = [];
+
+  function remember(){
+    history.push(mode === 'quality'
+      ? { mode, quiz }
+      : { mode, chord, keyName, scaleId, wholeShape, shapeIdx, octaveIdx, asked, askedCell });
+    if (history.length > HISTORY) history.shift();
+    backBtn.disabled = history.length < 2;
+  }
+
+  function goBack(){
+    if (history.length < 2) return;
+    history.pop();                                  // the one we're on
+    const was = history[history.length - 1];        // ...and the one before it
+    mode = was.mode;
+    syncMode();
+    if (mode === 'quality'){
+      quiz = was.quiz;
+      render(true);
+      const choice = choicesOf(subject).find(c => c.key === subject.answer);
+      asked = choice ? Object.assign({}, choice, { says: subject.label }) : null;
+      askedCell = null;
+    } else {
+      chord = was.chord; keyName = was.keyName; scaleId = was.scaleId;
+      wholeShape = was.wholeShape;
+      keySelect.value = keyName;
+      scaleSelect.value = scaleId;
+      octaveGroup.querySelectorAll('.seg-btn').forEach(b =>
+        b.classList.toggle('active', (b.dataset.value === 'whole') === wholeShape));
+      rebuild();
+      shapeIdx = Math.min(was.shapeIdx, Math.max(0, shapes.length - 1));
+      octaveIdx = was.octaveIdx;
+      render(true);
+      asked = was.asked;
+      askedCell = was.askedCell;
+    }
+    backBtn.disabled = history.length < 2;
+    quizEl.hidden = !asked;
+    playAsked();
+  }
+
   // ---- the drill ----------------------------------------------------------
   function say(text, kind){
     verdictEl.textContent = text;
@@ -606,32 +658,43 @@
 
   // A note to find. Never the one just answered: hearing the same note twice
   // running teaches nothing, and it reads as though the drill has stalled.
-  function ask(){
+  // a round starts clean whether the question is new or one being heard again
+  function resetRound(){
     clearTimeout(nextRound);
     nextRound = null;
     missed = false;
     answersEl.querySelectorAll('.ear-answer').forEach(b => b.classList.remove('right', 'wrong'));
     say('', '');
+  }
+
+  function ask(){
+    resetRound();
+    // The question is always one of the choices the buttons were built from.
+    // Working it out separately is how the two came to disagree about what a
+    // key was, and every answer read as wrong.
+    const choices = subject ? choicesOf(subject) : [];
     if (subject && subject.kind === 'quality'){
       // the chord was rolled before it was drawn; the question is what it is
-      asked = { key: subject.answer, name: subject.label, degree: '' };
+      const choice = choices.find(c => c.key === subject.answer);
+      asked = choice ? Object.assign({}, choice, { says: subject.label }) : null;
       askedCell = null;
-      quizEl.hidden = false;
+      quizEl.hidden = !asked;
+      if (asked) remember();
       return;
     }
-    const notes = subject ? subject.notes : [];
     // two notes is the fewest that can be told apart; below that there's no
     // question to ask
-    quizEl.hidden = notes.length < 2;
+    quizEl.hidden = choices.length < 2;
     if (quizEl.hidden){ asked = askedCell = null; return; }
-    const pool = asked ? notes.filter(n => n.pc !== asked.pc) : notes;
-    asked = pick(pool.length ? pool : notes);
+    const pool = asked ? choices.filter(c => c.key !== asked.key) : choices;
+    asked = pick(pool.length ? pool : choices);
     // When the root is the answer and the root has already sounded as the
     // reference, ask it an octave up rather than at the very pitch just
     // played: the same note twice is no question at all, where root against
     // its own octave is one worth being able to hear.
-    const spare = asked.cells.filter(c => c !== rootCell);
-    askedCell = pick(rootFirst.checked && spare.length ? spare : asked.cells);
+    const spare = asked.note.cells.filter(c => c !== rootCell);
+    askedCell = pick(rootFirst.checked && spare.length ? spare : asked.note.cells);
+    remember();
   }
 
   // every note that sounds lights where it sits, whether it was pressed or
@@ -689,7 +752,7 @@
     // now it can light: the round is over, and where the note was is the
     // thing worth taking away from it
     if (askedCell) lightUp(askedCell);
-    say(`Yes — ${asked.name}${asked.degree ? ' · ' + asked.degree : ''}`, 'good');
+    say(`Yes — ${asked.says}`, 'good');
     // the next question plays itself, so the drill keeps going without a
     // button press between every one
     nextRound = setTimeout(() => { nextRound = null; nextQuestion(); playAsked(); }, 1300);
@@ -757,6 +820,7 @@
         render();
       }));
 
+      backBtn.addEventListener('click', goBack);
       $('earPlayNote').addEventListener('click', playAsked);
       $('earPlayRoot').addEventListener('click', () => {
         if (rootCell) GT.chordFinder.playOne(rootCell.string, rootCell.fret, lightUp);

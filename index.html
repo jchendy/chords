@@ -57,6 +57,7 @@
   .ib.copied .i-tick{ display:block; }
   .ib.copied .i-link{ display:none; }
   .tbtn{ padding:7px 14px; border:1px solid var(--line2); border-radius:999px; color:var(--ink); font-weight:600; font-size:.82rem; white-space:nowrap; }
+  .tbtn:disabled{ opacity:.35; pointer-events:none; }
   .tbtn:hover{ border-color:var(--muted); }
   .check{ display:inline-flex; align-items:center; gap:7px; font-size:.82rem; color:var(--muted); cursor:pointer; }
   .check input{ appearance:none; -webkit-appearance:none; width:14px; height:14px; border:1px solid var(--line2); border-radius:3px; margin:0; display:grid; place-content:center; cursor:pointer; flex:none; }
@@ -943,6 +944,8 @@
         <button type="button" class="tbtn" id="earPlayRoot">Play root</button>
         <button type="button" class="tbtn" id="earPlayChord">Play the chord</button>
         <button type="button" class="tbtn" id="earPlayArp">Play arpeggio</button>
+        <!-- for when one went past before you'd placed it -->
+        <button type="button" class="tbtn" id="earBack" disabled aria-label="The question before this one">Back</button>
         <label class="check"><input type="checkbox" id="earRootFirst" checked><span>Root first</span></label>
       </div>
       <div class="ear-answers" id="earAnswers"></div>

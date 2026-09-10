@@ -1682,11 +1682,19 @@
       ['Finder: every fingering is playable', testFingeringsArePlayable],
       ['Finder: a sus chord keeps its 5th', testSusChordsKeepTheirFifth],
       ['Genre library and presets are well-formed', testData],
-    ].concat(GT.fretboardSuites || []).concat(GT.practiceSuites || []);   // added by js/tests-fretboard.js, if it loaded
+    ].concat(GT.fretboardSuites || []).concat(GT.earSuites || [])
+     .concat(GT.practiceSuites || []);   // added by the tests-*.js files, if they loaded
     const out = [];
     suites.forEach(([title, fn]) => {
       const from = results.length;
-      fn(t);
+      // A suite that throws used to take the page down with it, and a page
+      // with no results at all says less than a red line does — least of all
+      // when what threw is the thing the suite was written to catch.
+      try {
+        fn(t);
+      } catch (e){
+        t.equal(String(e && e.message || e), '', `${title}: threw before it could finish`);
+      }
       out.push({ title, cases: results.slice(from) });
     });
     const failed = results.filter(r => !r.pass);

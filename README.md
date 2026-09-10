@@ -542,6 +542,12 @@ sus4 through 9, 13 and 6/9 there to switch on as they become worth it. The
 last one on can't be switched off, and switching off the quality of the chord
 currently sounding rolls a new one, since it's no longer a fair question.
 
+**Back** puts the last question on again and plays it, for when one went past
+before you'd placed it. It restores the whole question, which in these drills
+means the thing on the neck as much as the note asked: stepping to another
+box or rolling another chord is a new question, so going back has to put the
+neck back too.
+
 **Random** rolls a new subject — in chord mode, the everyday triads and
 sevenths plus the colours you meet soon after, on any of the twelve roots,
 starting on one of the first few shapes rather than the open one every time;
@@ -727,6 +733,20 @@ Ab, Gb, C#, A9, E9, C7, D7, Cm7, CM7):
 The snapshot lives in `js/tests.js`. If a change is *meant* to alter the
 shapes, regenerate it deliberately rather than editing it to match.
 
+The second group needs a page. `js/tests-fretboard.js`, `js/tests-ear.js` and
+`js/tests-practice.js` each build the controls their tab binds to — the module
+only ever asks for ids, so that's all a fixture owes it — and then press the
+buttons. That's the only way to catch a class of bug the pure tests can't
+see: the ear trainer once built its answer buttons from one list and chose the
+question from another, the two labelled their answers differently, and every
+press came back "not that one" in all three note drills at once while the
+score counted misses. Nothing about it is wrong in isolation. Pressing every
+button and finding that exactly one is accepted is what sees it.
+
+A suite that throws is reported as a failure rather than taking the page down
+with it — a page with no results says less than a red line does, least of all
+when what threw is the thing the suite was written to catch.
+
 ## Sound
 
 Almost everything is synthesized live in the Web Audio API — no MIDI, no
@@ -824,6 +844,7 @@ by what each part does:
 | `tabs.js` | Tab switching, plus the URL fragment and page title that go with each tab. |
 | `main.js` | Boots each tab and wires the header together. |
 | `tests.js` | The regression tests, run by `tests.html`. |
+| `tests-ear.js` | The ear trainer's drill, pressed rather than reasoned about: builds the controls it binds to, then answers questions. Loads before `ear-training.js`. |
 | `tests-fretboard.js` | What the fretboard draws: builds the controls the view binds to, then checks the shapes it renders. Loads before `fretboard-view.js`. |
 
 Each file wraps itself in an IIFE and hangs its public interface off a single
