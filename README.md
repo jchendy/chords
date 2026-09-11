@@ -910,7 +910,22 @@ whole octaves until it settles about A3, give or take a half-octave: the
 grip and the spacing are untouched, only the register moves, which is what a
 player does when a voicing lands too high. Notes are
 scheduled against the audio clock by a 25 ms lookahead loop, so timing
-doesn't drift when the main thread is busy. Stop means stop: a note still
+doesn't drift when the main thread is busy.
+
+**The engine sleeps when nothing is sounding.** A running AudioContext
+renders its graph whether or not anything is audible — 375 blocks a second at
+48 kHz, through a limiter and a reverb convolver that are wired up
+permanently — and it keeps doing that for as long as the tab is open. On iOS
+a live audio session keeps the page resident besides, so a tab left open
+overnight goes on costing battery hours after the last note. So the context
+is suspended when nothing has sounded for twenty seconds, and woken by the
+next note; a page that has been hidden waits only long enough for a ringing
+note to finish, since nobody is listening to a tab they can't see, and one
+being put away (`pagehide`, which iOS sends when the screen locks even when
+it skips `visibilitychange`) stops at once. It never sleeps while something
+is playing — that rule is a pure function with a test on it, because the
+worst version of this is an engine that stops in the middle of a
+progression. Stop means stop: a note still
 queued never sounds, and one already sounding is taken away over 60 ms rather
 than left to ring — which was fine when every voice was synthesized and fell
 away by itself, and is not when a recorded piano rings for seconds. What

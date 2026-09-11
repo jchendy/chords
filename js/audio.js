@@ -111,12 +111,77 @@
     const held = wakeLock;
     wakeLock = null;
     if (held) held.release().catch(() => {});
+    planSleep();                 // nothing is playing now, so the engine can stop
+  }
+
+  // ---- letting the audio engine sleep ----
+  // A running AudioContext renders its graph whether or not anything is
+  // audible: 375 blocks a second at 48 kHz, through a limiter and a reverb
+  // convolver that are wired up permanently. Left alone it does that for as
+  // long as the tab is open — hours after the last note, with the screen off
+  // — and on iOS an live audio session keeps the page resident besides, so
+  // the tab goes on costing battery all night for nothing. So the engine
+  // sleeps when nothing has sounded for a while, and wakes on the next note.
+  //
+  // A hidden page is given only enough time for a ringing note to finish:
+  // nobody is listening to a tab they can't see, and this is the case that
+  // matters — the iPad face down on the sofa with the page still open.
+  const IDLE_SLEEP_SEC = 20;     // ...after the last note was due to start
+  const RING_TAIL_SEC = 6;       // the longest a sample can still be sounding
+  let lastVoiceAt = -Infinity;   // on the audio clock
+  let sleepTimer = null;
+
+  // How long to wait before stopping the engine, or null for "don't". Pulled
+  // out of the timer so the rule can be read and tested on its own: the worst
+  // version of this bug would be an engine that sleeps mid-progression.
+  function sleepDelay(now, lastAt, hidden, playing){
+    if (playing) return null;
+    const quiet = hidden ? RING_TAIL_SEC : IDLE_SLEEP_SEC;
+    return Math.max(0, lastAt + quiet - now);
+  }
+
+  function planSleep(){
+    clearTimeout(sleepTimer);
+    sleepTimer = null;
+    if (!audioCtx) return;
+    const wait = sleepDelay(audioCtx.currentTime, lastVoiceAt, document.hidden, wantWake);
+    if (wait === null) return;                    // something is playing
+    sleepTimer = setTimeout(() => {
+      sleepTimer = null;
+      if (!audioCtx) return;
+      // a note scheduled since this was armed moves the moment along
+      const again = sleepDelay(audioCtx.currentTime, lastVoiceAt, document.hidden, wantWake);
+      if (again === null) return;
+      if (again > 0){ planSleep(); return; }
+      if (audioCtx.state === 'running') audioCtx.suspend().catch(() => {});
+    }, wait * 1000 + 50);
+  }
+
+  // Anything about to make a sound wakes the engine and puts the sleep off.
+  // Resuming is asynchronous, but the clock doesn't move while suspended, so
+  // a note scheduled a moment ahead is still a moment ahead when it starts.
+  function wakeForVoice(time){
+    if (!audioCtx) return;
+    lastVoiceAt = Math.max(lastVoiceAt, time);
+    if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
+    planSleep();
   }
 
   // Hiding the tab releases the lock, and a released sentinel can't be reused,
-  // so coming back has to ask for a new one.
+  // so coming back has to ask for a new one. Going away is also when the
+  // engine should be thinking about sleeping.
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) acquireWakeLock();
+    planSleep();
+  });
+
+  // Safari doesn't always send visibilitychange when an iPad locks or the
+  // page goes into the back/forward cache, but it does send this. Nothing is
+  // going to be heard from a page that's being put away, so the engine stops
+  // at once rather than waiting out a window nobody is listening through.
+  window.addEventListener('pagehide', () => {
+    if (wantWake || !audioCtx) return;
+    if (audioCtx.state === 'running') audioCtx.suspend().catch(() => {});
   });
 
   function ensureAudio(){
@@ -233,6 +298,7 @@
   // ahead of the sound, so stopping playback has to be able to call off the
   // ones that haven't started — otherwise the queue plays on past the button.
   function startVoice(node, time, gain){
+    wakeForVoice(time);
     node.start(time);
     pending.push({ node, time, gain });
     // the list only ever needs the notes still to come
@@ -1443,7 +1509,7 @@
     ctx: () => audioCtx,               // live handle; null until ensureAudio() runs
     pianoWaveFor, PIANO_PARTIALS,      // exposed so the tests can render a note offline
     GUITAR_SAMPLES, sampleFor,         // ...and to check every note has a recording behind it
-    ensureAudio, keepAwake, cancelScheduled, stepsToSkip, noteFreq, chordFrequencies, pcFreq, bassFreqAt, walkBassFreq, ROOT_OCTAVE,
+    ensureAudio, keepAwake, planSleep, sleepDelay, IDLE_SLEEP_SEC, RING_TAIL_SEC, cancelScheduled, stepsToSkip, noteFreq, chordFrequencies, pcFreq, bassFreqAt, walkBassFreq, ROOT_OCTAVE,
     playNote, playChord, playChord7, playBass, playGuitar,
     playPluck, readyForPluck, pluckReady, warmGuitar,
     PIANO_SOFT, PIANO_HARD, PIANO_SPLIT, PIANO_RANGE, PIANO_XFADE, pianoSampleFor, warmPiano,

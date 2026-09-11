@@ -1002,6 +1002,46 @@
     t.equal(grip(seventhCells(cShape, 0, 11)), 'x-3-2-0-0-0', 'open C-shape Cmaj7 flattens the doubled root');
   }
 
+  // ---- 4w. the audio engine is allowed to stop ----
+  // A running AudioContext renders its graph whether or not anything is
+  // audible — hundreds of blocks a second through a limiter and a reverb — so
+  // one left running is a tab quietly spending battery for hours after the
+  // last note. It now sleeps when nothing has sounded for a while. The rule
+  // is held here rather than the timer, because the worst version of this
+  // bug is an engine that sleeps in the middle of a progression.
+  function testTheEngineSleepsButNotWhilePlaying(t){
+    const { sleepDelay, IDLE_SLEEP_SEC, RING_TAIL_SEC } = GT.audio;
+    const bad = [];
+    const now = 1000;
+
+    // while something is playing, never
+    [true].forEach(() => {
+      if (sleepDelay(now, now - 999, false, true) !== null) bad.push('it would sleep while something is playing');
+      if (sleepDelay(now, now, true, true) !== null) bad.push('a hidden page would sleep while something is playing');
+    });
+
+    // a note just scheduled holds it open for the whole window
+    const fresh = sleepDelay(now, now, false, false);
+    if (Math.abs(fresh - IDLE_SLEEP_SEC) > 0.001) bad.push(`a fresh note gave ${fresh}s, not the ${IDLE_SLEEP_SEC}s window`);
+
+    // ...and a note due in the future holds it open longer still
+    const ahead = sleepDelay(now, now + 5, false, false);
+    if (Math.abs(ahead - (IDLE_SLEEP_SEC + 5)) > 0.001) bad.push(`a note due in 5s gave ${ahead}s`);
+
+    // nothing for longer than the window: sleep now
+    if (sleepDelay(now, now - IDLE_SLEEP_SEC - 1, false, false) !== 0) bad.push('a long-quiet engine did not sleep at once');
+
+    // a hidden page waits only long enough for a ringing note to finish
+    const hidden = sleepDelay(now, now, true, false);
+    if (Math.abs(hidden - RING_TAIL_SEC) > 0.001) bad.push(`a hidden page waits ${hidden}s, not ${RING_TAIL_SEC}s`);
+    if (!(RING_TAIL_SEC < IDLE_SLEEP_SEC)) bad.push('a hidden page waits as long as a visible one');
+    // long enough, though: a sample can ring for seconds and cutting it off
+    // mid-note would be worse than the battery
+    if (RING_TAIL_SEC < 4) bad.push(`${RING_TAIL_SEC}s is not long enough for a note to finish`);
+
+    t.equal(bad.join('; '), '', 'The engine sleeps when nothing is sounding, and never while something is');
+  }
+
   // ---- 4x. every note a bass line can ask for has a recording ----
   // The bass is a double bass, and a double bass stops: the highest note
   // recorded is an A3, while a walking line's "third, up an octave" reaches a
@@ -1907,6 +1947,7 @@
       ['Every note the neck can play has a recording near it', testEveryNoteHasARecording],
       ['Every chord the practice tab plays has recordings for it', testEveryChordFitsTheRecordings],
       ['The piano map covers both layers end to end', testThePianoMapIsWhole],
+      ['The engine sleeps when idle, never while playing', testTheEngineSleepsButNotWhilePlaying],
       ['Every bass note every style can play has a recording', testEveryBassNoteHasARecording],
       ['Every style carries the Voice choice', testTheVoiceReachesEveryStyle],
       ['Every note the genre examples play has a recording', testGenreNotesHaveRecordings],
