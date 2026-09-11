@@ -90,10 +90,23 @@
   //   note.chordSlide — a strum slid in from this many frets below (negative: above)
   //   note.add — a colour tone on a strum (9, 13, 6...)
   //   voicing 'shell' — root 3rd 7th
+  //   strum with next:true — the NEXT chord, struck early (the "and of 4" push)
+  // and, on the part, the ways of mixing the figure and the fills that the
+  // second pass added (see proposals-more.js):
+  //   part.turnarounds — several turnarounds, one rolled per pass
+  //   part.tails (+ tailChance) — two-beat licks that replace the second half
+  //       of a figure bar, some of the time: the figure with a lick tagged on
+  //   part.pickups (+ pickupChance) — one-beat lead-ins into a change, on the
+  //       last beat of the figure bar before it
+  //   part.stops (+ stopChance) — stop-time: a bar where the band drops out on
+  //       the One and the guitar fills the silence
+  //   part.figureMode 'roll' — the figure and its variants rolled, not cycled
   function realiseAdvanced(part, bars, opts, feat = {}){
     const roll = rng(feat.seed || 1);
     const phrase = feat.phrase || 2;
+    const grid = feat.grid || 16;
     const out = [];
+    const stopBars = new Set();
     const pick = list => list[Math.floor(roll() * list.length)];
     let figureTurn = 0;
     bars.forEach((bar, b) => {
@@ -103,30 +116,45 @@
       const last = b === bars.length - 1;
       const fillBar = (b % phrase) === phrase - 1;
       let written;
-      if (last && part.turnaround) written = part.turnaround;
+      const turnarounds = part.turnarounds || (part.turnaround ? [part.turnaround] : null);
+      if (last && turnarounds) written = pick(turnarounds);
       else if (fillBar){
-        const list = changing && part.fillsOnChange ? part.fillsOnChange
-                   : !changing && part.fillsOnStay ? part.fillsOnStay
-                   : part.fills;
-        written = pick(list);
+        if (part.stops && part.stops.length && roll() < (part.stopChance == null ? 0.2 : part.stopChance)){
+          written = pick(part.stops);
+          stopBars.add(b);
+        } else {
+          const list = changing && part.fillsOnChange ? part.fillsOnChange
+                     : !changing && part.fillsOnStay ? part.fillsOnStay
+                     : part.fills;
+          written = pick(list);
+        }
       } else {
         const figures = [part.figure, ...(part.variants || [])];
-        written = figures[figureTurn++ % figures.length];
+        written = part.figureMode === 'roll' ? pick(figures) : figures[figureTurn++ % figures.length];
+        // a lick tagged on the end of the figure bar, some of the time
+        if (part.tails && part.tails.length && roll() < (part.tailChance == null ? 0.5 : part.tailChance)){
+          written = written.filter(w => w.at < grid / 2).concat(pick(part.tails));
+        }
+        // a lead-in to the next chord on the last beat, when it changes
+        if (changing && part.pickups && part.pickups.length && roll() < (part.pickupChance == null ? 0.5 : part.pickupChance)){
+          written = written.filter(w => w.at < grid * 3 / 4).concat(pick(part.pickups));
+        }
       }
-      // strums with a shell voicing or a colour tone are placed here; the
-      // rest goes through parts.js
+      // strums with a shell voicing, a colour tone or on the next chord are
+      // placed here; the rest goes through parts.js
       const plain = [], extra = [];
       written.forEach(w => {
-        if (w.strum && (w.voicing === 'shell' || w.add)) extra.push(w); else plain.push(w);
+        if (w.strum && (w.voicing === 'shell' || w.add || w.next)) extra.push(w); else plain.push(w);
       });
       let notes = parts.realiseBar(plain, bar.chord, opts, next);
       extra.forEach(w => {
-        let grip = w.voicing === 'shell' ? shellVoicing(bar.chord, opts) : parts.strumCells(bar.chord, opts, w.voicing || 'full');
+        const on = w.next ? next : bar.chord;
+        let grip = w.voicing === 'shell' ? shellVoicing(on, opts) : parts.strumCells(on, opts, w.voicing || 'full');
         if (!grip) return;
         grip = grip.slice().sort((a, b) => a.midi - b.midi);
         if (w.add){
           const top = grip[grip.length - 1].midi;
-          const c = placeIv(bar.chord, opts, w.add, top);
+          const c = placeIv(on, opts, w.add, top);
           if (c) grip.push(c);
         }
         const each = w.vel * parts.strumStringLevel(grip.length);
@@ -155,6 +183,7 @@
       });
       notes.forEach(n => out.push({ ...n, bar: b }));
     });
+    out.stopBars = stopBars;
     return out;
   }
 
@@ -235,7 +264,15 @@
       const chord = chords[bar], next = chords[(bar + 1) % chords.length];
       const changing = displayName(next) !== displayName(chord);
       const lastBar = bar === chords.length - 1;
-      if (style === 'simple'){
+      // stop-time: the band hits the One and stops; the guitar has the bar
+      const stopped = notes.stopBars && notes.stopBars.has(bar);
+      if (stopped){
+        if (style !== 'simple'){
+          if (p.kick && p.kick.length) audio.playKick(t0, p.kickVel || 0.9);
+          if (p.chord && p.chord.length) audio.playStyleVoice(p.voice, chord, t0, slotDur * 2, 0.7, 'piano');
+          if (p.bass && p.bass.length) audio.playBass(audio.bassNote(SEMITONE[chord.note] % 12, 0), t0, slotDur * 2, 0.9);
+        }
+      } else if (style === 'simple'){
         for (let beat = 0; beat < 4; beat++){
           audio.playChord(chord, t0 + beat * spb, spb, beat === 0 ? 0.86 : 0.68, 'piano');
           audio.playHiHat(t0 + beat * spb, 0.4);
@@ -359,7 +396,7 @@
   // way the app does (rollFills, one pick a phrase), the proposed ones
   // through realiseAdvanced — so "New fills" on a card shows how much
   // variety each version actually has.
-  function realiseCard(part, entry, style, advanced, seed){
+  function realiseCard(part, entry, style, advanced, seed, grid){
     const chords = chordsOf(entry);
     const bars = chords.map(chord => ({ chord }));
     const opts = {
@@ -368,7 +405,7 @@
       tech: opt.tech ? null : { double: false, bend: false, hammer: false, pull: false, slide: false },
     };
     const notes = advanced
-      ? realiseAdvanced(part, bars, opts, { seed: seed || opt.seed, phrase: opt.phrase })
+      ? realiseAdvanced(part, bars, opts, { seed: seed || opt.seed, phrase: opt.phrase, grid })
       : parts.realise(part, bars, seed ? parts.rollFills(part, bars.length, rng(seed)) : [0, 1, 2, 0, 1, 2].slice(0, Math.ceil(bars.length / 2)), opts);
     return { chords, notes };
   }
@@ -423,10 +460,17 @@
     const card = document.createElement('div');
     card.className = 'partcard';
     const flags = [];
-    const allWritten = [part.figure, ...(part.variants || []), ...(part.fills || []), ...(part.fillsOnChange || []), ...(part.fillsOnStay || []), ...(part.turnaround ? [part.turnaround] : [])];
+    const allWritten = [part.figure, ...(part.variants || []), ...(part.fills || []), ...(part.fillsOnChange || []), ...(part.fillsOnStay || []),
+                        ...(part.turnaround ? [part.turnaround] : []), ...(part.turnarounds || []), ...(part.tails || []), ...(part.pickups || []), ...(part.stops || [])];
     const has = k => allWritten.some(bar => bar.some(n => n[k]));
     if (part.fillsOnChange || part.fillsOnStay) flags.push('change-aware fills');
-    if (part.turnaround) flags.push('turnaround');
+    if (part.turnarounds && part.turnarounds.length > 1) flags.push(`${part.turnarounds.length} turnarounds`);
+    else if (part.turnaround || part.turnarounds) flags.push('turnaround');
+    if (part.tails) flags.push('tails');
+    if (part.pickups) flags.push('pickups');
+    if (part.stops) flags.push('stop-time');
+    if (part.figureMode === 'roll') flags.push('rolled figures');
+    const counts = ['fills', 'fillsOnChange', 'fillsOnStay'].map(k => (part[k] || []).length);
     ['ghost', 'rake', 'trem', 'vib', 'stacc', 'pm', 'chordSlide', 'add'].forEach(k => { if (has(k)) flags.push({ ghost: 'ghost notes', rake: 'rakes', trem: 'tremolo picking', vib: 'vibrato', stacc: 'staccato', pm: 'palm-muted notes', chordSlide: 'chord slides', add: 'colour tones' }[k]); });
     if (allWritten.some(bar => bar.some(n => n.strum && n.voicing === 'shell'))) flags.push('shell voicings');
     if (allWritten.some(bar => bar.some(n => n.tech === 'double' && n.up))) flags.push('double-stop bends');
@@ -434,6 +478,7 @@
       <div class="part-head"><h4>${esc(part.name)}${tag ? ` <span class="tag">${esc(tag)}</span>` : ''}</h4>
         <span class="btns"><button type="button" class="reroll" title="Roll the fills again, as New fills does in the app">New fills</button><span class="roll"></span><button type="button" class="play">Play</button></span></div>
       ${part.why ? `<p class="why">${part.why}</p>` : ''}
+      ${advanced ? `<p class="counts">${(part.variants || []).length + 1} figures · fills ${counts[0]} plain, ${counts[1]} into a change, ${counts[2]} staying put${part.tails ? ` · ${part.tails.length} tails` : ''}${part.pickups ? ` · ${part.pickups.length} pickups` : ''}${part.stops ? ` · ${part.stops.length} stop-time` : ''}</p>` : `<p class="counts">${(part.variants || []).length + 1} figures · ${(part.fills || []).length} fills</p>`}
       ${flags.length ? `<p class="flags">Needs: ${flags.map(f => `<span>${esc(f)}</span>`).join(' ')}</p>` : ''}
       <div class="tab"></div>`;
     host.appendChild(card);
@@ -441,7 +486,7 @@
     let state = null, seed = 0, rolls = 0;
     const build = () => {
       try {
-        const { chords, notes } = realiseCard(part, entry, style, advanced, seed);
+        const { chords, notes } = realiseCard(part, entry, style, advanced, seed, pattern.grid);
         const metrics = drawTab(tabHost, pattern.grid, chords, notes);
         state = { chords, notes, metrics };
       } catch (err){
