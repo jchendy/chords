@@ -425,6 +425,11 @@
   /* the right note in the wrong place: a different mistake from a wrong note,
      and worth saying so while you're learning to tell two octaves apart */
   .ear-answer.close{ border-color:var(--a); color:var(--a); }
+  .ear-neck-hint{ margin:14px 0 0; color:var(--muted); font-size:.85rem; }
+  /* answering by pointing: the dot itself says what happened */
+  .note-hit.ear-wrong circle{ stroke:var(--bad); stroke-width:2.5; }
+  .note-hit.ear-close circle{ stroke:var(--a); stroke-width:2.5; }
+  .note-hit.ear-right circle{ stroke:var(--good); stroke-width:3; }
   .ear-answer-where{ font-size:.72rem; color:var(--muted); font-variant-numeric:tabular-nums; }
   .ear-answer.right .ear-answer-where{ color:var(--good); }
   .ear-back-row{ margin-top:12px; }
@@ -983,8 +988,9 @@
       <div class="setup-row" id="earExactRow">
         <span class="tb-lbl">Answer</span>
         <span class="segmented" id="earExactGroup">
-          <button type="button" class="seg-btn active" data-value="name">Which note</button>
-          <button type="button" class="seg-btn" data-value="exact">Which one exactly</button>
+          <button type="button" class="seg-btn active" data-value="name">Name the note</button>
+          <button type="button" class="seg-btn" data-value="exact">Name the exact one</button>
+          <button type="button" class="seg-btn" data-value="neck">Point to it</button>
         </span>
       </div>
     </div>
@@ -1026,6 +1032,10 @@
         <label class="check"><input type="checkbox" id="earRootFirst" checked><span>Root first</span></label>
       </div>
       <div class="ear-answers" id="earAnswers"></div>
+      <!-- pointing at the neck answers instead: the dots stop sounding while a
+           question is live, since clicking round them until one matches is
+           not the drill -->
+      <p class="ear-neck-hint" id="earNeckHint" hidden>Click the note you heard, where you heard it.</p>
       <!-- under the answers, where you'd reach for it: for when one went past
            before you'd placed it -->
       <div class="toolbar ear-back-row">

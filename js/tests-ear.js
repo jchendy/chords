@@ -36,11 +36,11 @@
 
   segs('earModeGroup', ['chord', 'quality', 'penta', 'scale']);
   segs('earOctaveGroup', ['octave', 'whole']);
-  segs('earExactGroup', ['name', 'exact']);
+  segs('earExactGroup', ['name', 'exact', 'neck']);
   add('span', 'earQualityGroup', 'segmented');
   ['earChordRow', 'earScaleRow', 'earOctaveRow', 'earQualityRow', 'earShapeRow', 'earExactRow',
    'earOctaveStep', 'earShape', 'earShapeSheet', 'earScrim', 'earShapeChoices',
-   'earQuiz', 'earAnswers', 'earSetup', 'earGo', 'earRunBar', 'earRunDots',
+   'earQuiz', 'earAnswers', 'earNeckHint', 'earSetup', 'earGo', 'earRunBar', 'earRunDots',
    'earResult'].forEach(id => add('div', id));
   ['earError', 'earVerdict', 'earScore', 'earQuizTitle', 'earSheetTitle', 'earSheetChord',
    'earBrief', 'earRunWhat', 'earResultScore', 'earResultDetail'].forEach(id => add('p', id));
@@ -371,8 +371,52 @@
     t.equal(bad.join('; '), '', 'Naming the exact note asks which one, not just which note');
   }
 
+  // Pointing at the neck instead of pressing a button. The same question, the
+  // same judgement — what changes is the surface, and one thing that must
+  // change with it: a dot answers rather than sounds while a question is
+  // live. Clicking round a shape until one matches what you heard would be a
+  // way to get every question right without hearing anything.
+  function testPointingAtTheNeck(t){
+    start();
+    const bad = [];
+    setMode('scale');
+    q('#earExactGroup .seg-btn[data-value="neck"]').click();
+
+    if (!q('#earAnswers').hidden) bad.push('the buttons stayed up when the answer is given on the neck');
+    if (q('#earNeckHint').hidden) bad.push('nothing said to click the neck');
+
+    const read = () => {
+      const m = (q('#earScore').textContent || '').match(/^(\d+) of (\d+)/);
+      return m ? { right: Number(m[1]), of: Number(m[2]) } : null;
+    };
+    const dots = () => [...document.querySelectorAll('#earShape .note-hit')];
+    if (!dots().length){ bad.push('the shape has no dots to point at'); }
+    else {
+      // the drill knows which dot it asked for; anything else is refused
+      const before = read() || { right: 0, of: 0 };
+      let hit = null;
+      for (const d of dots()){
+        d.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        if (d.classList.contains('ear-right')){ hit = d; break; }
+      }
+      if (!hit) bad.push('no dot was ever accepted');
+      const after = read() || { right: 0, of: 0 };
+      if (after.of !== before.of + 1) bad.push(`pointing at the neck moved the count by ${after.of - before.of}`);
+    }
+
+    // ...and pointing is an exact answer by nature: one button per place
+    const keys = [...document.querySelectorAll('#earAnswers .ear-answer')].map(b => b.dataset.key);
+    if (keys.some(k => k.indexOf(':') < 0)) bad.push('pointing offered answers that name a note rather than a place');
+
+    q('#earExactGroup .seg-btn[data-value="name"]').click();
+    if (q('#earAnswers').hidden) bad.push('the buttons never came back');
+    GT.earTraining.stop();
+    t.equal(bad.join('; '), '', 'Pointing at the neck answers the question, and the dots stop sounding while it stands');
+  }
+
   GT.earSuites = [
     ['Ear: naming the exact note', testNamingTheExactNote],
+    ['Ear: pointing at the neck', testPointingAtTheNeck],
     ['Ear trainer: every question has exactly one answer', testEveryQuestionHasExactlyOneAnswer],
     ['Ear trainer: the score counts questions', testTheScoreCountsQuestions],
     ['Ear trainer: Back restores the question', testBackRestoresTheQuestion],

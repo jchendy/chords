@@ -32,7 +32,18 @@
   const quizEl = $('earQuiz'), answersEl = $('earAnswers'), verdictEl = $('earVerdict');
   const rootFirst = $('earRootFirst');
   const exactGroup = $('earExactGroup');
-  let exactNote = false;         // ...or just the note's name, which is the default
+  // HOW AN ANSWER IS GIVEN, and what counts as one.
+  //   name   — a button per note: what did you hear, wherever it was played
+  //   exact  — a button per place: which of the shape's three Gs was it
+  //   neck   — the same question, answered by pointing at the dot
+  //
+  // Pointing is only offered as an exact answer, and that isn't a limitation
+  // so much as what the gesture means: you can't point vaguely at a C. If
+  // pointing at one G accepted a different G, the drill would be contradicting
+  // the thing you just did. Wanting "any G" is what the buttons are for.
+  let answerStyle = 'name';      // 'name' | 'exact' | 'neck'
+  const exactNote = () => answerStyle !== 'name';
+  const onTheNeck = () => answerStyle === 'neck';
   const scoreEl = $('earScore');
 
   // The chords worth drilling: the everyday triads and sevenths, and the
@@ -336,7 +347,7 @@
 
   const choicesOf = s => {
     if (s.choices) return s.choices;                       // the quality drill answers with qualities
-    if (!exactNote || s.kind === 'quality'){
+    if (!exactNote() || s.kind === 'quality'){
       return s.notes.map(n => ({
         key: String(n.pc), name: n.name, degree: n.degree, note: n,
         says: `${n.name} · ${n.degree}`,
@@ -467,6 +478,10 @@
       ? 'What kind of chord is this?'
       : mode === 'chord' ? 'Which note of the chord is this?' : 'Which note of the scale is this?';
 
+    // ...and where the answer is given. Pointing hides the buttons entirely:
+    // two ways to answer the same question on screen at once is one too many.
+    answersEl.hidden = onTheNeck() && subject.kind !== 'quality';
+    $('earNeckHint').hidden = !answersEl.hidden;
     answersEl.innerHTML = choicesOf(subject).map(c =>
       `<button type="button" class="ear-answer" data-key="${c.key}">`
       + `<span class="ear-answer-name">${c.name}</span>`
@@ -586,7 +601,7 @@
     // chord you're hearing
     $('earExactRow').hidden = mode === 'quality';
     exactGroup.querySelectorAll('.seg-btn')
-      .forEach(b => b.classList.toggle('active', (b.dataset.value === 'exact') === exactNote));
+      .forEach(b => b.classList.toggle('active', b.dataset.value === answerStyle));
     if (mode === 'chord' || mode === 'quality') return;
     const pool = mode === 'penta' ? PENTAS : SCALES;
     if (!pool.some(s => s.id === scaleId)) scaleId = pool[0].id;
@@ -684,7 +699,7 @@
       else if (octaveIdx) p.set('o', octaveIdx);
     }
     if (!rootFirst.checked) p.set('r', '0');
-    if (exactNote) p.set('x', '1');
+    if (answerStyle !== 'name') p.set('x', answerStyle === 'neck' ? 'n' : '1');
     GT.tabs.setState('ear', p);
   }
 
@@ -694,7 +709,7 @@
     if (!['chord', 'quality', 'penta', 'scale'].includes(want)) return false;
     mode = want;
     rootFirst.checked = p.get('r') !== '0';
-    exactNote = p.get('x') === '1';
+    answerStyle = p.get('x') === 'n' ? 'neck' : p.get('x') === '1' ? 'exact' : 'name';
     syncMode();
     if (mode === 'chord'){
       if (!loadChord(p.get('c') || 'C')) return false;
@@ -918,12 +933,12 @@
     // all, where root against its own octave is one worth being able to hear.
     // Naming the note, that means asking a different cell of the same note;
     // naming the exact one, it means not offering that cell as the question.
-    if (exactNote && rootFirst.checked && rootCell){
+    if (exactNote() && rootFirst.checked && rootCell){
       const elsewhere = pool.filter(c => c.cell !== rootCell);
       if (elsewhere.length) pool = elsewhere;
     }
     asked = pick(pool.length ? pool : choices);
-    if (exactNote){
+    if (exactNote()){
       askedCell = asked.cell;
     } else {
       const spare = asked.note.cells.filter(c => c !== rootCell);
@@ -981,23 +996,28 @@
     }
   }
 
-  function answer(btn){
+  // One judgement, whichever surface gave the answer: a button that names a
+  // note, or a dot on the neck. `marks` is only the names of the classes each
+  // surface wears, since a button and a fret dot say "no" differently.
+  function respond(choice, el, marks){
     if (!asked || nextRound) return;         // the round is won; the next one is coming
-    if (btn.dataset.key !== String(asked.key)){
+    if (!choice || String(choice.key) !== String(asked.key)){
       // Told the note but not the place: a different mistake from hearing the
       // wrong note, and the one this drill exists to train, so it's named as
       // such rather than lumped in with a plain miss. It still costs the
       // question — the answer was the other one.
-      const pressed = choicesOf(subject).find(c => String(c.key) === btn.dataset.key);
-      const nearly = exactNote && pressed && pressed.note && pressed.note.pc === asked.note.pc;
-      btn.classList.add(nearly ? 'close' : 'wrong');
-      setTimeout(() => btn.classList.remove(nearly ? 'close' : 'wrong'), 700);
+      const nearly = exactNote() && choice && choice.note && choice.note.pc === asked.note.pc;
+      const mark = nearly ? marks.close : marks.wrong;
+      if (el){
+        el.classList.add(mark);
+        setTimeout(() => el.classList.remove(mark), 700);
+      }
       say(nearly ? `That's the ${asked.degree}, but not that one — listen again`
                  : 'Not that one — listen again', '');
       missed = true;
       return;
     }
-    btn.classList.add('right');
+    if (el) el.classList.add(marks.right);
     scored(!missed);
     // now it can light: the round is over, and where the note was is the
     // thing worth taking away from it
@@ -1009,21 +1029,48 @@
     nextRound = setTimeout(() => { nextRound = null; advance(true); }, 1300);
   }
 
+  const BUTTON_MARKS = { right: 'right', close: 'close', wrong: 'wrong' };
+  const DOT_MARKS = { right: 'ear-right', close: 'ear-close', wrong: 'ear-wrong' };
+
+  function answer(btn){
+    respond(choicesOf(subject).find(c => String(c.key) === btn.dataset.key), btn, BUTTON_MARKS);
+  }
+
+  // Pointing at the neck. The dot answers rather than sounds: clicking round
+  // the shape until one matches what you heard is a way to get every question
+  // right without hearing anything, which is not the drill. Between questions
+  // — and in the phases where there is no question — the dots play as they
+  // always did, because then it's a shape to explore rather than a test.
+  function answerAt(hit){
+    const key = `${hit.dataset.string}:${hit.dataset.fret}`;
+    respond(choicesOf(subject).find(c => String(c.key) === key), hit, DOT_MARKS);
+  }
+
   GT.earTraining = {
     init(){
       // The picture plays like the finder's diagrams, from the finder's own
       // code: a note on its own wherever it's drawn, and — for a chord shape,
       // which is the only one of the three that is a chord — the whole thing
       // three ways over when you click past the notes.
+      // Ahead of the finder's own play-on-click, and in the capture phase so
+      // it gets there first: while a question is live and the answer is given
+      // by pointing, a dot answers instead of sounding.
+      shapeEl.addEventListener('click', e => {
+        if (!onTheNeck() || !asked || nextRound || phase === 'ready') return;
+        const hit = e.target.closest('.note-hit');
+        if (!hit) return;
+        e.preventDefault();
+        e.stopPropagation();
+        answerAt(hit);
+      }, true);
       GT.chordFinder.soundOnClick(shapeEl,
         () => (mode === 'chord' && shapes[shapeIdx] ? [shapes[shapeIdx]] : []));
       modeGroup.querySelectorAll('.seg-btn').forEach(btn =>
         btn.addEventListener('click', () => setMode(btn.dataset.value)));
       exactGroup.querySelectorAll('.seg-btn').forEach(btn =>
         btn.addEventListener('click', () => {
-          const want = btn.dataset.value === 'exact';
-          if (want === exactNote) return;
-          exactNote = want;
+          if (btn.dataset.value === answerStyle) return;
+          answerStyle = btn.dataset.value;
           syncMode();
           render();               // different buttons, so a fresh question
         }));

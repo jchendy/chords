@@ -629,19 +629,38 @@ ever be the root. When the root *is* the answer it's asked an octave up from
 the reference wherever the shape has one: the same note twice is no question
 at all, where a root against its own octave is one worth being able to hear.
 
-**Which note, or which one exactly.** A shape holds the same note two or
-three times over, and by default any of them answers: the question is what
-you heard, not where it was. Switch the Answer setting to "Which one exactly"
-and the question becomes which — the 5th on the D string, or the 5th an
-octave up — which is the harder thing to hear and the more useful one to be
-able to do. The buttons then name one place each, carrying the octave (and
-the string too, where two of them are the same pitch played in two places),
-and they read low to high, the way the neck does. Pressing the right note in
-the wrong place is marked as its own kind of miss and says so — "that's the
-5, but not that one" — because it's a different mistake from hearing the
-wrong note, and it's the mistake this setting exists to train. It still costs
-the question. The setting applies to the three note drills and is meaningless
-in the quality one, so it isn't offered there.
+**How you answer, and what counts as one.** A shape holds the same note two
+or three times over, so there are three ways to be asked about it, and the
+Answer setting picks between them. They're not three difficulties of the same
+question so much as three different questions.
+
+*Name the note* — a button per note, and any of the places it's played
+answers. The question is what you heard, not where it was.
+
+*Name the exact one* — a button per place: the 5th on the D string, or the
+5th an octave up. The buttons carry the octave, and the string too where two
+of them are the same pitch played in two places, and they read low to high
+the way the neck does.
+
+*Point to it* — the same question as "exact", answered by clicking the dot
+instead of reading a list. It's offered only as an exact answer, and that
+isn't a limitation so much as what the gesture means: you can't point vaguely
+at a C, and accepting a different C than the one you pointed at would
+contradict the thing you just did. Wanting "any C" is what the first setting
+is for.
+
+Pointing carries one rule the buttons don't need: **while a question stands,
+a dot answers instead of sounding.** The shape is clickable everywhere else
+in this app, and clicking round a box until one matches what you heard is a
+way to get every question right without hearing anything. Before the drill
+starts, and after it ends, the dots play as they always did — then it's a
+shape to explore rather than a test.
+
+Pointing at the right note in the wrong place is marked as its own kind of
+miss, on the dot or on the button, and says so — "that's the 5, but not that
+one" — because it's a different mistake from hearing the wrong note, and it's
+the one these two settings exist to train. It still costs the question. None
+of this is offered in the quality drill, where naming a place means nothing.
 
 ## Bookmarking an exercise
 
