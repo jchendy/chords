@@ -629,46 +629,36 @@ ever be the root. When the root *is* the answer it's asked an octave up from
 the reference wherever the shape has one: the same note twice is no question
 at all, where a root against its own octave is one worth being able to hear.
 
-**How you answer, and what counts as one.** A shape holds the same note two
-or three times over, so there are three ways to be asked about it, and the
-Answer setting picks between them. They're not three difficulties of the same
-question so much as three different questions.
+**You answer by pointing at the dot.** A note drill asks which note sounded,
+and where a note is is what the answer is made of — so the answer is given on
+the neck rather than from a list. There is no setting: the three note drills
+all work this way. The quality drill is the exception, and not by omission —
+"what kind of chord is this" has no place on the neck to point at, so it
+keeps its buttons.
 
-*Name the note* — a button per note, and any of the places it's played
-answers. The question is what you heard, not where it was.
+Pointing is exact by nature. You can't point vaguely at a C, so a shape's
+three Gs are three different answers, and pressing the twin of the right one
+is marked as its own kind of miss — "that's the 5, but not that one" —
+because telling the note but not the place is a different mistake, and the
+one this drill exists to train. It still costs the question. A dot that is
+drawn but out of play, which is most of a box when one octave of it is
+sounding, isn't an answer at all: clicking it says so and leaves the question
+standing.
 
-*Name the exact one* — a button per place: the 5th on the D string, or the
-5th an octave up. The buttons carry the octave, and the string too where two
-of them are the same pitch played in two places, and they read low to high
-the way the neck does.
+Pointing carries one rule a list of buttons wouldn't need: **while a question
+stands, a dot answers instead of sounding.** The shape is clickable
+everywhere else in this app, and clicking round a box until one matches what
+you heard is a way to get every question right without hearing anything.
+Before the drill starts and after it ends, the dots play as they always did —
+then it's a shape to explore rather than a test.
 
 The neck under the question is drawn as the box and a fret either side,
 rather than as the whole fifteen. A box is four or five frets, so drawing it
 full-length spent three quarters of the width on neck nobody was being asked
-about and left every dot a third of the size it could be — which matters most
-where the dot is the thing you tap. On a phone the box now fills the screen
-with 40px targets, and the tap area grows a little further where the pointer
-is coarse.
-
-*Point to it* — the same question as "exact", answered by clicking the dot
-instead of reading a list. It's offered only as an exact answer, and that
-isn't a limitation so much as what the gesture means: you can't point vaguely
-at a C, and accepting a different C than the one you pointed at would
-contradict the thing you just did. Wanting "any C" is what the first setting
-is for.
-
-Pointing carries one rule the buttons don't need: **while a question stands,
-a dot answers instead of sounding.** The shape is clickable everywhere else
-in this app, and clicking round a box until one matches what you heard is a
-way to get every question right without hearing anything. Before the drill
-starts, and after it ends, the dots play as they always did — then it's a
-shape to explore rather than a test.
-
-Pointing at the right note in the wrong place is marked as its own kind of
-miss, on the dot or on the button, and says so — "that's the 5, but not that
-one" — because it's a different mistake from hearing the wrong note, and it's
-the one these two settings exist to train. It still costs the question. None
-of this is offered in the quality drill, where naming a place means nothing.
+about and left every dot a third of the size it could be — which matters a
+great deal when the dot is the thing you tap. On a phone the box now fills
+the screen with 40px targets, and the tap area grows a little further where
+the pointer is coarse.
 
 ## Bookmarking an exercise
 

@@ -440,8 +440,9 @@
   .note-hit.ear-wrong circle{ stroke:var(--bad); stroke-width:2.5; }
   .note-hit.ear-close circle{ stroke:var(--a); stroke-width:2.5; }
   .note-hit.ear-right circle{ stroke:var(--good); stroke-width:3; }
-  .ear-answer-where{ font-size:.72rem; color:var(--muted); font-variant-numeric:tabular-nums; }
-  .ear-answer.right .ear-answer-where{ color:var(--good); }
+  /* drawn but not in play: not an answer at all, so it says so rather than
+     costing you the question */
+  .note-hit.ear-outside circle{ stroke:var(--muted); stroke-width:2; }
   .ear-back-row{ margin-top:12px; }
   .ear-verdict{ margin:14px 0 0; min-height:1.3em; font-size:.88rem; color:var(--muted); }
   .ear-verdict.good{ color:var(--good); }
@@ -988,19 +989,6 @@
             <button type="button" class="seg-btn arrow" id="earOctaveDown" aria-label="The octave below">↓</button>
             <button type="button" class="seg-btn arrow" id="earOctaveUp" aria-label="The octave above">↑</button>
           </span>
-        </span>
-      </div>
-      <!-- A shape holds the same note in two or three places, and by default
-           any of them answers: you're being asked what you heard, not where
-           it was. Turned on, the question becomes which one — the 5th on the
-           D string or the 5th an octave up — which is the harder and more
-           useful thing to be able to hear. -->
-      <div class="setup-row" id="earExactRow">
-        <span class="tb-lbl">Answer</span>
-        <span class="segmented" id="earExactGroup">
-          <button type="button" class="seg-btn active" data-value="name">Name the note</button>
-          <button type="button" class="seg-btn" data-value="exact">Name the exact one</button>
-          <button type="button" class="seg-btn" data-value="neck">Point to it</button>
         </span>
       </div>
     </div>

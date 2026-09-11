@@ -36,9 +36,8 @@
 
   segs('earModeGroup', ['chord', 'quality', 'penta', 'scale']);
   segs('earOctaveGroup', ['octave', 'whole']);
-  segs('earExactGroup', ['name', 'exact', 'neck']);
   add('span', 'earQualityGroup', 'segmented');
-  ['earChordRow', 'earScaleRow', 'earOctaveRow', 'earQualityRow', 'earShapeRow', 'earExactRow',
+  ['earChordRow', 'earScaleRow', 'earOctaveRow', 'earQualityRow', 'earShapeRow',
    'earOctaveStep', 'earShape', 'earShapeSheet', 'earScrim', 'earShapeChoices',
    'earQuiz', 'earAnswers', 'earNeckHint', 'earSetup', 'earGo', 'earRunBar', 'earRunDots',
    'earResult'].forEach(id => add('div', id));
@@ -327,95 +326,93 @@
     t.equal(bad.join('; '), '', 'A run is ten questions and then a result');
   }
 
-  // Naming the exact note: a shape holds the same note two or three times
-  // over, and by default any of them answers, because the question is what
-  // you heard. Turned on, the question becomes which one — and the button
-  // that names the right note in the wrong place is a near miss rather than
-  // a wrong answer, since it is a different mistake and the one this drill
-  // is for.
-  function testNamingTheExactNote(t){
-    start();
-    const bad = [];
-    setMode('scale');
-    const names = () => [...document.querySelectorAll('#earAnswers .ear-answer')]
-      .map(b => b.querySelector('.ear-answer-name').textContent);
-    const keys = () => [...document.querySelectorAll('#earAnswers .ear-answer')].map(b => b.dataset.key);
-
-    const byName = keys().length;
-    if (new Set(names()).size !== byName) bad.push('the ordinary drill offers a button per note, but some repeat');
-
-    q('#earExactGroup .seg-btn[data-value="exact"]').click();
-    const exact = keys().length;
-    if (exact <= byName) bad.push(`naming the exact note offered ${exact} buttons where naming it offered ${byName}`);
-    if (new Set(keys()).size !== exact) bad.push('two buttons carry the same answer');
-    // ...and the extra ones are the repeats: the same note in another place
-    const repeated = names().filter((n, i) => names().indexOf(n) !== i);
-    if (!repeated.length) bad.push('no note appears twice, so nothing was told apart');
-    const where = [...document.querySelectorAll('#earAnswers .ear-answer-where')];
-    if (!where.length) bad.push('the buttons never say where the note is');
-
-    // the twin is refused, and told apart from a plain wrong answer
-    const btns = [...document.querySelectorAll('#earAnswers .ear-answer')];
-    const right = btns.find(b => { b.click(); return b.classList.contains('right'); });
-    if (!right){ bad.push('no button was accepted at all'); }
-    else {
-      const name = right.querySelector('.ear-answer-name').textContent;
-      const twin = btns.find(b => b !== right && b.querySelector('.ear-answer-name').textContent === name);
-      if (twin && !twin.classList.contains('close') && !twin.classList.contains('wrong')){
-        bad.push('the twin was neither accepted nor refused');
-      }
-    }
-
-    q('#earExactGroup .seg-btn[data-value="name"]').click();
-    GT.earTraining.stop();
-    t.equal(bad.join('; '), '', 'Naming the exact note asks which one, not just which note');
-  }
-
-  // Pointing at the neck instead of pressing a button. The same question, the
-  // same judgement — what changes is the surface, and one thing that must
-  // change with it: a dot answers rather than sounds while a question is
-  // live. Clicking round a shape until one matches what you heard would be a
-  // way to get every question right without hearing anything.
+  // A note drill is answered by pointing at the dot. Three things have to
+  // hold. The answer is a place, so a shape's three Gs are three answers and
+  // the twin of the right one is refused — as a near miss, since telling the
+  // note but not the place is a different mistake and the one this drill is
+  // for. There are no buttons, because two ways to answer the same question
+  // on screen at once is one too many. And a dot answers instead of sounding
+  // while a question stands: clicking round a box until one matches what you
+  // heard would be a way to get every question right without hearing it.
   function testPointingAtTheNeck(t){
     start();
     const bad = [];
     setMode('scale');
-    q('#earExactGroup .seg-btn[data-value="neck"]').click();
-
-    if (!q('#earAnswers').hidden) bad.push('the buttons stayed up when the answer is given on the neck');
-    if (q('#earNeckHint').hidden) bad.push('nothing said to click the neck');
-
+    // the whole shape, so every dot on screen is one of the answers — one
+    // octave of a box leaves the rest of it drawn but out of play
+    q('#earOctaveGroup .seg-btn[data-value="whole"]').click();
     const read = () => {
       const m = (q('#earScore').textContent || '').match(/^(\d+) of (\d+)/);
       return m ? { right: Number(m[1]), of: Number(m[2]) } : null;
     };
     const dots = () => [...document.querySelectorAll('#earShape .note-hit')];
-    if (!dots().length){ bad.push('the shape has no dots to point at'); }
+    const cls = d => d.getAttribute('class') || '';
+
+    if (!q('#earAnswers').hidden) bad.push('a note drill still put buttons up');
+    if (q('#earNeckHint').hidden) bad.push('nothing said to click the neck');
+    if (!dots().length) bad.push('the shape has no dots to point at');
+
+    // The drill says which dot it asked about, so the wrong ones can be
+    // pressed on purpose rather than found by pressing everything and hoping.
+    const asked = () => GT.earTraining.askedAt();
+    const at = c => dots().find(d => Number(d.dataset.string) === c.string
+                                  && Number(d.dataset.fret) === c.fret);
+    const { STRING_TUNING } = GT.fretboard;
+    const pcOf = d => (STRING_TUNING[Number(d.dataset.string)] + Number(d.dataset.fret)) % 12;
+
+    const before = read() || { right: 0, of: 0 };
+    const want = asked() && at(asked());
+    if (!want){ bad.push('the drill asked about a dot that is not on the neck'); }
     else {
-      // the drill knows which dot it asked for; anything else is refused
-      const before = read() || { right: 0, of: 0 };
-      let hit = null;
-      for (const d of dots()){
-        d.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-        if (d.classList.contains('ear-right')){ hit = d; break; }
+      // the twin — the same note somewhere else on the shape — is refused,
+      // and refused differently, since telling the note but not the place is
+      // a different mistake and the one this drill is for
+      const twin = dots().find(d => d !== want && pcOf(d) === pcOf(want));
+      if (twin){
+        twin.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        if (cls(twin).indexOf('ear-close') < 0){
+          bad.push(`the right note in the wrong place was marked "${cls(twin)}"`);
+        }
       }
-      if (!hit) bad.push('no dot was ever accepted');
-      const after = read() || { right: 0, of: 0 };
-      if (after.of !== before.of + 1) bad.push(`pointing at the neck moved the count by ${after.of - before.of}`);
+      // a different note is simply wrong
+      const other = dots().find(d => pcOf(d) !== pcOf(want));
+      if (other){
+        other.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        if (cls(other).indexOf('ear-wrong') < 0) bad.push(`a wrong note was marked "${cls(other)}"`);
+      }
+      // ...and the dot that sounded is accepted
+      want.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      if (cls(want).indexOf('ear-right') < 0) bad.push('the dot that sounded was refused');
+    }
+    const after = read() || { right: 0, of: 0 };
+    if (after.of !== before.of + 1) bad.push(`pointing moved the count by ${after.of - before.of}`);
+
+    // A dot that is drawn but out of play — one octave of a box leaves the
+    // rest of the box on screen — is not an answer at all, so clicking it
+    // says so rather than costing you the question.
+    q('#earOctaveGroup .seg-btn[data-value="octave"]').click();
+    const target = GT.earTraining.askedAt();
+    if (target){
+      const scored = read() || { right: 0, of: 0 };
+      const stray = dots().find(d => !(Number(d.dataset.string) === target.string
+                                    && Number(d.dataset.fret) === target.fret));
+      if (stray){
+        stray.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        const outside = cls(stray).indexOf('ear-outside') >= 0;
+        const now = read() || { right: 0, of: 0 };
+        if (outside && now.of !== scored.of) bad.push('a dot outside the octave in play cost the question');
+      }
     }
 
-    // ...and pointing is an exact answer by nature: one button per place
-    const keys = [...document.querySelectorAll('#earAnswers .ear-answer')].map(b => b.dataset.key);
-    if (keys.some(k => k.indexOf(':') < 0)) bad.push('pointing offered answers that name a note rather than a place');
-
-    q('#earExactGroup .seg-btn[data-value="name"]').click();
-    if (q('#earAnswers').hidden) bad.push('the buttons never came back');
+    // ...and the quality drill, which has no place to point at, keeps buttons
+    setMode('quality');
+    if (q('#earAnswers').hidden) bad.push('the quality drill lost its buttons');
+    if (!q('#earNeckHint').hidden) bad.push('the quality drill was told to click the neck');
     GT.earTraining.stop();
-    t.equal(bad.join('; '), '', 'Pointing at the neck answers the question, and the dots stop sounding while it stands');
+    t.equal(bad.join('; '), '', 'A note drill is answered by pointing, and only the dot that sounded will do');
   }
 
   GT.earSuites = [
-    ['Ear: naming the exact note', testNamingTheExactNote],
     ['Ear: pointing at the neck', testPointingAtTheNeck],
     ['Ear trainer: every question has exactly one answer', testEveryQuestionHasExactlyOneAnswer],
     ['Ear trainer: the score counts questions', testTheScoreCountsQuestions],
