@@ -1020,9 +1020,12 @@
     let parts = 0;
 
     Object.keys(LIBRARY).forEach(style => {
-      if (!STYLES[style]){ bad.push(`parts written for "${style}", which is not a style`); return; }
+      if (style !== 'simple' && !STYLES[style]){ bad.push(`parts written for "${style}", which is not a style`); return; }
       Object.keys(LIBRARY[style]).forEach(feelName => {
-        const feel = STYLES[style].variants.find(v => v.label === feelName);
+        // Simple has no feels; its parts are written for the stand-in
+        const feel = style === 'simple'
+          ? (feelName === GT.parts.SIMPLE_FEEL.label ? GT.parts.SIMPLE_FEEL : null)
+          : STYLES[style].variants.find(v => v.label === feelName);
         if (!feel){ bad.push(`${style} has no feel called "${feelName}"`); return; }
         LIBRARY[style][feelName].forEach(part => {
           parts++;

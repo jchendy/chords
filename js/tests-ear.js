@@ -383,6 +383,11 @@
       // ...and the dot that sounded is accepted
       want.dispatchEvent(new MouseEvent('click', { bubbles: true }));
       if (cls(want).indexOf('ear-right') < 0) bad.push('the dot that sounded was refused');
+      // its ring lasts until the next question and no longer: a run used to
+      // end with a halo on every dot it had asked about
+      GT.earTraining.tick();
+      const haloed = dots().filter(d => /ear-(right|close|wrong)/.test(cls(d))).length;
+      if (haloed) bad.push(`${haloed} dot(s) still marked once the next question was asked`);
     }
     const after = read() || { right: 0, of: 0 };
     if (after.of !== before.of + 1) bad.push(`pointing moved the count by ${after.of - before.of}`);

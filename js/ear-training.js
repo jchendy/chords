@@ -914,6 +914,10 @@
     nextRound = null;
     missed = false;
     answersEl.querySelectorAll('.ear-answer').forEach(b => b.classList.remove('right', 'wrong'));
+    // ...and the dots, which answer now that the buttons mostly don't: the
+    // green ring on a right answer stays until the next question, and used
+    // to stay past it, so a run ended with a halo on every dot it had asked
+    shapeEl.querySelectorAll('.note-hit').forEach(h => h.classList.remove(...Object.values(DOT_MARKS), 'ear-outside'));
     say('', '');
   }
 

@@ -1064,6 +1064,13 @@
       }
     }
     if (clickToggle.checked) playHiHat(nextNoteTime);
+    // the part, on its sixteenth grid, whether or not this beat struck a chord
+    if (chord){
+      const perBeat = GT.parts.SIMPLE_FEEL.grid / 4, slotDur = secondsPerBeat / perBeat;
+      for (let k = 0; k < perBeat; k++){
+        schedulePartSlot(barOffset(chordIdx) + Math.floor(beatInChord / 4), beatInMeasure * perBeat + k, nextNoteTime + k * slotDur, slotDur);
+      }
+    }
     // Every beat goes in the log, struck or not. The log is what the chart
     // reads to sweep its beat line, and on half and whole notes only one beat
     // in two or four is struck — logging just those left the line sitting
@@ -1431,7 +1438,8 @@
   const partTabEl = document.getElementById('partTab');
   const partScaleGroup = document.getElementById('partScaleGroup');
 
-  const feelNow = () => currentStyle === 'simple' ? null : STYLES[currentStyle].variants[currentVariant];
+  // Simple has no feels; its parts are written for a stand-in of the same shape
+  const feelNow = () => currentStyle === 'simple' ? GT.parts.SIMPLE_FEEL : STYLES[currentStyle].variants[currentVariant];
   const partsNow = () => { const f = feelNow(); return f ? GT.parts.partsFor(currentStyle, f.label) : []; };
   const partNow = () => { const ps = partsNow(); return ps.length ? ps[((partIdx % ps.length) + ps.length) % ps.length] : null; };
 
@@ -1473,9 +1481,7 @@
 
   // Why there is nothing to show, in the words that say what to do about it.
   function partExcuse(){
-    const feel = feelNow();
-    if (!feel) return 'Parts are written for a style\u2019s feel; Simple has none. Pick a style in Set up.';
-    if (!partsNow().length) return `No parts written for ${feelName(currentStyle, currentVariant)} yet. The blues feels have theirs.`;
+    if (!partsNow().length) return `No parts written for ${feelName(currentStyle, currentVariant)} yet. The blues feels and the feels the playback bar offers have theirs.`;
     const pv = view.positionView();
     if (!PART_READINGS.includes(pv.reading)) return 'A part is realised into the notes a reading offers: switch the neck to Chords, Triads, Pentatonic or Scales.';
     if (!pv.inPosition || !pv.window) return 'A part is written into one position: switch the neck to \u201cIn one position\u201d.';
@@ -1558,7 +1564,10 @@
     partTabEl.innerHTML = `<svg viewBox="${built.viewBox}" width="${built.width}" height="${built.height}"`
       + ` role="img" aria-label="${partNow().name}, written out">${built.markup}</svg>`;
     partTabEl.classList.toggle('wrapped', wide);
-    partTabEl.style.height = wide && built.metrics.rows > 2 ? `${2 * built.metrics.rowSpan}px` : '';
+    const paged = wide && built.metrics.rows > 2;
+    partTabEl.style.height = paged ? `${2 * built.metrics.rowSpan}px` : '';
+    // room under the last row, so it too can sit on top when its turn comes
+    if (paged) partTabEl.insertAdjacentHTML('beforeend', `<div class="part-tab-end" style="height:${built.metrics.rowSpan}px"></div>`);
     partTabEl.dataset.drawnAt = avail;
     partTabEl.scrollLeft = 0;
     partTabEl.scrollTop = 0;
@@ -1638,9 +1647,10 @@
     partTabEl.querySelectorAll('.tab-chord').forEach(el => el.classList.toggle('now', Number(el.dataset.bar) === arrival));
     const scale = partTabEl.querySelector('svg').getBoundingClientRect().width / partTab.width;
     if (partTabEl.classList.contains('wrapped')){
-      // two rows at a time: turn the page when the bar goes past them
+      // the row being played on top, the row after it in view below — what
+      // is coming is what you need to see; what has gone, you played
       const row = Math.floor(barIdx / partTab.barsPerRow);
-      partTabEl.scrollTo({ top: Math.floor(row / 2) * 2 * partTab.rowSpan * scale, behavior: 'smooth' });
+      partTabEl.scrollTo({ top: row * partTab.rowSpan * scale, behavior: 'smooth' });
     } else {
       const barStart = GT.tab.playheadPos(barIdx * grid, partTab).x;
       partTabEl.scrollTo({ left: Math.max(0, barStart * scale - 24), behavior: 'smooth' });

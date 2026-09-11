@@ -127,8 +127,10 @@ names the tab you're on.
   numeral after it, and not over the bars it holds through — the way the
   chart reads — with the name of the bar being played lit and a playhead
   on the slot. On a wide screen (700 px or more for the tab) it wraps to as
-  many bars as fit across and shows two rows at a time, turning the page
-  down when the bottom row runs out; narrower than that it's one long strip
+  many bars as fit across and shows two rows at a time, the row being
+  played on top and the row after it below — what's coming is what you need
+  to see — scrolling a row at a time as the bar moves down, with room under
+  the last row so it too gets the top; narrower than that it's one long strip
   that scrolls sideways a bar at a time, since a wrapped tab on a phone
   holds one bar a row. See **Suggested parts** below for how a part written
   once ends up in four readings
@@ -725,7 +727,13 @@ Written that way because parts belong to feels — sixteen of them — and
 appear in four readings. Written per reading they'd be sixteen times four
 times several examples, hundreds of hand-written parts none of which could
 be given real attention. Written once and snapped, they're sixteen times a
-few. The blues feels have theirs; the other styles' are still to write.
+few. The four blues feels have theirs, and so do the four the playback
+bar's picker offers for the other styles — Rock's Quarter drive, Jazz's
+Swing, Pop's Four-on-the-floor and Funk's Classic funk; the remaining eight
+are still to write. Simple has no feels of its own — quarter, half and
+whole notes are one hit at three spacings — so its parts are written for a
+stand-in on a sixteenth grid: the chord struck whole and a run through part
+of the scale between the strikes, in quarter notes or in eighths.
 
 **Where the parts come from, and why they're nobody's.** Every part is
 written from the idiom of its feel — where a shuffle puts its weight, which
