@@ -781,6 +781,21 @@ Pentatonic or Scales reading, and another plays the techniques plain. The
 text lives in `js/parts-guide-data.js`, and a test holds every feel and
 every part to having its page there.
 
+**The style review.** `review.html` is a page for deciding what the styles
+should become: every existing style beside a proposed revision of it — the
+band pattern and every guitar part, both playable — plus proposed new
+styles and a list of engine changes, with a decision to record on each
+(keep / take the proposal / mix / drop; add / skip; do / later / no) and a
+box for notes. Nothing on it touches the app: `review/proposals*.js` hold
+the proposed patterns and parts, `review/review.js` a player and realiser
+of its own that understands the proposed engine features (change-aware
+fills, turnarounds, ghost notes, rakes, tremolo, chord slides, colour
+tones, shell voicings, swung 16ths, humanized timing, slapback, 3/4), so
+what the app can't do yet can still be heard and judged. Decisions save to
+this browser and, when `serve.py` is serving, to `review/decisions.json`
+(not tracked); "Copy decisions" puts them on the clipboard for the deployed
+copy, which has no server.
+
 **What the fills are made of.** Each style's fills are written from what
 its players actually play between the chords, and the file says so above
 each: which notes carry the style (a blues line is the root, the ♭3 leaning
@@ -1182,6 +1197,8 @@ by what each part does:
 | `tab.js` | Draws guitar tablature from a note list. |
 | `parts-guide-data.js` | What the parts page says about each style and part: progression, tempo, what the rhythm and notes are made of, where the idiom comes from. Pure data. |
 | `parts-guide.js` | The parts page (`parts.html`): every part written out and playable, in any reading. Has a small player of its own. |
+| `review/review.js` | The style review page (`review.html`): existing beside proposed, playable, with decisions. Its own player and realiser, a superset of the app's for the proposed features. |
+| `review/proposals*.js` | The proposals: revised bands and parts per existing style, new styles, the engine list. Data plus the parts, written with the same helpers parts.js uses and a few more. |
 | `audio.js` | The Web Audio synth voices (piano, bass, drums) and the per-style groove patterns. Owns the `AudioContext` and the queue both players schedule into — how far a stall has put a cursor behind the clock, and calling off notes that haven't sounded — but knows nothing about the UI. |
 | `fretboard-view.js` | The practice tab's fretboard panel: the six views, the legend, the hover spotlight, the follow-playback highlighting. |
 | `practice.js` | The practice tab: progression generation, the chord display and settings, and the playback transport. |

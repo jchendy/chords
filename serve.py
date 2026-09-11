@@ -13,6 +13,8 @@ is served no-store, so a reload is always a reload.
 
 --lan serves the whole folder to anything on the network, .git included.
 """
+import json
+import os
 import sys
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 
@@ -21,6 +23,22 @@ class NoCache(SimpleHTTPRequestHandler):
     def end_headers(self):
         self.send_header('Cache-Control', 'no-store, must-revalidate')
         super().end_headers()
+
+    # The style review page (review/) posts its decisions here, and they land
+    # in review/decisions.json where the next session can read them. Nothing
+    # else is writable; anything but that one path is refused.
+    def do_POST(self):
+        if self.path.split('?')[0] != '/review/decisions':
+            self.send_error(404); return
+        length = int(self.headers.get('Content-Length') or 0)
+        body = self.rfile.read(length)
+        try:
+            json.loads(body.decode('utf-8'))          # it has to at least be JSON
+        except Exception:
+            self.send_error(400, 'not JSON'); return
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'review', 'decisions.json'), 'wb') as f:
+            f.write(body)
+        self.send_response(204); self.end_headers()
 
     def log_message(self, fmt, *args):        # one line per request is plenty
         sys.stderr.write('%s %s\n' % (self.address_string(), fmt % args))
