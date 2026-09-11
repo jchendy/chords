@@ -1002,6 +1002,81 @@
     t.equal(grip(seventhCells(cShape, 0, 11)), 'x-3-2-0-0-0', 'open C-shape Cmaj7 flattens the doubled root');
   }
 
+  // ---- 4v. the suggested parts ----
+  // A part is written once per feel as intervals and slots, and realised
+  // into whatever notes a reading offers in a position. Two things have to
+  // hold whatever anyone writes later. The library has to be well-formed:
+  // every part belongs to a feel that exists, sits on that feel's grid, and
+  // has a figure and fills to answer it. And realisation has to keep its
+  // promise — every note it produces is inside the window and is a note the
+  // reading allows, so the chords reading never plays a non-chord tone and a
+  // part told to stay on the I never leaves the key. A part that snapped
+  // half its notes away would technically pass that, so it also has to keep
+  // most of what was written when the reading is generous.
+  function testTheSuggestedParts(t){
+    const { LIBRARY, partsFor, palette, realise, rollFills } = GT.parts;
+    const { STYLES } = GT.audio;
+    const bad = [];
+    let parts = 0;
+
+    Object.keys(LIBRARY).forEach(style => {
+      if (!STYLES[style]){ bad.push(`parts written for "${style}", which is not a style`); return; }
+      Object.keys(LIBRARY[style]).forEach(feelName => {
+        const feel = STYLES[style].variants.find(v => v.label === feelName);
+        if (!feel){ bad.push(`${style} has no feel called "${feelName}"`); return; }
+        LIBRARY[style][feelName].forEach(part => {
+          parts++;
+          const where = `${style}/${feelName}/${part.name}`;
+          if (!part.figure || !part.figure.length) bad.push(`${where} has no figure`);
+          if (!part.fills || part.fills.length < 2) bad.push(`${where} has fewer than two fills`);
+          [part.figure, ...(part.fills || [])].forEach(bar => (bar || []).forEach(n => {
+            if (!(n.at >= 0 && n.at < feel.grid)) bad.push(`${where}: a note at slot ${n.at} on a ${feel.grid}-slot grid`);
+            if (!(n.dur > 0)) bad.push(`${where}: a note lasting ${n.dur}`);
+            if (!(n.iv >= 0 && n.iv <= 14)) bad.push(`${where}: an interval of ${n.iv}`);
+            if (!(n.vel > 0 && n.vel <= 1)) bad.push(`${where}: a velocity of ${n.vel}`);
+          }));
+        });
+      });
+    });
+    if (!parts) bad.push('the library is empty');
+
+    // realisation keeps its promise, on every reading, in every key
+    const roots = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'];
+    const windows = [{ min: 0, max: 3 }, { min: 5, max: 9 }, { min: 10, max: 14 }];
+    const midiPc = m => ((m % 12) + 12) % 12;
+    let checked = 0, written = 0, kept = 0;
+    ['caged', 'triads3', 'penta', 'scale'].forEach(reading => roots.forEach(root => {
+      const I = chordFromName(root), IV = chordFromName(roots[(roots.indexOf(root) + 5) % 12]),
+            V7 = chordFromName(roots[(roots.indexOf(root) + 7) % 12] + '7');
+      const bars = [I, I, IV, V7].map(chord => ({ chord }));
+      const key = { tonic: root, mode: 'major' };
+      Object.keys(LIBRARY).forEach(style => Object.keys(LIBRARY[style]).forEach(feelName => {
+        partsFor(style, feelName).forEach(part => windows.forEach(window => [false, true].forEach(stayOnKey => {
+          const opts = { reading, window, scaleTheory: 'parallel', stayOnKey, key };
+          const picks = rollFills(part, bars.length, () => 0.5);
+          const notes = realise(part, bars, picks, opts);
+          const again = realise(part, bars, picks, opts);
+          if (JSON.stringify(notes) !== JSON.stringify(again)) bad.push(`${part.name} realised differently twice`);
+          notes.forEach(n => {
+            checked++;
+            const chord = bars[n.bar].chord;
+            const { allowed } = palette(chord, opts);
+            if (!allowed.has(midiPc(n.midi))) bad.push(`${reading} ${root}: ${part.name} plays a note the reading doesn't offer`);
+            if (n.fret < window.min || n.fret > window.max) bad.push(`${reading} ${root}: ${part.name} left the window`);
+          });
+          // in the scales reading nearly everything written should survive
+          if (reading === 'scale' && !stayOnKey){
+            written += part.figure.length * 2 + part.fills[0].length * 2;
+            kept += notes.length;
+          }
+        })));
+      }));
+    }));
+    if (kept < written * 0.8) bad.push(`the scales reading kept only ${kept} of ${written} written notes`);
+
+    t.equal(bad.join('; '), '', `The suggested parts are well-formed and realise inside the reading (${parts} parts, ${checked} notes)`);
+  }
+
   // ---- 4w. the audio engine is allowed to stop ----
   // A running AudioContext renders its graph whether or not anything is
   // audible — hundreds of blocks a second through a limiter and a reverb — so
@@ -1952,6 +2027,7 @@
       ['Every note the neck can play has a recording near it', testEveryNoteHasARecording],
       ['Every chord the practice tab plays has recordings for it', testEveryChordFitsTheRecordings],
       ['The piano map covers both layers end to end', testThePianoMapIsWhole],
+      ['The suggested parts realise inside the reading', testTheSuggestedParts],
       ['The engine sleeps when idle, never while playing', testTheEngineSleepsButNotWhilePlaying],
       ['Every bass note every style can play has a recording', testEveryBassNoteHasARecording],
       ['Every style carries the Voice choice', testTheVoiceReachesEveryStyle],

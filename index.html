@@ -478,6 +478,12 @@
   .tab-note.muted text{ fill:var(--muted); }
   .tab-note.now text{ fill:var(--ink); font-weight:700; }
   .tab-playhead{ fill:var(--ink); opacity:.12; }
+  /* the suggested part: its tab under the chart, and its notes on the neck */
+  .part-tab{ margin:6px 0 2px; overflow-x:auto; }
+  .part-tab svg{ display:block; height:auto; }
+  .part-name{ color:var(--muted); font-size:.8rem; padding:0 6px; white-space:nowrap; }
+  .note-dot.sounding circle, .note-dot.sounding path{ stroke:var(--ink); stroke-width:3; }
+  .note-dot.sounding text{ fill:#0c0b0a; }
 
   @media (prefers-reduced-motion: reduce){
     .chart-grid .bar.rang, .diagram-card.rang, .note-hit.struck .note-ring{ animation:none; }
@@ -632,6 +638,8 @@
          chart, and marks the sounding one .active; stage.js draws the beat
          line along the top from the readout in the transport -->
     <div class="chart-grid" id="chords"></div>
+    <!-- the suggested part written out, when there is one -->
+    <div class="part-tab" id="partTab" hidden></div>
   </section>
 
   <!-- ---------------- the instrument ---------------- -->
@@ -689,6 +697,29 @@
           <span id="boxStep" class="pair">
             <button type="button" class="seg-btn arrow" id="boxPrev" aria-label="Previous position">‹</button>
             <button type="button" class="seg-btn arrow" id="boxNext" aria-label="Next position">›</button>
+          </span>
+        </span>
+        <!-- A part to play over the progression, in this position: a figure
+             and its fills, written for the feel that's playing and realised
+             into whatever notes this reading offers. Only in one position,
+             and only when the style has a feel to write for. -->
+        <span class="tb-group" id="partRow" hidden>
+          <span class="tb-lbl">Part</span>
+          <span class="segmented" id="partToggle">
+            <button type="button" class="seg-btn active" data-value="off">Off</button>
+            <button type="button" class="seg-btn" data-value="on">On</button>
+          </span>
+          <span id="partControls" hidden>
+            <span class="pair">
+              <button type="button" class="seg-btn arrow" id="partPrev" aria-label="Previous part">‹</button>
+              <button type="button" class="seg-btn arrow" id="partNext" aria-label="Next part">›</button>
+            </span>
+            <span class="part-name" id="partName"></span>
+            <button type="button" class="tbtn" id="partReroll" title="Different fills, same part">New fills</button>
+            <span class="segmented" id="partScaleGroup">
+              <button type="button" class="seg-btn active" data-value="follow">Follow chords</button>
+              <button type="button" class="seg-btn" data-value="key">Stay on the I</button>
+            </span>
           </span>
         </span>
       </div>
@@ -1103,6 +1134,7 @@
 <script src="js/fretboard.js"></script>
 <script src="js/audio.js"></script>
 <script src="js/neck.js"></script>
+<script src="js/parts.js"></script>
 <script src="js/tooltips.js"></script>
 <script src="js/tabs.js"></script>
 <script src="js/fretboard-view.js"></script>

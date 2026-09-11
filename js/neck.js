@@ -120,7 +120,9 @@
           : '';
         const extraClass = (m.hollow ? ' hollow' : '') + (m.passing ? ' passing' : '')
           + (m.ghost ? ' ghost' : '') + (m.ghostNext ? ' ghost-next' : '');
-        let g = `<g class="note-dot${extraClass}"${shapeAttr}${rootPcAttr}${labelsAttr}${colorsAttr}>`;
+        // where it is, so a part playing through the box can light it as it goes
+        const whereAttr = ` data-string="${m.string}" data-fret="${m.fret}"`;
+        let g = `<g class="note-dot${extraClass}"${whereAttr}${shapeAttr}${rootPcAttr}${labelsAttr}${colorsAttr}>`;
         if (m.hollow){
           const stroke = m.color || (m.split && m.split[0]);
           g += `<circle cx="${cx}" cy="${cy}" r="${r - 1.2}" fill="var(--panel)" stroke="${stroke}" stroke-width="2.4"/>`;

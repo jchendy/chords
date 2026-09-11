@@ -72,6 +72,11 @@
   };
   segGroup('noteValueGroup', ['1', '2', '4'], 'seg-btn');
   segGroup('voiceGroup', ['piano', 'guitar'], 'seg-btn');
+  segGroup('partToggle', ['off', 'on'], 'seg-btn');
+  segGroup('partScaleGroup', ['follow', 'key'], 'seg-btn');
+  ['partRow', 'partControls', 'partTab'].forEach(id => add('div', id));
+  add('span', 'partName');
+  ['partPrev', 'partNext', 'partReroll'].forEach(id => add('button', id, { type: 'button' }));
   segGroup('styleGroup', Object.keys(GT.audio.STYLES), 'genre-btn');
   document.body.appendChild(root);
 

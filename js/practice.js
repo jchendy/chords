@@ -624,6 +624,7 @@
   function renderAll(){
     syncChordText();
     writeShareState();
+    rebuildPart();
     document.getElementById('keyReadout').textContent =
       loadedLabel || (currentMode === 'major' ? `${currentTonic} major` : `${currentTonic}m`);
     renderChordDisplay();
@@ -793,6 +794,8 @@
         currentVariant = i;
         renderVariantButtons();
         syncQuickStyle();          // the bar names the feel, not just the style
+        partFills = [];            // a different feel is a different part
+        rebuildPart();
       });
       styleVariantGroup.appendChild(b);
     });
@@ -903,6 +906,8 @@
       currentVariant = 0;
       renderVariantButtons();
       updatePlaybackUI();
+      partFills = [];
+      rebuildPart();
     });
   });
 
@@ -1099,6 +1104,8 @@
             : audio.bassNote(SEMITONE[chord.note] % 12, be.off);
           playBass(freq, t, be.dur * slotDur, be.vel);
         }
+
+        schedulePartSlot(barOffset(chordIdx) + Math.floor(beatInChord / 4), slot, t, slotDur);
       }
     }
 
@@ -1174,6 +1181,7 @@
         `${Math.min(active.measure, measuresFor(active.idx))}.${active.beat}`;
       view.followChord(active);
     }
+    followPart(now, active);
     requestAnimationFrame(syncHighlight);
   }
 
@@ -1185,8 +1193,8 @@
     // A progression plays to a clock and can't wait for a recording mid-bar,
     // so they're fetched at the press rather than one chord at a time.
     // Nothing waits on it: until they land the synthesized voice plays.
-    if (chordVoice === 'guitar') audio.warmGuitar();
-    else warmThePiano();
+    if (chordVoice === 'guitar' || partOn) audio.warmGuitar();
+    if (chordVoice !== 'guitar') warmThePiano();
     audio.warmBass();          // the bass plays under every style and every voice
 
     if (!isPlaying){
@@ -1211,6 +1219,7 @@
       view.onPlaybackStarted();
     } else {
       isPlaying = false;
+      partStopped();
       clearTimeout(schedulerId);
       // the notes queued ahead of the sound would otherwise play on past the
       // button; what's already sounding is left to ring out
@@ -1257,6 +1266,9 @@
     // empty whenever the neck is at its defaults, which is most of the time.
     const fretboard = view.viewState();
     if (fretboard) p.set('f', fretboard);
+    // the part: on, which one, which fills were rolled, and whether it stays
+    // on the I — so the exact part you were working on comes back
+    if (partOn) p.set('p', `${partIdx}.${partScale === 'key' ? 'k' : 'f'}.${partFills.join('')}`);
     return p;
   }
 
@@ -1304,6 +1316,16 @@
     // the neck is set before the chords, so the redraw that follows them
     // draws the view the link asked for rather than the one that was up
     view.applyViewState(p.get('f') || '');
+    const part = p.get('p');
+    partOn = !!part;
+    if (part){
+      const [idx, scale, fills] = part.split('.');
+      partIdx = Number(idx) || 0;
+      partScale = scale === 'k' ? 'key' : 'follow';
+      partFills = (fills || '').split('').map(Number).filter(n => !Number.isNaN(n));
+    }
+    partToggle.querySelectorAll('.seg-btn').forEach(b => b.classList.toggle('active', (b.dataset.value === 'on') === partOn));
+    partScaleGroup.querySelectorAll('.seg-btn').forEach(b => b.classList.toggle('active', b.dataset.value === (partScale === 'key' ? 'key' : 'follow')));
 
     if (p.get('n')){
       const entries = p.get('n').split(',').map(e => e.split('.'));
@@ -1336,6 +1358,174 @@
   // change mid-progression, and warming what this chord needs is what left
   // the jazz comp playing a synthesized piano over sampled everything else.
   function warmThePiano(){ audio.warmPiano(); }
+
+  // ---- a part to play over it ----
+  // A rhythm figure and its fills, written for the feel that's playing (see
+  // parts.js) and realised into the notes this reading offers in this
+  // position. It's a suggestion of what to play, so it shows three ways: lit
+  // on the neck as it goes, written out as tab under the chart, and sounded
+  // on the recorded guitar so you can hear what you're aiming at.
+  //
+  // What's on screen stays put for the session. Rolling a new chord or
+  // stepping the box re-realises the same part into the new notes, but the
+  // part and its fills only change when you ask: one pair of arrows steps
+  // through the feel's parts, one button re-rolls the fills of the part
+  // you're on.
+  const PART_READINGS = ['caged', 'triads3', 'penta', 'scale'];
+  let partOn = false;
+  let partIdx = 0;                  // which of the feel's parts
+  let partFills = [];               // one fill choice per two-bar phrase
+  let partScale = 'follow';         // 'follow' the chords | stay on the 'key'
+  let partNotes = [];               // realised: bar, at, dur, vel, string, fret, midi
+  let partLog = [];                 // what's been scheduled, for lighting as it sounds
+  let partTab = null;               // the drawn tab's metrics, for the playhead
+  let partSig = '';                 // what the realised part was built from
+
+  const partRow = document.getElementById('partRow');
+  const partToggle = document.getElementById('partToggle');
+  const partControls = document.getElementById('partControls');
+  const partNameEl = document.getElementById('partName');
+  const partTabEl = document.getElementById('partTab');
+  const partScaleGroup = document.getElementById('partScaleGroup');
+
+  const feelNow = () => currentStyle === 'simple' ? null : STYLES[currentStyle].variants[currentVariant];
+  const partsNow = () => { const f = feelNow(); return f ? GT.parts.partsFor(currentStyle, f.label) : []; };
+  const partNow = () => { const ps = partsNow(); return ps.length ? ps[((partIdx % ps.length) + ps.length) % ps.length] : null; };
+
+  // one entry per bar of the progression, in order, with the chord in it
+  function progressionBars(){
+    const bars = [];
+    currentProgression.forEach((chord, i) => {
+      for (let b = 0; b < measuresFor(i); b++) bars.push({ chord, idx: i });
+    });
+    return bars;
+  }
+
+  // Available at all? The style has to have a feel, the feel parts written
+  // for it, and the neck has to be in one position on a reading that offers
+  // notes to play.
+  function partAvailable(){
+    const pv = view.positionView();
+    return !!partNow() && pv.inPosition && !!pv.window && PART_READINGS.includes(pv.reading);
+  }
+
+  // Everything the realised part depends on, so it's rebuilt when any of it
+  // moves and left alone otherwise — the neck redraws on every chord change
+  // during playback, and none of those should redraw the tab.
+  function partSignature(){
+    const pv = view.positionView();
+    const feel = feelNow();
+    return JSON.stringify([partOn, partIdx, partFills, partScale, currentMode, currentTonic,
+      feel && feel.label, pv.reading, pv.inPosition, pv.window, pv.scaleTheory,
+      currentProgression.map((c, i) => `${displayName(c)}.${measuresFor(i)}`)]);
+  }
+
+  function rebuildPart(force){
+    partRow.hidden = !partsNow().length || !view.positionView().inPosition;
+    partControls.hidden = !partOn;
+    const sig = partSignature();
+    if (!force && sig === partSig) return;
+    partSig = sig;
+
+    if (!partOn || !partAvailable()){
+      partNotes = [];
+      partTab = null;
+      partTabEl.hidden = true;
+      partTabEl.innerHTML = '';
+      view.lightSounding([]);
+      return;
+    }
+    const part = partNow(), bars = progressionBars(), pv = view.positionView();
+    // a roll for every phrase this progression has, keeping the ones it had
+    const phrases = Math.ceil(bars.length / 2);
+    if (partFills.length < phrases){
+      partFills = partFills.concat(GT.parts.rollFills(part, (phrases - partFills.length) * 2));
+    }
+    partNotes = GT.parts.realise(part, bars, partFills, {
+      reading: pv.reading, window: pv.window, scaleTheory: pv.scaleTheory,
+      stayOnKey: partScale === 'key', key: { tonic: currentTonic, mode: currentMode },
+    });
+    partNameEl.textContent = part.name;
+    drawPartTab(bars);
+  }
+
+  // The part as tablature, the way the genre examples write theirs, one bar
+  // per bar of the progression with the chord above it.
+  function drawPartTab(bars){
+    const grid = feelNow().grid;
+    const example = {
+      grid,
+      bars: bars.map((b, i) => ({ startSlot: i * grid, chord: displayName(b.chord) })),
+      notes: partNotes.map(n => ({ string: n.string, fret: n.fret, at: n.bar * grid + n.at, dur: n.dur })),
+      totalSlots: bars.length * grid,
+    };
+    const built = GT.tab.build(example, partTabEl.clientWidth || 640);
+    partTab = built.metrics;
+    partTabEl.innerHTML = `<svg viewBox="${built.viewBox}" width="${built.width}" height="${built.height}"`
+      + ` role="img" aria-label="${partNow().name}, written out">${built.markup}</svg>`;
+    partTabEl.hidden = false;
+  }
+
+  // Sound and log the part's notes for one slot of one bar. Called from the
+  // style scheduler, which already walks the grid slot by slot.
+  function schedulePartSlot(barIdx, slot, t, slotDur){
+    if (!partOn || !partNotes.length) return;
+    partNotes.forEach(n => {
+      if (n.bar !== barIdx || n.at !== slot) return;
+      const dur = n.dur * slotDur;
+      audio.playPluck(440 * Math.pow(2, (n.midi - 69) / 12), t, dur, n.vel);
+      partLog.push({ time: t, until: t + dur, string: n.string, fret: n.fret, slot: barIdx * feelNow().grid + n.at });
+    });
+    if (partLog.length > 256) partLog = partLog.filter(e => e.until > audio.ctx().currentTime);
+  }
+
+  // What the part is sounding right now, on the neck and in the tab. Called
+  // from the same animation frame that moves the chart's highlight.
+  function followPart(now, active){
+    if (!partOn || !partNotes.length){ return; }
+    const sounding = partLog.filter(e => e.time <= now && now < e.until);
+    view.lightSounding(sounding);
+    const slots = new Set(sounding.map(e => e.slot));
+    partTabEl.querySelectorAll('.tab-note').forEach(g => g.classList.toggle('now', slots.has(Number(g.dataset.slot))));
+    const head = partTabEl.querySelector('.tab-playhead');
+    if (head && partTab && active){
+      // the slot the beat is in: the bar from the chart's own count, the
+      // slot within it from how far into the beat the clock is
+      const grid = feelNow().grid, perBeat = grid / 4;
+      const barIdx = barOffset(active.idx) + Math.min(active.measure, measuresFor(active.idx)) - 1;
+      const into = Math.max(0, (now - active.time) / (60 / getTempo()));
+      const slot = barIdx * grid + (active.beat - 1) * perBeat + Math.min(perBeat - 1, Math.floor(into * perBeat));
+      const pos = GT.tab.playheadPos(slot, partTab);
+      head.hidden = false;
+      head.setAttribute('x', pos.x);
+      head.setAttribute('y', pos.y);
+    }
+  }
+
+  function partStopped(){
+    partLog = [];
+    view.lightSounding([]);
+    partTabEl.querySelectorAll('.tab-note.now').forEach(g => g.classList.remove('now'));
+    const head = partTabEl.querySelector('.tab-playhead');
+    if (head) head.hidden = true;
+  }
+
+  partToggle.querySelectorAll('.seg-btn').forEach(btn => btn.addEventListener('click', () => {
+    partOn = btn.dataset.value === 'on';
+    partToggle.querySelectorAll('.seg-btn').forEach(b => b.classList.toggle('active', b === btn));
+    if (partOn){ ensureAudio(); audio.warmGuitar(); }
+    rebuildPart();
+    writeShareState();
+  }));
+  document.getElementById('partPrev').addEventListener('click', () => { partIdx--; partFills = []; rebuildPart(); writeShareState(); });
+  document.getElementById('partNext').addEventListener('click', () => { partIdx++; partFills = []; rebuildPart(); writeShareState(); });
+  document.getElementById('partReroll').addEventListener('click', () => { partFills = []; rebuildPart(); writeShareState(); });
+  partScaleGroup.querySelectorAll('.seg-btn').forEach(btn => btn.addEventListener('click', () => {
+    partScale = btn.dataset.value;
+    partScaleGroup.querySelectorAll('.seg-btn').forEach(b => b.classList.toggle('active', b === btn));
+    rebuildPart();
+    writeShareState();
+  }));
 
   const voiceGroup = document.getElementById('voiceGroup');
   voiceGroup.querySelectorAll('.seg-btn').forEach(btn => {
@@ -1519,7 +1709,7 @@
         activeChord: () => scheduledLog[0],
         // the neck's own controls are its business, but the address bar is
         // this tab's — so it says when it has redrawn and the link follows
-        viewChanged: writeShareState,
+        viewChanged: () => { writeShareState(); rebuildPart(); },
       });
       // the style buttons are markup, so the default has to be put on them
       document.querySelectorAll('.genre-btn').forEach(b =>

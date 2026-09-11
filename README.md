@@ -104,6 +104,17 @@ names the tab you're on.
   a chord held for two reads `F C C`, wrapping four bars to a line the way a
   chart does, with the numeral under each bar and the carried-over bars
   dimmed so you can still see where the chord changes
+- "Part" — in any of the neck's in-one-position readings, a suggested
+  guitar part to play over the progression: a two-bar figure and its answer,
+  written for the feel that's playing and realised into the notes that
+  reading offers in that position. It's lit on the neck as it goes, written
+  out as tab under the chart, and sounded on the recorded guitar so you can
+  hear what you're aiming at. ‹ › steps through the feel's parts and "New
+  fills" re-rolls the answering bars of the one you're on; nothing changes
+  otherwise, however long you practise. "Follow chords" moves the part with
+  each change using whatever the neck is showing; "Stay on the I" keeps it
+  on the key's scale throughout. See **Suggested parts** below for how a
+  part written once ends up in four readings
 - "Type it" — a text field in Set up that takes the progression as chord
   names, one per bar: `E E E E A7 A7 E E Bm7 Bm7` is four chords held for
   four, two, two and two. Bar lines and commas are allowed (`A | D | E`,
@@ -659,6 +670,44 @@ about and left every dot a third of the size it could be — which matters a
 great deal when the dot is the thing you tap. On a phone the box now fills
 the screen with 40px targets, and the tap area grows a little further where
 the pointer is coarse.
+
+## Suggested parts
+
+A part is written **once per feel**, as two bars on the feel's own grid —
+a figure, then a fill — with every note an interval above a root: 0 is the
+root, 7 the fifth, 10 the flat seventh, 12 the octave. It isn't written for
+a key, a box or a reading. Those come at realisation: the interval becomes a
+pitch class against the chord (or the key, when the part stays on the I), is
+snapped to a note the reading allows — the note itself if it's there, else
+the nearest within a tone, downward first, else nothing — and is placed on
+the nearest such note inside the position window, climbing from the lowest
+root the window holds on the bottom three strings. So the same part appears
+in the chords reading using only chord tones, in the pentatonic reading
+using only the five, and in the scales reading using the scale; a note the
+reading can't offer within a tone is dropped rather than forced, so a sparse
+reading gives a sparser part, not a wrong one.
+
+Written that way because parts belong to feels — sixteen of them — and
+appear in four readings. Written per reading they'd be sixteen times four
+times several examples, hundreds of hand-written parts none of which could
+be given real attention. Written once and snapped, they're sixteen times a
+few. The blues feels have theirs; the other styles' are still to write.
+
+**Where the parts come from, and why they're nobody's.** Every part is
+written from the idiom of its feel — where a shuffle puts its weight, which
+degrees a blues line leans on, how a turnaround falls — and not from any
+recording. A boogie figure, a minor-pentatonic run, a chromatic walk down to
+the root: these are the common property of the style, the way a twelve-bar
+form is. What would be somebody's is a signature riff, and none is used,
+however simple, because being recognisable is the whole point of one.
+Sources were consulted for the idiom, never for the notes; `js/parts.js`
+says so at the top, beside the parts themselves.
+
+A test holds every part to its feel's grid and every realisation to its
+promise: on every reading, in every key, in three positions, every note it
+produces is inside the window and is one the reading allows — and in the
+generous scales reading, at least four notes in five of what was written
+survive, so a part can't quietly snap itself away to nothing.
 
 ## Bookmarking an exercise
 

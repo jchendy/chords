@@ -1490,9 +1490,33 @@
     renderFretboard();
   }
 
+  // ---- what a suggested part needs from the neck ----
+  // The reading, whether it's in one position, the stretch of frets that
+  // position covers, and the scale theory: enough to work out which notes the
+  // neck is offering without asking it to draw them. Live values, read when
+  // asked, so the part follows the box when the box moves.
+  function positionView(){
+    return {
+      reading: fretMode,
+      inPosition,
+      window: shownWindow ? { min: shownWindow.min, max: shownWindow.max } : null,
+      scaleTheory,
+    };
+  }
+
+  // Light the notes a part is sounding right now and nothing else. The dots
+  // carry their string and fret, so this is a class on the right ones and
+  // off the rest — cheap enough to call from an animation frame.
+  function lightSounding(cells){
+    const want = new Set(cells.map(c => `${c.string}:${c.fret}`));
+    fretboardSvg.querySelectorAll('.note-dot').forEach(g => {
+      g.classList.toggle('sounding', want.has(`${g.dataset.string}:${g.dataset.fret}`));
+    });
+  }
+
   GT.fretboardView = {
     init(hostImpl){ host = { ...HOST_DEFAULTS, ...hostImpl }; updateFretUI(); },
-    viewState, applyViewState,
+    viewState, applyViewState, positionView, lightSounding,
     render: renderFretboard,
     updateVisibility: updateFretUI,
     rebuildChordPicker: rebuildCagedPicker,
