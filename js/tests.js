@@ -1010,34 +1010,39 @@
   // is held here rather than the timer, because the worst version of this
   // bug is an engine that sleeps in the middle of a progression.
   function testTheEngineSleepsButNotWhilePlaying(t){
-    const { sleepDelay, IDLE_SLEEP_SEC, RING_TAIL_SEC } = GT.audio;
+    const { sleepDelay, IDLE_SLEEP_SEC, HIDDEN_SLEEP_SEC } = GT.audio;
     const bad = [];
     const now = 1000;
 
     // while something is playing, never
-    [true].forEach(() => {
-      if (sleepDelay(now, now - 999, false, true) !== null) bad.push('it would sleep while something is playing');
-      if (sleepDelay(now, now, true, true) !== null) bad.push('a hidden page would sleep while something is playing');
+    if (sleepDelay(now, now - 999, false, true) !== null) bad.push('it would sleep while something is playing');
+    if (sleepDelay(now, now, true, true) !== null) bad.push('a hidden page would sleep while something is playing');
+
+    // The windows are measured from when the sound STOPS, so a note still
+    // ringing is never cut off, however long it rings and however short the
+    // window is. The worst case in the app is a whole-note chord at 40 BPM,
+    // which rings for 6.06s; freezing it mid-decay and thawing it later,
+    // still sounding, is the failure this guards against.
+    const LONGEST_NOTE = 6.06;
+    [['visible', false], ['hidden', true]].forEach(([where, hidden]) => {
+      const mid = sleepDelay(now, now + LONGEST_NOTE, hidden, false);
+      if (mid < LONGEST_NOTE) bad.push(`${where}: it would sleep ${(LONGEST_NOTE - mid).toFixed(2)}s before the note finished`);
     });
 
-    // a note just scheduled holds it open for the whole window
+    // a note that has just finished holds it open for the whole window
     const fresh = sleepDelay(now, now, false, false);
-    if (Math.abs(fresh - IDLE_SLEEP_SEC) > 0.001) bad.push(`a fresh note gave ${fresh}s, not the ${IDLE_SLEEP_SEC}s window`);
-
-    // ...and a note due in the future holds it open longer still
-    const ahead = sleepDelay(now, now + 5, false, false);
-    if (Math.abs(ahead - (IDLE_SLEEP_SEC + 5)) > 0.001) bad.push(`a note due in 5s gave ${ahead}s`);
+    if (Math.abs(fresh - IDLE_SLEEP_SEC) > 0.001) bad.push(`a note just finished gave ${fresh}s, not the ${IDLE_SLEEP_SEC}s window`);
 
     // nothing for longer than the window: sleep now
     if (sleepDelay(now, now - IDLE_SLEEP_SEC - 1, false, false) !== 0) bad.push('a long-quiet engine did not sleep at once');
 
-    // a hidden page waits only long enough for a ringing note to finish
+    // a hidden page waits barely at all: nobody is listening to it
     const hidden = sleepDelay(now, now, true, false);
-    if (Math.abs(hidden - RING_TAIL_SEC) > 0.001) bad.push(`a hidden page waits ${hidden}s, not ${RING_TAIL_SEC}s`);
-    if (!(RING_TAIL_SEC < IDLE_SLEEP_SEC)) bad.push('a hidden page waits as long as a visible one');
-    // long enough, though: a sample can ring for seconds and cutting it off
-    // mid-note would be worse than the battery
-    if (RING_TAIL_SEC < 4) bad.push(`${RING_TAIL_SEC}s is not long enough for a note to finish`);
+    if (Math.abs(hidden - HIDDEN_SLEEP_SEC) > 0.001) bad.push(`a hidden page waits ${hidden}s, not ${HIDDEN_SLEEP_SEC}s`);
+    if (!(HIDDEN_SLEEP_SEC < IDLE_SLEEP_SEC)) bad.push('a hidden page waits as long as a visible one');
+    // ...but the visible window is long enough not to cycle between two
+    // clicks in the finder or two questions in the ear trainer
+    if (IDLE_SLEEP_SEC < 5) bad.push(`${IDLE_SLEEP_SEC}s will have it waking and sleeping under normal use`);
 
     t.equal(bad.join('; '), '', 'The engine sleeps when nothing is sounding, and never while something is');
   }

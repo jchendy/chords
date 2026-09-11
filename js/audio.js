@@ -126,31 +126,43 @@
   // A hidden page is given only enough time for a ringing note to finish:
   // nobody is listening to a tab they can't see, and this is the case that
   // matters — the iPad face down on the sofa with the page still open.
-  const IDLE_SLEEP_SEC = 20;     // ...after the last note was due to start
-  const RING_TAIL_SEC = 6;       // the longest a sample can still be sounding
-  let lastVoiceAt = -Infinity;   // on the audio clock
+  // Both windows are measured from the moment the last voice STOPS, not from
+  // when it started. Measured from the start you have to guess how long a
+  // note might ring and wait out the worst case — and the worst case here is
+  // a whole-note chord at 40 BPM, which rings for 6.06 seconds, so any window
+  // shorter than that would freeze a note mid-decay and then thaw it, still
+  // sounding, whenever the engine next woke. Knowing when the sound actually
+  // ends means the windows only have to cover what they're for.
+  //
+  // Visible: long enough not to cycle between two clicks in the chord finder
+  // or two questions in the ear trainer, since waking costs a few
+  // milliseconds and an audio session transition is not free on a phone.
+  // Hidden: nothing is going to be heard, so as soon as the sound is out.
+  const IDLE_SLEEP_SEC = 10;     // ...after the last voice has finished
+  const HIDDEN_SLEEP_SEC = 1;
+  let busyUntil = -Infinity;     // on the audio clock: when the last voice stops
   let sleepTimer = null;
 
   // How long to wait before stopping the engine, or null for "don't". Pulled
   // out of the timer so the rule can be read and tested on its own: the worst
   // version of this bug would be an engine that sleeps mid-progression.
-  function sleepDelay(now, lastAt, hidden, playing){
+  function sleepDelay(now, endsAt, hidden, playing){
     if (playing) return null;
-    const quiet = hidden ? RING_TAIL_SEC : IDLE_SLEEP_SEC;
-    return Math.max(0, lastAt + quiet - now);
+    const quiet = hidden ? HIDDEN_SLEEP_SEC : IDLE_SLEEP_SEC;
+    return Math.max(0, endsAt + quiet - now);
   }
 
   function planSleep(){
     clearTimeout(sleepTimer);
     sleepTimer = null;
     if (!audioCtx) return;
-    const wait = sleepDelay(audioCtx.currentTime, lastVoiceAt, document.hidden, wantWake);
+    const wait = sleepDelay(audioCtx.currentTime, busyUntil, document.hidden, wantWake);
     if (wait === null) return;                    // something is playing
     sleepTimer = setTimeout(() => {
       sleepTimer = null;
       if (!audioCtx) return;
       // a note scheduled since this was armed moves the moment along
-      const again = sleepDelay(audioCtx.currentTime, lastVoiceAt, document.hidden, wantWake);
+      const again = sleepDelay(audioCtx.currentTime, busyUntil, document.hidden, wantWake);
       if (again === null) return;
       if (again > 0){ planSleep(); return; }
       if (audioCtx.state === 'running') audioCtx.suspend().catch(() => {});
@@ -162,7 +174,7 @@
   // a note scheduled a moment ahead is still a moment ahead when it starts.
   function wakeForVoice(time){
     if (!audioCtx) return;
-    lastVoiceAt = Math.max(lastVoiceAt, time);
+    busyUntil = Math.max(busyUntil, time);      // until stop() says otherwise
     if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
     planSleep();
   }
@@ -299,6 +311,16 @@
   // ones that haven't started — otherwise the queue plays on past the button.
   function startVoice(node, time, gain){
     wakeForVoice(time);
+    // Every voice here is stopped explicitly, a moment after it's started, so
+    // this is where the engine learns how long it will be busy. Watching the
+    // call rather than asking each caller to report means a voice added later
+    // is counted without anyone remembering to count it.
+    const stop = node.stop.bind(node);
+    node.stop = when => {
+      busyUntil = Math.max(busyUntil, when == null ? audioCtx.currentTime : when);
+      planSleep();
+      return stop(when);
+    };
     node.start(time);
     pending.push({ node, time, gain });
     // the list only ever needs the notes still to come
@@ -1509,7 +1531,7 @@
     ctx: () => audioCtx,               // live handle; null until ensureAudio() runs
     pianoWaveFor, PIANO_PARTIALS,      // exposed so the tests can render a note offline
     GUITAR_SAMPLES, sampleFor,         // ...and to check every note has a recording behind it
-    ensureAudio, keepAwake, planSleep, sleepDelay, IDLE_SLEEP_SEC, RING_TAIL_SEC, cancelScheduled, stepsToSkip, noteFreq, chordFrequencies, pcFreq, bassFreqAt, walkBassFreq, ROOT_OCTAVE,
+    ensureAudio, keepAwake, planSleep, sleepDelay, IDLE_SLEEP_SEC, HIDDEN_SLEEP_SEC, cancelScheduled, stepsToSkip, noteFreq, chordFrequencies, pcFreq, bassFreqAt, walkBassFreq, ROOT_OCTAVE,
     playNote, playChord, playChord7, playBass, playGuitar,
     playPluck, readyForPluck, pluckReady, warmGuitar,
     PIANO_SOFT, PIANO_HARD, PIANO_SPLIT, PIANO_RANGE, PIANO_XFADE, pianoSampleFor, warmPiano,

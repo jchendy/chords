@@ -917,12 +917,24 @@ renders its graph whether or not anything is audible — 375 blocks a second at
 48 kHz, through a limiter and a reverb convolver that are wired up
 permanently — and it keeps doing that for as long as the tab is open. On iOS
 a live audio session keeps the page resident besides, so a tab left open
-overnight goes on costing battery hours after the last note. So the context
-is suspended when nothing has sounded for twenty seconds, and woken by the
-next note; a page that has been hidden waits only long enough for a ringing
-note to finish, since nobody is listening to a tab they can't see, and one
-being put away (`pagehide`, which iOS sends when the screen locks even when
-it skips `visibilitychange`) stops at once. It never sleeps while something
+overnight goes on costing battery hours after the last note. So the context is
+suspended once the sound has stopped and stayed stopped, and woken by the
+next note — ten seconds on a page you're looking at, one second on a hidden
+one, and at once for a page being put away (`pagehide`, which iOS sends when
+the screen locks even where it skips `visibilitychange`).
+
+Both windows are measured from when the last voice *stops*, not from when it
+started, which is what lets them be that short. Measured from the start you
+would have to wait out the worst case — a whole-note chord at 40 BPM rings
+for 6.06 seconds — or you would freeze a note mid-decay and thaw it, still
+sounding, whenever the engine next woke. Every voice here is stopped
+explicitly, so the engine watches the `stop` calls rather than asking each
+caller to report, and a voice added later is counted without anyone
+remembering to count it. Ten seconds on a visible page isn't about the
+battery, which is settled either way: it's so the engine doesn't cycle
+between two clicks in the chord finder or two questions in the ear trainer,
+since waking costs a few milliseconds here and an audio session transition
+is not free on a phone. It never sleeps while something
 is playing — that rule is a pure function with a test on it, because the
 worst version of this is an engine that stops in the middle of a
 progression. Stop means stop: a note still
