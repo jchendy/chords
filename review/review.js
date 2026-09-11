@@ -467,10 +467,12 @@
     return card;
   }
 
+  // ?only=blues,rock shows those genres alone — the page is long
+  const only = (new URLSearchParams(location.search).get('only') || '').split(',').map(x => x.trim()).filter(Boolean);
   function render(){
     const main = $('genres');
     main.innerHTML = '';
-    R.genres.forEach(genre => {
+    R.genres.filter(genre => !only.length || only.includes(genre.id)).forEach(genre => {
       const sec = document.createElement('section');
       sec.className = 'genre';
       sec.id = `g-${genre.id}`;
@@ -531,7 +533,8 @@
     });
     wireDecisions(document);
     summarise();
-    $('toc').innerHTML = R.genres.map(g => `<a href="#g-${g.id}">${esc(g.name)}</a>`).join('') + '<a href="#engine">Engine</a>';
+    $('toc').innerHTML = R.genres.map(g => `<a href="${only.length ? `?only=${g.id}` : `#g-${g.id}`}">${esc(g.name)}</a>`).join('')
+      + (only.length ? '<a href="review.html">All genres</a>' : '<a href="#engine">Engine</a>');
   }
 
   function rebuildAll(){ document.querySelectorAll('.partcard').forEach(c => c.rebuild && c.rebuild()); }
