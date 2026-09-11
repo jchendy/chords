@@ -48,6 +48,11 @@
   const mirror = (from, to) => { to.innerHTML = from.innerHTML; to.value = from.value; };
   const forward = (from, to) => { to.value = from.value; to.dispatchEvent(new Event('change')); };
   const chordSlotsEl = document.getElementById('chordSlots');
+  // grabbed here with the other elements rather than beside the code that
+  // uses them: renderAll() reads the typing field, and renderAll is hoisted
+  const chordText = document.getElementById('chordText');
+  const chordTextNote = document.getElementById('chordTextNote');
+  const chordTextApply = document.getElementById('chordTextApply');
 
   // chords a manual slot can be set to: the 7 diatonic triads, plus the
   // harmonic-minor V (degree 7) in minor keys
@@ -617,6 +622,7 @@
 
   // render everything from the current progression WITHOUT re-rolling it
   function renderAll(){
+    syncChordText();
     document.getElementById('keyReadout').textContent =
       loadedLabel || (currentMode === 'major' ? `${currentTonic} major` : `${currentTonic}m`);
     renderChordDisplay();
@@ -1401,6 +1407,78 @@
     }
     renderAll();
   }
+
+  // ---- typing the progression ----
+  // One chord per bar, so a chord held for four bars is written four times
+  // and loadProgression collapses the run — the same road a genre example
+  // takes in. Bar lines and commas are allowed because people write them:
+  // "E | A7 | E" and "E, A7, E" both mean what they look like.
+  //
+  // The key comes from the chords rather than the other way round: the first
+  // chord is the tonic, and its quality says major or minor. Typing names is
+  // a statement about what to play, and half the reason to type them is to
+  // reach something the dice would never roll — a borrowed chord, a secondary
+  // dominant — which reading them against the current key would throw away.
+  // Change the key afterwards and the whole thing transposes, the way a
+  // loaded progression does.
+  const TOKEN_SPLIT = /[\s,|]+/;
+
+  function say(message, bad){
+    chordTextNote.textContent = message || '';
+    chordTextNote.hidden = !message;
+    chordTextNote.classList.toggle('bad', !!bad);
+  }
+
+  // The field is a view of the progression as much as a way in, so it follows
+  // whatever is set — unless you're in the middle of typing, which nothing
+  // should interrupt.
+  function syncChordText(){
+    if (!chordText || document.activeElement === chordText) return;
+    chordText.value = chordTextFromProgression();
+  }
+
+  // What's set, written out the way you would type it: one token a bar.
+  function chordTextFromProgression(){
+    return currentProgression.map((chord, i) =>
+      Array(Math.max(1, measuresFor(i))).fill(displayName(chord)).join(' ')).join(' ');
+  }
+
+  function applyTypedChords(){
+    const tokens = chordText.value.trim().split(TOKEN_SPLIT).filter(Boolean);
+    if (!tokens.length){ say('Type a chord for each bar, like E E E E A7 A7 E E Bm7 Bm7.'); return false; }
+
+    // Refuse the line rather than the token: a progression with a hole in it
+    // is not what anyone meant, and saying which word is wrong is more use
+    // than quietly dropping it.
+    const unknown = [...new Set(tokens.filter(t => !chordFromName(t)))];
+    if (unknown.length){
+      say(`${unknown.length === 1 ? "Can't read" : "Can't read these:"} ${unknown.map(u => `"${u}"`).join(', ')}`, true);
+      return false;
+    }
+    // runs of the same chord collapse, so the limit is on chord changes
+    const runs = tokens.filter((t, i) => t !== tokens[i - 1]).length;
+    if (runs > MAX_CHORDS){
+      say(`That's ${runs} chord changes; there's room for ${MAX_CHORDS}.`, true);
+      return false;
+    }
+    // The key follows the chords — the first one is read as the tonic, and
+    // whether it's major or minor decides the mode. loadProgression only
+    // adopts a key when it's handed one; left to itself it keeps whatever was
+    // set, which would leave "F Bb C F" sitting in A minor and every numeral
+    // under the chart wrong.
+    const first = chordFromName(tokens[0]);
+    loadProgression({ chords: tokens, key: first && first.note });
+    say(`${tokens.length} bar${tokens.length === 1 ? '' : 's'}, ${runs} chord${runs === 1 ? '' : 's'}.`);
+    return true;
+  }
+
+  chordTextApply.addEventListener('click', applyTypedChords);
+  chordText.addEventListener('keydown', e => {
+    if (e.key === 'Enter'){ e.preventDefault(); applyTypedChords(); }
+  });
+  // an edit that hasn't been applied yet shouldn't keep shouting about the
+  // last one that failed
+  chordText.addEventListener('input', () => say(''));
 
   GT.practice = {
     // leaving the tab shouldn't leave a progression playing behind you

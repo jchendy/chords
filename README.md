@@ -104,6 +104,16 @@ names the tab you're on.
   a chord held for two reads `F C C`, wrapping four bars to a line the way a
   chart does, with the numeral under each bar and the carried-over bars
   dimmed so you can still see where the chord changes
+- "Type it" — a text field in Set up that takes the progression as chord
+  names, one per bar: `E E E E A7 A7 E E Bm7 Bm7` is four chords held for
+  four, two, two and two. Bar lines and commas are allowed (`A | D | E`,
+  `C, Am, F, G`) because people write them. The key follows the chords —
+  the first one is the tonic and its quality picks major or minor — since
+  half the reason to type a progression is to reach what the dice can't:
+  a borrowed chord, a secondary dominant, a key change. A word it can't
+  read refuses the whole line and says which word, rather than quietly
+  dropping a bar. The field also reads back whatever is set, so it doubles
+  as a plain-text view of the chart
 - "Common chords only" — limits the dice to I, ii, IV, V, vi / i, iv, v–V,
   VI, VII (picking a chord by hand can still reach anything)
 - "Use 7ths" — every chord whose quality you haven't set yourself takes the

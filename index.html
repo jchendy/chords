@@ -279,6 +279,13 @@
   .frow.checks{ gap:20px; }
   .stepper{ display:inline-flex; align-items:center; gap:8px; font-variant-numeric:tabular-nums; }
   .stepper span{ min-width:18px; text-align:center; font-weight:600; }
+  /* typing the progression: the fast way in when you already know it */
+  .chord-type-row{ gap:8px; }
+  .chord-text{ flex:1 1 auto; min-width:0; font:inherit; font-size:.85rem; color:var(--ink);
+    background:var(--panel2); border:1px solid var(--line2); border-radius:6px; padding:6px 9px; }
+  .chord-text:focus{ outline:none; border-color:var(--a); }
+  .chord-type-note{ margin:2px 0 6px; font-size:.75rem; color:var(--muted); }
+  .chord-type-note.bad{ color:var(--bad); }
   /* one chord per row, columns named once at the top */
   .chord-table{ margin:4px 0 6px; }
   .chord-row{ display:grid; grid-template-columns:22px 1fr 84px 110px; gap:8px; align-items:center; padding:4px 0; }
@@ -767,6 +774,17 @@
         <div class="frow"><span class="tb-lbl">Chords</span>
           <span class="stepper"><button type="button" class="ib" id="chordCountDown" aria-label="Fewer chords">−</button><span id="chordCountValue">3</span><button type="button" class="ib" id="chordCountUp" aria-label="More chords">+</button></span>
           <button type="button" class="ib" id="genBtn" aria-label="Randomize all chords" title="Randomize all chords"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="2" y="2" width="16" height="16" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="6.3" cy="6.3" r="1.6"/><circle cx="13.7" cy="6.3" r="1.6"/><circle cx="10" cy="10" r="1.6"/><circle cx="6.3" cy="13.7" r="1.6"/><circle cx="13.7" cy="13.7" r="1.6"/></svg></button></div>
+        <!-- Typing is the fast way in when you already know the progression:
+             one chord per bar, so a chord held for four bars is written four
+             times. It reads back out of whatever is set, so it doubles as a
+             plain-text view of the chart. -->
+        <div class="frow chord-type-row"><span class="tb-lbl">Type it</span>
+          <input type="text" id="chordText" class="chord-text" spellcheck="false"
+                 autocapitalize="off" autocorrect="off"
+                 aria-label="Type the progression as chord names, one per bar"
+                 placeholder="E E E E A7 A7 E E Bm7 Bm7">
+          <button type="button" class="tbtn" id="chordTextApply">Set</button></div>
+        <div class="chord-type-note" id="chordTextNote" hidden></div>
         <!-- one chord per row, with the columns named once at the top -->
         <div class="chord-table">
           <div class="chord-row chord-head" aria-hidden="true"><span class="chord-num"></span><span>Chord</span><span>Bars</span><span>Quality</span></div>

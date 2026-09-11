@@ -29,6 +29,9 @@
   ['keySelect', 'presetSelect', 'quickKey', 'quickPreset', 'quickStyle'].forEach(id => add('select', id));
   add('input', 'tempo', { type: 'range', min: '40', max: '208', value: '60' });
   add('input', 'shareOut', { type: 'text' });
+  add('input', 'chordText', { type: 'text' });
+  add('div', 'chordTextNote');
+  add('button', 'chordTextApply', { type: 'button' });
   ['tempoVal', 'keyReadout', 'measureReadout', 'chordCountValue', 'styleLabel']
     .forEach(id => add('span', id));
   ['chords', 'chordSlots', 'presetVariantGroup', 'presetVariantRow',
@@ -509,6 +512,55 @@
     t.equal(bad.join('; '), '', 'The transport picker names the feel that is playing');
   }
 
+  // Typing a progression: one chord per bar, so a chord held for four bars is
+  // written four times. The point of typing is to reach what the dice can't,
+  // so the chords set the key rather than being read against it — and a line
+  // with a word it can't read is refused whole, because a progression with a
+  // hole in it isn't what anyone meant.
+  function testTypingAProgression(t){
+    const bad = [];
+    const field = q('#chordText'), apply = q('#chordTextApply'), note = q('#chordTextNote');
+    const chart = () => [...document.querySelectorAll('#chordSlots .chord-row')].length;
+    const set = text => { field.value = text; apply.click(); };
+    const bars = () => [...document.querySelectorAll('#chordSlots .chord-degree')]
+      .map(sel => (sel.selectedOptions[0] || {}).textContent).join(' ');
+
+    set('E E E E A7 A7 E E Bm7 Bm7');
+    const after = field.value.trim().split(/\s+/);
+    if (after.length !== 10) bad.push(`ten bars went in and ${after.length} came back: "${field.value}"`);
+    if (after[0] !== 'E' || after[4] !== 'A7' || after[8] !== 'Bm7'){
+      bad.push(`the bars came back in the wrong order: "${field.value}"`);
+    }
+    // E A7 E Bm7 — four runs, not three: the E comes back after the A7
+    if (chart() !== 4) bad.push(`ten bars of four chords filled ${chart()} slots`);
+
+    // bar lines and commas are how people write these
+    set('A | D | E | A');
+    if (field.value.trim().split(/\s+/).length !== 4) bad.push(`bar lines confused it: "${field.value}"`);
+    set('C, Am, F, G');
+    if (field.value.trim().split(/\s+/).length !== 4) bad.push(`commas confused it: "${field.value}"`);
+
+    // a word it can't read refuses the line and says which word
+    set('C, Am, F, G');
+    const before = bars();
+    set('A D Q7 E');
+    if (note.hidden || !/Q7/.test(note.textContent)) bad.push(`a chord it can't read went unnamed: "${note.textContent}"`);
+    // the field keeps what was typed — nothing is more annoying than having
+    // your line rewritten under you — so what must be unchanged is the chart
+    if (chart() !== 4 || bars() !== before) bad.push(`a line with an unreadable chord was applied anyway: ${bars()}`);
+
+    // more chord changes than there are slots is refused, not truncated
+    set('C D E F G A B C D E F G A B');
+    if (note.hidden || !/room/.test(note.textContent)){
+      bad.push(`too many chords was not reported: "${note.textContent}"`);
+    }
+
+    // and typing sets the key rather than reading against it
+    set('F Bb C F');
+    if (!/F/.test(q('#keyReadout').textContent)) bad.push(`typing F Bb C F left the key reading "${q('#keyReadout').textContent}"`);
+    t.equal(bad.join('; '), '', 'A typed progression goes in a bar at a time, and a bad word refuses the line');
+  }
+
   GT.practiceSuites = [
     ['Practice: a shared link round-trips', testShareLinkRoundTrips],
     ['Practice: the transport picker names the feel', testTheTransportPickerNamesTheFeel],
@@ -521,5 +573,7 @@
     ['Practice: the transports stay in step', testTransportsStayInStep],
     ['Practice: a stall slips the progression, it does not pile up notes', testTheSchedulerNeverQueuesThePast],
     ['Practice: stopping calls off the queue and mutes what is ringing', testStoppingCallsOffWhatIsQueued],
+    // last: it types a progression of its own in, and the fixture is shared
+    ['Practice: typing a progression', testTypingAProgression],
   ];
 })();
