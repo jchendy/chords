@@ -13,7 +13,6 @@
           cagedTriadBoard, scaleBoxPlacements, pentaBoxPlacements,
           cagedArpeggioBoxes, stringSetTriads, CAGED_MINOR } = GT.fretboard;
   const { findChordVoicings } = GT.chordFinder;
-  const { voiceChord, midiFor } = GT.genres;
 
   const CHORDS = ["C", "A", "G", "E", "D", "Cm", "Am", "Gm", "Em", "Dm", "Ab", "Gb", "C#", "A9", "E9", "C7", "D7", "Cm7", "CM7"];
 
@@ -1033,16 +1032,23 @@
           if (!part.figure || !part.figure.length) bad.push(`${where} has no figure`);
           if (!part.fills || part.fills.length < 2) bad.push(`${where} has fewer than two fills`);
           if (!part.variants || part.variants.length < 2) bad.push(`${where} has fewer than two variants of its figure`);
-          let strums = 0;
+          let strums = 0, pointed = 0;
           [part.figure, ...(part.variants || []), ...(part.fills || [])].forEach(bar => (bar || []).forEach(n => {
             if (!(n.at >= 0 && n.at < feel.grid)) bad.push(`${where}: a note at slot ${n.at} on a ${feel.grid}-slot grid`);
             if (!(n.dur > 0)) bad.push(`${where}: a note lasting ${n.dur}`);
             if (n.strum) strums++;
-            else if (!(n.iv >= 0 && n.iv <= 14)) bad.push(`${where}: an interval of ${n.iv}`);
+            else if (!(n.iv >= -3 && n.iv <= 14)) bad.push(`${where}: an interval of ${n.iv}`);
             if (!(n.vel > 0 && n.vel <= 1)) bad.push(`${where}: a velocity of ${n.vel}`);
+            // Simple's backing is a chord a beat already: a part over it
+            // strikes the chord on one and nowhere else
+            if (style === 'simple' && n.strum && n.at !== 0) bad.push(`${where}: a chord on slot ${n.at}, not the first beat`);
           }));
           // rhythm guitar with fills, not a lead line: every part strums somewhere
           if (!strums) bad.push(`${where} never strums the chord`);
+          // ...and its fills hear the change coming: at least one of them
+          // ends on notes written against the next chord
+          (part.fills || []).forEach(fill => { if (fill.some(n => n.next)) pointed++; });
+          if (!pointed) bad.push(`${where}: no fill points at the next chord`);
         });
       });
     });
@@ -1105,7 +1111,9 @@
               }
               return;
             }
-            const { allowed } = palette(chord, opts);
+            // a note written against the next chord is held to that chord's palette
+            const target = n.next ? bars[(n.bar + 1) % bars.length].chord : chord;
+            const { allowed } = palette(target, opts);
             if (!allowed.has(midiPc(n.midi))) bad.push(`${reading} ${root}: ${part.name} plays a note the reading doesn't offer`);
           });
           // a strum is as many strings as it asked for: the root alone for
@@ -1139,6 +1147,21 @@
       }));
     }));
     if (kept < written * 0.8) bad.push(`the scales reading kept only ${kept} of ${written} written notes`);
+
+    // A note written against the next chord lands on that chord: the root
+    // of the IV written as nx(…, 0) over the I sounds the IV's root, and the
+    // semitone under it sounds a semitone under it — where the line is
+    // going, not a degree of where it is.
+    {
+      const I = chordFromName('C'), IV = chordFromName('F');
+      const opts = { reading: 'scale', window: { min: 5, max: 9 }, scaleTheory: 'parallel', stayOnKey: false, key: { tonic: 'C', mode: 'major' } };
+      const written = [{ at: 0, iv: 0, dur: 4, vel: 1, next: true }, { at: 4, iv: -1, dur: 4, vel: 1, next: true }, { at: 8, iv: 0, dur: 4, vel: 1 }];
+      const got = GT.parts.realiseBar(written, I, opts, IV).map(n => midiPc(n.midi));
+      if (got.join() !== [5, 4, 0].join()) bad.push(`over C going to F, [next root, semitone under it, this root] came out as pitch classes ${got.join(' ')}`);
+      // and with nothing after it, "next" is this chord
+      const alone = GT.parts.realiseBar(written, I, opts, null).map(n => midiPc(n.midi));
+      if (alone.join() !== [0, 11, 0].join()) bad.push(`with no next chord the same came out as ${alone.join(' ')}`);
+    }
 
     // the parts of a grip are its parts: 'low' is the bottom of the same
     // grip 'high' is the top of, and 'bass' is its lowest root
@@ -1296,91 +1319,7 @@
     t.equal(bad.join('; '), '', 'Every style carries the Voice choice down to what plays the chord');
   }
 
-  // ---- 4z. every note the genre examples play has a recording behind it ----
-  // The examples are written as string and fret, so a note added to a lead
-  // line or a voicing added to a rhythm reaches the guitar samples without
-  // anyone thinking about it. This walks every genre, every progression,
-  // every rhythm and every lead, and holds each note to the same line the
-  // neck is held to: inside some sample's own range, and near enough to it
-  // to still be that note played on that guitar. A pattern written outside
-  // the recorded range would play — on the synthesized guitar, one voice in
-  // an otherwise sampled arrangement, which is the kind of thing you only
-  // notice as "something sounds off".
-  function testGenreNotesHaveRecordings(t){
-    const { GUITAR_SAMPLES, sampleFor } = GT.audio;
-    const { voiceChord, midiFor } = GT.genres;
-    const bad = [];
-    let checked = 0;
-    const check = (midi, where) => {
-      checked++;
-      const spec = sampleFor(midi);
-      if (midi < GUITAR_SAMPLES[0].lo || midi > GUITAR_SAMPLES[GUITAR_SAMPLES.length - 1].hi){
-        bad.push(`${where}: MIDI ${midi} is outside every sample's range`);
-      } else if (midi < spec.lo || midi > spec.hi){
-        bad.push(`${where}: MIDI ${midi} got ${spec.file}, whose range is ${spec.lo}-${spec.hi}`);
-      } else if (Math.abs(midi - spec.key) > 3){
-        bad.push(`${where}: MIDI ${midi} is ${Math.abs(midi - spec.key)} semitones from ${spec.file}`);
-      }
-    };
-    GT.genreData.forEach(g => {
-      g.rhythms.forEach(r => g.progressions.forEach(p => p.chords.forEach(chord => {
-        const voiced = voiceChord(chord, r.voicing);
-        if (!voiced) return;                       // testData already reports this
-        voiced.cells.forEach(c => check(midiFor(c.string, c.fret), `${g.name} ${r.name} ${chord}`));
-      })));
-      g.leads.forEach(l => l.notes.forEach(n => check(midiFor(n.s, n.f), `${g.name} lead ${l.name}`)));
-    });
-    t.equal(bad.join('; '), '', `Every note the genre examples play has a recording (${checked} notes)`);
-  }
-
-  // ---- 5. the genre library and the presets are well-formed ----
   function testData(t){
-    GT.genreData.forEach(g => {
-      const tag = `[${g.name}]`;
-      const issues = [];
-      g.progressions.forEach(p => {
-        if (!p.key) issues.push(`"${p.name}" has no key`);
-        p.chords.forEach(c => { if (!parseChordName(c)) issues.push(`"${p.name}": "${c}" doesn't parse`); });
-        if (/twelve|12|quick.change/i.test(p.name) && p.chords.length !== 12)
-          issues.push(`"${p.name}" is a twelve-bar form with ${p.chords.length} bars`);
-        const m = p.name.match(/in ([A-G][b#]?)/);
-        if (m && m[1] !== p.key) issues.push(`"${p.name}" names ${m[1]} but its key is ${p.key}`);
-      });
-      g.rhythms.forEach(r => {
-        if (![6, 8, 12, 16].includes(r.grid)) issues.push(`rhythm "${r.name}" has grid ${r.grid}`);
-        if (r.grid === 6 && r.beats !== 3) issues.push(`rhythm "${r.name}" is six to the bar but doesn't say it's in 3`);
-        r.hits.forEach(h => { if (h.at < 0 || h.at >= r.grid) issues.push(`rhythm "${r.name}" hits slot ${h.at} of ${r.grid}`); });
-        if (r.drums) Object.entries(r.drums).forEach(([k, arr]) =>
-          (arr || []).forEach(at => { if (at >= r.grid) issues.push(`rhythm "${r.name}" ${k} at ${at} of ${r.grid}`); }));
-        g.progressions.forEach(p => p.chords.forEach(c => {
-          const v = voiceChord(c, r.voicing);
-          if (!v){ issues.push(`"${c}" can't be voiced as ${r.voicing} for "${r.name}"`); return; }
-          // A power chord or an octave holds the root, the 5th and the octave
-          // and nothing else. A quality the style didn't list used to fall
-          // through to the barre table, so a G7 in a power-chord riff came out
-          // as a six-string dominant barre — audibly the wrong instrument part.
-          if (!['power', 'octave'].includes(r.voicing)) return;
-          const rootPc = parseChordName(c).rootPc;
-          const stray = [...new Set(v.cells
-            .map(x => (((STRING_TUNING[x.string] + x.fret) - rootPc) % 12 + 12) % 12))]
-            .filter(iv => iv !== 0 && iv !== 7);
-          if (stray.length) issues.push(
-            `"${c}" as ${r.voicing} for "${r.name}" plays ${stray.join(',')} semitones above the root`);
-        }));
-      });
-      g.leads.forEach(l => {
-        const total = l.bars * l.grid;
-        const pcs = new Set();
-        l.notes.forEach(n => {
-          if (n.at + (n.dur || 1) > total) issues.push(`lead "${l.name}" runs past its ${l.bars} bars`);
-          if (n.f < 0 || n.f > FRET_COUNT) issues.push(`lead "${l.name}" uses fret ${n.f}`);
-          pcs.add(midiFor(n.s, n.f) % 12);
-        });
-        if (/pentatonic/i.test(l.name) && pcs.size > 5) issues.push(`lead "${l.name}" says pentatonic but uses ${pcs.size} notes`);
-      });
-      t.equal(issues.join('; '), '', `${tag} data is well-formed`);
-    });
-
     GT.progressionPresets.forEach(p => p.variants.forEach(v => {
       const label = p.name + (v.name ? ' / ' + v.name : '');
       const bars = v.chords.reduce((a, c) => a + c.bars, 0);
@@ -2115,7 +2054,6 @@
       ['The engine sleeps when idle, never while playing', testTheEngineSleepsButNotWhilePlaying],
       ['Every bass note every style can play has a recording', testEveryBassNoteHasARecording],
       ['Every style carries the Voice choice', testTheVoiceReachesEveryStyle],
-      ['Every note the genre examples play has a recording', testGenreNotesHaveRecordings],
       ['Theory: naming and identification', testTheory],
       ['Theory: one answer for what degree a note is', testDegreeNamesAgree],
       ['Fretboard: the pentatonic boxes are unchanged', testPentatonicBoxesAreUnchanged],
@@ -2130,7 +2068,7 @@
       ['Finder: the fingerings are unchanged', testFingeringsAreUnchanged],
       ['Finder: every fingering is playable', testFingeringsArePlayable],
       ['Finder: a sus chord keeps its 5th', testSusChordsKeepTheirFifth],
-      ['Genre library and presets are well-formed', testData],
+      ['The progression presets are well-formed', testData],
     ].concat(GT.fretboardSuites || []).concat(GT.earSuites || [])
      .concat(GT.practiceSuites || []);   // added by the tests-*.js files, if they loaded
     const out = [];

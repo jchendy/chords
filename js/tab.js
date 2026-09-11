@@ -82,7 +82,7 @@
       if (bar.chord){
         els.push(`<text class="tab-chord" data-bar="${i}" x="${p.x + 4}" y="${p.top - 12}">${bar.chord}</text>`);
         // the Nashville numeral after the name, quieter, when the caller has
-        // one — the genre examples have no key and pass none
+        // one — a tab drawn without a key passes none
         if (bar.numeral){
           const dx = 4 + bar.chord.length * 7.2 + 5;
           els.push(`<text class="tab-numeral" x="${p.x + dx}" y="${p.top - 12}">${bar.numeral}</text>`);

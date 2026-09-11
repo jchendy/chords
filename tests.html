@@ -50,15 +50,15 @@
 <main>
   <h1>Tests</h1>
   <p class="intro">
-    Regression tests for the chord finder, the theory module, the genre and
-    preset data, and the shapes the fretboard draws. They run as soon as this page loads — no server or build step
+    Regression tests for the chord finder, the theory module, the preset
+    data, the suggested parts, and the shapes the fretboard draws. They run as soon as this page loads — no server or build step
     needed, just open the file. Results are also left on
     <code>window.TEST_RESULTS</code> for anything driving the page automatically.
   </p>
   <div id="results"></div>
 </main>
 
-<!-- The pure theory, fretboard and genre logic, the data files, and the chord
+<!-- The pure theory and fretboard logic, the data files, and the chord
      finder's search. The fretboard view is here too: it draws the shapes, and
      what it draws is worth testing, so tests-fretboard.js builds the controls
      it binds to and must come first. -->
@@ -71,8 +71,6 @@
 <script src="js/chord-finder.js"></script>
 <script src="js/tests-ear.js"></script>
 <script src="js/ear-training.js"></script>
-<script src="js/genres.js"></script>
-<script src="js/genre-data.js"></script>
 <script src="js/tests-fretboard.js"></script>
 <script src="js/fretboard-view.js"></script>
 <!-- and the same again for the practice tab: audio and tabs are what it

@@ -14,10 +14,6 @@ A single-page, dependency-free site with four tabs under one header:
   chord shape, a pentatonic box or a scale box on the neck and sound a note
   from inside it for you to place; the fourth plays a whole chord, shows you
   only its root, and asks what kind of chord it is.
-- **Genre examples** — pick a style, then a rhythm or a lead line, and read
-  the tab while you hear it played. It's experimental, and lives behind the
-  menu at the right end of the header (with a mailto link) rather than among
-  the tools.
 
 Switching tabs stops any playback that was running. Each tab has its own URL
 fragment (`#chord-finder`, `#reverse-chord-finder`), so a tab can be
@@ -44,9 +40,9 @@ names the tab you're on.
   by hand or by dice — transposes what's already there rather than rolling
   something new: each chord keeps its scale
   degree, so a I–V–vi–IV in A becomes the I–V–vi–IV of wherever you land, and
-  picking C minor from C major turns it into i–v–VI–iv. A progression loaded
-  from a genre example isn't diatonic, so it shifts by the same interval
-  instead, spelled the way the new key spells it
+  picking C minor from C major turns it into i–v–VI–iv. A progression that was
+  typed in isn't diatonic, so it shifts by the same interval instead,
+  spelled the way the new key spells it
 - Preset progressions, in one picker that names each the way people do with
   the numerals beside it, and that follows the key's mode. In a major key:
   Blues (12-bar, quick change, jazz blues, 8-bar, slow blues), Three-chord ·
@@ -73,8 +69,8 @@ names the tab you're on.
   a real chord, and the dice beside the count stepper rolls the
   whole set at once. Randomness
   is an action rather than a state a slot sits in, so what you see in the
-  pickers is always what's sounding. A chord loaded from a genre example that
-  isn't a root you picked names itself instead. The presets sit above these,
+  pickers is always what's sounding. A chord that was typed in and isn't a
+  root you picked names itself instead. The presets sit above these,
   so you can drop a shape in and then edit it
 - All twelve roots, in two groups — the seven the key owns read as their
   degree (`Dm · ii`) under "In this key", and the five it doesn't read as
@@ -156,8 +152,8 @@ names the tab you're on.
   not — for checking a shape against what it's meant to sound like. Each bar
   is a button, so Enter or the space bar does the same to a focused one
   (there the space bar means "hear this chord" rather than play/pause)
-- Space bar starts and stops playback (here and in the genre examples), as
-  long as you're not typing in a field
+- Space bar starts and stops playback, as long as you're not typing in a
+  field
 - "Voice" plays the chords on the recorded piano or on the recorded
   guitar the finders use (see **Sound**). The piano is the default because
   it stays out of the way of the guitar you are playing over it; the guitar
@@ -173,9 +169,8 @@ names the tab you're on.
   one field. A setting left at its default is left out, so the fragment only
   grows as far as you've strayed from them, and a bookmark holds what you
   were actually looking at: the third box of the A-shape pentatonic coloured
-  by interval, not merely the key you were in. A progression loaded from a
-  genre example is written as chord names instead, since its chords aren't
-  degrees of anything. "Copy link to this progression" stays, because putting
+  by interval, not merely the key you were in. A typed progression is written
+  as chord names instead, since its chords aren't degrees of anything. "Copy link to this progression" stays, because putting
   that address on the clipboard is the part the address bar can't do for you
 - An info tooltip (ⓘ) beside the position method, the one choice that
   needs explaining — hover on desktop, tap on touch, tap elsewhere to dismiss
@@ -238,6 +233,12 @@ already fits and the bar has no space to spare. A "Style" picker chooses the bac
   per quarter and the bass filling the "and" of 2 and 4, which is what a
   fresh page plays; Half-time rock — the snare on 3 alone under sustained
   chords;
+  Rockabilly — swung and quick, the slap bass walking root and fifth with
+  its click on the upbeats, a dominant-7th comp chanking on the upbeats and
+  leaning on 2 and 4; Psychobilly — straight and faster, the kick on every
+  beat, the bass pumping eighths with an octave leap, the chords chugging
+  every eighth; Surf rock — straight and dry, a push into 1 and 3, eighth
+  notes in the bass with the fifth under three, short chords every eighth;
   Blues shuffle — 12/8: boogie-woogie walking bass (1-3-5-6-♭7-6-5-3),
   long-ringing dominant-7th stabs on the shuffle upbeats, a shuffled kit;
   Slow blues — sparse 12/8, a held chord and the turnaround bass; Jump
@@ -246,6 +247,8 @@ already fits and the bar has no space to spare. A "Style" picker chooses the bac
   Swing — a "spang-a-lang" ride with hi-hat on 2 & 4, a quarter-note walking
   bass (root–5th–3rd–chromatic approach), rootless Charleston-comped 7ths;
   Bossa nova — straight, the samba-derived bass and a syncopated comp;
+  Gypsy jazz — no drums at all: la pompe, four short chords a bar with a
+  lift into 2 and 4, over a bass in two;
   Pop — four on the floor;
   Classic funk — the hit on the One, ghost kicks, constant 16th hats; Disco
   — four on the floor with off-beat chords and an octave-jumping bass.
@@ -697,7 +700,10 @@ the pointer is coarse.
 A part is written **once per feel**, as two bars on the feel's own grid —
 a figure, then a fill — out of two kinds of note. A single note is an
 interval above a root: 0 is the root, 7 the fifth, 10 the flat seventh, 12
-the octave. A strum is the chord itself: the CAGED grip the box is built on,
+the octave; or, marked as such, an interval above the *next* bar's root —
+how a fill points where the music is going, the ♭7 falling to the IV's 3rd,
+a chromatic step up under the root that's coming — and an interval below
+zero is below that root. A strum is the chord itself: the CAGED grip the box is built on,
 the strings of it that sit in the window (three at the least, or it isn't
 a chord), swept low to high 16 ms a string the way a pick does, with a 7th
 chord getting its 7th the way the chords reading draws it. A strum says how
@@ -724,15 +730,29 @@ using only the five, and in the scales reading using the scale; a note the
 reading can't offer within a tone is dropped rather than forced, so a sparse
 reading gives a sparser part, not a wrong one.
 
-Written that way because parts belong to feels — eleven of them, and
-Simple — and appear in four readings. Written per reading they'd be twelve
+Written that way because parts belong to feels — fifteen of them, and
+Simple — and appear in four readings. Written per reading they'd be sixteen
 times four times several examples, hundreds of hand-written parts none of
-which could be given real attention. Written once and snapped, they're twelve times a
+which could be given real attention. Written once and snapped, they're sixteen times a
 few. Every feel the picker offers has two, and a test holds it to that.
 Simple has no feels of its own — quarter, half and
 whole notes are one hit at three spacings — so its parts are written for a
-stand-in on a sixteenth grid: the chord struck whole and a run through part
-of the scale between the strikes, in quarter notes or in eighths.
+stand-in on a sixteenth grid: the chord struck whole on one and nowhere
+else (the backing is already a chord a beat) and a run through part of the
+scale for the rest of the bar, in quarter notes or in eighths.
+
+**What the fills are made of.** Each style's fills are written from what
+its players actually play between the chords, and the file says so above
+each: which notes carry the style (a blues line is the root, the ♭3 leaning
+on the 3, the 4th, 5th and ♭7, said more than once; a rock line the minor
+pentatonic with a note repeated rather than a scale run; a jazz line a
+chord tone on the beat — 3rd and 7th first — with a passing note between;
+a funk line mostly root and octave in syncopated bursts; a gypsy line an
+arpeggio with the 6th), what the rhythm does (space in a slow blues,
+sixteenth bursts in funk, triplets in gypsy jazz), and where the last beat
+goes — nearly every fill ends on notes written against the next chord: its
+root approached from a semitone or a tone away, its 3rd, its 5th, or the
+root enclosed from above and below, as the style would.
 
 **Where the parts come from, and why they're nobody's.** Every part is
 written from the idiom of its feel — where a shuffle puts its weight, which
@@ -746,7 +766,10 @@ says so at the top, beside the parts themselves.
 
 A test holds every part to its feel's grid and every realisation to its
 promise: on every reading, in every key, in three positions, every note it
-produces is inside the window and is one the reading allows; a strum is as
+produces is inside the window and is one the reading allows (a note written
+against the next chord is held to *that* chord's palette, and one test
+plays the IV's root over the I and expects the IV's root); every part has a
+fill that points at the next chord; a strum is as
 many strings as it asked for, its bass note the root or the 5th, and in
 triads it is three notes of the triad on the chosen strings — and in the
 generous scales reading, at least four notes in five of what was written
@@ -765,7 +788,6 @@ drill or example can be bookmarked or sent to someone:
 | `#reverse-chord-finder?n=x-x-5-6-7-7` | those notes picked, written the way this app writes a grip |
 | `#ear-training?m=scale&k=Eb&s=dorian&i=2&o=1` | that drill, that box, that octave |
 | `#ear-training?m=quality&q=maj.m.7.9.13` | the quality drill, asking about those five |
-| `#genre-examples?g=hardcore&r=lead` | that style's solo line |
 | `#caged-practice?k=major:C&c=0.2.,4.2.&t=120` | the practice tab's own share link |
 
 It's the exercise that's saved, not the question it happens to be asking: a
@@ -799,43 +821,6 @@ few minutes the page you reload is quietly the page you had before, and you
 end up debugging code that no longer exists on disk. Add `--lan` to reach it
 from a phone on the same wifi, at the price of serving the whole folder,
 `.git` included, to anything on that network.
-
-## Genre examples
-
-Twenty-two styles, grouped by family: skate punk, ska punk, pop punk and
-hardcore; rockabilly, psychobilly, surf rock, country and bluegrass; hard
-rock and grunge; delta blues, Chicago blues and blues rock; bebop, gypsy jazz
-and bossa nova; funk, reggae and soul; thrash metal; flamenco.
-
-Choose **rhythm** and you get that genre's chord progressions and its
-strumming patterns as separate lists — pick any combination of the two, and
-the tab and playback update together. Choose **lead** and you get solo lines
-built from the same vocabulary. Either way the tab shows what you're about to
-hear, note for note, with a playhead tracking the beat, and there's a loop
-and a drums toggle. Long examples wrap onto as many rows as they need, the
-way printed notation does — breaking only at bar lines, and tightening the
-note spacing a little before wrapping to a single bar per row on narrow
-screens.
-
-Any progression here can be opened in the practice tab, which loads its
-chords, key, tempo and bar lengths. Runs of the same chord collapse into one
-chord held for that many measures, so a twelve-bar blues arrives as seven
-chords lasting 4, 2, 2, 1, 1, 1 and 1 bars. The practice tab's model is a
-triad plus an optional 7th, so anything richer arrives as its nearest
-equivalent: a 9th keeps its dominant 7th, a 6th chord drops to its triad, and
-a power chord is read as major.
-
-The chords aren't drawn from a chord dictionary: each rhythm says how it wants
-its chords voiced — power chords for punk, barre shapes for ska, jazz shells
-for bebop, the 9th grip for funk, octaves for pop punk, and for the styles
-that live at the nut (delta blues, country, bluegrass, flamenco) "open",
-which tries every CAGED form and takes the lowest one that fits, so G is the
-open G and B7 the open B7 rather than a barre — and the shapes are derived
-from interval templates in `js/genres.js`. A boom-chick bass can alternate
-between the root and the 5th of whatever grip it's on. The material itself
-is the generic vocabulary
-method books teach (twelve-bar forms, ii–V–I, pentatonic and arpeggio
-patterns, strumming styles), not transcriptions of particular recordings.
 
 ## Tests
 
@@ -950,17 +935,10 @@ Ab, Gb, C#, A9, E9, C7, D7, Cm7, CM7):
    you wait, which is the shape of bug you only notice as "that sounded
    thin". The last of those was real — moving the roots down left the lowest
    samples outside what the warm asked for.
-14. **Every note the genre examples play has a recording too.** The examples
-   are written as string and fret, so a note added to a lead line or a
-   voicing added to a rhythm reaches the guitar samples without anyone
-   thinking about it. Every genre, progression, rhythm and lead is walked and
-   held to the line the neck is held to.
-15. **The genre library and the presets are well-formed.** Every progression
-   has a key and parseable chords, a "twelve-bar" has twelve bars, hits sit
-   inside their grid, a six-slot bar declares itself a waltz, every chord can
-   be voiced the way its rhythm asks, lead lines stay on the neck and inside
-   their bars, and a "pentatonic" line uses five notes. This is the check
-   that would have caught the eight-bar quick-change blues.
+14. **The presets are well-formed.** Every preset progression's degrees
+   are in range, a "blues" preset is twelve bars, a preset a mode offers has
+   a variant that mode can show, and the harmonic-minor V only appears in a
+   minor key.
 
 The snapshot lives in `js/tests.js`. If a change is *meant* to alter the
 shapes, regenerate it deliberately rather than editing it to match.
@@ -1004,15 +982,10 @@ opens with velocity and closes as the note rings, a two-stage decay so a note
 drops quickly then sustains quietly, a few milliseconds of filtered noise on
 the front for the hammer, and a level that eases off up the keyboard the way
 a real piano's does — and its level was matched to the recordings by
-measurement, so nothing jumps when the samples finish arriving. The genre examples
-add a guitar voice — detuned sawtooth pairs through a filter. The overdriven
-tones all go through one shared clipping stage, so the strings of a chord
-are distorted *together*: that intermodulation is where a power chord's
-crunch comes from, and clipping each string on its own never gets there.
+measurement, so nothing jumps when the samples finish arriving.
 There's a reverb too — a convolver fed by a synthesized room, decaying noise
 whose top end rolls off over the tail — with a send from each voice at its
-own level: a clean guitar sits in it, an overdriven one only touches it, and
-the palm-muted chug stays dry. Drums are the classic recipes: a pitched-down
+own level. Drums are the classic recipes: a pitched-down
 sine for the kick, filtered white noise for the snare and cymbals. The bass
 under a progression is the recorded double bass (see below); the synthesized
 one it replaced — a triangle wave through a lowpass at 850 Hz — is still what
@@ -1077,11 +1050,7 @@ Wherever a guitar rings undistorted it is a **real guitar**: fifteen notes of
 a 2017 Martin HD-28 recorded by Jeff Learman and released CC0, one sample
 every two or three semitones with the notes between reached by pitching the
 nearest one. That is the chord finder, the reverse finder, the ear trainer,
-the practice tab's guitar voice, and the genre examples' clean tone — the
-jazz, rockabilly and surf patterns. The palm-muted chug and the overdriven
-tone stay synthesized on purpose: they are different articulations rather
-than a note made shorter or dirtier, and a struck acoustic pushed through a
-clipping stage is neither of them. The samples sit in `audio/guitar/`, and `audio/guitar/SOURCE.md` records where they came from
+the practice tab's guitar voice and its suggested parts. The samples sit in `audio/guitar/`, and `audio/guitar/SOURCE.md` records where they came from
 and why we believe we may use them, along with two libraries that were
 rejected and the reason — the Philharmonia's, whose terms forbid making the
 samples available as-is, which is what a public repository does; and VCSL,
@@ -1131,10 +1100,7 @@ it read its own neighbours — Firefox and Chrome both closed that door after
 `index.html` still works, just synthesized. The practice tab can use them
 too, under Voice, and falls back the same way: the piano is what you get
 until the samples are resident, and all that happens on a page that can't
-reach them is that the fallback is permanent. Its bass and its genre styles
-stay synthesized — a strum, a palm-muted chug and a walking bass are
-different articulations rather than one note pitched about, and fifteen
-notes of one dreadnought can't play them.
+reach them is that the fallback is permanent. Its drums stay synthesized.
 
 That loop queues the notes 0.4 s ahead of the sound, and steps over any beat
 whose moment has already passed. Both matter for the same reason: a browser
@@ -1144,10 +1110,8 @@ starts at the same instant, which is heard as a burst of pops rather than
 music. Stepping over the missed beats makes a stall a slip in the
 progression instead, the way a metronome carries on while you look away. The
 cushion costs nothing at the transport, because stopping calls off the notes
-still queued; the ones already sounding are left to ring out. The genre
-examples player queues into the same clock and works the same way, so the
-counting and the calling-off both live in `audio.js` rather than in either
-tab.
+still queued; the ones already sounding are left to ring out. The counting
+and the calling-off both live in `audio.js`, beside the clock.
 
 Two things keep a practice session alive on a phone propped up on a music
 stand. The screen is held awake while something is playing — and only while
@@ -1171,11 +1135,8 @@ by what each part does:
 | `fretboard.js` | Tuning, CAGED and pentatonic shape templates, the maths that places them on the neck, CAGED shape matching, and the two pieces of box drawing every view shares — `boxColouredNotes`, which colours a note by the box that owns it, and `gripOutlines`, which traces the chord shape underneath. Also pure. |
 | `neck.js` | Draws a full 15-fret neck as SVG from markers and shape outlines — shared by the practice fretboard, the chord finder's CAGED overview and the reverse finder, so all three necks are one drawing. A fret is close to twice as wide as the gap between two strings, near enough the shape of the real thing to read a grip off, and a note sits close up behind its fret wire where the finger goes rather than in the middle of the gap; the inlays and the fret numbers stay centred, since that's where they are on a guitar. The label and the dot are sized against each other: a single character is set as large as the dot will hold without running into a root's ring, and a longer one ("♭3") a size down so it fits — which is what lets the dots be small enough for the strings to sit that close together. A full neck is wide, so it wants most of a laptop's width — hence the wider cap on how large the drawing may render. |
 | `progressions.js` | The preset progressions, written as scale degrees. Pure data. |
-| `genres.js` | Voicing templates and the code that turns a progression × rhythm into notes. Pure. |
-| `genre-data.js` | The genre library itself: progressions, rhythm patterns and lead lines. Pure data. |
 | `tab.js` | Draws guitar tablature from a note list. |
-| `genre-examples.js` | The Genre examples tab: pickers, tab display, and its player. |
-| `audio.js` | The Web Audio synth voices (piano, bass, drums) and the per-genre groove patterns. Owns the `AudioContext` and the queue both players schedule into — how far a stall has put a cursor behind the clock, and calling off notes that haven't sounded — but knows nothing about the UI. |
+| `audio.js` | The Web Audio synth voices (piano, bass, drums) and the per-style groove patterns. Owns the `AudioContext` and the queue both players schedule into — how far a stall has put a cursor behind the clock, and calling off notes that haven't sounded — but knows nothing about the UI. |
 | `fretboard-view.js` | The practice tab's fretboard panel: the six views, the legend, the hover spotlight, the follow-playback highlighting. |
 | `practice.js` | The CAGED practice tab: progression generation, the chord display and settings, and the playback transport. |
 | `stage.js` | The practice tab's chrome: the Set up sheet, the phone's controls toggle, the progression name in the chart head, the beat line, the draggable position window, and the site menu. Reads what the other modules draw; keeps no state. |

@@ -24,8 +24,8 @@
   // pickers; randomness is a button you press, not a state a slot sits in. A
   // slot holds the scale degree it's on, or a root outside the key written as
   // the semitones above the tonic ('c3' is a ♭III) — or null, which means only
-  // that this chord isn't a root you picked at all (one loaded from a genre
-  // example), and its picker names the chord itself instead.
+  // that this chord isn't a root you picked at all (one that was typed in),
+  // and its picker names the chord itself instead.
   let slotChoices = [0, 0, 0];          // per slot: the root it's on
   let slotMeasures = [];                // per slot: how many measures that chord lasts
   let slotShapes = [];                // per slot: the shape you chose, or null to follow the key
@@ -423,8 +423,8 @@
   const randomKeyBtn = document.getElementById('randomKeyBtn');
 
   // Which root of the current key a slot is sitting on — a degree, or one of
-  // the chromatic ids. Chords generated here carry their root; one loaded from
-  // a genre example doesn't, so match it by pitch: to a degree if the key has
+  // the chromatic ids. Chords generated here carry their root; a typed one
+  // doesn't, so match it by pitch: to a degree if the key has
   // one there, and otherwise to the root outside the key that it is.
   function degreeOf(i){
     if (slotChoices[i] != null) return slotChoices[i];
@@ -468,7 +468,7 @@
         const c = baseChordFor('c' + semis);
         outsideOpts.push(`<option value="c${semis}">${c.note} · ${c.numeral}</option>`);
       }
-      // a chord loaded from a genre example is on no root you picked; it still
+      // a chord that was typed in is on no root you picked; it still
       // gets to name itself, and picking anything else replaces it
       const offOpt = (slotChoices[i] == null && currentProgression[i])
         ? `<option value="off">${displayName(currentProgression[i])}</option>` : '';
@@ -677,7 +677,7 @@
   // Move the progression to another key rather than rolling a new one: each
   // chord keeps its scale degree, so a I–V–vi–IV in A becomes the I–V–vi–IV of
   // wherever you land. Chords that aren't degrees of the old key — a
-  // progression loaded from a genre example — are shifted by the same interval.
+  // typed progression — are shifted by the same interval.
   function transposeToKey(mode, tonic){
     const shift = ((SEMITONE[tonic] - SEMITONE[currentTonic]) % 12 + 12) % 12;
     currentMode = mode;
@@ -713,8 +713,8 @@
         slotShapes[i] = shapeOf(moved);
         return chordForDegree(match.deg, slotShapes[i]);
       }
-      // Otherwise it's a chord of no degree at all (one loaded from a genre
-      // example). Spell its shape out, so its picker describes what's sounding.
+      // Otherwise it's a chord of no degree at all (one that was typed in).
+      // Spell its shape out, so its picker describes what's sounding.
       slotShapes[i] = shapeOf(moved);
       return moved;
     });
@@ -1199,7 +1199,7 @@
   // k = mode:tonic; c = one entry per chord as root.bars.shape, where a root is
   // a scale degree or a 'c'-prefixed interval above the tonic (shape blank
   // for the key's own triad); t = tempo; s = style.variant. A progression that
-  // came in as chord names (from a genre example) is written as n = name.bars
+  // came in as chord names (typed in) is written as n = name.bars
   // instead, since its chords aren't degrees of anything.
   function shareState(){
     const p = new URLSearchParams();
@@ -1462,7 +1462,7 @@
     partSig = partSignature();
   }
 
-  // The part as tablature, the way the genre examples write theirs, one bar
+  // The part as tablature, one bar
   // per bar of the progression with the chord above it.
   function drawPartTab(bars){
     partBars = bars;
@@ -1691,7 +1691,7 @@
     shareBtn._reset = setTimeout(() => { shareBtn.textContent = 'Copy link to this progression'; }, 2200);
   });
 
-  // Take a progression from somewhere else in the app — a genre example, say —
+  // Take a progression written as chord names — the typed field, a link —
   // and set the practice tab up to play it. Runs of the same chord collapse
   // into one chord held for that many measures, which is how a twelve-bar
   // blues fits into seven slots.
@@ -1753,7 +1753,7 @@
 
   // ---- typing the progression ----
   // One chord per bar, so a chord held for four bars is written four times
-  // and loadProgression collapses the run — the same road a genre example
+  // and loadProgression collapses the run — the same road a link's chord names
   // takes in. Bar lines and commas are allowed because people write them:
   // "E | A7 | E" and "E, A7, E" both mean what they look like.
   //

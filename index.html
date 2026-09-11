@@ -453,56 +453,6 @@
   .shape-sheet .diagram-card.current .diagram-caption{ color:var(--ink); }
   .shape-choice-num{ display:block; margin-top:2px; font-family:Inter,system-ui,sans-serif; font-weight:500; font-size:.66rem; color:var(--muted2); letter-spacing:.02em; }
 
-  /* ---------- genre examples ---------- */
-  .page-title{ margin:0; font-family:Fraunces,Georgia,serif; font-style:italic; font-weight:500; font-size:1.5rem; line-height:1; display:flex; align-items:center; gap:10px; }
-  .genre-family{ margin-top:12px; }
-  .genre-family-name{ display:block; font-size:.66rem; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:var(--muted2); margin-bottom:2px; }
-  .genre-family .seg-btn:first-child{ margin-left:0; }
-  .genre-blurb{ margin:14px 0 0; font-size:.86rem; line-height:1.5; color:var(--muted); max-width:70ch; }
-  .genres .toolbar{ margin-top:10px; }
-  .genres .toolbar .seg-btn:first-child{ margin-left:0; }
-  .genre-transport{ display:flex; align-items:center; gap:18px; flex-wrap:wrap; margin-bottom:12px; }
-  .gplay{ padding:8px 22px; border-radius:999px; background:var(--ink); color:var(--bg); font-weight:600; font-size:.86rem; }
-  .gplay.playing{ background:var(--muted); }
-  .genre-tempo{ font-size:.82rem; color:var(--muted); font-variant-numeric:tabular-nums; }
-  /* the tab wraps onto extra rows rather than scrolling sideways; the
-     overflow is only a safety net for screens too narrow for a single bar */
-  .tab-scroll{ width:100%; overflow-x:auto; }
-  #genreTab{ display:block; }
-  .tab-string{ stroke:var(--line2); stroke-width:1; }
-  .tab-bar{ stroke:var(--muted); stroke-width:1.2; opacity:.55; }
-  .tab-label{ fill:var(--muted); font:500 10px Inter,system-ui,sans-serif; }
-  .tab-chord{ fill:var(--ink); font:600 11px Inter,system-ui,sans-serif; }
-  .tab-note rect{ fill:var(--panel); }
-  .tab-note text{ fill:var(--ink); font:600 10px Inter,system-ui,sans-serif; }
-  .tab-note.muted text{ fill:var(--muted); }
-  .tab-note.now text{ fill:var(--ink); font-weight:700; }
-  .tab-playhead{ fill:var(--ink); opacity:.12; }
-  /* the suggested part: its tab under the chart, and its notes on the neck */
-  .chart-view-row{ margin:10px 0 0; }
-  /* T56: on a wide screen the tab wraps to as many bars as fit and shows two
-     rows, scrolling down to the row being played; on a phone it stays one
-     strip that scrolls sideways */
-  .part-tab.wrapped{ overflow-x:hidden; overflow-y:auto; }
-  .tab-numeral{ fill:var(--muted); font:600 10px Inter,system-ui,sans-serif; }
-  .part-view{ margin:12px 0 4px; }
-  .part-controls{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-bottom:8px; }
-  .part-note{ margin:10px 0; color:var(--muted); font-size:.9rem; max-width:60ch; }
-  .part-volume{ display:inline-flex; align-items:center; gap:6px; }
-  .part-volume-label{ font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); }
-  .part-volume input{ width:96px; accent-color:var(--a); }
-  .part-volume .i-cross{ display:none; }
-  .part-volume [aria-pressed="true"] .i-waves{ display:none; }
-  .part-volume [aria-pressed="true"] .i-cross{ display:block; }
-  .part-volume [aria-pressed="true"] + input{ opacity:.45; }
-  .part-tab{ margin:6px 0 2px; overflow-x:auto; scroll-behavior:smooth; }
-  .part-tab svg{ display:block; height:auto; }
-  .part-tab .tab-chord.now{ fill:var(--a); }
-  .part-tab .tab-playhead{ fill:var(--a); opacity:.22; }
-  .part-name{ color:var(--muted); font-size:.8rem; padding:0 6px; white-space:nowrap; }
-  .note-dot.sounding circle, .note-dot.sounding path{ stroke:var(--ink); stroke-width:3; }
-  .note-dot.sounding text{ fill:#0c0b0a; }
-
   @media (prefers-reduced-motion: reduce){
     .chart-grid .bar.rang, .diagram-card.rang, .note-hit.struck .note-ring{ animation:none; }
     .note-dot, .shape-line, .note-ring{ transition:none; }
@@ -609,7 +559,6 @@
       <svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 5.5h14M3 10h14M3 14.5h14"/></svg>
     </button>
     <div class="menu" id="siteMenu" hidden>
-      <span class="menu-item"><button type="button" class="site-tab" data-tab="genres">Genre examples</button><span class="tag">Experimental</span></span>
       <a class="menu-item" href="mailto:jeff@jeffsguitartools.com">Email Jeff</a>
     </div>
   </span>
@@ -1114,43 +1063,6 @@
   </section>
 </div>
 
-<!-- ================= genre examples ====================================== -->
-<div class="tab-page" id="page-genres" hidden>
-  <section class="page genres">
-    <h2 class="page-title">Genre examples <span class="tag">Experimental</span></h2>
-    <div id="genreGroup"></div>
-    <p class="genre-blurb" id="genreBlurb"></p>
-    <div class="toolbar">
-      <div class="tb-group">
-        <span class="tb-lbl">Play</span>
-        <span class="segmented" id="genreRoleGroup">
-          <button type="button" class="seg-btn active" data-value="rhythm">Rhythm</button>
-          <button type="button" class="seg-btn" data-value="lead">Lead</button>
-        </span>
-      </div>
-      <div class="tb-group" id="genreProgRow">
-        <span class="tb-lbl">Progression</span>
-        <span class="segmented" id="genreProgGroup"></span>
-      </div>
-      <div class="tb-group">
-        <span class="tb-lbl" id="genrePatternLabel">Rhythm</span>
-        <span class="segmented" id="genrePatternGroup"></span>
-      </div>
-    </div>
-    <div class="toolbar" id="genreOpenRow">
-      <button type="button" class="link-btn" id="genreOpenInPractice">Open this progression in CAGED practice →</button>
-    </div>
-    <div class="stage">
-      <div class="genre-transport">
-        <button type="button" class="gplay" id="genrePlayBtn">Play</button>
-        <span class="genre-tempo" id="genreTempo"></span>
-        <label class="check"><input type="checkbox" id="genreLoopToggle" checked><span>Loop</span></label>
-        <label class="check"><input type="checkbox" id="genreDrumsToggle" checked><span>Drums</span></label>
-      </div>
-      <div class="tab-scroll" id="genreTabWrap"></div>
-    </div>
-  </section>
-</div>
 
 </main>
 
@@ -1171,11 +1083,8 @@
 <script src="js/practice.js"></script>
 <script src="js/stage.js"></script>
 <script src="js/chord-finder.js"></script>
-<script src="js/genres.js"></script>
-<script src="js/genre-data.js"></script>
 <script src="js/tab.js"></script>
 <script src="js/ear-training.js"></script>
-<script src="js/genre-examples.js"></script>
 <script src="js/reverse-finder.js"></script>
 <script src="js/main.js"></script>
 </body>

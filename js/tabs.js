@@ -75,8 +75,8 @@
       }
     };
 
-    // let the rest of the app move between tabs (a genre example handing its
-    // progression to the practice tab, say)
+    // let the rest of the app move between tabs (the ear trainer sending a
+    // shape to the finder, say)
     GT.tabs.goTo = name => {
       const btn = buttons.find(b => b.dataset.tab === name);
       if (btn) goTo(btn, 'push');

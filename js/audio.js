@@ -1,5 +1,5 @@
-// Web Audio engine: the synth voices (piano, bass, drums) and the groove patterns
-// each genre plays. Owns the AudioContext; knows nothing about the UI.
+// Web Audio engine: the voices (piano, bass, drums, guitar) and the groove
+// patterns each style plays. Owns the AudioContext; knows nothing about the UI.
 (function(){
   'use strict';
   const GT = (window.GT = window.GT || {});
@@ -47,9 +47,6 @@
   let drumGain = null;
   let noiseBuffer = null;
   let pianoWave = null;
-  let guitarGain = null;
-  let driveCurve = null;
-  let driveIn = null;           // the shared overdrive stage's input
   let reverb = null;
   let reverbSends = {};         // per-voice send gains into the reverb
   let bandGain = null;          // everything the band plays, before the limiter
@@ -216,8 +213,8 @@
       limiter.release.value = 0.12;
       limiter.connect(audioCtx.destination);
 
-      // The band — comp, bass, drums, the genre examples' guitar and the
-      // room they share — meets on one bus before the limiter, so it has one
+      // The band — comp, bass, drums and the room they share — meets on
+      // one bus before the limiter, so it has one
       // volume against the suggested part, which has a bus of its own.
       bandGain = audioCtx.createGain();
       bandGain.gain.value = bandLevelWanted;
@@ -238,7 +235,7 @@
       hihatGain.gain.value = 0.4;
       hihatGain.connect(bandGain);
 
-      // bass and kick/snare buses for the genre styles
+      // bass and kick/snare buses for the styles
       bassGain = audioCtx.createGain();
       bassGain.gain.value = 0.42;
       bassGain.connect(bandGain);
@@ -249,45 +246,14 @@
 
       pianoWave = pianoWaveFor(audioCtx);
 
-      // the guitar in the genre examples gets its own bus
-      guitarGain = audioCtx.createGain();
-      guitarGain.gain.value = 0.5;
-      guitarGain.connect(bandGain);
-
-      // a soft-clipping curve — the overdrive the punk and metal tones run through
-      driveCurve = new Float32Array(1024);
-      for (let i = 0; i < 1024; i++){
-        const x = (i / 1023) * 2 - 1;
-        driveCurve[i] = Math.tanh(x * 3.2);
-      }
-      // One overdrive stage shared by every 'drive' note, so the strings of a
-      // chord add up *before* they clip — that intermodulation is where a
-      // power chord's crunch comes from; clipping each string on its own
-      // never gets there. Pre-gain sets how hard the stage is driven; the
-      // filter after it takes the fizz off the top.
-      driveIn = audioCtx.createGain();
-      driveIn.gain.value = 2.2;
-      const driveShaper = audioCtx.createWaveShaper();
-      driveShaper.curve = driveCurve;
-      driveShaper.oversample = '4x';
-      const driveTone = audioCtx.createBiquadFilter();
-      driveTone.type = 'lowpass';
-      driveTone.frequency.value = 4200;
-      driveTone.Q.value = 0.8;
-      const driveOut = audioCtx.createGain();
-      driveOut.gain.value = 0.55;
-      driveIn.connect(driveShaper).connect(driveTone).connect(driveOut).connect(guitarGain);
-
-      // a shared reverb, with a send from each voice at its own level: a
-      // clean guitar sits in it, an overdriven one only touches it, and the
-      // palm-muted chug stays dry
+      // a shared reverb, with a send from each voice at its own level
       reverb = audioCtx.createConvolver();
       reverb.buffer = roomImpulse(audioCtx, 1.8);
       const reverbOut = audioCtx.createGain();
       reverbOut.gain.value = 0.5;
       reverb.connect(reverbOut).connect(bandGain);
       reverbSends = {};
-      [['piano', 0.14], ['clean', 0.32], ['drive', 0.14], ['muted', 0.05], ['drums', 0.08]].forEach(([name, level]) => {
+      [['piano', 0.14], ['clean', 0.32], ['drums', 0.08]].forEach(([name, level]) => {
         const g = audioCtx.createGain();
         g.gain.value = level;
         g.connect(reverb);
@@ -954,7 +920,7 @@
     return Promise.all(GUITAR_SAMPLES.map(loadSample)).then(all => all.every(Boolean));
   }
 
-  // ---- extra voices for the genre styles ----
+  // ---- extra voices for the styles ----
 
   function pcFreq(pc, octave){
     return 440 * Math.pow(2, ((octave + 1) * 12 + pc - 69) / 12);
@@ -1218,66 +1184,7 @@
     (STYLE_VOICES[styleVoice] || STYLE_VOICES.triad).play(chord, time, duration, velocity, voice);
   }
 
-  // A plucked-string voice for the genre examples. Sawtooth pairs give the
-  // reedy edge of a wound string; the tone decides how bright it is, how long
-  // it rings, whether it goes through the shared overdrive, and how much of
-  // it reaches the reverb.
-  //   clean  — hollowbody/ringing, for rockabilly, jazz, surf
-  //   muted  — palm-muted chug, short and thumpy
-  //   drive  — overdriven and sustaining, for punk and metal
-  const CLEAN_SAMPLE_TRIM = 1.6;
-  const GUITAR_TONES = {
-    clean: { cutoff: 3400, close: 0.5, ring: 1,    level: 0.30, drive: false },
-    muted: { cutoff: 1100, close: 0.3, ring: 0.16, level: 0.34, drive: false },
-    drive: { cutoff: 2600, close: 0.6, ring: 1,    level: 0.20, drive: true },
-  };
-
-  function playGuitar(freq, time, duration, velocity = 1, tone = 'clean'){
-    // The clean tone is a string ringing undistorted, which is the one thing
-    // the recordings actually are — so when they're here they play it. The
-    // other two stay synthesized on purpose: a palm-muted chug and an
-    // overdriven sustain are different articulations, not one note made
-    // shorter or dirtier, and a struck Martin pushed through a clipping
-    // stage is neither of them. CLEAN_SAMPLE_TRIM matches the recording's
-    // level to the synthesized tone it replaces; measured, like the piano's.
-    if (tone === 'clean' && pluckReady(freq)){
-      return playPluck(freq, time, duration, velocity * CLEAN_SAMPLE_TRIM);   // counts itself
-    }
-    if (tone === 'clean') voiceUse.guitarSynth++;
-    const spec = GUITAR_TONES[tone] || GUITAR_TONES.clean;
-    const ring = Math.min(duration, duration * spec.ring + 0.02);
-
-    const env = audioCtx.createGain();
-    env.gain.setValueAtTime(0.0001, time);
-    env.gain.exponentialRampToValueAtTime(spec.level * velocity, time + 0.004);
-    env.gain.exponentialRampToValueAtTime(spec.level * velocity * 0.4, time + ring * 0.35);
-    env.gain.exponentialRampToValueAtTime(0.0001, time + ring);
-
-    const filter = audioCtx.createBiquadFilter();
-    filter.type = 'lowpass';
-    filter.Q.value = 1.1;
-    const open = Math.min(9000, spec.cutoff + freq * 2);
-    filter.frequency.setValueAtTime(open, time);
-    filter.frequency.exponentialRampToValueAtTime(Math.max(400, open * spec.close), time + ring);
-
-    filter.connect(env);
-    // the overdriven tone goes through the shared stage, where the other
-    // strings of the chord are waiting to be clipped together with it
-    env.connect(spec.drive ? driveIn : guitarGain);
-    env.connect(reverbSends[tone] || reverbSends.clean);
-
-    [-4, 4].forEach(detune => {
-      const osc = audioCtx.createOscillator();
-      osc.type = 'sawtooth';
-      osc.frequency.value = freq;
-      osc.detune.value = detune;
-      osc.connect(filter);
-      startVoice(osc, time, env);
-      osc.stop(time + ring + 0.05);
-    });
-  }
-
-  // ---- genre rhythm patterns (one bar of 4/4) --------------------------------
+  // ---- style rhythm patterns (one bar of 4/4) --------------------------------
   // grid = subdivisions per bar (16 = sixteenths, 12 = triplet-eighths / shuffle);
   // drum arrays list slot indices; chord/bass entries are { slot, dur (in slots),
   // vel } with bass carrying either a semitone `off` from the root or a `walk`
@@ -1331,6 +1238,69 @@
           voice: 'triad',
           chord: [{ slot: 0, dur: 7.5, vel: 0.9 }, { slot: 8, dur: 7.5, vel: 0.85 }],
           bass:  [{ slot: 0, off: 0, dur: 7.5, vel: 0.95 }, { slot: 8, off: 0, dur: 7.5, vel: 0.85 }],
+        },
+      ],
+    },
+    rockabilly: {
+      label: 'Rockabilly',
+      variants: [
+        {
+          // Swung and quick: the slap bass walking root and fifth on every
+          // beat with its click on the upbeats (the hat carries the click),
+          // the snare on 2 and 4, the comp chanking on the shuffle upbeats
+          // and leaning on 2 and 4 — a dominant-7th boogie sound.
+          label: 'Rockabilly',
+          grid: 12,
+          kick:  [0, 6],
+          snare: [3, 9],
+          hat:   [2, 5, 8, 11],
+          voice: 'dom7',
+          chord: [
+            { slot: 2, dur: 1, vel: 0.5 }, { slot: 3, dur: 1.6, vel: 0.72 }, { slot: 5, dur: 1, vel: 0.5 },
+            { slot: 8, dur: 1, vel: 0.5 }, { slot: 9, dur: 1.6, vel: 0.72 }, { slot: 11, dur: 1, vel: 0.5 },
+          ],
+          bass: [
+            { slot: 0, off: 0, dur: 1.3, vel: 0.95 }, { slot: 3, off: 7, dur: 1.3, vel: 0.8 },
+            { slot: 6, off: 0, dur: 1.3, vel: 0.9 },  { slot: 9, off: 7, dur: 1.3, vel: 0.8 },
+          ],
+        },
+      ],
+    },
+    psychobilly: {
+      label: 'Psychobilly',
+      variants: [
+        {
+          // Straight and faster: the kick on every beat, the snare hard on 2
+          // and 4, the bass pumping eighths on root and fifth with an octave
+          // leap into three and one, and the chords chugging every eighth.
+          label: 'Psychobilly',
+          grid: 16,
+          kick:  [0, 4, 8, 12],
+          snare: [4, 12],
+          snareVel: 0.95,
+          hat:   [0, 2, 4, 6, 8, 10, 12, 14],
+          voice: 'triad',
+          chord: [0, 2, 4, 6, 8, 10, 12, 14].map(s => ({ slot: s, dur: 1.2, vel: s % 8 === 0 ? 0.9 : 0.62 })),
+          bass:  [0, 2, 4, 6, 8, 10, 12, 14].map((s, i) => ({ slot: s, off: [0, 7, 0, 12, 0, 7, 0, 12][i], dur: 1.6, vel: i % 2 ? 0.8 : 0.9 })),
+        },
+      ],
+    },
+    surf: {
+      label: 'Surf rock',
+      variants: [
+        {
+          // Straight, fast and dry: the kick on 1 and 3 with a push into
+          // each, the snare cracking 2 and 4, eighth-note hats, the bass
+          // pumping eighths on the root with the fifth under beat three, and
+          // the chords on every eighth, short.
+          label: 'Surf rock',
+          grid: 16,
+          kick:  [0, 6, 8, 14],
+          snare: [4, 12],
+          hat:   [0, 2, 4, 6, 8, 10, 12, 14],
+          voice: 'triad',
+          chord: [0, 2, 4, 6, 8, 10, 12, 14].map(s => ({ slot: s, dur: 1.4, vel: s % 4 === 0 ? 0.8 : 0.55 })),
+          bass:  [0, 2, 4, 6, 8, 10, 12, 14].map((s, i) => ({ slot: s, off: [0, 0, 0, 0, 7, 7, 0, 0][i], dur: 1.7, vel: i % 2 ? 0.75 : 0.9 })),
         },
       ],
     },
@@ -1442,6 +1412,26 @@
         },
       ],
     },
+    gypsy: {
+      label: 'Gypsy jazz',
+      variants: [
+        {
+          // No drums: the rhythm guitar is the drums. La pompe — four short
+          // chords to the bar with a lift into 2 and 4 that lands harder —
+          // over a bass in two, root on one and the fifth on three. The
+          // lines swing, so the grid is in threes.
+          label: 'Gypsy jazz',
+          grid: 12,
+          kick: [], snare: [], hat: [],
+          voice: 'jazz',
+          chord: [
+            { slot: 0, dur: 1.2, vel: 0.5 }, { slot: 2, dur: 0.6, vel: 0.3 }, { slot: 3, dur: 1, vel: 0.75 },
+            { slot: 6, dur: 1.2, vel: 0.5 }, { slot: 8, dur: 0.6, vel: 0.3 }, { slot: 9, dur: 1, vel: 0.75 },
+          ],
+          bass: [{ slot: 0, off: 0, dur: 5, vel: 0.9 }, { slot: 6, off: 7, dur: 5, vel: 0.8 }],
+        },
+      ],
+    },
     pop: {
       label: 'Pop',
       variants: [
@@ -1502,7 +1492,7 @@
     pianoWaveFor, PIANO_PARTIALS,      // exposed so the tests can render a note offline
     GUITAR_SAMPLES, sampleFor,         // ...and to check every note has a recording behind it
     ensureAudio, keepAwake, planSleep, sleepDelay, IDLE_SLEEP_SEC, HIDDEN_SLEEP_SEC, cancelScheduled, stepsToSkip, noteFreq, chordFrequencies, pcFreq, bassFreqAt, walkBassFreq, ROOT_OCTAVE,
-    playNote, playChord, playChord7, playBass, playGuitar,
+    playNote, playChord, playChord7, playBass,
     playPluck, readyForPluck, pluckReady, warmGuitar,
     setBandLevel, bandLevel, partBus: () => partGain,
     PIANO_SOFT, PIANO_HARD, PIANO_SPLIT, PIANO_RANGE, PIANO_XFADE, pianoSampleFor, warmPiano,

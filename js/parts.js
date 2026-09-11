@@ -57,7 +57,16 @@
   //       chord. In the triads reading every one of these is the triad the
   //       neck is showing ('bass' its lowest note), since that is the whole
   //       of what that reading offers.
+  //   nx — one note measured from the NEXT bar's chord rather than this
+  //       one's: how a fill points where the music is going. A player
+  //       ending a bar on the ♭7 of the IV chord's 3rd, or walking up
+  //       chromatically under the next root, is hearing the change coming,
+  //       and these are the notes that do it. An interval below zero is
+  //       below that root: -1 is the semitone under it. When the part
+  //       stays on the I, "next" is the I too and these read as plain
+  //       intervals above it.
   const n = (at, iv, dur, vel) => ({ at, iv, dur, vel });
+  const nx = (at, iv, dur, vel) => ({ at, iv, dur, vel, next: true });
   const s = (at, dur, vel, voicing = 'full') => ({ at, dur, vel, strum: true, voicing });
 
   // Simple has no feels of its own — quarter, half and whole notes are the
@@ -68,52 +77,56 @@
   const LIBRARY = {
     simple: {
       // The plainest thing to play over a plain backing: the chord struck
-      // whole, and a run through part of the scale between the strikes, in
-      // quarter notes or eighths. The reading decides which notes the run
-      // lands on — in Chords it thins to the chord tones, in Scales it is
-      // the scale.
+      // whole on one, and a run through part of the scale for the rest of
+      // the bar, in quarter notes or eighths. A chord only ever on the
+      // first beat — the backing is already a chord a beat, and a part that
+      // struck more would be doubling it. The reading decides which notes
+      // the run lands on — in Chords it thins to the chord tones, in Scales
+      // it is the scale.
       'Simple': [
         {
           name: 'Quarter-note run',
           figure: [s(0, 4, 0.85), n(4, 0, 4, 0.8), n(8, 2, 4, 0.75), n(12, 4, 4, 0.8)],
           variants: [
-            // the chord on one and three, a step between each
-            [s(0, 4, 0.85), n(4, 2, 4, 0.75), s(8, 4, 0.8), n(12, 4, 4, 0.75)],
-            // the run first, the chord to close
-            [n(0, 0, 4, 0.8), n(4, 2, 4, 0.75), n(8, 4, 4, 0.8), s(12, 4, 0.85)],
+            [s(0, 4, 0.85), n(4, 4, 4, 0.8), n(8, 2, 4, 0.75), n(12, 0, 4, 0.8)],
+            [s(0, 4, 0.85), n(4, 7, 4, 0.8), n(8, 5, 4, 0.75), n(12, 4, 4, 0.8)],
           ],
           fills: [
             // on up the scale
             [n(0, 5, 4, 0.8), n(4, 7, 4, 0.8), n(8, 9, 4, 0.8), n(12, 12, 4, 0.85)],
-            // down from the octave to the chord
-            [n(0, 12, 4, 0.85), n(4, 11, 4, 0.75), n(8, 9, 4, 0.75), s(12, 4, 0.8)],
-            // the chord, then three steps down to the root
-            [s(0, 4, 0.85), n(4, 4, 4, 0.75), n(8, 2, 4, 0.75), n(12, 0, 4, 0.8)],
+            // down from the octave, and a step below the next root to lead in
+            [n(0, 12, 4, 0.85), n(4, 11, 4, 0.75), n(8, 9, 4, 0.75), nx(12, -2, 4, 0.8)],
+            // the chord, then down to the next chord's fifth
+            [s(0, 4, 0.85), n(4, 4, 4, 0.75), n(8, 2, 4, 0.75), nx(12, 7, 4, 0.8)],
           ],
         },
         {
           name: 'Eighth-note run',
           figure: [s(0, 4, 0.85), n(4, 0, 2, 0.8), n(6, 2, 2, 0.7), n(8, 4, 2, 0.75), n(10, 5, 2, 0.7), n(12, 7, 2, 0.75), n(14, 9, 2, 0.7)],
           variants: [
-            // the chord on one and three, four steps between
-            [s(0, 4, 0.85), n(4, 0, 2, 0.8), n(6, 2, 2, 0.7), s(8, 4, 0.8), n(12, 4, 2, 0.75), n(14, 5, 2, 0.7)],
-            // from the 3rd
             [s(0, 4, 0.85), n(4, 4, 2, 0.8), n(6, 5, 2, 0.7), n(8, 7, 2, 0.75), n(10, 9, 2, 0.7), n(12, 11, 2, 0.75), n(14, 12, 2, 0.75)],
+            [s(0, 4, 0.85), n(4, 7, 2, 0.8), n(6, 5, 2, 0.7), n(8, 4, 2, 0.75), n(10, 2, 2, 0.7), n(12, 0, 4, 0.8)],
           ],
           fills: [
             // the whole way down from the octave
             [n(0, 12, 2, 0.85), n(2, 11, 2, 0.7), n(4, 9, 2, 0.75), n(6, 7, 2, 0.7), n(8, 5, 2, 0.75), n(10, 4, 2, 0.7), n(12, 2, 2, 0.75), n(14, 0, 2, 0.8)],
-            // up to the octave and the chord to land on
-            [n(0, 5, 2, 0.8), n(2, 7, 2, 0.7), n(4, 9, 2, 0.75), n(6, 11, 2, 0.7), n(8, 12, 4, 0.85), s(12, 4, 0.8)],
-            // the chord, and a turn round the root
-            [s(0, 4, 0.85), n(4, 2, 2, 0.75), n(6, 0, 2, 0.7), n(8, 11, 2, 0.7), n(10, 0, 2, 0.75), n(12, 2, 2, 0.7), n(14, 4, 2, 0.75)],
+            // up to the octave, then a step down onto the next root
+            [n(0, 5, 2, 0.8), n(2, 7, 2, 0.7), n(4, 9, 2, 0.75), n(6, 11, 2, 0.7), n(8, 12, 4, 0.85), nx(12, 2, 2, 0.7), nx(14, -1, 2, 0.7)],
+            // the chord, and a turn round the root that walks to the next one
+            [s(0, 4, 0.85), n(4, 2, 2, 0.75), n(6, 0, 2, 0.7), n(8, 2, 2, 0.7), n(10, 4, 2, 0.75), nx(12, 7, 2, 0.7), nx(14, -1, 2, 0.75)],
           ],
         },
       ],
     },
+
     blues: {
-      // A straight shuffle: down on the first triplet, up on the third, the
-      // downbeats leaning harder — and a fill every other bar.
+      // What a blues player actually plays between the chords: a handful of
+      // notes — the root, the ♭3 leaning on the 3, the 4th, the 5th, the ♭7
+      // — said more than once rather than a scale said once, with room in
+      // the bar, and the last beat pointing at the next chord: the ♭7 of
+      // this one falling to the 3rd of the IV, or a chromatic step up under
+      // the next root. A straight shuffle: down on the first triplet, up on
+      // the third, the downbeats leaning harder.
       'Blues shuffle': [
         {
           name: 'Shuffle comp',
@@ -129,15 +142,15 @@
              s(6, 1.6, 0.8, 'low'), s(8, 0.8, 0.5, 'low'), s(9, 1.6, 0.7, 'low'), s(11, 0.8, 0.6, 'bass')],
           ],
           fills: [
-            // a walk down from the octave to the root
-            [n(0, 12, 1.6, 0.9), n(2, 10, 0.8, 0.7), n(3, 9, 1.6, 0.8), n(5, 7, 0.8, 0.7),
-             n(6, 5, 1.6, 0.8), n(8, 4, 0.8, 0.7), n(9, 3, 1.6, 0.8), n(11, 0, 0.8, 0.7)],
-            // a pentatonic answer that climbs, and the chord to land on
-            [n(0, 3, 1.6, 0.9), n(2, 5, 0.8, 0.7), n(3, 7, 1.6, 0.85), n(6, 10, 1.6, 0.85),
-             n(8, 12, 0.8, 0.8), s(9, 2.4, 0.75)],
-            // half a bar of chords, then a push up to the octave
-            [s(0, 1.6, 0.8, 'low'), s(2, 0.8, 0.5, 'low'), s(3, 1.6, 0.7, 'low'), n(6, 7, 1.6, 0.85), n(8, 10, 0.8, 0.75),
-             n(9, 12, 2.4, 0.9)],
+            // the ♭3 pushed at the 3rd, the root said twice, the ♭7 answering
+            [n(0, 3, 0.8, 0.85), n(2, 4, 1.6, 0.8), n(3, 0, 1.6, 0.8), n(5, 0, 0.8, 0.6),
+             n(6, 10, 1.6, 0.85), n(8, 7, 0.8, 0.7), n(9, 5, 1.6, 0.75), n(11, 3, 0.8, 0.7)],
+            // up through the 4th and 5th to the ♭7, then a step below the next root
+            [n(0, 0, 1.6, 0.85), n(3, 5, 1.6, 0.8), n(5, 7, 0.8, 0.7), n(6, 10, 2.4, 0.85),
+             nx(9, -2, 1.6, 0.75), nx(11, -1, 0.8, 0.75)],
+            // half a bar of chords, then the ♭7 falling to the next chord's 3rd
+            [s(0, 1.6, 0.8, 'low'), s(2, 0.8, 0.5, 'low'), s(3, 1.6, 0.7, 'low'), n(6, 10, 1.6, 0.85), n(8, 10, 0.8, 0.6),
+             nx(9, 4, 1.6, 0.8), nx(11, 7, 0.8, 0.7)],
           ],
         },
         {
@@ -156,16 +169,19 @@
              s(9, 2.4, 0.8, 'high')],
           ],
           fills: [
-            [n(0, 0, 1.6, 0.9), n(2, 3, 0.8, 0.7), n(3, 5, 1.6, 0.8), n(5, 6, 0.8, 0.7),
-             n(6, 7, 2.4, 0.9), n(9, 10, 1.6, 0.8), n(11, 12, 0.8, 0.75)],
-            [n(0, 7, 2.4, 0.9), n(3, 10, 1.6, 0.8), n(5, 7, 0.8, 0.7), n(6, 5, 1.6, 0.8),
-             n(8, 3, 0.8, 0.7), s(9, 2.4, 0.8, 'high')],
-            [s(0, 1.6, 0.8, 'high'), s(2, 0.8, 0.5, 'high'), n(3, 4, 1.6, 0.85), n(6, 7, 1.6, 0.85), n(8, 10, 0.8, 0.7),
+            // the root, the ♭3 into the 3rd, and the 5th held — a bar that breathes
+            [n(0, 0, 1.6, 0.9), n(2, 3, 0.8, 0.7), n(3, 4, 2.4, 0.85), n(6, 7, 3, 0.85), nx(9, 7, 1.6, 0.75), nx(11, 4, 0.8, 0.7)],
+            // the ♭7 and 5th rocked, then down to the next root from above
+            [n(0, 10, 1.6, 0.85), n(2, 7, 0.8, 0.7), n(3, 10, 1.6, 0.8), n(5, 7, 0.8, 0.7),
+             n(6, 5, 1.6, 0.8), n(8, 3, 0.8, 0.7), nx(9, 2, 1.6, 0.75), nx(11, 1, 0.8, 0.7)],
+            // a stab, then the 4th pushed to the 5th and the octave held
+            [s(0, 1.6, 0.8, 'high'), n(3, 5, 0.8, 0.75), n(5, 7, 0.8, 0.8), n(6, 7, 1.6, 0.85), n(8, 10, 0.8, 0.75),
              n(9, 12, 2.4, 0.9)],
           ],
         },
       ],
-      // 12/8 and sparse: a chord let ring, and lines that take their time.
+      // 12/8 and sparse: a chord let ring, and lines that take their time —
+      // one idea a bar, a note bent at (here, leaned on) and left.
       'Slow blues': [
         {
           name: 'Long chords',
@@ -178,9 +194,12 @@
             [s(0, 3, 0.8), s(3, 3, 0.5, 'high'), s(6, 5, 0.7, 'high'), n(11, 12, 1, 0.7)],
           ],
           fills: [
-            [n(0, 10, 3, 0.85), n(3, 7, 3, 0.8), n(6, 5, 3, 0.8), n(9, 3, 3, 0.8)],
-            [n(3, 12, 2, 0.85), n(6, 10, 1, 0.7), n(8, 7, 1, 0.7), s(9, 3, 0.75)],
-            [n(0, 3, 6, 0.85), s(9, 3, 0.7)],
+            // the ♭3 held against the chord, resolved to the root late
+            [n(0, 3, 4, 0.85), n(4, 4, 1, 0.6), n(5, 0, 4, 0.85), nx(9, 7, 2, 0.7), nx(11, -1, 1, 0.7)],
+            // the ♭7 answered by the 5th, twice, then the next chord's 3rd
+            [n(0, 10, 2, 0.85), n(2, 7, 1, 0.7), n(3, 10, 2, 0.8), n(5, 7, 1, 0.7), n(6, 5, 3, 0.8), nx(9, 4, 3, 0.8)],
+            // one note, the 5th, and the chord to close
+            [n(0, 7, 6, 0.85), n(6, 5, 1, 0.65), n(7, 3, 2, 0.75), s(9, 3, 0.7)],
           ],
         },
         {
@@ -195,14 +214,18 @@
             [s(0, 3, 0.85), n(6, 3, 1, 0.75), n(8, 4, 1, 0.75), n(9, 7, 3, 0.85)],
           ],
           fills: [
-            [n(0, 12, 2, 0.9), n(3, 10, 2, 0.8), n(6, 7, 2, 0.8), n(9, 10, 3, 0.85)],
-            [s(0, 3, 0.8), n(3, 7, 3, 0.85), n(6, 5, 1, 0.7), n(8, 6, 1, 0.7), n(9, 7, 3, 0.85)],
-            [n(6, 7, 1, 0.75), n(8, 10, 1, 0.75), s(9, 3, 0.8)],
+            // the octave down to the ♭7, sat on, then the next chord's root from below
+            [n(0, 12, 2, 0.9), n(2, 10, 4, 0.85), n(6, 10, 1, 0.6), n(7, 7, 2, 0.75), nx(9, -1, 3, 0.8)],
+            // the chord, and the 4th-5th-♭7 climb blues lines are made of
+            [s(0, 3, 0.8), n(3, 5, 1.5, 0.8), n(4.5, 7, 1.5, 0.8), n(6, 10, 3, 0.85), nx(9, 4, 3, 0.75)],
+            // the root, twice, and the chord on the and of three
+            [n(0, 0, 3, 0.85), n(3, 0, 1, 0.6), n(4, 3, 2, 0.75), n(6, 0, 1, 0.7), s(8, 4, 0.8, 'high')],
           ],
         },
       ],
       // Straight eighths: the chords punch the backbeat with a light upstroke
-      // after each, and the fills run in between.
+      // after each, and the fills run in between — the boogie's 6th and ♭7
+      // and the ♭3/3, with the last beat walking to the next chord.
       'Jump blues': [
         {
           name: 'Jump comp',
@@ -216,10 +239,15 @@
             [s(4, 2, 0.85, 'high'), s(6, 1, 0.45, 'high'), s(10, 2, 0.8, 'high'), s(14, 1, 0.45, 'high')],
           ],
           fills: [
-            [n(0, 12, 2, 0.9), n(2, 10, 2, 0.75), n(4, 7, 2, 0.8), n(6, 10, 2, 0.75),
-             n(8, 7, 2, 0.8), n(10, 4, 2, 0.75), s(12, 4, 0.8)],
-            [s(4, 2, 0.85, 'high'), n(8, 9, 2, 0.75), n(10, 10, 2, 0.75), n(12, 12, 2, 0.9), n(14, 10, 2, 0.75)],
-            [n(0, 3, 2, 0.85), n(2, 4, 2, 0.75), n(4, 7, 4, 0.9), n(8, 3, 2, 0.8), n(10, 4, 2, 0.75), s(12, 4, 0.85)],
+            // the boogie walk up — root, 3, 5, 6, ♭7 — and back down onto the next chord's 5th
+            [n(0, 0, 2, 0.9), n(2, 4, 2, 0.75), n(4, 7, 2, 0.8), n(6, 9, 2, 0.75),
+             n(8, 10, 2, 0.85), n(10, 9, 2, 0.7), n(12, 7, 2, 0.75), nx(14, 7, 2, 0.75)],
+            // a stab, the ♭3 into the 3rd twice, then a chromatic step up under the next root
+            [s(4, 2, 0.85, 'high'), n(8, 3, 1, 0.75), n(9, 4, 1, 0.75), n(10, 3, 1, 0.7), n(11, 4, 1, 0.75),
+             nx(12, -2, 2, 0.75), nx(14, -1, 2, 0.8)],
+            // the 5th said three times, and the chord on three
+            [n(0, 7, 2, 0.85), n(2, 7, 2, 0.6), n(4, 7, 2, 0.8), n(6, 10, 2, 0.8), s(8, 4, 0.85, 'high'),
+             nx(12, 4, 2, 0.7), nx(14, 7, 2, 0.7)],
           ],
         },
         {
@@ -236,18 +264,24 @@
             [s(4, 2, 0.85, 'high'), n(8, 7, 2, 0.8), n(10, 9, 2, 0.7), s(12, 2, 0.85, 'high'), n(14, 10, 2, 0.7)],
           ],
           fills: [
-            [n(0, 12, 1, 0.8), n(2, 10, 1, 0.75), n(4, 7, 2, 0.85), n(8, 10, 1, 0.75), n(10, 7, 1, 0.75), n(12, 4, 4, 0.9)],
-            [s(4, 2, 0.85, 'high'), n(8, 9, 1, 0.75), n(10, 10, 1, 0.75), n(12, 12, 4, 0.9)],
-            [n(2, 3, 1, 0.75), n(4, 4, 2, 0.9), n(8, 7, 1, 0.8), n(10, 3, 1, 0.75), s(12, 4, 0.8)],
+            // the octave, ♭7, 5 — the top of the boogie — and the next root from a step above
+            [n(0, 12, 2, 0.85), n(2, 12, 1, 0.5), n(3, 10, 1, 0.75), n(4, 7, 2, 0.85), n(6, 7, 2, 0.6),
+             n(8, 10, 2, 0.8), n(10, 7, 2, 0.75), nx(12, 2, 2, 0.7), nx(14, 0, 2, 0.8)],
+            // a stab, then 6-♭7-octave and the octave held
+            [s(4, 2, 0.85, 'high'), n(8, 9, 1, 0.75), n(9, 10, 1, 0.75), n(10, 12, 4, 0.9), nx(14, 7, 2, 0.7)],
+            // the ♭3 into the 3rd, the 5th, and a chromatic walk up to the next chord
+            [n(0, 3, 1, 0.75), n(1, 4, 3, 0.9), n(4, 7, 2, 0.8), n(6, 7, 2, 0.6), s(8, 2, 0.8, 'high'),
+             nx(11, -3, 1, 0.7), nx(12, -2, 2, 0.75), nx(14, -1, 2, 0.8)],
           ],
         },
       ],
     },
 
     rock: {
-      // Straight eighths with the weight on 1 and 3, the chord kept low so
-      // it sits with the bass; fills out of the root, ♭3, 4, 5 and ♭7 that
-      // rock lines are made of (the reading decides what they snap to).
+      // Rock lines are the minor pentatonic said plainly — the root, ♭7, 5
+      // and 4, in that order of how often — with a note repeated rather
+      // than a scale run, and the last beat walking up to the next chord's
+      // root from the ♭7 or a tone below.
       'Rock': [
         {
           name: 'Driving eighths',
@@ -262,14 +296,14 @@
              s(8, 3.6, 0.85), s(12, 1.8, 0.6, 'low'), s(14, 1.8, 0.55, 'low')],
           ],
           fills: [
-            // down from the octave to the root
-            [n(0, 12, 2, 0.9), n(2, 10, 2, 0.75), n(4, 7, 2, 0.8), n(6, 5, 2, 0.7),
-             n(8, 3, 2, 0.8), n(10, 0, 4, 0.85), s(14, 2, 0.6, 'low')],
-            // half a bar of chugging, then a climb to the fifth
+            // root, root, ♭7, 5 — and the walk up to the next chord
+            [n(0, 0, 2, 0.9), n(2, 0, 2, 0.65), n(4, 10, 2, 0.85), n(6, 7, 2, 0.8),
+             n(8, 5, 2, 0.8), n(10, 7, 2, 0.7), nx(12, -2, 2, 0.8), nx(14, -1, 2, 0.8)],
+            // half a bar of chugging, then the 4th pushed to the 5th and the ♭7
             [s(0, 1.8, 0.85, 'low'), s(2, 1.8, 0.55, 'low'), s(4, 1.8, 0.7, 'low'), s(6, 1.8, 0.55, 'low'),
-             n(8, 0, 2, 0.85), n(10, 3, 2, 0.75), n(12, 5, 2, 0.8), n(14, 7, 2, 0.85)],
-            // the fifth hammered, the chord answering on three
-            [n(0, 7, 2, 0.85), n(2, 7, 2, 0.6), n(4, 10, 2, 0.8), n(6, 12, 2, 0.8),
+             n(8, 5, 2, 0.8), n(10, 7, 2, 0.85), n(12, 10, 2, 0.85), nx(14, 7, 2, 0.75)],
+            // the octave hammered, then down to the 5th and the chord on three
+            [n(0, 12, 2, 0.9), n(2, 12, 2, 0.6), n(4, 10, 2, 0.8), n(6, 7, 2, 0.8),
              s(8, 3.6, 0.85), s(12, 1.8, 0.6, 'low'), s(14, 1.8, 0.55, 'low')],
           ],
         },
@@ -285,14 +319,16 @@
             [s(0, 3, 0.9), s(4, 2, 0.7, 'low'), s(6, 2, 0.8, 'low'), s(12, 3, 0.85, 'low')],
           ],
           fills: [
-            [n(0, 0, 2, 0.9), n(2, 0, 2, 0.6), n(4, 3, 2, 0.8), n(6, 5, 2, 0.8),
-             n(8, 7, 2, 0.85), n(10, 5, 2, 0.7), n(12, 3, 2, 0.8), n(14, 0, 2, 0.85)],
-            [s(0, 4, 0.9, 'low'), n(6, 12, 2, 0.85), n(8, 10, 2, 0.8), n(10, 7, 2, 0.8), n(12, 5, 4, 0.85)],
-            [n(0, 5, 2, 0.85), n(2, 7, 2, 0.8), n(4, 10, 2, 0.8), n(6, 12, 6, 0.9), s(12, 3, 0.8, 'low')],
+            // the root and the ♭3 into the 4th, twice — a riff, not a run
+            [n(0, 0, 2, 0.9), n(2, 0, 1, 0.5), n(3, 3, 1, 0.75), n(4, 5, 2, 0.85), n(6, 0, 2, 0.75),
+             n(8, 0, 1, 0.5), n(9, 3, 1, 0.75), n(10, 5, 2, 0.85), nx(12, 7, 2, 0.75), nx(14, 10, 2, 0.75)],
+            // a stab, then the ♭7 falling to the 5th and the next root from a tone below
+            [s(0, 4, 0.9, 'low'), n(6, 10, 2, 0.85), n(8, 10, 2, 0.6), n(10, 7, 2, 0.8), nx(12, -2, 2, 0.75), nx(14, -2, 2, 0.6)],
+            // the 5th, the ♭7 and the octave held, and the chord back on four
+            [n(0, 7, 2, 0.85), n(2, 10, 2, 0.8), n(4, 12, 6, 0.9), n(10, 10, 2, 0.7), s(12, 3, 0.8, 'low')],
           ],
         },
       ],
-
       // Busier: every eighth on the low strings, the whole chord on 1 and 3
       // — the chug rock rhythm guitar is built on — and riffs in the gaps.
       'Straight rock': [
@@ -309,10 +345,13 @@
              s(8, 1.8, 0.8, 'low'), s(10, 1.8, 0.5, 'high'), s(12, 1.8, 0.7, 'low'), s(14, 1.8, 0.5, 'high')],
           ],
           fills: [
+            // root, root, ♭3, 4 / 5, 4, ♭3 — and up to the next root
             [n(0, 0, 2, 0.9), n(2, 0, 2, 0.6), n(4, 3, 2, 0.8), n(6, 5, 2, 0.8),
-             n(8, 7, 2, 0.85), n(10, 5, 2, 0.7), n(12, 3, 2, 0.8), n(14, 0, 2, 0.8)],
+             n(8, 7, 2, 0.85), n(10, 5, 2, 0.7), n(12, 3, 2, 0.8), nx(14, -1, 2, 0.8)],
+            // chugging, then the octave, ♭7, 5 and the next chord's 5th
             [s(0, 1.8, 0.85, 'low'), s(2, 1.8, 0.55, 'low'), s(4, 1.8, 0.7, 'low'), s(6, 1.8, 0.55, 'low'),
-             n(8, 12, 2, 0.9), n(10, 10, 2, 0.75), n(12, 7, 2, 0.8), n(14, 5, 2, 0.75)],
+             n(8, 12, 2, 0.9), n(10, 10, 2, 0.75), n(12, 7, 2, 0.8), nx(14, 7, 2, 0.75)],
+            // 5, ♭7, octave, octave — then the chord on three
             [n(0, 7, 2, 0.85), n(2, 10, 2, 0.75), n(4, 12, 2, 0.85), n(6, 12, 2, 0.6),
              s(8, 3.6, 0.9), s(12, 1.8, 0.7, 'low'), s(14, 1.8, 0.55, 'low')],
           ],
@@ -329,15 +368,18 @@
             [s(0, 6, 0.9), n(6, 7, 2, 0.75), s(8, 4, 0.85), n(12, 10, 2, 0.75), n(14, 12, 2, 0.8)],
           ],
           fills: [
-            [n(0, 12, 2, 0.9), n(2, 10, 2, 0.75), n(4, 7, 2, 0.8), n(6, 5, 2, 0.75), n(8, 3, 4, 0.85), n(12, 0, 4, 0.85)],
+            // the octave and ♭7 rocked, the 5th, and down onto the next root from above
+            [n(0, 12, 2, 0.9), n(2, 10, 2, 0.75), n(4, 12, 2, 0.8), n(6, 10, 2, 0.75), n(8, 7, 4, 0.85), nx(12, 2, 2, 0.75), nx(14, 0, 2, 0.8)],
+            // low chords, the 4th into the 5th, low chords, the ♭7 into the octave
             [s(0, 2, 0.85, 'low'), s(2, 2, 0.55, 'low'), n(4, 5, 2, 0.8), n(6, 7, 2, 0.8),
              s(8, 2, 0.8, 'low'), s(10, 2, 0.55, 'low'), n(12, 10, 2, 0.8), n(14, 12, 2, 0.85)],
+            // ♭3, 4, and the 5th held, the chord to close
             [n(0, 3, 2, 0.8), n(2, 5, 2, 0.8), n(4, 7, 6, 0.9), s(10, 2, 0.5, 'high'), s(12, 4, 0.85)],
           ],
         },
       ],
       // Half-time: the chord held long, the riff slow and low — space is the
-      // point, so the fills leave it.
+      // point, so the fills leave it, and say a note twice rather than move.
       'Half-time rock': [
         {
           name: 'Big chords',
@@ -349,8 +391,11 @@
             [s(0, 4, 0.9), s(4, 2, 0.5, 'high'), s(6, 2, 0.5, 'high'), s(8, 8, 0.85)],
           ],
           fills: [
-            [n(0, 0, 4, 0.9), n(4, 3, 2, 0.75), n(6, 5, 2, 0.75), n(8, 7, 4, 0.85), n(12, 5, 2, 0.7), n(14, 3, 2, 0.7)],
+            // root held, ♭3 to 4, the 5th held, and the walk up to the next chord
+            [n(0, 0, 4, 0.9), n(4, 3, 2, 0.75), n(6, 5, 2, 0.75), n(8, 7, 4, 0.85), nx(12, -2, 2, 0.7), nx(14, -1, 2, 0.75)],
+            // the chord for half the bar, then the octave and ♭7 and the 5th held
             [s(0, 8, 0.9), n(8, 12, 2, 0.85), n(10, 10, 2, 0.75), n(12, 7, 4, 0.8)],
+            // 5, ♭7, and the octave held — three notes in a bar
             [n(0, 7, 4, 0.85), n(4, 10, 4, 0.8), n(8, 12, 8, 0.9)],
           ],
         },
@@ -363,9 +408,175 @@
             [s(0, 4, 0.85, 'low'), n(4, 0, 2, 0.8), n(6, 3, 2, 0.75), s(8, 4, 0.85, 'low'), n(12, 5, 2, 0.75), n(14, 7, 2, 0.8)],
           ],
           fills: [
-            [n(0, 12, 2, 0.9), n(2, 12, 2, 0.6), n(4, 10, 2, 0.8), n(6, 7, 2, 0.75), n(8, 5, 4, 0.85), n(12, 3, 2, 0.75), n(14, 0, 2, 0.8)],
+            // the octave twice, ♭7, 5 — then the next root from a tone below
+            [n(0, 12, 2, 0.9), n(2, 12, 2, 0.6), n(4, 10, 2, 0.8), n(6, 7, 2, 0.75), n(8, 5, 4, 0.85), nx(12, -2, 4, 0.8)],
+            // two big chords
             [s(0, 8, 0.9), s(8, 8, 0.85)],
-            [n(0, 0, 6, 0.9), n(6, 3, 2, 0.75), n(8, 5, 4, 0.85), n(12, 7, 2, 0.8), n(14, 10, 2, 0.8)],
+            // the root held, ♭3, then 4 and the 5th, and the next chord's 5th
+            [n(0, 0, 6, 0.9), n(6, 3, 2, 0.75), n(8, 5, 4, 0.85), nx(12, 7, 4, 0.8)],
+          ],
+        },
+      ],
+    },
+
+    rockabilly: {
+      // Swung: three to a beat. The rhythm is boom-chick — the bass note on
+      // the beat, the chord on the top strings on the and — and the lines
+      // are the major side of the boogie: root, 3, 5, 6 and the ♭7, the ♭3
+      // pushed into the 3, the octave, walked up and down the low strings
+      // and walked chromatically into the next chord.
+      'Rockabilly': [
+        {
+          name: 'Boom-chick',
+          figure: [s(0, 1.6, 0.85, 'bass'), s(2, 0.8, 0.6, 'high'), s(3, 1.6, 0.8, 'bass'), s(5, 0.8, 0.6, 'high'),
+                   s(6, 1.6, 0.85, 'bass'), s(8, 0.8, 0.6, 'high'), s(9, 1.6, 0.8, 'bass'), s(11, 0.8, 0.6, 'high')],
+          variants: [
+            // the chord on 2 and 4 hits harder, the ands lighter
+            [s(0, 1.6, 0.85, 'bass'), s(2, 0.8, 0.45, 'high'), s(3, 1.6, 0.8, 'high'), s(5, 0.8, 0.45, 'high'),
+             s(6, 1.6, 0.85, 'bass'), s(8, 0.8, 0.45, 'high'), s(9, 1.6, 0.8, 'high'), s(11, 0.8, 0.45, 'high')],
+            // the walk-up bass under the chicks: root, 3, 5, 6
+            [n(0, 0, 1.6, 0.85), s(2, 0.8, 0.6, 'high'), n(3, 4, 1.6, 0.8), s(5, 0.8, 0.6, 'high'),
+             n(6, 7, 1.6, 0.85), s(8, 0.8, 0.6, 'high'), n(9, 9, 1.6, 0.8), s(11, 0.8, 0.6, 'high')],
+          ],
+          fills: [
+            // the boogie up — root, 3, 5, 6, ♭7 — and a chromatic walk into the next chord
+            [n(0, 0, 1.6, 0.9), n(2, 4, 0.8, 0.7), n(3, 7, 1.6, 0.85), n(5, 9, 0.8, 0.7),
+             n(6, 10, 1.6, 0.85), nx(8, -3, 0.8, 0.7), nx(9, -2, 1.6, 0.8), nx(11, -1, 0.8, 0.8)],
+            // the ♭3 pushed into the 3, twice, and the 6th to the octave
+            [n(0, 3, 0.8, 0.8), n(1, 4, 1.6, 0.85), n(3, 3, 0.8, 0.75), n(4, 4, 1.6, 0.85),
+             n(6, 9, 1.6, 0.8), n(8, 10, 0.8, 0.7), n(9, 12, 2.4, 0.9)],
+            // half a bar of boom-chick, then down the boogie to the next chord's 5th
+            [s(0, 1.6, 0.85, 'bass'), s(2, 0.8, 0.6, 'high'), s(3, 1.6, 0.8, 'bass'), s(5, 0.8, 0.6, 'high'),
+             n(6, 10, 1.6, 0.85), n(8, 9, 0.8, 0.7), n(9, 7, 1.6, 0.8), nx(11, 7, 0.8, 0.7)],
+          ],
+        },
+        {
+          name: 'Walking boogie',
+          figure: [n(0, 0, 1.6, 0.9), n(2, 0, 0.8, 0.5), n(3, 4, 1.6, 0.85), n(5, 4, 0.8, 0.5),
+                   n(6, 7, 1.6, 0.85), n(8, 7, 0.8, 0.5), n(9, 9, 1.6, 0.85), n(11, 9, 0.8, 0.5)],
+          variants: [
+            // up to the ♭7 and back to the 6th
+            [n(0, 0, 1.6, 0.9), n(2, 0, 0.8, 0.5), n(3, 4, 1.6, 0.85), n(5, 7, 0.8, 0.6),
+             n(6, 9, 1.6, 0.85), n(8, 10, 0.8, 0.7), n(9, 9, 1.6, 0.85), n(11, 7, 0.8, 0.6)],
+            // the chord on 2 and 4 over the walk
+            [n(0, 0, 1.6, 0.9), s(3, 1.6, 0.75, 'high'), n(6, 7, 1.6, 0.85), s(9, 1.6, 0.75, 'high')],
+          ],
+          fills: [
+            // the octave and ♭7 rocked, 6, 5 — then the next root from a semitone below
+            [n(0, 12, 1.6, 0.9), n(2, 10, 0.8, 0.7), n(3, 12, 1.6, 0.85), n(5, 10, 0.8, 0.7),
+             n(6, 9, 1.6, 0.8), n(8, 7, 0.8, 0.7), nx(9, -1, 2.4, 0.85)],
+            // a chord on one, then ♭3-3, 5, 6 and the chromatic walk up
+            [s(0, 2.4, 0.85, 'high'), n(3, 3, 0.8, 0.75), n(4, 4, 1.6, 0.85), n(6, 7, 0.8, 0.8), n(7, 9, 1.6, 0.8),
+             nx(9, -2, 1.6, 0.75), nx(11, -1, 0.8, 0.8)],
+            // the root said and said, then up to the 5th
+            [n(0, 0, 1.6, 0.9), n(2, 0, 0.8, 0.5), n(3, 0, 1.6, 0.8), n(5, 3, 0.8, 0.7), n(6, 4, 1.6, 0.85),
+             n(8, 5, 0.8, 0.7), n(9, 7, 2.4, 0.9)],
+          ],
+        },
+      ],
+    },
+
+    psychobilly: {
+      // Straight and quick, on the low strings: chugged eighths with the
+      // accents on the beat, minor-pentatonic riffs — root, ♭3, 4, 5, ♭7,
+      // the ♭5 as a passing tone — and chromatic walks up and down into the
+      // next chord, which is most of what the bass is doing too.
+      'Psychobilly': [
+        {
+          name: 'Chug and stab',
+          figure: [s(0, 1.6, 0.9, 'low'), s(2, 1.6, 0.6, 'low'), s(4, 1.6, 0.75, 'low'), s(6, 1.6, 0.6, 'low'),
+                   s(8, 1.6, 0.85, 'low'), s(10, 1.6, 0.6, 'low'), s(12, 1.6, 0.75, 'low'), s(14, 1.6, 0.6, 'low')],
+          variants: [
+            // the stab on the and of two and the and of four
+            [s(0, 1.6, 0.9, 'low'), s(2, 1.6, 0.6, 'low'), s(4, 1.6, 0.6, 'low'), s(6, 2, 0.9, 'low'),
+             s(8, 1.6, 0.6, 'low'), s(10, 1.6, 0.6, 'low'), s(12, 1.6, 0.6, 'low'), s(14, 2, 0.9, 'low')],
+            // the root alone under the chugs on 1 and 3
+            [s(0, 1.6, 0.9, 'bass'), s(2, 1.6, 0.6, 'low'), s(4, 1.6, 0.75, 'low'), s(6, 1.6, 0.6, 'low'),
+             s(8, 1.6, 0.85, 'bass'), s(10, 1.6, 0.6, 'low'), s(12, 1.6, 0.75, 'low'), s(14, 1.6, 0.6, 'low')],
+          ],
+          fills: [
+            // the riff: root, root, ♭3, 4, ♭5, 4, ♭3 — and the walk up to the next root
+            [n(0, 0, 2, 0.9), n(2, 0, 2, 0.6), n(4, 3, 2, 0.8), n(6, 5, 2, 0.8), n(8, 6, 2, 0.85), n(10, 5, 2, 0.7),
+             nx(12, -2, 2, 0.8), nx(14, -1, 2, 0.85)],
+            // chugging, then the octave dropped to the ♭7 and the 5th
+            [s(0, 1.6, 0.9, 'low'), s(2, 1.6, 0.6, 'low'), s(4, 1.6, 0.75, 'low'), s(6, 1.6, 0.6, 'low'),
+             n(8, 12, 2, 0.9), n(10, 10, 2, 0.8), n(12, 7, 2, 0.8), nx(14, 7, 2, 0.75)],
+            // the ♭7 hammered, the 5th, and down chromatically onto the next root
+            [n(0, 10, 2, 0.9), n(2, 10, 2, 0.6), n(4, 10, 2, 0.8), n(6, 7, 2, 0.8), n(8, 7, 2, 0.6), n(10, 5, 2, 0.75),
+             nx(12, 2, 2, 0.75), nx(14, 1, 2, 0.8)],
+          ],
+        },
+        {
+          name: 'Low riff',
+          figure: [n(0, 0, 2, 0.9), n(2, 0, 2, 0.6), n(4, 3, 2, 0.8), n(6, 0, 2, 0.7),
+                   n(8, 5, 2, 0.85), n(10, 3, 2, 0.7), n(12, 0, 2, 0.85), n(14, 10, 2, 0.75)],
+          variants: [
+            // through the ♭5
+            [n(0, 0, 2, 0.9), n(2, 0, 2, 0.6), n(4, 3, 2, 0.8), n(6, 5, 2, 0.8),
+             n(8, 6, 2, 0.85), n(10, 5, 2, 0.7), n(12, 3, 2, 0.8), n(14, 0, 2, 0.75)],
+            // the riff with a stab on the and of two
+            [n(0, 0, 2, 0.9), n(2, 0, 2, 0.6), n(4, 3, 2, 0.8), s(6, 2, 0.85, 'low'),
+             n(8, 5, 2, 0.85), n(10, 3, 2, 0.7), n(12, 0, 2, 0.85), n(14, 10, 2, 0.75)],
+          ],
+          fills: [
+            // a bar of chugs
+            [s(0, 1.6, 0.9, 'low'), s(2, 1.6, 0.6, 'low'), s(4, 1.6, 0.75, 'low'), s(6, 1.6, 0.6, 'low'),
+             s(8, 1.6, 0.85, 'low'), s(10, 1.6, 0.6, 'low'), s(12, 1.6, 0.75, 'low'), s(14, 1.6, 0.6, 'low')],
+            // the octave, ♭7, 5, 4 — and the chromatic walk down to the next root
+            [n(0, 12, 2, 0.9), n(2, 10, 2, 0.8), n(4, 7, 2, 0.8), n(6, 5, 2, 0.75), n(8, 3, 2, 0.8), n(10, 0, 2, 0.8),
+             nx(12, 2, 2, 0.75), nx(14, 1, 2, 0.8)],
+            // the root pounded, the ♭3 and 4, the chord on three
+            [n(0, 0, 2, 0.9), n(2, 0, 2, 0.6), n(4, 0, 2, 0.8), n(6, 3, 2, 0.8), s(8, 4, 0.9, 'low'), n(12, 5, 2, 0.8), nx(14, -1, 2, 0.8)],
+          ],
+        },
+      ],
+    },
+
+    surf: {
+      // Straight, picked hard and dry: eighth notes on the low root, the
+      // chord stabbed short on 2 and 4, and runs that fall — the minor
+      // pentatonic with the 6th and the ♭2 that surf borrowed from the
+      // Mediterranean — landing on the next chord from a semitone above.
+      'Surf rock': [
+        {
+          name: 'Low-string pulse',
+          figure: [n(0, 0, 2, 0.9), n(2, 0, 2, 0.7), s(4, 2, 0.85, 'high'), n(6, 0, 2, 0.7),
+                   n(8, 0, 2, 0.85), n(10, 0, 2, 0.7), s(12, 2, 0.85, 'high'), n(14, 0, 2, 0.7)],
+          variants: [
+            // the 5th under beat three
+            [n(0, 0, 2, 0.9), n(2, 0, 2, 0.7), s(4, 2, 0.85, 'high'), n(6, 0, 2, 0.7),
+             n(8, 7, 2, 0.85), n(10, 7, 2, 0.7), s(12, 2, 0.85, 'high'), n(14, 7, 2, 0.7)],
+            // the pulse alone, the chord only on four
+            [n(0, 0, 2, 0.9), n(2, 0, 2, 0.7), n(4, 0, 2, 0.8), n(6, 0, 2, 0.7),
+             n(8, 0, 2, 0.85), n(10, 0, 2, 0.7), s(12, 4, 0.85, 'high')],
+          ],
+          fills: [
+            // down from the octave: 12, 10, 7, 5, ♭3 — and the next root from a semitone above
+            [n(0, 12, 2, 0.9), n(2, 10, 2, 0.8), n(4, 7, 2, 0.85), n(6, 5, 2, 0.8), n(8, 3, 2, 0.85), n(10, 0, 2, 0.8),
+             nx(12, 1, 2, 0.75), nx(14, 0, 2, 0.85)],
+            // the pulse, then the ♭2 leaning on the root, twice
+            [n(0, 0, 2, 0.9), n(2, 0, 2, 0.7), n(4, 0, 2, 0.8), n(6, 0, 2, 0.7),
+             n(8, 1, 2, 0.85), n(10, 0, 2, 0.8), n(12, 1, 2, 0.85), n(14, 0, 2, 0.8)],
+            // a stab, and a run up the pentatonic to the octave held
+            [s(0, 2, 0.85, 'high'), n(4, 3, 2, 0.8), n(6, 5, 2, 0.8), n(8, 7, 2, 0.85), n(10, 10, 2, 0.85), n(12, 12, 4, 0.9)],
+          ],
+        },
+        {
+          name: 'Stabs and runs',
+          figure: [s(0, 2, 0.9, 'high'), s(4, 2, 0.8, 'high'), n(8, 7, 2, 0.85), n(10, 5, 2, 0.8), n(12, 3, 2, 0.85), n(14, 0, 2, 0.8)],
+          variants: [
+            // the run first, the stabs on three and four
+            [n(0, 0, 2, 0.85), n(2, 3, 2, 0.8), n(4, 5, 2, 0.85), n(6, 7, 2, 0.8), s(8, 2, 0.9, 'high'), s(12, 2, 0.8, 'high')],
+            // stabs on the ands
+            [s(2, 2, 0.85, 'high'), s(6, 2, 0.85, 'high'), n(8, 7, 2, 0.85), n(10, 5, 2, 0.8), n(12, 3, 2, 0.85), n(14, 0, 2, 0.8)],
+          ],
+          fills: [
+            // the octave and 6th, the 5th and 4th, down to the ♭3 — and the semitone above the next root
+            [n(0, 12, 2, 0.9), n(2, 9, 2, 0.8), n(4, 7, 2, 0.85), n(6, 5, 2, 0.8), n(8, 3, 4, 0.85), nx(12, 1, 2, 0.75), nx(14, 0, 2, 0.85)],
+            // the low pulse for a bar, the 5th under four
+            [n(0, 0, 2, 0.9), n(2, 0, 2, 0.7), n(4, 0, 2, 0.8), n(6, 0, 2, 0.7), n(8, 0, 2, 0.85), n(10, 0, 2, 0.7), n(12, 7, 2, 0.8), n(14, 7, 2, 0.7)],
+            // the ♭2 to the root, the ♭3 to the root, a stab
+            [n(0, 1, 2, 0.85), n(2, 0, 2, 0.8), n(4, 3, 2, 0.85), n(6, 0, 2, 0.8), s(8, 4, 0.9, 'high'), n(12, 7, 2, 0.8), nx(14, 7, 2, 0.75)],
           ],
         },
       ],
@@ -375,8 +586,9 @@
       // Swung: the grid is three to a beat, the eighths on the first and
       // third. Four-to-the-bar comping on the low three strings with 2 and
       // 4 leaning, and the Charleston figure — one and the and of two — on
-      // the top; lines out of the chord scale, with a chromatic step where
-      // the reading will take one.
+      // the top. The lines put a chord tone on the beat — 3rd and 7th
+      // before anything — a passing or chromatic note between, and arrive
+      // on the next chord's 3rd or root from a semitone away.
       'Swing': [
         {
           name: 'Four to the bar',
@@ -388,15 +600,15 @@
             [s(0, 2.2, 0.6, 'low'), s(3, 2.2, 0.75, 'low'), s(6, 2.2, 0.65), s(9, 2.2, 0.8)],
           ],
           fills: [
-            // a line down from the octave, swung
-            [n(0, 12, 1.6, 0.85), n(2, 11, 0.8, 0.65), n(3, 9, 1.6, 0.8), n(5, 7, 0.8, 0.65),
-             n(6, 5, 1.6, 0.8), n(8, 4, 0.8, 0.65), n(9, 2, 1.6, 0.8), n(11, 0, 0.8, 0.7)],
-            // up to the 6th and back
-            [n(0, 4, 1.6, 0.85), n(2, 5, 0.8, 0.65), n(3, 7, 1.6, 0.8), n(5, 9, 0.8, 0.7),
-             n(6, 10, 1.6, 0.8), n(8, 9, 0.8, 0.65), n(9, 7, 1.6, 0.8), n(11, 4, 0.8, 0.65)],
-            // two chords, then a climb to the octave
-            [s(0, 2.2, 0.65, 'high'), s(3, 2.2, 0.75, 'high'), n(6, 7, 1.6, 0.8), n(8, 9, 0.8, 0.65),
-             n(9, 10, 1.6, 0.8), n(11, 12, 0.8, 0.75)],
+            // 3rd on one, 5th on two, 7th on three, then a chromatic step down onto the next chord's 3rd
+            [n(0, 4, 1.6, 0.85), n(2, 5, 0.8, 0.6), n(3, 7, 1.6, 0.8), n(5, 9, 0.8, 0.65),
+             n(6, 10, 1.6, 0.85), n(8, 12, 0.8, 0.7), nx(9, 5, 1.6, 0.7), nx(11, 4, 0.8, 0.8)],
+            // the 7th on one, down the chord, and the next root enclosed from above and below
+            [n(0, 10, 1.6, 0.85), n(2, 9, 0.8, 0.6), n(3, 7, 1.6, 0.8), n(5, 4, 0.8, 0.65),
+             n(6, 2, 1.6, 0.8), nx(8, 1, 0.8, 0.65), nx(9, -1, 1.6, 0.7), nx(11, 0, 0.8, 0.8)],
+            // two chords, then the 6th to the 7th to the octave and the next chord's 3rd
+            [s(0, 2.2, 0.65, 'high'), s(3, 2.2, 0.75, 'high'), n(6, 9, 1.6, 0.8), n(8, 10, 0.8, 0.65),
+             n(9, 12, 1.6, 0.8), nx(11, 4, 0.8, 0.75)],
           ],
         },
         {
@@ -409,18 +621,20 @@
             [s(2, 3, 0.7, 'high'), s(8, 3, 0.7, 'high')],
           ],
           fills: [
+            // 5th, 6th, 7th, octave — up the chord — and the next chord's 3rd from a semitone below
             [n(0, 7, 1.6, 0.85), n(2, 9, 0.8, 0.65), n(3, 10, 1.6, 0.8), n(5, 12, 0.8, 0.7),
-             n(6, 10, 1.6, 0.8), n(8, 9, 0.8, 0.65), n(9, 7, 1.6, 0.8), n(11, 5, 0.8, 0.65)],
-            [s(0, 2, 0.8, 'high'), n(3, 2, 1.6, 0.8), n(5, 4, 0.8, 0.65), n(6, 5, 1.6, 0.8), n(8, 7, 0.8, 0.65), n(9, 9, 2.4, 0.85)],
-            // a walking line on top, quarter notes
-            [n(0, 12, 2.4, 0.85), n(3, 10, 2.4, 0.8), n(6, 9, 2.4, 0.8), n(9, 7, 2.4, 0.85)],
+             n(6, 10, 1.6, 0.8), n(8, 9, 0.8, 0.65), nx(9, 3, 1.6, 0.7), nx(11, 4, 0.8, 0.8)],
+            // a chord, then 9th, 3rd, 5th, 7th in swung eighths and the next root
+            [s(0, 2, 0.8, 'high'), n(3, 2, 1.6, 0.8), n(5, 4, 0.8, 0.65), n(6, 7, 1.6, 0.8), n(8, 10, 0.8, 0.65), nx(9, -1, 1.6, 0.7), nx(11, 0, 0.8, 0.8)],
+            // a walking line on top, quarter notes, down to the next chord's 3rd
+            [n(0, 12, 2.4, 0.85), n(3, 10, 2.4, 0.8), n(6, 9, 2.4, 0.8), nx(9, 5, 1.2, 0.7), nx(10.5, 4, 1.5, 0.8)],
           ],
         },
       ],
-
       // Straight, quiet: the thumb on one and three, the chord in the
       // fingers on the syncopations between — the bossa's own rhythm guitar
-      // — with lines out of the chord scale that move by step.
+      // — with lines out of the chord scale that move by step, land on
+      // chord tones, and slip into the next chord from a semitone away.
       'Bossa nova': [
         {
           name: 'Thumb and fingers',
@@ -434,9 +648,12 @@
             [s(0, 4, 0.8, 'bass'), s(2, 4, 0.55, 'high'), s(8, 4, 0.75, 'bass'), s(10, 2, 0.5, 'high'), s(12, 2, 0.5, 'high')],
           ],
           fills: [
-            [n(0, 4, 2, 0.75), n(2, 5, 2, 0.65), n(4, 7, 2, 0.7), n(6, 9, 2, 0.65), n(8, 11, 2, 0.7), n(10, 12, 4, 0.75)],
-            [s(0, 4, 0.8, 'bass'), n(4, 12, 2, 0.75), n(6, 11, 2, 0.65), n(8, 9, 2, 0.7), n(10, 7, 2, 0.65), n(12, 5, 2, 0.65), n(14, 4, 2, 0.65)],
-            [n(0, 9, 4, 0.75), n(4, 7, 2, 0.65), n(6, 5, 2, 0.65), n(8, 4, 4, 0.7), s(12, 4, 0.55, 'high')],
+            // 3rd, 5th, 7th, 9th by step, and the next chord's 3rd from above
+            [n(0, 4, 2, 0.75), n(2, 5, 2, 0.6), n(4, 7, 2, 0.7), n(6, 9, 2, 0.6), n(8, 11, 2, 0.7), n(10, 14, 2, 0.7), nx(12, 5, 2, 0.6), nx(14, 4, 2, 0.7)],
+            // the thumb, then down from the 9th to the 3rd and the next root from below
+            [s(0, 4, 0.8, 'bass'), n(4, 14, 2, 0.7), n(6, 12, 2, 0.65), n(8, 11, 2, 0.65), n(10, 9, 2, 0.65), n(12, 7, 2, 0.65), nx(14, -1, 2, 0.7)],
+            // the 6th held, the 5th, the 3rd held, and a chord
+            [n(0, 9, 4, 0.75), n(4, 7, 2, 0.65), n(6, 5, 2, 0.6), n(8, 4, 4, 0.7), s(12, 4, 0.55, 'high')],
           ],
         },
         {
@@ -447,9 +664,60 @@
             [s(0, 6, 0.8, 'bass'), s(6, 2, 0.55, 'high'), s(8, 6, 0.75, 'bass'), s(14, 2, 0.5, 'high')],
           ],
           fills: [
-            [n(0, 12, 2, 0.75), n(2, 11, 2, 0.65), n(4, 9, 2, 0.7), n(6, 7, 2, 0.65), n(8, 5, 4, 0.7), n(12, 4, 2, 0.65), n(14, 2, 2, 0.65)],
-            [s(0, 2, 0.8, 'bass'), n(2, 4, 2, 0.65), n(4, 5, 2, 0.65), n(6, 7, 2, 0.7), s(8, 2, 0.75, 'bass'), n(10, 9, 2, 0.65), n(12, 11, 2, 0.65), n(14, 12, 2, 0.7)],
-            [n(0, 7, 4, 0.75), n(4, 9, 2, 0.65), n(6, 7, 2, 0.65), n(8, 4, 4, 0.7), n(12, 2, 2, 0.65), n(14, 0, 2, 0.7)],
+            // from the octave down the chord scale, the 7th on three, and the next chord's 3rd
+            [n(0, 12, 2, 0.75), n(2, 11, 2, 0.65), n(4, 9, 2, 0.7), n(6, 7, 2, 0.65), n(8, 4, 4, 0.7), nx(12, 5, 2, 0.6), nx(14, 4, 2, 0.7)],
+            // the thumb under a rising line — 3, 4, 5 / 6, 7, octave — and the next root
+            [s(0, 2, 0.8, 'bass'), n(2, 4, 2, 0.65), n(4, 5, 2, 0.6), n(6, 7, 2, 0.7), s(8, 2, 0.75, 'bass'), n(10, 9, 2, 0.65), n(12, 11, 2, 0.65), nx(14, 0, 2, 0.7)],
+            // the 5th held, 6th, 5th, the 3rd held, and the 9th to close
+            [n(0, 7, 4, 0.75), n(4, 9, 2, 0.65), n(6, 7, 2, 0.6), n(8, 4, 4, 0.7), n(12, 2, 4, 0.65)],
+          ],
+        },
+      ],
+    },
+
+    gypsy: {
+      // Swung and quick, no drums: la pompe — a short chord on every beat
+      // with a brushed lift into 2 and 4 — is the whole rhythm section, and
+      // the lines are arpeggios up and down the chord with the 6th, and
+      // chromatic enclosures round the next chord's root or 3rd.
+      'Gypsy jazz': [
+        {
+          name: 'La pompe',
+          figure: [s(0, 1.2, 0.55), s(2, 0.5, 0.3, 'high'), s(3, 1, 0.8), s(6, 1.2, 0.55), s(8, 0.5, 0.3, 'high'), s(9, 1, 0.8)],
+          variants: [
+            // the lifts left out, the four beats alone
+            [s(0, 1.2, 0.55), s(3, 1, 0.8), s(6, 1.2, 0.55), s(9, 1, 0.8)],
+            // a bass note on one and three under the chords
+            [s(0, 1.2, 0.7, 'bass'), s(2, 0.5, 0.3, 'high'), s(3, 1, 0.8, 'high'), s(6, 1.2, 0.7, 'bass'), s(8, 0.5, 0.3, 'high'), s(9, 1, 0.8, 'high')],
+          ],
+          fills: [
+            // up the arpeggio — root, 3, 5, 6, octave — and the next root enclosed from above and below
+            [n(0, 0, 1.6, 0.85), n(2, 4, 0.8, 0.7), n(3, 7, 1.6, 0.85), n(5, 9, 0.8, 0.7),
+             n(6, 12, 1.6, 0.85), nx(8, 1, 0.8, 0.65), nx(9, -1, 1.6, 0.75), nx(11, 0, 0.8, 0.85)],
+            // two pompe beats, then down the arpeggio to the next chord's 3rd from a semitone above
+            [s(0, 1.2, 0.55), s(3, 1, 0.8), n(6, 12, 0.8, 0.85), n(7, 9, 0.8, 0.75), n(8, 7, 0.8, 0.8),
+             n(9, 4, 0.8, 0.8), nx(10, 5, 0.8, 0.7), nx(11, 4, 0.8, 0.85)],
+            // the 6th to the 5th, twice, and the octave held
+            [n(0, 9, 1.6, 0.85), n(2, 7, 0.8, 0.7), n(3, 9, 1.6, 0.8), n(5, 7, 0.8, 0.7), n(6, 4, 1.6, 0.8), n(8, 7, 0.8, 0.7), n(9, 12, 2.4, 0.9)],
+          ],
+        },
+        {
+          name: 'Pompe and arpeggio',
+          figure: [s(0, 1.2, 0.55), s(3, 1, 0.8), n(6, 0, 0.8, 0.85), n(7, 4, 0.8, 0.75), n(8, 7, 0.8, 0.8), n(9, 12, 0.8, 0.85), n(10, 7, 0.8, 0.75), n(11, 4, 0.8, 0.75)],
+          variants: [
+            // the arpeggio first
+            [n(0, 0, 0.8, 0.85), n(1, 4, 0.8, 0.75), n(2, 7, 0.8, 0.8), n(3, 12, 0.8, 0.85), n(4, 7, 0.8, 0.75), n(5, 4, 0.8, 0.75), s(6, 1.2, 0.55), s(9, 1, 0.8)],
+            // three beats of pompe, a triplet turn on four
+            [s(0, 1.2, 0.55), s(3, 1, 0.8), s(6, 1.2, 0.55), n(9, 9, 0.8, 0.8), n(10, 7, 0.8, 0.75), n(11, 4, 0.8, 0.75)],
+          ],
+          fills: [
+            // the 6th enclosing the 5th, the 3rd, and the next root from a semitone below
+            [n(0, 9, 0.8, 0.8), n(1, 7, 0.8, 0.8), n(2, 6, 0.8, 0.65), n(3, 7, 1.6, 0.85), n(5, 4, 0.8, 0.75), n(6, 2, 1.6, 0.8), n(8, 0, 0.8, 0.75), nx(9, -1, 1.6, 0.75), nx(11, 0, 0.8, 0.85)],
+            // a bar of pompe
+            [s(0, 1.2, 0.55), s(2, 0.5, 0.3, 'high'), s(3, 1, 0.8), s(6, 1.2, 0.55), s(8, 0.5, 0.3, 'high'), s(9, 1, 0.8)],
+            // up in triplets: root 3 5 / 6 octave 6 / 5 3 root, and the next chord's 3rd
+            [n(0, 0, 0.8, 0.85), n(1, 4, 0.8, 0.75), n(2, 7, 0.8, 0.8), n(3, 9, 0.8, 0.8), n(4, 12, 0.8, 0.85), n(5, 9, 0.8, 0.75),
+             n(6, 7, 0.8, 0.8), n(7, 4, 0.8, 0.75), n(8, 0, 0.8, 0.8), nx(9, 5, 1.6, 0.7), nx(11, 4, 0.8, 0.85)],
           ],
         },
       ],
@@ -457,8 +725,10 @@
 
     pop: {
       // Straight, the chord doing most of the work: the down-down-up-up-
-      // down-up strum with the ups on the top strings, and broken chords
-      // out of the root, 3rd, 5th and octave.
+      // down-up strum with the ups on the top strings, broken chords out
+      // of the root, 3rd, 5th and octave, and lines that are melodies —
+      // chord tones held, the 9th and 6th as colour, a step into the next
+      // chord's root or 3rd rather than a chromatic slide.
       'Pop': [
         {
           name: 'Down down up up down up',
@@ -472,12 +742,12 @@
              s(10, 2, 0.55, 'high'), s(12, 2, 0.75), s(14, 2, 0.55, 'high')],
           ],
           fills: [
-            // the chord broken upward, and struck to close
+            // the chord broken upward and back, and the next chord's 3rd from a step above
             [n(0, 0, 2, 0.85), n(2, 4, 2, 0.7), n(4, 7, 2, 0.75), n(6, 12, 2, 0.8),
-             n(8, 7, 2, 0.7), n(10, 4, 2, 0.65), s(12, 4, 0.8)],
-            // half the pattern, then a line down from the octave
-            [s(0, 4, 0.8), s(4, 2, 0.75), s(6, 2, 0.55, 'high'), n(8, 12, 2, 0.85), n(10, 9, 2, 0.7), n(12, 7, 2, 0.75), n(14, 4, 2, 0.7)],
-            // a melody note a beat, rising
+             n(8, 7, 2, 0.7), n(10, 4, 2, 0.65), nx(12, 5, 2, 0.65), nx(14, 4, 2, 0.75)],
+            // half the pattern, then the octave, 6th, 5th held into the next root
+            [s(0, 4, 0.8), s(4, 2, 0.75), s(6, 2, 0.55, 'high'), n(8, 12, 2, 0.85), n(10, 9, 2, 0.7), n(12, 7, 2, 0.75), nx(14, 0, 2, 0.75)],
+            // a melody: 3rd, 5th, 6th, octave, a beat each
             [n(0, 4, 4, 0.85), n(4, 7, 4, 0.8), n(8, 9, 4, 0.8), n(12, 12, 4, 0.9)],
           ],
         },
@@ -494,9 +764,12 @@
              n(8, 0, 2, 0.8), n(10, 7, 2, 0.65), n(12, 12, 2, 0.7), n(14, 7, 2, 0.6)],
           ],
           fills: [
-            [n(0, 12, 2, 0.85), n(2, 12, 2, 0.6), n(4, 9, 2, 0.75), n(6, 7, 2, 0.7), n(8, 4, 4, 0.8), n(12, 0, 4, 0.85)],
+            // the octave twice, 6th, 5th, the 3rd held, and a step down onto the next root
+            [n(0, 12, 2, 0.85), n(2, 12, 2, 0.6), n(4, 9, 2, 0.75), n(6, 7, 2, 0.7), n(8, 4, 4, 0.8), nx(12, 2, 2, 0.7), nx(14, 0, 2, 0.8)],
+            // up the chord to the 9th and back
             [n(0, 0, 2, 0.8), n(2, 4, 2, 0.65), n(4, 7, 2, 0.7), n(6, 12, 2, 0.75),
-             n(8, 14, 2, 0.75), n(10, 12, 2, 0.7), n(12, 7, 2, 0.65), n(14, 4, 2, 0.6)],
+             n(8, 14, 2, 0.75), n(10, 12, 2, 0.7), n(12, 7, 2, 0.65), nx(14, 4, 2, 0.7)],
+            // two chords, then the 6th, 5th, and the 3rd held
             [s(0, 4, 0.8), s(4, 4, 0.7), n(8, 9, 2, 0.75), n(10, 7, 2, 0.7), n(12, 4, 4, 0.8)],
           ],
         },
@@ -504,9 +777,11 @@
     },
 
     funk: {
-      // Sixteenths, short: the hit on one and the chops on the top strings
-      // in the gaps the drums leave, single-note lines out of the root, ♭3,
-      // 4, 5, ♭7 and octave that funk guitar lives on.
+      // Sixteenths, short, with rests: the hit on one and the chops on the
+      // top strings in the gaps the drums leave, and single-note lines that
+      // are mostly the root and the octave with the ♭7 and ♭3 for flavour
+      // — said in syncopated bursts, not runs — sliding into the next
+      // chord from a semitone below.
       'Classic funk': [
         {
           name: 'The one and the chops',
@@ -520,12 +795,14 @@
              s(8, 1, 0.7, 'high'), s(10, 1, 0.5, 'high'), s(11, 1, 0.5, 'high'), s(14, 1, 0.55, 'high')],
           ],
           fills: [
-            [n(0, 0, 1, 0.9), n(2, 10, 1, 0.7), n(3, 12, 1, 0.7), n(6, 10, 1, 0.7), n(8, 7, 2, 0.8),
-             n(11, 5, 1, 0.6), n(12, 3, 2, 0.8), n(14, 0, 2, 0.7)],
-            [s(0, 1, 0.9, 'high'), n(4, 7, 1, 0.8), n(6, 10, 1, 0.7), n(7, 12, 1, 0.75), n(10, 10, 1, 0.7), n(12, 7, 4, 0.85)],
-            // octaves, then a chop and a turn
+            // root, root, octave / ♭7 — in bursts — and the next root from a semitone below
+            [n(0, 0, 1, 0.9), n(2, 0, 1, 0.6), n(3, 12, 1, 0.75), n(6, 10, 1, 0.7), n(8, 0, 2, 0.85),
+             n(11, 12, 1, 0.7), n(12, 10, 2, 0.8), nx(14, -1, 2, 0.75)],
+            // the hit, then the 5th, ♭7 and octave stabbed and the octave held
+            [s(0, 1, 0.9, 'high'), n(4, 7, 1, 0.8), n(6, 10, 1, 0.7), n(7, 12, 1, 0.75), n(10, 10, 1, 0.7), n(12, 12, 4, 0.85)],
+            // octaves, then a chop and the ♭3 into the next chord's 3rd
             [n(0, 0, 1, 0.9), n(2, 12, 1, 0.75), n(4, 0, 1, 0.8), n(6, 12, 1, 0.75),
-             s(8, 1, 0.7, 'high'), s(10, 1, 0.5, 'high'), n(12, 10, 2, 0.75), n(14, 12, 2, 0.75)],
+             s(8, 1, 0.7, 'high'), s(10, 1, 0.5, 'high'), nx(12, 3, 2, 0.7), nx(14, 4, 2, 0.75)],
           ],
         },
         {
@@ -544,16 +821,18 @@
             // a bar of chops
             [s(0, 1, 0.85, 'high'), s(2, 1, 0.5, 'high'), s(6, 1, 0.6, 'high'), s(8, 1, 0.75, 'high'),
              s(10, 1, 0.5, 'high'), s(11, 1, 0.45, 'high'), s(14, 1, 0.55, 'high')],
-            [n(0, 12, 1, 0.85), n(2, 10, 1, 0.7), n(3, 7, 1, 0.7), n(6, 5, 1, 0.7), n(8, 3, 2, 0.8), n(11, 0, 1, 0.6), n(12, 0, 2, 0.85)],
+            // the octave, ♭7, 5 / ♭3, root — and the next root from below
+            [n(0, 12, 1, 0.85), n(2, 10, 1, 0.7), n(3, 7, 1, 0.7), n(6, 3, 1, 0.7), n(8, 0, 2, 0.8), n(11, 0, 1, 0.6), nx(12, -1, 1, 0.7), nx(14, 0, 2, 0.85)],
+            // root, ♭3, 4 / 5, ♭7, octave — up in bursts — and two chops
             [n(0, 0, 1, 0.85), n(2, 3, 1, 0.7), n(3, 5, 1, 0.7), n(6, 7, 1, 0.75), n(8, 10, 1, 0.8), n(10, 12, 1, 0.75),
              s(12, 1, 0.75, 'high'), s(14, 1, 0.5, 'high')],
           ],
         },
       ],
-
       // Four on the floor under it, the guitar on the off-beats: short chops
       // on the top strings on the ands, and the octave line disco bass and
-      // guitar share.
+      // guitar share — root and octave, with the ♭7 and 5th as the way
+      // from one chord to the next.
       'Disco': [
         {
           name: 'Off-beat chops',
@@ -566,11 +845,13 @@
             [s(0, 1, 0.8, 'high'), s(2, 2, 0.7, 'high'), s(6, 2, 0.7, 'high'), s(10, 2, 0.7, 'high'), s(13, 1, 0.5, 'high'), s(14, 2, 0.75, 'high')],
           ],
           fills: [
-            // the octave line
+            // the octave line, and the ♭7 down to the next chord's 5th
             [n(0, 0, 1, 0.85), n(2, 12, 1, 0.7), n(4, 0, 1, 0.8), n(6, 12, 1, 0.7),
-             n(8, 0, 1, 0.8), n(10, 12, 1, 0.7), n(12, 10, 2, 0.75), n(14, 12, 2, 0.75)],
+             n(8, 0, 1, 0.8), n(10, 12, 1, 0.7), n(12, 10, 2, 0.75), nx(14, 7, 2, 0.75)],
+            // two chops, then 5th, ♭7, octave held
             [s(2, 2, 0.75, 'high'), s(6, 2, 0.75, 'high'), n(8, 7, 2, 0.8), n(10, 10, 2, 0.75), n(12, 12, 4, 0.85)],
-            [n(0, 0, 2, 0.85), n(2, 3, 1, 0.7), n(3, 5, 1, 0.7), n(4, 7, 2, 0.8), n(6, 10, 2, 0.75), n(8, 12, 4, 0.85), s(14, 2, 0.7, 'high')],
+            // root, octave, root, octave in a burst, and the next root from a semitone below
+            [n(0, 0, 1, 0.85), n(1, 12, 1, 0.7), n(2, 0, 1, 0.8), n(3, 12, 1, 0.7), n(8, 0, 2, 0.8), n(10, 12, 2, 0.75), nx(12, -1, 2, 0.7), nx(14, 0, 2, 0.8)],
           ],
         },
         {
@@ -586,9 +867,12 @@
              s(10, 2, 0.75, 'high'), s(13, 1, 0.5, 'high'), s(14, 2, 0.75, 'high')],
           ],
           fills: [
+            // a bar of chops
             [s(2, 2, 0.75, 'high'), s(6, 2, 0.75, 'high'), s(10, 2, 0.75, 'high'), s(13, 1, 0.5, 'high'), s(14, 2, 0.75, 'high')],
-            [n(0, 12, 1, 0.85), n(2, 10, 1, 0.7), n(4, 7, 2, 0.8), n(6, 5, 2, 0.7), n(8, 3, 2, 0.8), n(10, 0, 2, 0.8), n(12, 0, 4, 0.85)],
-            [n(0, 0, 2, 0.85), n(2, 0, 1, 0.5), n(3, 3, 1, 0.7), n(4, 5, 2, 0.75), n(6, 7, 2, 0.75), n(8, 10, 2, 0.8), n(10, 12, 2, 0.8), s(14, 2, 0.75, 'high')],
+            // the octave down to the root, ♭7 and 5th on the way, and the next root from below
+            [n(0, 12, 1, 0.85), n(2, 10, 1, 0.7), n(4, 7, 2, 0.8), n(6, 0, 2, 0.8), n(8, 0, 2, 0.8), n(10, 12, 2, 0.75), nx(12, -1, 2, 0.7), nx(14, 0, 2, 0.85)],
+            // root in a burst, ♭3 to the 5th, ♭7 and octave, two chops
+            [n(0, 0, 1, 0.85), n(1, 0, 1, 0.5), n(2, 0, 1, 0.7), n(3, 3, 1, 0.7), n(4, 7, 2, 0.75), n(8, 10, 2, 0.8), n(10, 12, 2, 0.8), s(14, 2, 0.75, 'high')],
           ],
         },
       ],
@@ -767,10 +1051,16 @@
   const strumStringLevel = strings => Math.min(1, 1.45 / Math.sqrt(strings));
 
   // Realise one written bar against one chord: a list of playable notes.
-  function realiseBar(written, chord, opts){
+  // `nextChord` is what the bar after this one holds, for the notes that
+  // point at it; without one, the next chord is this one.
+  function realiseBar(written, chord, opts, nextChord){
     const { root, allowed } = palette(chord, opts);
     const cells = cellsIn(opts.window);
     const home = homeMidi(cells, root);
+    // the notes written against the next chord are placed from its root,
+    // in its palette — where the line is going, not where it is
+    const nextPal = palette(nextChord || chord, opts);
+    const nextHome = homeMidi(cells, nextPal.root);
     const out = [];
     let prev = null;
     written.forEach(w => {
@@ -787,9 +1077,10 @@
         prev = grip[grip.length - 1];
         return;
       }
-      const s = snap(root, w.iv, allowed);
+      const from = w.next ? nextPal : { root, allowed };
+      const s = snap(from.root, w.iv, from.allowed);
       if (!s) return;
-      const wantMidi = home + w.iv + s.shift;
+      const wantMidi = (w.next ? nextHome : home) + w.iv + s.shift;
       const cands = cells.filter(c => c.midi % 12 === s.pc);
       if (!cands.length) return;
       // nearest pitch; between two places for the same pitch, the string
@@ -797,7 +1088,7 @@
       cands.sort((a, b) => Math.abs(a.midi - wantMidi) - Math.abs(b.midi - wantMidi)
         || (prev ? Math.abs(a.string - prev.string) - Math.abs(b.string - prev.string) : 0));
       const c = cands[0];
-      out.push({ at: w.at, dur: w.dur, vel: w.vel, string: c.string, fret: c.fret, midi: c.midi, iv: w.iv });
+      out.push({ at: w.at, dur: w.dur, vel: w.vel, string: c.string, fret: c.fret, midi: c.midi, iv: w.iv, next: !!w.next });
       prev = c;
     });
     return out;
@@ -822,7 +1113,9 @@
       const written = b % 2 === 0
         ? figureFor(part, phrase)
         : part.fills[Math.abs(picks[phrase] || 0) % part.fills.length];
-      realiseBar(written, bar.chord, opts).forEach(note => notes.push({ ...note, bar: b }));
+      // the bar after this one, round to the first at the end: a loop
+      const after = bars[(b + 1) % bars.length];
+      realiseBar(written, bar.chord, opts, after && after.chord).forEach(note => notes.push({ ...note, bar: b }));
     });
     return notes;
   }
