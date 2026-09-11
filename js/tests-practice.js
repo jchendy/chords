@@ -74,6 +74,7 @@
   segGroup('voiceGroup', ['piano', 'guitar'], 'seg-btn');
   segGroup('partToggle', ['off', 'on'], 'seg-btn');
   segGroup('partScaleGroup', ['follow', 'key'], 'seg-btn');
+  segGroup('partSoundGroup', ['on', 'off'], 'seg-btn');
   ['partRow', 'partControls', 'partTab'].forEach(id => add('div', id));
   add('span', 'partName');
   ['partPrev', 'partNext', 'partReroll'].forEach(id => add('button', id, { type: 'button' }));
@@ -566,8 +567,58 @@
     t.equal(bad.join('; '), '', 'A typed progression goes in a bar at a time, and a bad word refuses the line');
   }
 
+  // A suggested part stays put until you move it. The neck follows the
+  // playing chord, and in one position that re-picks the box on every
+  // change — so a part that followed the window came out as different notes
+  // on every chord and read as changing every time round. The window the
+  // part was set in is the window it stays in: the neck moving by itself
+  // must leave it alone, and only your own moves — the arrows, a new part,
+  // new fills — may change it.
+  function testThePartStaysPut(t){
+    start();
+    const bad = [];
+    const view = GT.fretboardView;
+    const notesOf = () => JSON.stringify(GT.practice.partState().notes);
+
+    // a blues feel in one position, so there is a part to have
+    q('#styleGroup .genre-btn[data-value="blues"]').click();
+    view.applyViewState('m:penta.p:position');
+    q('#partToggle .seg-btn[data-value="on"]').click();
+    const first = notesOf();
+    if (first === '[]'){ bad.push('turning the part on gave no notes'); }
+    else {
+      // the neck re-picking its box, as it does on every chord while playing:
+      // a different window, no hand on the arrows
+      const before = GT.practice.partState().window;
+      view.applyViewState('m:penta.p:position.b:2');
+      const moved = JSON.stringify(view.positionView().window) !== JSON.stringify(before);
+      if (!moved) bad.push('could not move the neck to test against (box 2 is where it already was)');
+      if (notesOf() !== first) bad.push('the neck moving by itself re-realised the part');
+      if (JSON.stringify(GT.practice.partState().window) !== JSON.stringify(before)){
+        bad.push('the part followed the neck to a new window');
+      }
+
+      // ...whereas stepping the box yourself moves it into the new window
+      q('#boxNext').click();
+      const after = GT.practice.partState().window;
+      if (JSON.stringify(after) === JSON.stringify(before)) bad.push('stepping the box left the part in the old window');
+
+      // and new fills change the answering bars but never the figure
+      const was = GT.practice.partState().notes;
+      q('#partReroll').click();
+      const now = GT.practice.partState().notes;
+      const figureOf = ns => JSON.stringify(ns.filter(n => n.bar % 2 === 0));
+      if (figureOf(was) !== figureOf(now)) bad.push('re-rolling the fills changed the figure');
+    }
+    q('#partToggle .seg-btn[data-value="off"]').click();
+    if (notesOf() !== '[]') bad.push('turning the part off left notes behind');
+    view.applyViewState('');
+    t.equal(bad.join('; '), '', 'A part stays in the window it was set in until you move it');
+  }
+
   GT.practiceSuites = [
     ['Practice: a shared link round-trips', testShareLinkRoundTrips],
+    ['Practice: a part stays put until you move it', testThePartStaysPut],
     ['Practice: the transport picker names the feel', testTheTransportPickerNamesTheFeel],
     ['Practice: a hit ends when the next begins', testAHitEndsWhenTheNextBegins],
     ['Practice: the downbeat is an accent, not another instrument', testTheDownbeatIsAnAccentNotAnInstrument],

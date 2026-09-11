@@ -107,7 +107,7 @@
       const elapsed = audio.ctx().currentTime - startTime;
       const slot = Math.max(0, elapsed / secondsPerSlot) % example.totalSlots;
       const pos = GT.tab.playheadPos(slot, tabMetrics);
-      head.hidden = false;
+      head.removeAttribute('hidden');     // no `hidden` property on an SVG element
       head.setAttribute('x', pos.x);
       head.setAttribute('y', pos.y);
       const current = Math.floor(slot);
@@ -151,7 +151,7 @@
     audio.keepAwake(false);
     if (tabSvg){
       const head = tabSvg.querySelector('.tab-playhead');
-      if (head) head.hidden = true;
+      if (head) head.setAttribute('hidden', '');
       tabSvg.querySelectorAll('.tab-note.now').forEach(g => g.classList.remove('now'));
     }
   }

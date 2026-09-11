@@ -109,11 +109,17 @@ names the tab you're on.
   written for the feel that's playing and realised into the notes that
   reading offers in that position. It's lit on the neck as it goes, written
   out as tab under the chart, and sounded on the recorded guitar so you can
-  hear what you're aiming at. ‹ › steps through the feel's parts and "New
-  fills" re-rolls the answering bars of the one you're on; nothing changes
-  otherwise, however long you practise. "Follow chords" moves the part with
-  each change using whatever the neck is showing; "Stay on the I" keeps it
-  on the key's scale throughout. See **Suggested parts** below for how a
+  hear what you're aiming at — on top of the band, the way a lead sits,
+  with "Silent" for when you'd rather play it yourself. ‹ › steps through
+  the feel's parts and "New fills" re-rolls the answering bars of the one
+  you're on; nothing changes otherwise, however long you practise, and
+  in particular the neck following the playing chord into another box
+  does not move it — the part stays in the window it was set in, and only
+  stepping the box yourself takes it along. "Follow chords" moves the notes
+  with each change using whatever the neck is showing; "Stay on the I"
+  keeps them on the key's scale throughout. The tab is one long strip that
+  scrolls a bar at a time to keep the bar being played in view, with the
+  bar's chord lit and a playhead on the slot. See **Suggested parts** below for how a
   part written once ends up in four readings
 - "Type it" — a text field in Set up that takes the progression as chord
   names, one per bar: `E E E E A7 A7 E E Bm7 Bm7` is four chords held for

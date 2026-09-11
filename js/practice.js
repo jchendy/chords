@@ -1268,7 +1268,7 @@
     if (fretboard) p.set('f', fretboard);
     // the part: on, which one, which fills were rolled, and whether it stays
     // on the I — so the exact part you were working on comes back
-    if (partOn) p.set('p', `${partIdx}.${partScale === 'key' ? 'k' : 'f'}.${partFills.join('')}`);
+    if (partOn) p.set('p', `${partIdx}.${partScale === 'key' ? 'k' : 'f'}.${partFills.join('')}${partSound ? '' : '.s'}`);
     return p;
   }
 
@@ -1319,11 +1319,13 @@
     const part = p.get('p');
     partOn = !!part;
     if (part){
-      const [idx, scale, fills] = part.split('.');
+      const [idx, scale, fills, silent] = part.split('.');
       partIdx = Number(idx) || 0;
       partScale = scale === 'k' ? 'key' : 'follow';
       partFills = (fills || '').split('').map(Number).filter(n => !Number.isNaN(n));
+      partSound = silent !== 's';
     }
+    partSoundGroup.querySelectorAll('.seg-btn').forEach(b => b.classList.toggle('active', (b.dataset.value === 'on') === partSound));
     partToggle.querySelectorAll('.seg-btn').forEach(b => b.classList.toggle('active', (b.dataset.value === 'on') === partOn));
     partScaleGroup.querySelectorAll('.seg-btn').forEach(b => b.classList.toggle('active', b.dataset.value === (partScale === 'key' ? 'key' : 'follow')));
 
@@ -1376,10 +1378,18 @@
   let partIdx = 0;                  // which of the feel's parts
   let partFills = [];               // one fill choice per two-bar phrase
   let partScale = 'follow';         // 'follow' the chords | stay on the 'key'
+  let partSound = true;             // sounded, or shown for you to play yourself
+  // The part is the thing you're aiming at, so it sits on top of the band
+  // the way a lead does, not inside it. Measured: at the guitar's own level
+  // it added half a decibel to the mix, which is to say nobody could hear
+  // it — the reason "New fills" seemed to do nothing.
+  const PART_LEVEL = 2.4;
   let partNotes = [];               // realised: bar, at, dur, vel, string, fret, midi
   let partLog = [];                 // what's been scheduled, for lighting as it sounds
   let partTab = null;               // the drawn tab's metrics, for the playhead
   let partSig = '';                 // what the realised part was built from
+  let partWindow = null;            // the stretch of neck it was realised in
+  let partBarShown = -1;            // which bar the tab is scrolled to
 
   const partRow = document.getElementById('partRow');
   const partToggle = document.getElementById('partToggle');
@@ -1410,22 +1420,27 @@
   }
 
   // Everything the realised part depends on, so it's rebuilt when any of it
-  // moves and left alone otherwise — the neck redraws on every chord change
-  // during playback, and none of those should redraw the tab.
+  // moves and left alone otherwise. The position window is deliberately NOT
+  // here: the neck follows the playing chord, and in one position that means
+  // re-picking the box on every change — so a part that followed the window
+  // was re-realised into different notes on every chord, and came out
+  // different every time round. The part is realised in the window it was
+  // set in and stays there; stepping the box yourself is the one thing that
+  // moves it, and that's wired to the arrows below rather than to the neck.
   function partSignature(){
     const pv = view.positionView();
     const feel = feelNow();
     return JSON.stringify([partOn, partIdx, partFills, partScale, currentMode, currentTonic,
-      feel && feel.label, pv.reading, pv.inPosition, pv.window, pv.scaleTheory,
+      feel && feel.label, pv.reading, pv.inPosition, pv.scaleTheory,
       currentProgression.map((c, i) => `${displayName(c)}.${measuresFor(i)}`)]);
   }
 
   function rebuildPart(force){
     partRow.hidden = !partsNow().length || !view.positionView().inPosition;
     partControls.hidden = !partOn;
-    const sig = partSignature();
-    if (!force && sig === partSig) return;
-    partSig = sig;
+    if (!force && partSignature() === partSig) return;
+    partWindow = view.positionView().window;
+    partBarShown = -1;
 
     if (!partOn || !partAvailable()){
       partNotes = [];
@@ -1433,6 +1448,7 @@
       partTabEl.hidden = true;
       partTabEl.innerHTML = '';
       view.lightSounding([]);
+      partSig = partSignature();
       return;
     }
     const part = partNow(), bars = progressionBars(), pv = view.positionView();
@@ -1442,11 +1458,16 @@
       partFills = partFills.concat(GT.parts.rollFills(part, (phrases - partFills.length) * 2));
     }
     partNotes = GT.parts.realise(part, bars, partFills, {
-      reading: pv.reading, window: pv.window, scaleTheory: pv.scaleTheory,
+      reading: pv.reading, window: partWindow, scaleTheory: pv.scaleTheory,
       stayOnKey: partScale === 'key', key: { tonic: currentTonic, mode: currentMode },
     });
     partNameEl.textContent = part.name;
     drawPartTab(bars);
+    // Taken now, after the fills have been rolled, not before: stored before
+    // the roll it described a part that no longer existed, so the very next
+    // neck redraw saw "different fills", rebuilt once more, and carried the
+    // part off into whatever window the neck had moved to by then.
+    partSig = partSignature();
   }
 
   // The part as tablature, the way the genre examples write theirs, one bar
@@ -1459,11 +1480,16 @@
       notes: partNotes.map(n => ({ string: n.string, fret: n.fret, at: n.bar * grid + n.at, dur: n.dur })),
       totalSlots: bars.length * grid,
     };
-    const built = GT.tab.build(example, partTabEl.clientWidth || 640);
+    // One row, however long, rather than wrapped to the width: a wrapped tab
+    // is all on screen at once but there is no "current bar" to keep in view
+    // when it's taller than the window. A strip scrolls sideways, and the
+    // frame loop keeps the bar being played in it.
+    const built = GT.tab.build(example, Number.MAX_SAFE_INTEGER);
     partTab = built.metrics;
     partTabEl.innerHTML = `<svg viewBox="${built.viewBox}" width="${built.width}" height="${built.height}"`
       + ` role="img" aria-label="${partNow().name}, written out">${built.markup}</svg>`;
     partTabEl.hidden = false;
+    partTabEl.scrollLeft = 0;
   }
 
   // Sound and log the part's notes for one slot of one bar. Called from the
@@ -1473,7 +1499,7 @@
     partNotes.forEach(n => {
       if (n.bar !== barIdx || n.at !== slot) return;
       const dur = n.dur * slotDur;
-      audio.playPluck(440 * Math.pow(2, (n.midi - 69) / 12), t, dur, n.vel);
+      if (partSound) audio.playPluck(440 * Math.pow(2, (n.midi - 69) / 12), t, dur, n.vel * PART_LEVEL);
       partLog.push({ time: t, until: t + dur, string: n.string, fret: n.fret, slot: barIdx * feelNow().grid + n.at });
     });
     if (partLog.length > 256) partLog = partLog.filter(e => e.until > audio.ctx().currentTime);
@@ -1496,9 +1522,21 @@
       const into = Math.max(0, (now - active.time) / (60 / getTempo()));
       const slot = barIdx * grid + (active.beat - 1) * perBeat + Math.min(perBeat - 1, Math.floor(into * perBeat));
       const pos = GT.tab.playheadPos(slot, partTab);
-      head.hidden = false;
+      // an SVG element has no `hidden` property, only the attribute — set the
+      // property and nothing happens, which is why this never showed
+      head.removeAttribute('hidden');
       head.setAttribute('x', pos.x);
       head.setAttribute('y', pos.y);
+      if (barIdx !== partBarShown){
+        partBarShown = barIdx;
+        // the bar being played, named in the tab and brought into view — the
+        // strip scrolls a bar at a time, when the bar changes, so it reads
+        // like a page turning rather than a ticker
+        partTabEl.querySelectorAll('.tab-chord').forEach((el, i) => el.classList.toggle('now', i === barIdx));
+        const barStart = GT.tab.playheadPos(barIdx * grid, partTab).x;
+        const scale = partTabEl.querySelector('svg').getBoundingClientRect().width / partTab.width;
+        partTabEl.scrollTo({ left: Math.max(0, barStart * scale - 24), behavior: 'smooth' });
+      }
     }
   }
 
@@ -1507,7 +1545,9 @@
     view.lightSounding([]);
     partTabEl.querySelectorAll('.tab-note.now').forEach(g => g.classList.remove('now'));
     const head = partTabEl.querySelector('.tab-playhead');
-    if (head) head.hidden = true;
+    if (head) head.setAttribute('hidden', '');
+    partTabEl.querySelectorAll('.tab-chord.now').forEach(el => el.classList.remove('now'));
+    partBarShown = -1;
   }
 
   partToggle.querySelectorAll('.seg-btn').forEach(btn => btn.addEventListener('click', () => {
@@ -1520,6 +1560,18 @@
   document.getElementById('partPrev').addEventListener('click', () => { partIdx--; partFills = []; rebuildPart(); writeShareState(); });
   document.getElementById('partNext').addEventListener('click', () => { partIdx++; partFills = []; rebuildPart(); writeShareState(); });
   document.getElementById('partReroll').addEventListener('click', () => { partFills = []; rebuildPart(); writeShareState(); });
+  // The arrows (and the window on the neck, which forwards to them) are you
+  // moving the box; the neck moving it for you during playback is not.
+  ['boxPrev', 'boxNext'].forEach(id => {
+    const b = document.getElementById(id);
+    if (b) b.addEventListener('click', () => rebuildPart(true));
+  });
+  const partSoundGroup = document.getElementById('partSoundGroup');
+  partSoundGroup.querySelectorAll('.seg-btn').forEach(btn => btn.addEventListener('click', () => {
+    partSound = btn.dataset.value === 'on';
+    partSoundGroup.querySelectorAll('.seg-btn').forEach(b => b.classList.toggle('active', b === btn));
+    writeShareState();
+  }));
   partScaleGroup.querySelectorAll('.seg-btn').forEach(btn => btn.addEventListener('click', () => {
     partScale = btn.dataset.value;
     partScaleGroup.querySelectorAll('.seg-btn').forEach(b => b.classList.toggle('active', b === btn));
@@ -1700,6 +1752,10 @@
     loadProgression,
     copyShareLink,
     simpleHitSeconds, SIMPLE_ACCENT, DEFAULT_FEEL,
+    // the realised part and the window it was realised in, so a test can
+    // hold it still across the things that must not move it
+    partState: () => ({ notes: partNotes.map(n => ({ ...n })), window: partWindow && { ...partWindow },
+                        fills: partFills.slice(), signature: partSignature() }),
     init(){
       view.init({
         progression: () => currentProgression,
