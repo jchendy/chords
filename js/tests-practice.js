@@ -435,8 +435,83 @@
     t.equal(bad.join('; '), '', 'The downbeat is an accent, and the layers cross-fade rather than switch');
   }
 
+  // The transport's picker is a short list of feels, not of styles: most
+  // styles put up one entry, but the two blues feels are different music and
+  // both belong there, and "Rock" means the quarter-note one. What it must
+  // never do is say one thing while another plays — including when the feel
+  // was chosen in the Set up sheet, which the picker doesn't list.
+  function testTheTransportPickerNamesTheFeel(t){
+    const bad = [];
+    const { STYLES } = GT.audio;
+    const picker = q('#quickStyle');
+    const at = (style, label) => `${style}.${STYLES[style].variants.findIndex(v => v.label === label)}`;
+    // An entry borrowed for a feel the list doesn't carry may be left over
+    // from an earlier suite; the list proper is what's being checked here.
+    const listed = [...picker.options].filter(o => !o.dataset.extra);
+    const values = listed.map(o => o.value);
+    const names = listed.map(o => o.text);
+
+    [['rock', 'Quarter drive'], ['blues', 'Shuffle'], ['blues', 'Jump blues']].forEach(([style, label]) => {
+      if (!values.includes(at(style, label))) bad.push(`the picker doesn't offer ${style}'s ${label}`);
+    });
+    ['Blues shuffle', 'Jump blues'].forEach(name => {
+      if (!names.includes(name)) bad.push(`the picker has no entry called "${name}"`);
+    });
+    // a style that offers one feel is named plainly — "Jazz", not "Jazz · Swing"
+    const dressed = listed.filter(o => o.value === `${o.value.split('.')[0]}.0` && o.text.indexOf('·') >= 0);
+    if (dressed.length) bad.push(`a style offering one feel is listed as "${dressed[0].text}"`);
+
+    // the default is named rather than left inline, and it is a feel that exists
+    const { DEFAULT_FEEL } = GT.practice;
+    if (!DEFAULT_FEEL || DEFAULT_FEEL.style !== 'rock'){
+      bad.push(`a fresh page opens on ${DEFAULT_FEEL && DEFAULT_FEEL.style}, not rock`);
+    } else if (!STYLES.rock.variants.some(v => v.label === DEFAULT_FEEL.variant)){
+      bad.push(`the default names a feel rock hasn't got: ${DEFAULT_FEEL.variant}`);
+    }
+
+    const activeStyle = () => { const b = document.querySelector('#styleGroup .genre-btn.active'); return b && b.dataset.value; };
+    const activeFeel = () => { const b = document.querySelector('#styleVariantGroup .seg-btn.active'); return b && b.textContent; };
+
+    // every entry puts on what it says
+    listed.forEach(opt => {
+      const [style, arg] = opt.value.split('.');
+      picker.value = opt.value;
+      picker.dispatchEvent(new Event('change'));
+      if (activeStyle() !== style) bad.push(`"${opt.text}" put on ${activeStyle()} instead of ${style}`);
+      if (style !== 'simple'){
+        const wanted = STYLES[style].variants[Number(arg)].label;
+        if (activeFeel() !== wanted) bad.push(`"${opt.text}" put on the ${activeFeel()} feel instead of ${wanted}`);
+      }
+    });
+
+    // ...and a feel chosen in the sheet, which the short list doesn't carry,
+    // is still named rather than leaving the picker showing something else
+    q('#styleGroup .genre-btn[data-value="rock"]').click();
+    const sheetFeels = [...document.querySelectorAll('#styleVariantGroup .seg-btn')];
+    const halfTime = sheetFeels.find(b => b.textContent === 'Half-time');
+    if (!halfTime){ bad.push('the sheet lost its Half-time feel'); }
+    else {
+      halfTime.click();
+      const shown = picker.options[picker.selectedIndex];
+      if (!shown || !/half-time/i.test(shown.text)){
+        bad.push(`after choosing Half-time the picker says "${shown ? shown.text : 'nothing'}"`);
+      }
+      if (q('#styleLabel').textContent.indexOf('Half-time') < 0){
+        bad.push(`the bar says "${q('#styleLabel').textContent}" while Half-time plays`);
+      }
+      // and going back to a listed feel clears that entry away again
+      picker.value = at('rock', 'Quarter drive');
+      picker.dispatchEvent(new Event('change'));
+      if ([...picker.options].some(o => /half-time/i.test(o.text))){
+        bad.push('the borrowed entry outstayed the feel it was for');
+      }
+    }
+    t.equal(bad.join('; '), '', 'The transport picker names the feel that is playing');
+  }
+
   GT.practiceSuites = [
     ['Practice: a shared link round-trips', testShareLinkRoundTrips],
+    ['Practice: the transport picker names the feel', testTheTransportPickerNamesTheFeel],
     ['Practice: a hit ends when the next begins', testAHitEndsWhenTheNextBegins],
     ['Practice: the downbeat is an accent, not another instrument', testTheDownbeatIsAnAccentNotAnInstrument],
     ['Practice: every root is on the picker', testEveryRootIsOnThePicker],

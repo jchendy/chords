@@ -149,7 +149,13 @@ names the tab you're on.
   joined ‹ › pair at the end of the toolbar and an arrow on each edge of the
   window step it. One transport is pinned to the bottom of the tab: Play, the
   tempo slider with its BPM readout and five one-tap tempos under it, the
-  style, the click, and Set up. While it plays, a beat line
+  style, the click, and Set up. The style there is a short list of *feels*
+  rather than of styles: most styles put up one entry — "Rock" means the
+  quarter-note feel, which is what a fresh page opens on — but the two blues
+  feels are different music rather than two shadings of one, so "Blues
+  shuffle" and "Jump blues" both appear. Everything else stays in the Set up
+  sheet, and a feel chosen there borrows an entry in the list, so the bar
+  never names one thing while another plays. While it plays, a beat line
   appears along the top of every bar in the chart and fills through the
   sounding one a quarter per beat. Everything set once and left alone — key,
   preset, the per-chord pickers and what the dice may use; style and feel,
@@ -178,10 +184,10 @@ already fits and the bar has no space to spare. A "Style" picker chooses the bac
   Simple — the plain piano voicing, with note value (quarter / half / whole),
   metronome click and a roots-only mode;
   Rock — driving 8th-note piano chords and a basic kit, with three alternate
-  Feels: **Quarter drive**, which keeps the full backbeat but halves
-  everything else — a chord and a hat on each quarter, the bass filling the
-  "and" of 2 and 4 — so it sits between the busy one and the half-time one;
-  a half-time feel; and a 16th-note "1 & a" gallop (Punk drive);
+  Feels: **Quarter drive**, which keeps the full backbeat and the eighth-note
+  hats but thins the comping to a chord per quarter, with the bass filling
+  the "and" of 2 and 4 — so it sits between the busy one and the half-time
+  one; a half-time feel; and a 16th-note "1 & a" gallop (Punk drive);
   Blues — a 12/8 shuffle: boogie-woogie walking bass (1-3-5-6-♭7-6-5-3),
   long-ringing dominant-7th chord stabs on the shuffle upbeats, and a
   shuffled kick/snare/hat — plus **Jump blues**, the one that isn't swung:
