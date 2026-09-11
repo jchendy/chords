@@ -1002,6 +1002,31 @@
     t.equal(grip(seventhCells(cShape, 0, 11)), 'x-3-2-0-0-0', 'open C-shape Cmaj7 flattens the doubled root');
   }
 
+  // ---- 4y. the Voice control reaches every style ----
+  // The practice tab's Voice control picks piano or guitar. It used to be
+  // read in one place — the Simple style's own beat — so choosing Guitar
+  // did nothing at all under Rock, Blues, Jazz, Pop or Funk, which all comp
+  // through playStyleVoice. Nothing caught it because sound isn't testable;
+  // what is testable is whether the choice arrives. Every style in the
+  // library is asked to play a chord with the guitar voice, and every one of
+  // them has to have carried it down to the thing that would strum it.
+  function testTheVoiceReachesEveryStyle(t){
+    const { STYLES, lastVoiceAsked, playStyleVoice } = GT.audio;
+    const chord = chordFromName('C7');
+    const bad = [];
+    Object.keys(STYLES).forEach(key => (STYLES[key].variants || []).forEach(v => {
+      ['guitar', 'piano'].forEach(want => {
+        // The play itself needs an audio context this page hasn't got, and
+        // doesn't need to succeed: the voice is recorded before a note is
+        // scheduled, which is the part being checked.
+        try { playStyleVoice(v.voice, chord, 0, 0.2, 0.6, want); } catch (e) { /* no audio here */ }
+        const got = lastVoiceAsked();
+        if (got !== want) bad.push(`${key}/${v.label} asked for ${want} and passed on ${got}`);
+      });
+    }));
+    t.equal(bad.join('; '), '', 'Every style carries the Voice choice down to what plays the chord');
+  }
+
   // ---- 4z. every note the genre examples play has a recording behind it ----
   // The examples are written as string and fret, so a note added to a lead
   // line or a voicing added to a rhythm reaches the guitar samples without
@@ -1817,6 +1842,7 @@
       ['Every note the neck can play has a recording near it', testEveryNoteHasARecording],
       ['Every chord the practice tab plays has recordings for it', testEveryChordFitsTheRecordings],
       ['The piano map covers both layers end to end', testThePianoMapIsWhole],
+      ['Every style carries the Voice choice', testTheVoiceReachesEveryStyle],
       ['Every note the genre examples play has a recording', testGenreNotesHaveRecordings],
       ['Theory: naming and identification', testTheory],
       ['Theory: one answer for what degree a note is', testDegreeNamesAgree],

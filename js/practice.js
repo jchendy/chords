@@ -1010,7 +1010,7 @@
 
       if (chord){
         const ce = style.chord && style.chord.find(e => e.slot === slot);
-        if (ce) playStyleVoice(style.voice, chord, t, ce.dur * slotDur, ce.vel);
+        if (ce) playStyleVoice(style.voice, chord, t, ce.dur * slotDur, ce.vel, chordVoice);
 
         const be = style.bass && style.bass.find(e => e.slot === slot);
         if (be){

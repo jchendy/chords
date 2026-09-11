@@ -652,13 +652,23 @@
   // rare — the practice tab calls it when you press Play.
   const STRUM_GAP = 0.016;
 
-  function playChord(chord, time, duration, velocity, voice){
-    const freqs = chordFrequencies(chord);
+  // Whatever the notes are, played the way the chosen voice plays them. Every
+  // chord in the app comes through here — the plain triad, the styles' 7ths,
+  // the jazz shell — so the voice can't reach one kind of chord and miss
+  // another, which is what it did when only the Simple style passed it on.
+  let lastVoiceAsked = null;          // what the test watches, since sound isn't testable
+
+  function playVoicedNotes(freqs, time, duration, velocity, voice){
+    lastVoiceAsked = voice || 'piano';
     if (voice === 'guitar' && freqs.every(pluckReady)){
       freqs.forEach((freq, i) => playPluck(freq, time + i * STRUM_GAP, duration, velocity));
       return;
     }
     freqs.forEach(freq => playNote(freq, time, duration, velocity));
+  }
+
+  function playChord(chord, time, duration, velocity, voice){
+    playVoicedNotes(chordFrequencies(chord), time, duration, velocity, voice);
   }
 
   // Every recording at once, for a tab that plays to a clock and can't wait
@@ -703,9 +713,8 @@
     });
   }
 
-  function playChord7(chord, time, duration, velocity, rootless){
-    chord7Frequencies(chord, rootless)
-      .forEach(freq => playNote(freq, time, duration, velocity));
+  function playChord7(chord, time, duration, velocity, rootless, voice){
+    playVoicedNotes(chord7Frequencies(chord, rootless), time, duration, velocity, voice);
   }
 
   function playBass(freq, time, duration, velocity){
@@ -802,15 +811,19 @@
   // a voice added here can't quietly start playing notes nothing warmed.
   const STYLE_VOICES = {
     triad: { freqs: chord => chordFrequencies(chord),
-             play: (chord, t, d, v) => playChord(chord, t, d, v) },
+             play: (chord, t, d, v, voice) => playChord(chord, t, d, v, voice) },
     dom7:  { freqs: chord => chord7Frequencies(chord, false),
-             play: (chord, t, d, v) => playChord7(chord, t, d, v, false) },
+             play: (chord, t, d, v, voice) => playChord7(chord, t, d, v, false, voice) },
     jazz:  { freqs: chord => chord7Frequencies(chord, true),
-             play: (chord, t, d, v) => playChord7(chord, t, d, v, true) },
+             play: (chord, t, d, v, voice) => playChord7(chord, t, d, v, true, voice) },
   };
 
-  function playStyleVoice(voice, chord, time, duration, velocity){
-    (STYLE_VOICES[voice] || STYLE_VOICES.triad).play(chord, time, duration, velocity);
+  // `styleVoice` is how the style spells a chord — triad, 7th, jazz shell.
+  // `voice` is what plays it, piano or guitar, and it has to be carried the
+  // whole way down: a style that drops it leaves the Voice control doing
+  // nothing whenever that style is playing.
+  function playStyleVoice(styleVoice, chord, time, duration, velocity, voice){
+    (STYLE_VOICES[styleVoice] || STYLE_VOICES.triad).play(chord, time, duration, velocity, voice);
   }
 
   // A plucked-string voice for the genre examples. Sawtooth pairs give the
@@ -1121,7 +1134,7 @@
     playNote, playChord, playChord7, playBass, playGuitar,
     playPluck, readyForPluck, pluckReady, warmGuitar,
     PIANO_SOFT, PIANO_HARD, PIANO_SPLIT, PIANO_RANGE, pianoSampleFor, warmPiano, pianoReady: pianoSampleReady,
-    chord7Frequencies, chordVoicings, STYLE_VOICES,
+    chord7Frequencies, chordVoicings, STYLE_VOICES, lastVoiceAsked: () => lastVoiceAsked,
     playHiHat, playRide, playKick, playSnare, playStyleVoice,
     STYLES,
   };
