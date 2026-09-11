@@ -458,6 +458,41 @@
     .note-dot, .shape-line, .note-ring{ transition:none; }
   }
 
+  /* ---------- tablature and the suggested part ---------- */
+  .tab-string{ stroke:var(--line2); stroke-width:1; }
+  .tab-bar{ stroke:var(--muted); stroke-width:1.2; opacity:.55; }
+  .tab-label{ fill:var(--muted); font:500 10px Inter,system-ui,sans-serif; }
+  .tab-chord{ fill:var(--ink); font:600 11px Inter,system-ui,sans-serif; }
+  .tab-note rect{ fill:var(--panel); }
+  .tab-note text{ fill:var(--ink); font:600 10px Inter,system-ui,sans-serif; }
+  .tab-note.muted text{ fill:var(--muted); }
+  .tab-note.now text{ fill:var(--ink); font-weight:700; }
+  .tab-playhead{ fill:var(--ink); opacity:.12; }
+  /* the suggested part: its tab under the chart, and its notes on the neck */
+  .chart-view-row{ margin:10px 0 0; }
+  /* T56: on a wide screen the tab wraps to as many bars as fit and shows two
+     rows, scrolling down to the row being played; on a phone it stays one
+     strip that scrolls sideways */
+  .part-tab.wrapped{ overflow-x:hidden; overflow-y:auto; }
+  .tab-numeral{ fill:var(--muted); font:600 10px Inter,system-ui,sans-serif; }
+  .part-view{ margin:12px 0 4px; }
+  .part-controls{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-bottom:8px; }
+  .part-note{ margin:10px 0; color:var(--muted); font-size:.9rem; max-width:60ch; }
+  .part-volume{ display:inline-flex; align-items:center; gap:6px; }
+  .part-volume-label{ font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); }
+  .part-volume input{ width:96px; accent-color:var(--a); }
+  .part-volume .i-cross{ display:none; }
+  .part-volume [aria-pressed="true"] .i-waves{ display:none; }
+  .part-volume [aria-pressed="true"] .i-cross{ display:block; }
+  .part-volume [aria-pressed="true"] + input{ opacity:.45; }
+  .part-tab{ margin:6px 0 2px; overflow-x:auto; scroll-behavior:smooth; }
+  .part-tab svg{ display:block; height:auto; }
+  .part-tab .tab-chord.now{ fill:var(--a); }
+  .part-tab .tab-playhead{ fill:var(--a); opacity:.22; }
+  .part-name{ color:var(--muted); font-size:.8rem; padding:0 6px; white-space:nowrap; }
+  .note-dot.sounding circle, .note-dot.sounding path{ stroke:var(--ink); stroke-width:3; }
+  .note-dot.sounding text{ fill:#0c0b0a; }
+
   /* ---------- phone ---------- */
   body.controls-off .ctl{ display:none !important; }
   @media (max-width:760px){
