@@ -1,13 +1,9 @@
-Finger Bass YR
---------------
+1958 Otto Rubner double bass played and mapped by D. Smolken.
+Arco and pizzicato with SFZ mappings, miscellaneous noises also included with each file.
+There is one file for arco, one for pizz, and one with key switches for everything.
+The extras folder under the arco samples contains some samples made by layering some of the arco Cs.
+Those extra samples are not mapped to anything, they're just extra - try resynthesizing them in Harmor.
+Fifths tuning (CGDA), Thomastik-Infeld Spirocore strings. F.G. Pfretzchner bow, Pops' rosin.
 
-Version 2019-09-30
-
-Sound samples created by Andrea Biasior <reusenoise@gmail.com> from a Yamaha RBX bass guitar. It was sent for inclusion in FreePats on September 2019. A few small edits to the samples and sound banks were made by <roberto@zenvoid.org> for integration with other sound banks in the FreePats project.
-
-Please visit FreePats web pages for updates and more content:
-http://freepats.zenvoid.org/
-
-
-Published under the terms of Creative Commons CC0 public domain dedication:
-https://creativecommons.org/publicdomain/zero/1.0/
+Royalty-free for all commercial and non-commercial use.
+Copyright 2013 D. Smolken.

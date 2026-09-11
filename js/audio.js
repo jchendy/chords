@@ -492,6 +492,79 @@
   // samples finish arriving.
   const PIANO_LEVEL = 0.9;
 
+  // THE BASS. A 1958 Otto Rubner double bass, played pizzicato and mapped by
+  // D. Smolken, who recorded it and who dedicated it to the public domain
+  // himself: the CC0 licence in audio/bass/LICENSE.txt was committed to
+  // <https://github.com/sfzinstruments/dsmolken.double-bass> by Smolken in
+  // November 2022, with the message "Swapping to CC0", and the readme beside
+  // it names him as the copyright holder. That is the test T49's rejected
+  // Killer Bass failed and this one passes: the grant is made where it can be
+  // read, by the person entitled to make it. audio/bass/SOURCE.md has the
+  // reasoning, and what was left upstream.
+  //
+  // Three velocity bands, split where the upstream .sfz splits them — 0-74,
+  // 75-120, 121-127 of MIDI velocity — and the bands are NOT sampled alike:
+  // where a pitch has only two layers the .sfz fills the gap with a sample
+  // from the other one, which is why the file names in a band don't share a
+  // suffix. Reading the band out of a file name rather than out of the .sfz
+  // is what made a forte B1 sit next to a piano A2, seventeen decibels apart.
+  const BASS_DIR = 'audio/bass/samples/';
+  const bassMap = text => text.trim().split('\n').map(line => {
+    const [name, key, lo, hi] = line.trim().split(/\s+/);
+    return { file: name + '.wav', key: +key, lo: +lo, hi: +hi };
+  });
+  const BASS_SOFT = bassMap(`
+    pizz_c1_pa 24 12 24
+    pizz_eb1_ma 27 25 27
+    pizz_g1_pa 31 28 31
+    pizz_bb1_pa 34 32 34
+    pizz_d2_pa 38 35 38
+    pizz_f2_pa 41 39 41
+    pizz_a2_pa 45 42 45
+    pizz_c3_pa 48 46 48
+    pizz_e3_pa 52 49 52
+    pizz_g3_pa 55 53 55
+    pizz_a3_pa 57 56 60
+  `);
+  const BASS_MID = bassMap(`
+    pizz_c1_ma 24 12 24
+    pizz_eb1_fa 27 25 27
+    pizz_g1_ma 31 28 31
+    pizz_bb1_fa 34 32 34
+    pizz_d2_ma 38 35 38
+    pizz_f2_ma 41 39 41
+    pizz_a2_ma 45 42 45
+    pizz_c3_ma 48 46 48
+    pizz_e3_ma 52 49 52
+    pizz_g3_ma 55 53 55
+    pizz_a3_ma 57 56 60
+  `);
+  const BASS_HARD = bassMap(`
+    pizz_c1_fa 24 12 26
+    pizz_g1_fa 31 27 33
+    pizz_d2_fa 38 34 38
+    pizz_f2_fa 41 39 41
+    pizz_a2_fa 45 42 45
+    pizz_c3_fa 48 46 48
+    pizz_e3_fa 52 49 52
+    pizz_g3_fa 55 53 55
+    pizz_a3_fa 57 56 60
+  `);
+  // The bands in the order the .sfz has them, with the velocity each covers.
+  const BASS_BANDS = [
+    { map: BASS_SOFT, hiVel: 74 },
+    { map: BASS_MID,  hiVel: 120 },
+    { map: BASS_HARD, hiVel: 127 },
+  ];
+  // The highest note that was recorded reaches this far and no further. A
+  // walking line can ask for more: the "third, up an octave" figure lands on
+  // a D#4 in the keys of A, A# and B. Six semitones of stretch stops sounding
+  // like a bass, so those notes are played an octave down — which is what a
+  // player would do rather than climb to the end of the fingerboard for one
+  // passing note. The fold happens whatever voice is playing, so the line is
+  // the same line whether it's the recording or the synth.
+  const BASS_TOP = 60;
+
   // ---- one bank, two instruments ----
   // Both want the same three things: fetch a file once, keep the decoded
   // buffer, and say nothing when a fetch fails. A page opened from disk can't
@@ -501,6 +574,7 @@
   const makeBank = dir => ({ dir, buffers: new Map(), loading: new Map(), reachable: true });
   const guitarBank = makeBank(GUITAR_DIR);
   const pianoBank = makeBank(PIANO_DIR);
+  const bassBank = makeBank(BASS_DIR);
 
   const midiOf = freq => Math.round(69 + 12 * Math.log2(freq / 440));
   const inMap = (map, midi) => map.find(s => midi >= s.lo && midi <= s.hi)
@@ -633,6 +707,9 @@
   // out synthesized.
   const PIANO_RANGE = { lo: 48, hi: 80 };
 
+  // Matched to the synthesized bass it replaces, by measurement.
+  const BASS_LEVEL = 2;
+
   function warmPiano(){
     if (!audioCtx || !pianoBank.reachable) return Promise.resolve(false);
     const wanted = [...PIANO_SOFT, ...PIANO_HARD]
@@ -717,7 +794,72 @@
     playVoicedNotes(chord7Frequencies(chord, rootless), time, duration, velocity, voice);
   }
 
+  // Which band a velocity asks for, and which sample inside it. Our velocity
+  // is 0..1; the .sfz speaks MIDI, so it's scaled rather than guessed at.
+  function bassSampleFor(midi, velocity){
+    const vel = Math.max(0, Math.min(127, Math.round(velocity * 127)));
+    const band = BASS_BANDS.find(b => vel <= b.hiVel) || BASS_BANDS[BASS_BANDS.length - 1];
+    return inMap(band.map, midi);
+  }
+
+  // The band the velocity asks for if we have it, any band we do have if not.
+  // Same trade as the piano: a note in the wrong dynamic beats a note in the
+  // wrong instrument, and during a warm that is the choice.
+  function bassSampleReady(midi, velocity){
+    if (!audioCtx || !bassBank.reachable) return null;
+    const asked = bassSampleFor(midi, velocity);
+    if (bassBank.buffers.has(asked.file)) return asked;
+    for (const band of BASS_BANDS){
+      const spec = inMap(band.map, midi);
+      if (bassBank.buffers.has(spec.file)) return spec;
+    }
+    return null;
+  }
+
+  // Down an octave at a time until the note is one the bass was recorded
+  // playing. Above BASS_TOP there is nothing but stretch.
+  function bassFold(freq){
+    let f = freq;
+    while (midiOf(f) > BASS_TOP) f /= 2;
+    return f;
+  }
+
+  // The bands the styles can actually ask for, over the stretch of neck a
+  // bass line uses. Not the soft band: every bass velocity in the library is
+  // 0.65 or above, which is MIDI 83, well inside the middle band.
+  function warmBass(){
+    if (!audioCtx || !bassBank.reachable) return Promise.resolve(false);
+    const wanted = [BASS_MID, BASS_HARD].reduce((all, map) => all.concat(
+      map.filter(spec => spec.hi >= 33 && spec.lo <= BASS_TOP)), []);
+    return Promise.all(wanted.map(spec => loadInto(bassBank, spec))).then(all => all.every(Boolean));
+  }
+
+  // One note of the real bass, the sample's own decay left alone and taken
+  // away when the note's time is up — the same shape as the guitar's pluck.
+  function playRecordedBass(spec, freq, time, duration, velocity){
+    const src = audioCtx.createBufferSource();
+    src.buffer = bassBank.buffers.get(spec.file);
+    src.playbackRate.value = freq / (440 * Math.pow(2, (spec.key - 69) / 12));
+    const env = audioCtx.createGain();
+    const level = BASS_LEVEL * velocity;
+    env.gain.setValueAtTime(level, time);
+    const fade = Math.min(0.18, duration * 0.3);
+    env.gain.setValueAtTime(level, time + Math.max(0.02, duration - fade));
+    env.gain.exponentialRampToValueAtTime(0.0001, time + duration + 0.02);
+    src.connect(env);
+    env.connect(bassGain);
+    startVoice(src, time);
+    src.stop(time + duration + 0.06);
+  }
+
   function playBass(freq, time, duration, velocity){
+    const note = bassFold(freq);
+    const spec = bassSampleReady(midiOf(note), velocity);
+    if (spec) return playRecordedBass(spec, note, time, duration, velocity);
+    synthBass(note, time, duration, velocity);
+  }
+
+  function synthBass(freq, time, duration, velocity){
     const osc = audioCtx.createOscillator();
     osc.type = 'triangle';
     osc.frequency.value = freq;
@@ -1135,6 +1277,7 @@
     playPluck, readyForPluck, pluckReady, warmGuitar,
     PIANO_SOFT, PIANO_HARD, PIANO_SPLIT, PIANO_RANGE, pianoSampleFor, warmPiano, pianoReady: pianoSampleReady,
     chord7Frequencies, chordVoicings, STYLE_VOICES, lastVoiceAsked: () => lastVoiceAsked,
+    BASS_SOFT, BASS_MID, BASS_HARD, BASS_BANDS, BASS_TOP, bassSampleFor, bassFold, warmBass,
     playHiHat, playRide, playKick, playSnare, playStyleVoice,
     STYLES,
   };

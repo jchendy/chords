@@ -3,8 +3,8 @@
 A single-page, dependency-free site with four tabs under one header:
 
 - **CAGED practice** — generates random diatonic chord progressions and
-  plays them back on a recorded piano or a recorded guitar, with an optional
-  hi-hat click.
+  plays them back on a recorded piano or a recorded guitar, over a recorded
+  double bass, with an optional hi-hat click.
 - **Chord finder** — type a chord name (e.g. `G#9`, `Cmaj7`, `Dm7b5`), or
   pick one of the examples, and see the common places to play it on the neck.
 - **Reverse chord finder** — click frets on an interactive fretboard and
@@ -783,12 +783,18 @@ Ab, Gb, C#, A9, E9, C7, D7, Cm7, CM7):
    voices that exist today: a style added later either voices inside the
    warmed range or this fails, and a style asking for a voice nothing can
    place fails too. That is the guard the jazz comp needed and didn't have.
-13. **Every note the genre examples play has a recording too.** The examples
+13. **Every bass note every style can play has a recording.** The bass
+   stops where the player stopped — an A3 — while a walking line reaches a
+   D♯4 in three keys, so those are folded down an octave. Every bass figure
+   in every style, on every chord, at the velocity that style declares, is
+   checked to come out on a sample rather than quietly falling back to the
+   synthesized bass. 21,024 notes.
+14. **Every note the genre examples play has a recording too.** The examples
    are written as string and fret, so a note added to a lead line or a
    voicing added to a rhythm reaches the guitar samples without anyone
    thinking about it. Every genre, progression, rhythm and lead is walked and
    held to the line the neck is held to.
-14. **The genre library and the presets are well-formed.** Every progression
+15. **The genre library and the presets are well-formed.** Every progression
    has a key and parseable chords, a "twelve-bar" has twelve bars, hits sit
    inside their grid, a six-slot bar declares itself a waltz, every chord can
    be voiced the way its rhythm asks, lead lines stay on the neck and inside
@@ -840,7 +846,11 @@ There's a reverb too — a convolver fed by a synthesized room, decaying noise
 whose top end rolls off over the tail — with a send from each voice at its
 own level: a clean guitar sits in it, an overdriven one only touches it, and
 the palm-muted chug stays dry. Drums are the classic recipes: a pitched-down
-sine for the kick, filtered white noise for the snare and cymbals. Every bus
+sine for the kick, filtered white noise for the snare and cymbals. The bass
+under a progression is the recorded double bass (see below); the synthesized
+one it replaced — a triangle wave through a lowpass at 850 Hz — is still what
+plays when the recordings can't be reached, and the two were levelled against
+each other by measurement. Every bus
 meets at one gentle limiter before the
 output, so a kick, a bass note and a full chord landing together can't add
 up past what the output can carry. The style voices play a chord's own
@@ -875,12 +885,26 @@ holds a buffer as 32-bit floats, four times the size of the file, and this is
 325 seconds of piano. Warming per chord instead would save a few megabytes
 and leave a hole wherever a style voiced somewhere the warm didn't look —
 which it did, and the jazz comp came out synthesized over sampled everything
-else until a test was written to catch it. The bass (`audio/bass/`, a Yamaha RBX, finger
-and picked, chromatic through its first octave) is still waiting: it stops at
-A2 while the walking line can ask for a D♯4, so those notes get voiced lower
-or left to the synth, and that is a decision rather than a download. Each
-folder's `SOURCE.md` records who recorded them, where the CC0 dedication is
-stated, and what the set does and doesn't cover.
+else until a test was written to catch it. Each folder's `SOURCE.md` records who recorded them, where the CC0
+dedication is stated, and what the set does and doesn't cover.
+
+The bass is a **1958 Otto Rubner double bass**, played pizzicato by D.
+Smolken, who dedicated his own recordings to the public domain — the CC0
+licence in that repository was committed by him, with the message "Swapping
+to CC0". It sits in `audio/bass/`: eleven pitches from C1 to A3 in three
+velocity bands, the bands split where the upstream `.sfz` splits them rather
+than where the file names suggest, which is a real distinction — a band holds
+files whose names say `_pa`, `_ma` and `_fa`, because pitches recorded at two
+dynamics borrow from a third. Getting that wrong put a forte B1 beside a
+piano A2, seventeen decibels apart, in the audition that picked this
+instrument.
+
+A double bass stops, though, and this one's highest recorded note is an A3.
+A walking line's "third, up an octave" reaches D♯4 in the keys of A, A♯ and
+B — six semitones above anything played. Those notes drop an octave instead
+of being stretched, which is what a player would do rather than climb to the
+end of the fingerboard for a passing note, and it happens whichever voice is
+playing so the line is the same line either way.
 
 The recordings are a bonus rather than a requirement. Each sample is fetched the first
 time a note needs it (about 30 ms on a local server, nothing after that), and

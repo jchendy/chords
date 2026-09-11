@@ -1107,6 +1107,7 @@
     // Nothing waits on it: until they land the synthesized voice plays.
     if (chordVoice === 'guitar') audio.warmGuitar();
     else warmThePiano();
+    audio.warmBass();          // the bass plays under every style and every voice
 
     if (!isPlaying){
       isPlaying = true;

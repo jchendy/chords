@@ -1002,6 +1002,56 @@
     t.equal(grip(seventhCells(cShape, 0, 11)), 'x-3-2-0-0-0', 'open C-shape Cmaj7 flattens the doubled root');
   }
 
+  // ---- 4x. every note a bass line can ask for has a recording ----
+  // The bass is a double bass, and a double bass stops: the highest note
+  // recorded is an A3, while a walking line's "third, up an octave" reaches a
+  // D#4 in three keys. Those are folded down an octave rather than stretched
+  // six semitones, and this holds the whole arrangement to that promise —
+  // every bass figure in every style, on every chord, at the velocity the
+  // style declares, has to come out on a sample rather than quietly falling
+  // back to the synthesized bass. A style added later gets the same check,
+  // which is the point: nothing here should be silently un-sampled.
+  function testEveryBassNoteHasARecording(t){
+    const { STYLES, BASS_BANDS, BASS_TOP, bassSampleFor, bassFold,
+            walkBassFreq, bassFreqAt } = GT.audio;
+    const { SEMITONE } = GT.theory;
+    const bad = [];
+    const midiOfF = f => Math.round(69 + 12 * Math.log2(f / 440));
+
+    // each band tiles the stretch a line uses, with no gap and no note twice
+    BASS_BANDS.forEach(({ map, hiVel }) => {
+      map.forEach((spec, i) => {
+        if (i && map[i - 1].hi !== spec.lo - 1) bad.push(`band ${hiVel}: ${spec.file} leaves a gap or overlap under it`);
+        if (spec.key < spec.lo || spec.key > spec.hi) bad.push(`band ${hiVel}: ${spec.file} is mapped outside its own range`);
+        if (spec.hi >= 33 && spec.lo <= BASS_TOP && Math.max(spec.key - spec.lo, spec.hi - spec.key) > 4){
+          bad.push(`band ${hiVel}: ${spec.file} is stretched further than 4 semitones`);
+        }
+      });
+    });
+
+    const roots = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'];
+    let checked = 0;
+    Object.keys(STYLES).forEach(key => (STYLES[key].variants || []).forEach(v => {
+      (v.bass || []).forEach(entry => {
+        roots.forEach(root => roots.forEach(next => ['maj', 'min'].forEach(quality => {
+          const chord = { note: root, quality, third: root, fifth: root };
+          const nextChord = { note: next, quality, third: next, fifth: next };
+          const raw = 'walk' in entry
+            ? walkBassFreq(chord, nextChord, entry.walk, true)
+            : bassFreqAt(SEMITONE[root] % 12, entry.off, 2);
+          const midi = midiOfF(bassFold(raw));
+          checked++;
+          if (midi > BASS_TOP) bad.push(`${key}/${v.label}: ${root} lands on MIDI ${midi}, above the top recording`);
+          const spec = bassSampleFor(midi, entry.vel);
+          if (!spec || midi < spec.lo || midi > spec.hi){
+            bad.push(`${key}/${v.label}: MIDI ${midi} at velocity ${entry.vel} has no sample`);
+          }
+        })));
+      });
+    }));
+    t.equal(bad.join('; '), '', `Every bass note every style can play has a recording (${checked} notes)`);
+  }
+
   // ---- 4y. the Voice control reaches every style ----
   // The practice tab's Voice control picks piano or guitar. It used to be
   // read in one place — the Simple style's own beat — so choosing Guitar
@@ -1842,6 +1892,7 @@
       ['Every note the neck can play has a recording near it', testEveryNoteHasARecording],
       ['Every chord the practice tab plays has recordings for it', testEveryChordFitsTheRecordings],
       ['The piano map covers both layers end to end', testThePianoMapIsWhole],
+      ['Every bass note every style can play has a recording', testEveryBassNoteHasARecording],
       ['Every style carries the Voice choice', testTheVoiceReachesEveryStyle],
       ['Every note the genre examples play has a recording', testGenreNotesHaveRecordings],
       ['Theory: naming and identification', testTheory],
