@@ -298,8 +298,8 @@
   // and a page that can't never learns there was a choice.
   function playNote(freq, time, duration, velocity){
     const spec = pianoSampleReady(freq, velocity);
-    if (spec) playRecordedPiano(spec, freq, time, duration, velocity);
-    else synthPiano(freq, time, duration, velocity);
+    if (spec){ voiceUse.pianoSampled++; playRecordedPiano(spec, freq, time, duration, velocity); }
+    else { voiceUse.pianoSynth++; synthPiano(freq, time, duration, velocity); }
   }
 
   function synthPiano(freq, time, duration, velocity){
@@ -639,7 +639,11 @@
   function playPluck(freq, time, duration, velocity = 1){
     const spec = sampleFor(midiOf(freq));
     const buffer = guitarBank.buffers.get(spec.file);
-    if (!buffer) return playNote(freq, time, duration, velocity);   // not here yet
+    if (!buffer){
+      voiceUse.guitarSynth++;      // asked for a guitar, got whatever playNote has
+      return playNote(freq, time, duration, velocity);
+    }
+    voiceUse.guitarSampled++;
     const src = audioCtx.createBufferSource();
     src.buffer = buffer;
     // the sample's own pitch, moved to the note asked for
@@ -758,6 +762,16 @@
   // another, which is what it did when only the Simple style passed it on.
   let lastVoiceAsked = null;          // what the test watches, since sound isn't testable
 
+  // A running tally of which voices actually played: recordings or the
+  // synthesized stand-ins. "Am I hearing the samples?" is otherwise a matter
+  // of opinion, and the answer changes with what has finished downloading.
+  const voiceUse = {
+    pianoSampled: 0, pianoSynth: 0,
+    bassSampled: 0, bassSynth: 0,
+    guitarSampled: 0, guitarSynth: 0,
+  };
+  const resetVoiceUse = () => Object.keys(voiceUse).forEach(k => { voiceUse[k] = 0; });
+
   function playVoicedNotes(freqs, time, duration, velocity, voice){
     lastVoiceAsked = voice || 'piano';
     if (voice === 'guitar' && freqs.every(pluckReady)){
@@ -784,6 +798,17 @@
   function pcFreq(pc, octave){
     return 440 * Math.pow(2, ((octave + 1) * 12 + pc - 69) / 12);
   }
+  // WHERE A BASS PLAYER PUTS THE ROOT. Every root used to be taken in one
+  // octave, so the distance from the bottom of the instrument depended on the
+  // key: a C sat four semitones up and a B sat fifteen, and a boogie figure
+  // that fits comfortably in C climbed to an A3 in B — a note a bass player
+  // reaches for rarely, and never for a pattern like that. A player takes the
+  // lowest root they have. On a bass tuned E-A-D-G that is E1 upward, so
+  // roots from E up take the low octave and C, C#, D and D# take the one
+  // above it, which puts every root inside E1-D#2 whatever the key.
+  const bassRootOctave = pc => (pc >= 4 ? 1 : 2);
+  const bassNote = (pc, off = 0) => bassFreqAt(pc, off, bassRootOctave(pc));
+
   // absolute frequency `off` semitones above the root pitch-class in `octave`
   function bassFreqAt(rootPc, off, octave){
     return 440 * Math.pow(2, ((octave + 1) * 12 + rootPc + off - 69) / 12);
@@ -847,14 +872,24 @@
     return f;
   }
 
-  // The bands the styles can actually ask for, over the stretch of neck a
-  // bass line uses. Not the soft band: every bass velocity in the library is
-  // 0.65 or above, which is MIDI 83, well inside the middle band.
+  // The stretch a bass line uses: the lowest root a style can take, less a
+  // semitone for the approach note under it, up to the top of a boogie figure
+  // on the highest root. A test walks every style and fails if anything lands
+  // outside it, so this can't quietly stop covering the music.
+  const BASS_RANGE = { lo: 26, hi: 52 };
+
+  // Every band, so a note is never played in the wrong dynamic for want of a
+  // download — the whole range is fourteen files where the piano's is
+  // twenty-five, and the difference isn't worth the hole it leaves.
+  function bassWarmList(){
+    return [BASS_SOFT, BASS_MID, BASS_HARD].reduce((all, map) => all.concat(
+      map.filter(spec => spec.hi >= BASS_RANGE.lo && spec.lo <= BASS_RANGE.hi)), []);
+  }
+
   function warmBass(){
     if (!audioCtx || !bassBank.reachable) return Promise.resolve(false);
-    const wanted = [BASS_MID, BASS_HARD].reduce((all, map) => all.concat(
-      map.filter(spec => spec.hi >= 33 && spec.lo <= BASS_TOP)), []);
-    return Promise.all(wanted.map(spec => loadInto(bassBank, spec))).then(all => all.every(Boolean));
+    return Promise.all(bassWarmList().map(spec => loadInto(bassBank, spec)))
+      .then(all => all.every(Boolean));
   }
 
   // One note of the real bass, the sample's own decay left alone and taken
@@ -878,7 +913,8 @@
   function playBass(freq, time, duration, velocity){
     const note = bassFold(freq);
     const spec = bassSampleReady(midiOf(note), velocity);
-    if (spec) return playRecordedBass(spec, note, time, duration, velocity);
+    if (spec){ voiceUse.bassSampled++; return playRecordedBass(spec, note, time, duration, velocity); }
+    voiceUse.bassSynth++;
     synthBass(note, time, duration, velocity);
   }
 
@@ -1014,8 +1050,9 @@
     // stage is neither of them. CLEAN_SAMPLE_TRIM matches the recording's
     // level to the synthesized tone it replaces; measured, like the piano's.
     if (tone === 'clean' && pluckReady(freq)){
-      return playPluck(freq, time, duration, velocity * CLEAN_SAMPLE_TRIM);
+      return playPluck(freq, time, duration, velocity * CLEAN_SAMPLE_TRIM);   // counts itself
     }
+    if (tone === 'clean') voiceUse.guitarSynth++;
     const spec = GUITAR_TONES[tone] || GUITAR_TONES.clean;
     const ring = Math.min(duration, duration * spec.ring + 0.02);
 
@@ -1129,6 +1166,36 @@
           voice: 'dom7',
           bass: [{ slot: 0, off: 0, dur: 5, vel: 0.9 }, { slot: 6, off: 7, dur: 5, vel: 0.8 }],
           chord: [{ slot: 0, dur: 11, vel: 0.7 }],
+        },
+        {
+          // T51: the one blues here that isn't swung. Every other variant is
+          // built on triplets, so all three shuffle; this is the jump / rock
+          // and roll side of the music — even eighths, quicker, with the
+          // drive coming from the bass figure and the backbeat rather than
+          // from the lilt. A 16-slot grid, so an eighth is two slots and the
+          // eighths land square instead of on the 1st and 3rd of a triplet.
+          label: 'Jump blues',
+          grid: 16,
+          kick:  [0, 6, 8, 14],
+          snare: [4, 12],              // backbeat, hard: this is where it drives from
+          snareVel: 0.9,
+          hat:   [0, 2, 4, 6, 8, 10, 12, 14],
+          voice: 'dom7',
+          // the boogie figure, straight: 1 3 5 6 - b7 6 5 3, two slots a note
+          bass: [
+            { slot: 0,  off: 0,  dur: 1.9, vel: 0.95 }, { slot: 2,  off: 4,  dur: 1.9, vel: 0.8 },
+            { slot: 4,  off: 7,  dur: 1.9, vel: 0.9 },  { slot: 6,  off: 9,  dur: 1.9, vel: 0.8 },
+            { slot: 8,  off: 10, dur: 1.9, vel: 0.9 },  { slot: 10, off: 9,  dur: 1.9, vel: 0.8 },
+            { slot: 12, off: 7,  dur: 1.9, vel: 0.9 },  { slot: 14, off: 4,  dur: 1.9, vel: 0.8 },
+          ],
+          // comped on the offbeats, the way a piano or a horn section sits on
+          // top of a jump shuffle: short, and out of the way of the bass
+          chord: [
+            { slot: 0, dur: 1.6, vel: 0.75 },
+            { slot: 3, dur: 1.4, vel: 0.5 }, { slot: 7,  dur: 1.4, vel: 0.5 },
+            { slot: 8, dur: 1.6, vel: 0.65 },
+            { slot: 11, dur: 1.4, vel: 0.5 }, { slot: 15, dur: 1.4, vel: 0.5 },
+          ],
         },
         {
           label: 'Train beat',   // busy blues-rock shuffle (Texas / boogie-rock)
@@ -1284,11 +1351,11 @@
   function walkBassFreq(chord, nextChord, pos, approachNext){
     const r = SEMITONE[chord.note] % 12;
     const isMin = chord.quality !== 'maj';                     // minor and diminished both have a flat 3rd
-    if (pos === 0) return bassFreqAt(r, 0, 2);                 // root
-    if (pos === 1) return bassFreqAt(r, 7, 2);                 // fifth
-    if (pos === 2) return bassFreqAt(r, isMin ? 15 : 16, 2);   // third, up an octave
+    if (pos === 0) return bassNote(r);                         // root
+    if (pos === 1) return bassNote(r, 7);                      // fifth
+    if (pos === 2) return bassNote(r, isMin ? 3 : 4);          // third, in position
     const targetPc = approachNext ? SEMITONE[nextChord.note] % 12 : r;
-    return bassFreqAt(targetPc, -1, 2);                        // chromatic approach from below
+    return bassNote(targetPc, -1);                             // chromatic approach from below
   }
 
   GT.audio = {
@@ -1300,7 +1367,9 @@
     playPluck, readyForPluck, pluckReady, warmGuitar,
     PIANO_SOFT, PIANO_HARD, PIANO_SPLIT, PIANO_RANGE, pianoSampleFor, warmPiano, pianoReady: pianoSampleReady,
     chord7Frequencies, chordVoicings, STYLE_VOICES, lastVoiceAsked: () => lastVoiceAsked,
-    BASS_SOFT, BASS_MID, BASS_HARD, BASS_BANDS, BASS_TOP, bassSampleFor, bassFold, warmBass,
+    BASS_SOFT, BASS_MID, BASS_HARD, BASS_BANDS, BASS_TOP, BASS_RANGE, bassSampleFor, bassFold,
+    warmBass, bassWarmList, bassNote, bassRootOctave,
+    voiceUse: () => ({ ...voiceUse }), resetVoiceUse,
     playHiHat, playRide, playKick, playSnare, playStyleVoice,
     STYLES,
   };

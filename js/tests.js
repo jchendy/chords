@@ -1012,8 +1012,8 @@
   // back to the synthesized bass. A style added later gets the same check,
   // which is the point: nothing here should be silently un-sampled.
   function testEveryBassNoteHasARecording(t){
-    const { STYLES, BASS_BANDS, BASS_TOP, bassSampleFor, bassFold,
-            walkBassFreq, bassFreqAt } = GT.audio;
+    const { STYLES, BASS_BANDS, BASS_TOP, BASS_RANGE, bassSampleFor, bassFold,
+            walkBassFreq, bassNote, bassWarmList } = GT.audio;
     const { SEMITONE } = GT.theory;
     const bad = [];
     const midiOfF = f => Math.round(69 + 12 * Math.log2(f / 440));
@@ -1030,7 +1030,8 @@
     });
 
     const roots = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'];
-    let checked = 0;
+    const warmed = new Set(bassWarmList().map(spec => spec.file));
+    let checked = 0, lowest = 128, highest = 0;
     Object.keys(STYLES).forEach(key => (STYLES[key].variants || []).forEach(v => {
       (v.bass || []).forEach(entry => {
         roots.forEach(root => roots.forEach(next => ['maj', 'min'].forEach(quality => {
@@ -1038,18 +1039,32 @@
           const nextChord = { note: next, quality, third: next, fifth: next };
           const raw = 'walk' in entry
             ? walkBassFreq(chord, nextChord, entry.walk, true)
-            : bassFreqAt(SEMITONE[root] % 12, entry.off, 2);
+            : bassNote(SEMITONE[root] % 12, entry.off);
           const midi = midiOfF(bassFold(raw));
           checked++;
+          lowest = Math.min(lowest, midi); highest = Math.max(highest, midi);
           if (midi > BASS_TOP) bad.push(`${key}/${v.label}: ${root} lands on MIDI ${midi}, above the top recording`);
+          // A bass part that climbs out of a bass's usual register is a
+          // different complaint from one that has no sample: this pins the
+          // register itself, so a new style can't quietly write a line up
+          // where a player wouldn't go.
+          if (midi < BASS_RANGE.lo || midi > BASS_RANGE.hi){
+            bad.push(`${key}/${v.label}: ${root} reaches MIDI ${midi}, outside the bass register ${BASS_RANGE.lo}-${BASS_RANGE.hi}`);
+          }
           const spec = bassSampleFor(midi, entry.vel);
           if (!spec || midi < spec.lo || midi > spec.hi){
             bad.push(`${key}/${v.label}: MIDI ${midi} at velocity ${entry.vel} has no sample`);
+          } else if (!warmed.has(spec.file)){
+            // ...and the sample it needs must be one the warm actually
+            // fetches, or that note plays on the synthesized bass however
+            // long you wait.
+            bad.push(`${key}/${v.label}: MIDI ${midi} needs ${spec.file}, which the warm never loads`);
           }
         })));
       });
     }));
-    t.equal(bad.join('; '), '', `Every bass note every style can play has a recording (${checked} notes)`);
+    t.equal(bad.join('; '), '',
+      `Every bass note every style can play has a recording, and it is warmed (${checked} notes, MIDI ${lowest}-${highest})`);
   }
 
   // ---- 4y. the Voice control reaches every style ----

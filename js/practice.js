@@ -1028,7 +1028,7 @@
         if (be){
           const freq = 'walk' in be
             ? walkBassFreq(chord, nextChord, be.walk, approachNext)
-            : bassFreqAt(SEMITONE[chord.note] % 12, be.off, 2);
+            : audio.bassNote(SEMITONE[chord.note] % 12, be.off);
           playBass(freq, t, be.dur * slotDur, be.vel);
         }
       }

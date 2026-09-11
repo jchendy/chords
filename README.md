@@ -181,7 +181,10 @@ already fits and the bar has no space to spare. A "Style" picker chooses the bac
   feel and a 16th-note "1 & a" gallop (Punk drive) as alternate Feels;
   Blues — a 12/8 shuffle: boogie-woogie walking bass (1-3-5-6-♭7-6-5-3),
   long-ringing dominant-7th chord stabs on the shuffle upbeats, and a
-  shuffled kick/snare/hat;
+  shuffled kick/snare/hat — plus **Jump blues**, the one that isn't swung:
+  the same boogie figure with the eighths square, a hard backbeat, and
+  chords comped short and off the beat, which is the jump / rock-and-roll
+  side of the music rather than the shuffle;
   Jazz — a swung "spang-a-lang" ride pattern with hi-hat on 2 & 4, a quarter-note
   walking bass (root–5th–3rd–chromatic approach to the next chord), and
   rootless Charleston-comped 7th-chord voicings;
@@ -189,7 +192,7 @@ already fits and the bar has no space to spare. A "Style" picker chooses the bac
   Funk — a hard-hitting "on the One" groove, a 16th-note guitar-chop groove,
   and a four-on-the-floor disco groove.
   Every style (except Simple) offers three "Feel" variants — its canonical
-  groove plus two common alternatives
+  groove plus two common alternatives, and the blues offers four
 - Live chord highlighting synced to playback, with a measure.beat position
   readout under the chords (the key itself is shown plainly above them,
   e.g. "C major" / "C#m")
@@ -783,12 +786,16 @@ Ab, Gb, C#, A9, E9, C7, D7, Cm7, CM7):
    voices that exist today: a style added later either voices inside the
    warmed range or this fails, and a style asking for a voice nothing can
    place fails too. That is the guard the jazz comp needed and didn't have.
-13. **Every bass note every style can play has a recording.** The bass
-   stops where the player stopped — an A3 — while a walking line reaches a
-   D♯4 in three keys, so those are folded down an octave. Every bass figure
-   in every style, on every chord, at the velocity that style declares, is
-   checked to come out on a sample rather than quietly falling back to the
-   synthesized bass. 21,024 notes.
+13. **Every bass note every style can play has a recording, and it is
+   warmed.** Three things at once, over 23,328 notes — every bass figure in
+   every style, on every chord, at the velocity that style declares. It has
+   to be inside the register a bass plays in, so a style added later can't
+   quietly write a line up where a player wouldn't go. It has to have a
+   sample. And that sample has to be one the warm actually fetches: a note
+   whose recording nothing loads plays on the synthesized bass however long
+   you wait, which is the shape of bug you only notice as "that sounded
+   thin". The last of those was real — moving the roots down left the lowest
+   samples outside what the warm asked for.
 14. **Every note the genre examples play has a recording too.** The examples
    are written as string and fret, so a note added to a lead line or a
    voicing added to a rhythm reaches the guitar samples without anyone
@@ -850,7 +857,17 @@ sine for the kick, filtered white noise for the snare and cymbals. The bass
 under a progression is the recorded double bass (see below); the synthesized
 one it replaced — a triangle wave through a lowpass at 850 Hz — is still what
 plays when the recordings can't be reached, and the two were levelled against
-each other by measurement. Every bus
+each other by measurement.
+
+Where the bass sits is chosen the way a player chooses it. Every root used to
+be taken in one octave, so how far it sat from the bottom of the instrument
+depended on the key — a C at MIDI 36, a B at 47 — and anything built on the
+root climbed from there, which put a boogie figure in B up at A3. A player
+takes the lowest root they have: roots from E up take the low octave and C,
+C♯, D and D♯ take the one above, so every root lands inside E1–D♯2 whatever
+the key. The walking line's third is in position rather than an octave up.
+Across every style, variant, root and next chord, the bass now spans D♯1–D♯3,
+and only the punk and disco octave figures reach the top of that. Every bus
 meets at one gentle limiter before the
 output, so a kick, a bass note and a full chord landing together can't add
 up past what the output can carry. The style voices play a chord's own
