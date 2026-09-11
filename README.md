@@ -177,8 +177,11 @@ room for it, which is everywhere but a phone held upright, where the neck
 already fits and the bar has no space to spare. A "Style" picker chooses the backing:
   Simple — the plain piano voicing, with note value (quarter / half / whole),
   metronome click and a roots-only mode;
-  Rock — driving 8th-note piano chords and a basic kit, with a half-time
-  feel and a 16th-note "1 & a" gallop (Punk drive) as alternate Feels;
+  Rock — driving 8th-note piano chords and a basic kit, with three alternate
+  Feels: **Quarter drive**, which keeps the full backbeat but halves
+  everything else — a chord and a hat on each quarter, the bass filling the
+  "and" of 2 and 4 — so it sits between the busy one and the half-time one;
+  a half-time feel; and a 16th-note "1 & a" gallop (Punk drive);
   Blues — a 12/8 shuffle: boogie-woogie walking bass (1-3-5-6-♭7-6-5-3),
   long-ringing dominant-7th chord stabs on the shuffle upbeats, and a
   shuffled kick/snare/hat — plus **Jump blues**, the one that isn't swung:
@@ -191,8 +194,8 @@ already fits and the bar has no space to spare. A "Style" picker chooses the bac
   Pop — four-on-the-floor, ballad, and syncopated dance-pop grooves;
   Funk — a hard-hitting "on the One" groove, a 16th-note guitar-chop groove,
   and a four-on-the-floor disco groove.
-  Every style (except Simple) offers three "Feel" variants — its canonical
-  groove plus two common alternatives, and the blues offers four
+  Every style (except Simple) offers a canonical groove plus common
+  alternatives — three Feels each, four for rock and blues
 - Live chord highlighting synced to playback, with a measure.beat position
   readout under the chords (the key itself is shown plainly above them,
   e.g. "C major" / "C#m")

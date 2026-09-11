@@ -1133,6 +1133,29 @@
           bass:  [0, 4, 8, 12].map((s, i) => ({ slot: s, off: 0, dur: 3.4, vel: [0.95, 0.8, 0.88, 0.8][i] })),
         },
         {
+          // Between the other two: Straight rock strums eight chords a bar
+          // over eighth-note hats, Half-time holds two and puts the snare on
+          // 3 alone. This keeps the full backbeat — which is where the drive
+          // comes from — and halves everything else: a chord and a hat on
+          // each quarter, each chord ending as the next lands. The bass does
+          // the work between: roots on 1 and 3, a pickup on the "and" of 2,
+          // and the fifth on the "and" of 4 leading back round.
+          label: 'Quarter drive',
+          grid: 16,
+          kick:  [0, 6, 8],
+          snare: [4, 12],
+          hat:   [0, 4, 8, 12],
+          voice: 'triad',
+          chord: [
+            { slot: 0,  dur: 3.6, vel: 0.9 },  { slot: 4,  dur: 3.6, vel: 0.68 },
+            { slot: 8,  dur: 3.6, vel: 0.82 }, { slot: 12, dur: 3.6, vel: 0.68 },
+          ],
+          bass: [
+            { slot: 0,  off: 0, dur: 3.4, vel: 0.9 },  { slot: 6,  off: 0, dur: 1.6, vel: 0.7 },
+            { slot: 8,  off: 0, dur: 3.4, vel: 0.85 }, { slot: 14, off: 7, dur: 1.6, vel: 0.72 },
+          ],
+        },
+        {
           label: 'Half-time',     // snare only on 3, sustained power chords
           grid: 16,
           kick:  [0, 6],
