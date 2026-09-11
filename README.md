@@ -857,7 +857,11 @@ up past what the output can carry. The style voices play a chord's own
 seventh when it has one (a `D7` set on the ii is a real dominant) and only
 fall back to the style's implied seventh for a plain triad. Notes are
 scheduled against the audio clock by a 25 ms lookahead loop, so timing
-doesn't drift when the main thread is busy.
+doesn't drift when the main thread is busy. Stop means stop: a note still
+queued never sounds, and one already sounding is taken away over 60 ms rather
+than left to ring — which was fine when every voice was synthesized and fell
+away by itself, and is not when a recorded piano rings for seconds. What
+carries on after is the reverb, decaying the way a room does.
 
 Wherever a guitar rings undistorted it is a **real guitar**: fifteen notes of
 a 2017 Martin HD-28 recorded by Jeff Learman and released CC0, one sample

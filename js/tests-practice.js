@@ -235,7 +235,30 @@
     if (GT.audio.stepsToSkip(0, 0.3, spb) === 0){
       bad.push('a 0.3s stall was treated as no stall at all');
     }
-    t.equal(bad.join('; '), '', 'Playback can be called off without waiting for the queue');
+
+    // Stop has two jobs, and until the recordings arrived only one of them
+    // showed: a note still queued must never sound, and a note already
+    // sounding must be taken away rather than left to ring. The synthesized
+    // piano fell away by itself, so nobody noticed the second; a recorded one
+    // rings for seconds, and pause stopped meaning stop. This drives both:
+    // one note scheduled now, one well ahead, and stop has to treat them
+    // differently. The context is never resumed, so nothing is audible.
+    GT.audio.ensureAudio();
+    const ctx = GT.audio.ctx();
+    if (!ctx){
+      bad.push('no audio context to test stopping with');
+    } else {
+      GT.audio.playNote(220, ctx.currentTime, 4, 0.4);         // sounding
+      GT.audio.playNote(330, ctx.currentTime + 5, 4, 0.4);     // still queued
+      const did = GT.audio.cancelScheduled();
+      if (!did || typeof did.faded !== 'number'){
+        bad.push('stopping says nothing about what it did');
+      } else {
+        if (did.stopped < 1) bad.push('a note queued five seconds out was not called off');
+        if (did.faded < 1) bad.push('a note already sounding was left to ring out');
+      }
+    }
+    t.equal(bad.join('; '), '', 'Stopping calls off what is queued and takes away what is sounding');
   }
 
   // T41 — a progression isn't limited to the seven chords the key hands you:
@@ -354,14 +377,35 @@
     t.equal(bad.join('; '), '', 'A root outside the key moves with the key, and is given back when a key owns it');
   }
 
+  // A chord in the Simple style must not still be sounding when the next one
+  // is struck. It used to ring 2.3 beats, which the synthesized piano got
+  // away with and the recorded one did not — a bar of quarter notes came out
+  // as one chord smeared over the whole bar. This is the rule rather than the
+  // number: whatever the tempo and whatever the note value, a hit ends by the
+  // time the next begins.
+  function testAHitEndsWhenTheNextBegins(t){
+    const bad = [];
+    [40, 60, 90, 120, 160, 208].forEach(bpm => {
+      const secondsPerBeat = 60 / bpm;
+      [1, 2, 4].forEach(noteBeats => {
+        const gap = secondsPerBeat * noteBeats;
+        const rings = GT.practice.simpleHitSeconds(secondsPerBeat, noteBeats);
+        if (rings > gap + 1e-9) bad.push(`at ${bpm} BPM a ${noteBeats}-beat hit rings ${(rings / gap).toFixed(2)}x the gap`);
+        if (rings <= 0) bad.push(`at ${bpm} BPM a ${noteBeats}-beat hit lasts ${rings}s`);
+      });
+    });
+    t.equal(bad.join('; '), '', 'A Simple-style chord ends as the next one is struck');
+  }
+
   GT.practiceSuites = [
     ['Practice: a shared link round-trips', testShareLinkRoundTrips],
+    ['Practice: a hit ends when the next begins', testAHitEndsWhenTheNextBegins],
     ['Practice: every root is on the picker', testEveryRootIsOnThePicker],
     ['Practice: a root outside the key travels with it', testAnOutsideRootTravels],
     ['Practice: a variant the mode drops takes its preset with it', testModeLockedVariantDropsItsPreset],
     ['Practice: a hidden variant row is empty', testHiddenVariantRowIsEmpty],
     ['Practice: the transports stay in step', testTransportsStayInStep],
     ['Practice: a stall slips the progression, it does not pile up notes', testTheSchedulerNeverQueuesThePast],
-    ['Practice: stopping calls off what is queued', testStoppingCallsOffWhatIsQueued],
+    ['Practice: stopping calls off the queue and mutes what is ringing', testStoppingCallsOffWhatIsQueued],
   ];
 })();

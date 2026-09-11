@@ -962,12 +962,24 @@
   // still queued, so the cushion costs nothing at the button.
   const SCHEDULE_AHEAD_SEC = 0.4;
 
+  // How long a hit in the Simple style rings: until the next one lands, and no
+  // longer. It used to ring 2.3 times that, on the reasoning that a piano's
+  // notes overlap — which they do, and the synthesized voice fell away far
+  // enough by itself that the overlap read as ring. The recordings actually
+  // sustain, so the same rule turned a bar of quarter notes into one chord
+  // held under the next two. The envelope tapers over the last third of the
+  // note, so this lands the fade just as the next hit arrives rather than
+  // chopping it off.
+  function simpleHitSeconds(secondsPerBeat, noteBeats){
+    return secondsPerBeat * noteBeats;
+  }
+
   function scheduleSimpleBeat(chord, secondsPerBeat, beatInMeasure, isDownbeat){
     const noteBeats = getNoteBeats();
     const shouldTrigger = beatInMeasure % noteBeats === 0;
     if (chord && shouldTrigger){
       const interval = secondsPerBeat * noteBeats;
-      const duration = Math.min(interval * 2.3, 2.6 * noteBeats);
+      const duration = simpleHitSeconds(secondsPerBeat, noteBeats);
       const velocity = isDownbeat ? 1 : 0.62;
       if (rootOnlyToggle.checked){
         // boost the lone root so it sits at a similar loudness to a full triad
@@ -1334,6 +1346,7 @@
     stop(){ if (isPlaying) togglePlay(); },
     loadProgression,
     copyShareLink,
+    simpleHitSeconds,
     init(){
       view.init({
         progression: () => currentProgression,

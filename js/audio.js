@@ -232,9 +232,9 @@
   // Start a source, and remember it until its moment comes. Notes are queued
   // ahead of the sound, so stopping playback has to be able to call off the
   // ones that haven't started — otherwise the queue plays on past the button.
-  function startVoice(node, time){
+  function startVoice(node, time, gain){
     node.start(time);
-    pending.push({ node, time });
+    pending.push({ node, time, gain });
     // the list only ever needs the notes still to come
     if (pending.length > 256){
       const now = audioCtx.currentTime;
@@ -255,18 +255,41 @@
     return Math.ceil((now - cursor) / step);
   }
 
-  // Called off: a note that hasn't started yet is stopped outright, while one
-  // already sounding is left to ring out the way it would have. Stopping a
-  // source before its start time means it never plays at all.
+  // Called off. A note that hasn't started yet is stopped outright — stopping
+  // a source before its start time means it never plays at all. A note already
+  // sounding used to be left to ring out the way it would have, which was
+  // right when every voice was synthesized and fell away in a moment; a
+  // recorded piano note rings for seconds, so pause stopped sounding like
+  // stop. Now they're taken away over STOP_FADE — long enough not to click,
+  // short enough to be the button you pressed.
+  const STOP_FADE = 0.06;
+
+  // Reports what it did — how many notes were called off before they started
+  // and how many were taken away mid-ring — so the behaviour can be tested
+  // without anything having to listen.
   function cancelScheduled(){
-    if (!audioCtx) return;
+    if (!audioCtx) return { stopped: 0, faded: 0 };
     const now = audioCtx.currentTime;
+    let stopped = 0, faded = 0;
     pending.forEach(v => {
       if (v.time > now){
+        stopped++;
         try { v.node.stop(now); } catch (e) { /* already finished */ }
+        return;
       }
+      faded++;
+      if (v.gain){
+        try {
+          const g = v.gain.gain;
+          g.cancelScheduledValues(now);
+          g.setValueAtTime(Math.max(g.value, 0.0001), now);
+          g.exponentialRampToValueAtTime(0.0001, now + STOP_FADE);
+        } catch (e) { /* a voice that has already finished has nothing to fade */ }
+      }
+      try { v.node.stop(now + STOP_FADE + 0.01); } catch (e) { /* already finished */ }
     });
     pending = [];
+    return { stopped, faded };
   }
 
   // The piano, played from the recordings when they're here and synthesized
@@ -313,7 +336,7 @@
       osc.frequency.value = freq;
       osc.detune.value = detune;
       osc.connect(tone);
-      startVoice(osc, time);
+      startVoice(osc, time, envelope);
       osc.stop(time + duration + 0.05);
     });
 
@@ -330,7 +353,7 @@
     knockGain.gain.exponentialRampToValueAtTime(0.09 * velocity, time + 0.002);
     knockGain.gain.exponentialRampToValueAtTime(0.0001, time + 0.014);
     hammer.connect(knock).connect(knockGain).connect(masterGain);
-    startVoice(hammer, time);
+    startVoice(hammer, time, knockGain);
     hammer.stop(time + 0.02);
   }
 
@@ -632,7 +655,7 @@
     src.connect(env);
     env.connect(masterGain);
     env.connect(reverbSends.clean);
-    startVoice(src, time);
+    startVoice(src, time, env);
     src.stop(time + duration + 0.06);
   }
 
@@ -679,7 +702,7 @@
     src.connect(env);
     env.connect(masterGain);
     env.connect(reverbSends.piano);
-    startVoice(src, time);
+    startVoice(src, time, env);
     src.stop(time + duration + 0.06);
   }
 
@@ -848,7 +871,7 @@
     env.gain.exponentialRampToValueAtTime(0.0001, time + duration + 0.02);
     src.connect(env);
     env.connect(bassGain);
-    startVoice(src, time);
+    startVoice(src, time, env);
     src.stop(time + duration + 0.06);
   }
 
@@ -871,7 +894,7 @@
     env.gain.exponentialRampToValueAtTime(velocity, time + 0.012);
     env.gain.exponentialRampToValueAtTime(0.0001, time + duration);
     osc.connect(lp).connect(env).connect(bassGain);
-    startVoice(osc, time);
+    startVoice(osc, time, env);
     osc.stop(time + duration + 0.05);
   }
 
@@ -886,7 +909,7 @@
     envelope.gain.exponentialRampToValueAtTime(velocity, time + 0.002);
     envelope.gain.exponentialRampToValueAtTime(0.0001, time + decay);
     src.connect(highpass).connect(envelope).connect(hihatGain);
-    startVoice(src, time);
+    startVoice(src, time, envelope);
     src.stop(time + decay + 0.03);
   }
 
@@ -900,7 +923,7 @@
     env.gain.exponentialRampToValueAtTime(velocity * 0.1, time + 0.003);
     env.gain.exponentialRampToValueAtTime(0.0001, time + 0.22);
     osc.connect(env).connect(hihatGain);
-    startVoice(osc, time);
+    startVoice(osc, time, env);
     osc.stop(time + 0.24);
   }
 
@@ -914,7 +937,7 @@
     env.gain.exponentialRampToValueAtTime(velocity, time + 0.005);
     env.gain.exponentialRampToValueAtTime(0.0001, time + 0.3);
     osc.connect(env).connect(drumGain);
-    startVoice(osc, time);
+    startVoice(osc, time, env);
     osc.stop(time + 0.32);
   }
 
@@ -931,7 +954,7 @@
     ng.gain.exponentialRampToValueAtTime(0.0001, time + 0.16);
     src.connect(bp).connect(ng).connect(drumGain);
     ng.connect(reverbSends.drums);
-    startVoice(src, time);
+    startVoice(src, time, ng);
     src.stop(time + 0.18);
 
     const osc = audioCtx.createOscillator();
@@ -943,7 +966,7 @@
     og.gain.exponentialRampToValueAtTime(velocity * 0.45, time + 0.004);
     og.gain.exponentialRampToValueAtTime(0.0001, time + 0.11);
     osc.connect(og).connect(drumGain);
-    startVoice(osc, time);
+    startVoice(osc, time, og);
     osc.stop(time + 0.13);
   }
 
@@ -1021,7 +1044,7 @@
       osc.frequency.value = freq;
       osc.detune.value = detune;
       osc.connect(filter);
-      startVoice(osc, time);
+      startVoice(osc, time, env);
       osc.stop(time + ring + 0.05);
     });
   }
