@@ -269,7 +269,17 @@
     pending = [];
   }
 
+  // The piano, played from the recordings when they're here and synthesized
+  // when they aren't. Every caller goes through this, so a page that can
+  // reach audio/piano/ gets the Kawai everywhere the app plays a piano note,
+  // and a page that can't never learns there was a choice.
   function playNote(freq, time, duration, velocity){
+    const spec = pianoSampleReady(freq, velocity);
+    if (spec) playRecordedPiano(spec, freq, time, duration, velocity);
+    else synthPiano(freq, time, duration, velocity);
+  }
+
+  function synthPiano(freq, time, duration, velocity){
     // A struck string doesn't fade evenly: it drops fast at first, then rings
     // on quietly. Two ramps give that shape instead of one straight decay.
     // High notes are played a little quieter and low ones a little fuller,
@@ -374,44 +384,164 @@
     { file: 'MartinGM2_080_Ab5_1.wav', key: 80, lo: 79, hi: 81 },
     { file: 'MartinGM2_083__B5_1.wav', key: 83, lo: 82, hi: 88 },
   ];
-  const guitarBuffers = new Map();       // file name -> decoded AudioBuffer
-  const guitarLoading = new Map();       // ...and the promise while it's on its way
-  let guitarReachable = true;            // until a fetch says otherwise
+  // THE PIANO. The same reasoning, a different recording: a Kawai upright
+  // standing in a living room, recorded in January 2017 by Gonzalo
+  // <humanogonzalo@gmail.com> and Roberto <roberto@zenvoid.org> on a Zoom H1
+  // at about the height a player's head would be, edited by Roberto, and
+  // published by the FreePats project — Roberto's own project — under the
+  // Creative Commons CC0 1.0 public domain dedication. The samples are in
+  // audio/piano/, from <https://github.com/freepats/upright-piano-KW>, with
+  // the dedication stated both on the project's page and in the README that
+  // ships in the repository, which is kept beside them.
+  //
+  // WHY WE THINK WE MAY USE THEM. CC0 waives copyright as far as the law
+  // allows: no condition to meet, not even attribution. We name the players
+  // anyway. The test this had to pass is the one T49's Killer Bass failed —
+  // the grant has to be readable where it was given, by the people entitled
+  // to give it — and here the recordists published it themselves.
+  // audio/piano/SOURCE.md keeps the full reasoning and what was rejected.
+  //
+  // The map below is the upstream .sfz, transcribed: each line is a file, the
+  // note it was recorded at, and the keys it covers. TWO LAYERS, and they are
+  // not sampled alike — the soft one is minor thirds all the way up, the hard
+  // one adds a B in most octaves but is missing A2 and C4 — so each layer
+  // gets its own list rather than one list with a suffix swapped, which is
+  // the version of this that asks for files that don't exist.
+  const PIANO_DIR = 'audio/piano/samples/';
+  const pianoMap = text => text.trim().split('\n').map(line => {
+    const [name, key, lo, hi] = line.trim().split(/\s+/);
+    return { file: name + '.flac', key: +key, lo: +lo, hi: +hi };
+  });
+  const PIANO_SOFT = pianoMap(`
+    A0vL 21 21 22
+    C1vL 24 23 25
+    D#1vL 27 26 28
+    F#1vL 30 29 31
+    A1vL 33 32 34
+    C2vL 36 35 37
+    D#2vL 39 38 40
+    F#2vL 42 41 43
+    A2vL 45 44 46
+    C3vL 48 47 49
+    D#3vL 51 50 52
+    F#3vL 54 53 55
+    A3vL 57 56 58
+    C4vL 60 59 61
+    D#4vL 63 62 64
+    F#4vL 66 65 67
+    A4vL 69 68 70
+    C5vL 72 71 73
+    D#5vL 75 74 76
+    F#5vL 78 77 79
+    A5vL 81 80 82
+    C6vL 84 83 85
+    D#6vL 87 86 88
+    F#6vL 90 89 91
+    A6vL 93 92 94
+    C7vL 96 95 97
+    D#7vL 99 98 100
+    F#7vL 102 101 103
+    A7vL 105 104 106
+    C8vL 108 107 108
+  `);
+  const PIANO_HARD = pianoMap(`
+    A0vH 21 21 22
+    B0vH 23 23 23
+    C1vH 24 24 25
+    D#1vH 27 26 28
+    F#1vH 30 29 31
+    A1vH 33 32 33
+    B1vH 35 34 35
+    C2vH 36 36 37
+    D#2vH 39 38 40
+    F#2vH 42 41 45
+    B2vH 47 46 47
+    C3vH 48 48 49
+    D#3vH 51 50 52
+    F#3vH 54 53 55
+    A3vH 57 56 57
+    B3vH 59 58 61
+    D#4vH 63 62 64
+    F#4vH 66 65 67
+    A4vH 69 68 69
+    B4vH 71 70 71
+    C5vH 72 72 73
+    D#5vH 75 74 76
+    F#5vH 78 77 79
+    A5vH 81 80 81
+    B5vH 83 82 83
+    C6vH 84 84 85
+    D#6vH 87 86 88
+    F#6vH 90 89 91
+    A6vH 93 92 93
+    B6vH 95 94 95
+    C7vH 96 96 97
+    D#7vH 99 98 100
+    F#7vH 102 101 103
+    A7vH 105 104 105
+    B7vH 107 106 107
+    C8vH 108 108 108
+  `);
+  // the .sfz splits its layers at MIDI velocity 80, which is this much of the
+  // 0..1 velocity everything here speaks in
+  const PIANO_SPLIT = 80 / 127;
+  // Set by measuring, not by ear: the same note played both ways, tapped off
+  // the node that feeds the output. At 0.9 the recordings land within a
+  // sixth of the synthesized voice's peak at full velocity, which is what a
+  // progression needs — nothing should jump in loudness at the moment the
+  // samples finish arriving.
+  const PIANO_LEVEL = 0.9;
+
+  // ---- one bank, two instruments ----
+  // Both want the same three things: fetch a file once, keep the decoded
+  // buffer, and say nothing when a fetch fails. A page opened from disk can't
+  // read its own neighbours at all, so failing quietly is the common case
+  // rather than the exception — everything falls back to the synthesized
+  // voices and the app carries on.
+  const makeBank = dir => ({ dir, buffers: new Map(), loading: new Map(), reachable: true });
+  const guitarBank = makeBank(GUITAR_DIR);
+  const pianoBank = makeBank(PIANO_DIR);
 
   const midiOf = freq => Math.round(69 + 12 * Math.log2(freq / 440));
-  const sampleFor = midi => GUITAR_SAMPLES.find(s => midi >= s.lo && midi <= s.hi)
-    || (midi < GUITAR_SAMPLES[0].key ? GUITAR_SAMPLES[0] : GUITAR_SAMPLES[GUITAR_SAMPLES.length - 1]);
+  const inMap = (map, midi) => map.find(s => midi >= s.lo && midi <= s.hi)
+    || (midi < map[0].lo ? map[0] : map[map.length - 1]);
+  const sampleFor = midi => inMap(GUITAR_SAMPLES, midi);
+  const pianoSampleFor = (midi, hard) => inMap(hard ? PIANO_HARD : PIANO_SOFT, midi);
 
-  function loadSample(spec){
-    if (guitarBuffers.has(spec.file)) return Promise.resolve(true);
-    if (guitarLoading.has(spec.file)) return guitarLoading.get(spec.file);
-    const job = fetch(GUITAR_DIR + spec.file)
+  function loadInto(bank, spec){
+    if (!audioCtx) return Promise.resolve(false);
+    if (bank.buffers.has(spec.file)) return Promise.resolve(true);
+    if (bank.loading.has(spec.file)) return bank.loading.get(spec.file);
+    // the piano's file names carry a sharp, which a URL reads as the start of
+    // a fragment unless it's escaped
+    const job = fetch(bank.dir + encodeURIComponent(spec.file))
       .then(r => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
       .then(bytes => audioCtx.decodeAudioData(bytes))
-      .then(buf => { guitarBuffers.set(spec.file, buf); return true; })
-      .catch(() => { guitarReachable = false; return false; })
-      .finally(() => guitarLoading.delete(spec.file));
-    guitarLoading.set(spec.file, job);
+      .then(buf => { bank.buffers.set(spec.file, buf); return true; })
+      .catch(() => { bank.reachable = false; return false; })
+      .finally(() => bank.loading.delete(spec.file));
+    bank.loading.set(spec.file, job);
     return job;
   }
+  const loadSample = spec => loadInto(guitarBank, spec);
 
   // Have the recordings for these notes on hand, if they can be had at all.
   // Resolves false rather than throwing: a page that can't reach them plays
   // the synthesized voice and says nothing about it.
   function readyForPluck(freqs){
-    if (!guitarReachable || !audioCtx) return Promise.resolve(false);
+    if (!guitarBank.reachable || !audioCtx) return Promise.resolve(false);
     const wanted = [...new Set(freqs.map(f => sampleFor(midiOf(f))))];
     return Promise.all(wanted.map(loadSample)).then(all => all.every(Boolean));
   }
 
-  const pluckReady = freq => guitarBuffers.has(sampleFor(midiOf(freq)).file);
+  const pluckReady = freq => guitarBank.buffers.has(sampleFor(midiOf(freq)).file);
 
   // One note of the real guitar. The sample is a whole pluck with its own
   // decay, so the envelope here only fades it out when the note's time is up
   // rather than shaping it from scratch.
   function playPluck(freq, time, duration, velocity = 1){
     const spec = sampleFor(midiOf(freq));
-    const buffer = guitarBuffers.get(spec.file);
+    const buffer = guitarBank.buffers.get(spec.file);
     if (!buffer) return playNote(freq, time, duration, velocity);   // not here yet
     const src = audioCtx.createBufferSource();
     src.buffer = buffer;
@@ -430,6 +560,69 @@
     env.connect(reverbSends.clean);
     startVoice(src, time);
     src.stop(time + duration + 0.06);
+  }
+
+  // The layer the velocity asks for, if we have it — the other layer if that
+  // is the one that arrived instead. A note in the wrong dynamic is far
+  // closer to right than a note in the wrong instrument, and while a warm is
+  // still running that is exactly the choice on offer.
+  function pianoSampleReady(freq, velocity){
+    if (!audioCtx || !pianoBank.reachable) return null;
+    const midi = midiOf(freq), hard = velocity >= PIANO_SPLIT;
+    const asked = pianoSampleFor(midi, hard);
+    if (pianoBank.buffers.has(asked.file)) return asked;
+    const other = pianoSampleFor(midi, !hard);
+    return pianoBank.buffers.has(other.file) ? other : null;
+  }
+
+  // One note of the real piano. The sample is a whole note with its own
+  // decay, so nothing here shapes it — the envelope holds it flat and then
+  // takes it away when the note's time is up, and the only thing scaled by
+  // velocity is the level, since which layer plays has already answered the
+  // question of how hard it was struck.
+  function playRecordedPiano(spec, freq, time, duration, velocity){
+    const src = audioCtx.createBufferSource();
+    src.buffer = pianoBank.buffers.get(spec.file);
+    // the note it was recorded at, moved to the note asked for: at most a
+    // semitone for the soft layer and three for the hard one, which is the
+    // upstream mapping rather than a guess
+    src.playbackRate.value = freq / (440 * Math.pow(2, (spec.key - 69) / 12));
+
+    const env = audioCtx.createGain();
+    // Straight multiplication, the way the synthesized voice scales its own
+    // peak, because the two layers are not level-matched to each other: the
+    // soft A3 is recorded a touch louder than the hard one, so leaning on the
+    // layer to carry the dynamic left soft beats louder than hard ones.
+    // Uncapped for the same reason the synth is — the practice tab's
+    // roots-only mode deliberately asks for more than 1 to make a lone root
+    // sit where a triad did, and the limiter catches the rest.
+    const level = PIANO_LEVEL * velocity;
+    env.gain.setValueAtTime(level, time);
+    const fade = Math.min(0.3, duration * 0.3);
+    env.gain.setValueAtTime(level, time + Math.max(0.02, duration - fade));
+    env.gain.exponentialRampToValueAtTime(0.0001, time + duration + 0.02);
+
+    src.connect(env);
+    env.connect(masterGain);
+    env.connect(reverbSends.piano);
+    startVoice(src, time);
+    src.stop(time + duration + 0.06);
+  }
+
+  // The recordings a run of notes is about to need, fetched before the beat
+  // that needs them. Both layers, because one progression played straight
+  // through uses both: the practice tab strikes a downbeat at full velocity
+  // and everything else at 0.62, which lands either side of the split.
+  function warmPiano(freqs){
+    if (!audioCtx || !pianoBank.reachable) return Promise.resolve(false);
+    const wanted = new Set();
+    freqs.forEach(f => {
+      const midi = midiOf(f);
+      wanted.add(pianoSampleFor(midi, true));
+      wanted.add(pianoSampleFor(midi, false));
+    });
+    return Promise.all([...wanted].map(spec => loadInto(pianoBank, spec)))
+      .then(all => all.every(Boolean));
   }
 
   // The chords of a progression, on the piano by default and on the recorded
@@ -456,7 +649,7 @@
   // for one mid-bar. Silent about failure, like everything else here: a page
   // that can't reach them simply stays on the piano.
   function warmGuitar(){
-    if (!audioCtx || !guitarReachable) return Promise.resolve(false);
+    if (!audioCtx || !guitarBank.reachable) return Promise.resolve(false);
     return Promise.all(GUITAR_SAMPLES.map(loadSample)).then(all => all.every(Boolean));
   }
 
@@ -879,6 +1072,7 @@
     ensureAudio, keepAwake, cancelScheduled, stepsToSkip, noteFreq, chordFrequencies, pcFreq, bassFreqAt, walkBassFreq, ROOT_OCTAVE,
     playNote, playChord, playChord7, playBass, playGuitar,
     playPluck, readyForPluck, pluckReady, warmGuitar,
+    PIANO_SOFT, PIANO_HARD, PIANO_SPLIT, pianoSampleFor, warmPiano, pianoReady: pianoSampleReady,
     playHiHat, playRide, playKick, playSnare, playStyleVoice,
     STYLES,
   };

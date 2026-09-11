@@ -1103,9 +1103,10 @@
     ensureAudio();
     if (audio.ctx().state === 'suspended') audio.ctx().resume();
     // A progression plays to a clock and can't wait for a recording mid-bar,
-    // so they're all fetched at the press rather than one chord at a time.
-    // Nothing waits on it: until they land the piano plays.
+    // so they're fetched at the press rather than one chord at a time.
+    // Nothing waits on it: until they land the synthesized voice plays.
     if (chordVoice === 'guitar') audio.warmGuitar();
+    else warmThePiano();
 
     if (!isPlaying){
       isPlaying = true;
@@ -1225,12 +1226,27 @@
     return true;
   }
 
+  // Only the notes this progression will actually strike, rather than the
+  // whole keyboard: the piano is 66 recordings and a handful of chords needs
+  // a dozen of them. Rolling new chords warms again, and what was already
+  // fetched costs nothing the second time.
+  function warmThePiano(){
+    const freqs = [];
+    currentProgression.forEach(chord => {
+      if (!chord) return;
+      chordFrequencies(chord).forEach(f => freqs.push(f));
+      freqs.push(noteFreq(chord.note, ROOT_OCTAVE));      // roots-only mode
+    });
+    if (freqs.length) audio.warmPiano(freqs);
+  }
+
   const voiceGroup = document.getElementById('voiceGroup');
   voiceGroup.querySelectorAll('.seg-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       voiceGroup.querySelectorAll('.seg-btn').forEach(b => b.classList.toggle('active', b === btn));
       chordVoice = btn.dataset.value;
-      if (chordVoice === 'guitar'){ ensureAudio(); audio.warmGuitar(); }
+      ensureAudio();
+      if (chordVoice === 'guitar') audio.warmGuitar(); else warmThePiano();
     });
   });
 

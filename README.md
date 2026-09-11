@@ -3,8 +3,8 @@
 A single-page, dependency-free site with four tabs under one header:
 
 - **CAGED practice** — generates random diatonic chord progressions and
-  plays them back on a piano or a recorded guitar, with an optional hi-hat
-  click.
+  plays them back on a recorded piano or a recorded guitar, with an optional
+  hi-hat click.
 - **Chord finder** — type a chord name (e.g. `G#9`, `Cmaj7`, `Dm7b5`), or
   pick one of the examples, and see the common places to play it on the neck.
 - **Reverse chord finder** — click frets on an interactive fretboard and
@@ -118,7 +118,7 @@ names the tab you're on.
   (there the space bar means "hear this chord" rather than play/pause)
 - Space bar starts and stops playback (here and in the genre examples), as
   long as you're not typing in a field
-- "Voice" plays the chords on the synthesized piano or on the recorded
+- "Voice" plays the chords on the recorded piano or on the recorded
   guitar the finders use (see **Sound**). The piano is the default because
   it stays out of the way of the guitar you are playing over it; the guitar
   is there for hearing a voicing the way it would actually sound, and strums
@@ -772,7 +772,15 @@ Ab, Gb, C#, A9, E9, C7, D7, Cm7, CM7):
    written out, voiced, and checked note by note against the map, because a
    voicing that reaches past it would drop to the piano mid-progression and
    the only sign would be that one bar sounded different.
-12. **The genre library and the presets are well-formed.** Every progression
+12. **The piano map covers both layers end to end.** Sixty-six file names
+   were transcribed out of the upstream `.sfz`, and a wrong one is invisible
+   at runtime: the fetch fails, the bank goes quiet, and the synthesized
+   voice plays as though nothing had happened. So both layers are held to the
+   shape the `.sfz` has — all 88 keys covered, no gap, no note claimed twice,
+   no sample stretched further than its layer allows — and every note the
+   practice tab can play is checked to have a sample on both sides of the
+   velocity split.
+13. **The genre library and the presets are well-formed.** Every progression
    has a key and parseable chords, a "twelve-bar" has twelve bars, hits sit
    inside their grid, a six-slot bar declares itself a waltz, every chord can
    be voiced the way its rhythm asks, lead lines stay on the neck and inside
@@ -798,13 +806,24 @@ when what threw is the thing the suite was written to catch.
 
 ## Sound
 
-Almost everything is synthesized live in the Web Audio API — no MIDI, no
-plugins, nothing to install. The piano is a single periodic wave (five harmonics
-baked into one oscillator, doubled and detuned a few cents) through a
-per-note lowpass that opens with velocity and closes as the note rings, a
-two-stage decay so a note drops quickly then sustains quietly, a few
-milliseconds of filtered noise on the front for the hammer, and a level that
-eases off up the keyboard the way a real piano's does. The genre examples
+Most of it is synthesized live in the Web Audio API — no MIDI, no plugins,
+nothing to install — and the two voices you hear most are recordings of real
+instruments, with the synthesized ones behind them for any page that can't
+reach the files.
+
+Every piano note in the app is a Kawai upright, recorded in a living room and
+released CC0 (see below). Sixty-six samples in two velocity layers: a
+downbeat is a hard strike and everything after it a soft one, which is the
+difference between a piano and a piano-shaped noise repeated. Where a note
+falls between samples it is the nearest one moved, by a semitone in the soft
+layer and no more than three in the hard one. The synthesized piano still
+stands behind it — a single periodic wave (five harmonics baked into one
+oscillator, doubled and detuned a few cents) through a per-note lowpass that
+opens with velocity and closes as the note rings, a two-stage decay so a note
+drops quickly then sustains quietly, a few milliseconds of filtered noise on
+the front for the hammer, and a level that eases off up the keyboard the way
+a real piano's does — and its level was matched to the recordings by
+measurement, so nothing jumps when the samples finish arriving. The genre examples
 add a guitar voice — detuned sawtooth pairs through a filter. The overdriven
 tones all go through one shared clipping stage, so the strings of a chord
 are distorted *together*: that intermodulation is where a power chord's
@@ -833,15 +852,16 @@ samples available as-is, which is what a public repository does; and VCSL,
 which is genuinely CC0 but has no guitar in it.
 
 Two more CC0 sets sit beside them, recorded for the FreePats project and
-taken whole rather than in the slice we need: a Kawai upright piano
-(`audio/piano/`, 66 samples, two velocity layers) and a Yamaha RBX bass
-guitar (`audio/bass/`, finger and picked, chromatic through its first
-octave). Nothing plays them yet — they are on hand for the day the practice
-tab's piano and its walking bass stop being synthesized, and each folder's
-`SOURCE.md` records who recorded them, where the CC0 dedication is stated,
-and what the set does and doesn't cover. The bass, in particular, stops at
-A2 while the walking line can ask for a D♯4, which is a decision waiting to
-be made rather than a download waiting to happen.
+taken whole rather than in the slice we need. The piano (`audio/piano/`, a
+Kawai upright, 66 samples in two velocity layers) is the one every piano note
+in the app now comes from; only the notes a progression actually strikes are
+fetched, at the press of Play, so a handful of chords costs a dozen files
+rather than the whole keyboard. The bass (`audio/bass/`, a Yamaha RBX, finger
+and picked, chromatic through its first octave) is still waiting: it stops at
+A2 while the walking line can ask for a D♯4, so those notes get voiced lower
+or left to the synth, and that is a decision rather than a download. Each
+folder's `SOURCE.md` records who recorded them, where the CC0 dedication is
+stated, and what the set does and doesn't cover.
 
 The recordings are a bonus rather than a requirement. Each sample is fetched the first
 time a note needs it (about 30 ms on a local server, nothing after that), and

@@ -806,6 +806,56 @@
     t.equal(bad.join('; '), '', `Every chord the practice tab plays has recordings for it (${checked} notes)`);
   }
 
+  // ---- 3i-bis. the piano map says what the .sfz says ----
+  // Sixty-six file names were transcribed out of the upstream .sfz into
+  // audio.js, and a wrong one is invisible: the fetch 404s, the bank goes
+  // quiet, and the synthesized voice plays as though nothing happened. So the
+  // map is held to the shape the .sfz has — two layers, each covering the
+  // whole keyboard end to end with no gap and no note claimed twice, each
+  // sample near enough to the notes it covers to still be that note. The
+  // layers differ on purpose (the soft one is minor thirds, the hard one adds
+  // a B in most octaves and is missing A2 and C4), so they're checked apart
+  // rather than assumed to match.
+  function testThePianoMapIsWhole(t){
+    const { PIANO_SOFT, PIANO_HARD, pianoSampleFor, chordFrequencies, PIANO_SPLIT } = GT.audio;
+    const bad = [];
+    const midiOf = f => Math.round(69 + 12 * Math.log2(f / 440));
+    [['soft', PIANO_SOFT, 1], ['hard', PIANO_HARD, 3]].forEach(([name, map, reach]) => {
+      if (map[0].lo !== 21 || map[map.length - 1].hi !== 108){
+        bad.push(`the ${name} layer covers ${map[0].lo}-${map[map.length - 1].hi}, not the 88 keys`);
+      }
+      const seen = new Set();
+      map.forEach((spec, i) => {
+        if (i && map[i - 1].hi !== spec.lo - 1) bad.push(`${name}: ${spec.file} leaves a gap or overlap under it`);
+        if (spec.key < spec.lo || spec.key > spec.hi) bad.push(`${name}: ${spec.file} is mapped outside its own range`);
+        if (Math.max(spec.key - spec.lo, spec.hi - spec.key) > reach){
+          bad.push(`${name}: ${spec.file} is stretched further than ${reach} semitones`);
+        }
+        if (seen.has(spec.file)) bad.push(`${name}: ${spec.file} is claimed twice`);
+        seen.add(spec.file);
+      });
+    });
+    // and the notes the app actually plays land on a layer either side of the split
+    let checked = 0;
+    ['C', 'Db', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'].forEach(root =>
+      ['', 'm', '7', 'maj7', 'm7', 'm7b5', 'dim7', '6', '9', '13', 'sus4', 'add9'].forEach(suffix => {
+        const chord = chordFromName(root + suffix);
+        if (!chord) return;
+        chordFrequencies(chord).forEach(freq => {
+          const midi = midiOf(freq);
+          [true, false].forEach(hard => {
+            checked++;
+            const spec = pianoSampleFor(midi, hard);
+            if (!spec || midi < spec.lo || midi > spec.hi){
+              bad.push(`${root}${suffix}: MIDI ${midi} has no ${hard ? 'hard' : 'soft'} sample`);
+            }
+          });
+        });
+      }));
+    if (!(PIANO_SPLIT > 0 && PIANO_SPLIT < 1)) bad.push('the velocity split is outside 0..1');
+    t.equal(bad.join('; '), '', `The piano map covers both layers end to end (${checked} notes)`);
+  }
+
   // ---- 3j. every note the neck can play has a recording behind it ----
   // Fifteen samples cover the range by being stretched a semitone or three
   // either side of themselves. Stretch one much further and it stops sounding
@@ -1699,6 +1749,7 @@
       ['Ear trainer: every chord quality it can ask, it can play', testEveryQualityCanBeAsked],
       ['Every note the neck can play has a recording near it', testEveryNoteHasARecording],
       ['Every chord the practice tab plays has recordings for it', testEveryChordFitsTheRecordings],
+      ['The piano map covers both layers end to end', testThePianoMapIsWhole],
       ['Theory: naming and identification', testTheory],
       ['Theory: one answer for what degree a note is', testDegreeNamesAgree],
       ['Fretboard: the pentatonic boxes are unchanged', testPentatonicBoxesAreUnchanged],
