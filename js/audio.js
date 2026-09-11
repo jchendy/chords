@@ -749,9 +749,10 @@
   }
 
   // WHAT GETS WARMED, AND WHY IT ISN'T THE WHOLE PIANO. Every chord this app
-  // can build, voiced every way it can be voiced, lands between C3 and G#5 —
-  // 1656 notes checked, and a test holds it there. That stretch is 25 of the
-  // 66 recordings: 10.6 MB to fetch and about 42 MB once decoded. The whole
+  // can build, voiced every way it can be voiced, lands between A2 and C5 —
+  // settleVoicing above keeps the 7ths from climbing out of it — and a test
+  // holds that true over every chord and every voice. That stretch is a fraction of the
+  // 66 recordings: a few megabytes to fetch, tens once decoded. The whole
   // keyboard would be 33 MB to fetch, which is nothing much, and 125 MB
   // decoded, which is not — Web Audio keeps a buffer as 32-bit floats, four
   // times the size of the file, and these are long samples: 325 seconds of
@@ -759,7 +760,7 @@
   // chord saves a few megabytes and leaves a hole the moment a style voices
   // somewhere the warm didn't look, which is exactly how the jazz comp came
   // out synthesized.
-  const PIANO_RANGE = { lo: 48, hi: 80 };
+  const PIANO_RANGE = { lo: 45, hi: 72 };
 
   // Matched to the synthesized bass it replaces, by measurement.
   const BASS_LEVEL = 2;
@@ -845,6 +846,36 @@
   // A chord that carries its own 7th — one the practice tab's shape picker
   // set — is played as written. A plain triad still gets the style's 7th,
   // since that's the style's sound: a blues comps in dominants.
+  // KEEPING THE COMP IN THE MIDDLE OF THE PIANO. A voicing is built upward
+  // from its lowest note, so how high it finishes depends on the key: the
+  // rootless shape sits E4-C5 in C and climbs to Ab5 in Ab, a long way above
+  // where a pianist actually comps, and in the sharp keys it sings out over
+  // everything else. Whole octaves are taken off (or added) until it sits in
+  // the stretch a comping hand uses — the shape and the spacing are kept
+  // exactly, only the register moves, which is what a player does when a
+  // voicing lands too high: the same grip, an octave down.
+  // Around a centre rather than under a ceiling. A ceiling alone leaves
+  // neighbouring keys an octave apart — a voicing that just fits stays put
+  // while the one a semitone above it drops — so the register would lurch
+  // whenever a progression crossed that line. Settling each voicing about the
+  // same centre keeps the comp in one place whatever the key, which is also
+  // what makes the movement between chords small.
+  const COMP_CENTRE = 57;                        // A3, where a comping hand sits
+  const COMP_DRIFT = 6;                          // ...give or take a half-octave
+
+  function settleVoicing(freqs){
+    let notes = freqs;
+    // a voicing settles in a step or two; the bound is there so one that
+    // somehow can't fit gives up rather than spinning
+    for (let i = 0; i < 4; i++){
+      const centre = notes.reduce((sum, f) => sum + midiOf(f), 0) / notes.length;
+      if (centre - COMP_CENTRE > COMP_DRIFT) notes = notes.map(f => f / 2);
+      else if (COMP_CENTRE - centre > COMP_DRIFT) notes = notes.map(f => f * 2);
+      else break;
+    }
+    return notes;
+  }
+
   // Where the notes of a 7th chord land, worked out apart from playing them:
   // the styles voice much higher than a plain triad does — the rootless one
   // starts an octave up and climbs from there — and anything wanting the
@@ -858,11 +889,11 @@
       : (r + (isDom || chord.quality !== 'maj' ? 10 : 11)) % 12;
     const pcs = rootless ? [third, fifth, seventh, r] : [r, third, fifth, seventh];
     let octave = rootless ? 4 : 3, prev = -1;
-    return pcs.map(pc => {
+    return settleVoicing(pcs.map(pc => {
       if (pc <= prev) octave++;
       prev = pc;
       return pcFreq(pc, octave);
-    });
+    }));
   }
 
   function playChord7(chord, time, duration, velocity, rootless, voice){
@@ -1416,7 +1447,7 @@
     playPluck, readyForPluck, pluckReady, warmGuitar,
     PIANO_SOFT, PIANO_HARD, PIANO_SPLIT, PIANO_RANGE, PIANO_XFADE, pianoSampleFor, warmPiano,
     pianoLayerMix, pianoReady: (freq, velocity) => pianoSampleIfReady(freq, velocity >= PIANO_SPLIT),
-    chord7Frequencies, chordVoicings, STYLE_VOICES, lastVoiceAsked: () => lastVoiceAsked,
+    chord7Frequencies, chordVoicings, STYLE_VOICES, COMP_CENTRE, COMP_DRIFT, settleVoicing, lastVoiceAsked: () => lastVoiceAsked,
     BASS_SOFT, BASS_MID, BASS_HARD, BASS_BANDS, BASS_TOP, BASS_RANGE, bassSampleFor, bassFold,
     warmBass, bassWarmList, bassNote, bassRootOctave,
     voiceUse: () => ({ ...voiceUse }), resetVoiceUse,

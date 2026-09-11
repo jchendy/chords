@@ -881,7 +881,13 @@ meets at one gentle limiter before the
 output, so a kick, a bass note and a full chord landing together can't add
 up past what the output can carry. The style voices play a chord's own
 seventh when it has one (a `D7` set on the ii is a real dominant) and only
-fall back to the style's implied seventh for a plain triad. Notes are
+fall back to the style's implied seventh for a plain triad. A voicing is
+built upward from its lowest note, so where it ends up depends on the key —
+the rootless jazz shape sat E4–C5 in C and climbed to A♭5 in A♭, singing out
+over everything else in the sharp keys. Each 7th voicing is now moved by
+whole octaves until it settles about A3, give or take a half-octave: the
+grip and the spacing are untouched, only the register moves, which is what a
+player does when a voicing lands too high. Notes are
 scheduled against the audio clock by a 25 ms lookahead loop, so timing
 doesn't drift when the main thread is busy. Stop means stop: a note still
 queued never sounds, and one already sounding is taken away over 60 ms rather
