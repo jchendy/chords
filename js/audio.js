@@ -1281,7 +1281,8 @@
   // grid = subdivisions per bar (16 = sixteenths, 12 = triplet-eighths / shuffle);
   // drum arrays list slot indices; chord/bass entries are { slot, dur (in slots),
   // vel } with bass carrying either a semitone `off` from the root or a `walk`
-  // index for the walking-bass line. Each style offers three canonical "feels".
+  // index for the walking-bass line. The feels here are exactly the ones the
+  // style picker lists — one flat list, in the Set up sheet and the bar alike.
   const STYLES = {
     rock: {
       label: 'Rock',
@@ -1304,8 +1305,9 @@
           // chord on each quarter rather than each eighth, each one ending as
           // the next lands. The bass does the rest of the work: roots on 1
           // and 3, a pickup on the "and" of 2, and the fifth on the "and" of
-          // 4 leading back round.
-          label: 'Quarter drive',
+          // 4 leading back round. Plain "Rock" in the list: the one you'd
+          // expect when you ask for rock, and what a fresh page plays.
+          label: 'Rock',
           grid: 16,
           kick:  [0, 6, 8],
           snare: [4, 12],
@@ -1321,7 +1323,7 @@
           ],
         },
         {
-          label: 'Half-time',     // snare only on 3, sustained power chords
+          label: 'Half-time rock',     // snare only on 3, sustained power chords
           grid: 16,
           kick:  [0, 6],
           snare: [8],
@@ -1330,27 +1332,13 @@
           chord: [{ slot: 0, dur: 7.5, vel: 0.9 }, { slot: 8, dur: 7.5, vel: 0.85 }],
           bass:  [{ slot: 0, off: 0, dur: 7.5, vel: 0.95 }, { slot: 8, off: 0, dur: 7.5, vel: 0.85 }],
         },
-        {
-          label: 'Punk drive',    // 16th-note "1 & a" gallop, skipping the "e" of each beat
-          grid: 16,
-          kick:  [0, 3, 4, 7, 8, 11, 12, 15],       // hits the downbeat and the pickup into the next one
-          snare: [4, 12],
-          hat:   [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],   // constant 16ths
-          voice: 'triad',
-          // gallop strum: 1, &, a of every beat (slots 0,2,3 / 4,6,7 / 8,10,11 / 12,14,15)
-          chord: [0, 2, 3, 4, 6, 7, 8, 10, 11, 12, 14, 15]
-            .map(s => ({ slot: s, dur: 0.9, vel: s % 4 === 0 ? 0.95 : 0.72 })),
-          // bass follows the same gallop, jumping octaves for drive
-          bass: [0, 2, 3, 4, 6, 7, 8, 10, 11, 12, 14, 15]
-            .map((s, i) => ({ slot: s, off: i % 2 === 0 ? 0 : 12, dur: 0.9, vel: 0.88 })),
-        },
       ],
     },
     blues: {
       label: 'Blues',
       variants: [
         {
-          label: 'Shuffle',      // straight-shuffle boogie: 1st & 3rd triplet of each beat
+          label: 'Blues shuffle',      // straight-shuffle boogie: 1st & 3rd triplet of each beat
           grid: 12,
           kick:  [0, 6],
           snare: [3, 9],
@@ -1411,21 +1399,6 @@
             { slot: 4, dur: 1.5, vel: 0.75 }, { slot: 12, dur: 1.5, vel: 0.7 },
           ],
         },
-        {
-          label: 'Train beat',   // busy blues-rock shuffle (Texas / boogie-rock)
-          grid: 12,
-          kick:  [0, 3, 6, 9],
-          snare: [3, 9],
-          hat:   [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
-          voice: 'dom7',
-          bass: [
-            { slot: 0, off: 0, dur: 1.6, vel: 0.95 }, { slot: 2, off: 7, dur: 0.8, vel: 0.8 },
-            { slot: 3, off: 0, dur: 1.6, vel: 0.9 },  { slot: 5, off: 7, dur: 0.8, vel: 0.8 },
-            { slot: 6, off: 0, dur: 1.6, vel: 0.95 }, { slot: 8, off: 7, dur: 0.8, vel: 0.8 },
-            { slot: 9, off: 0, dur: 1.6, vel: 0.9 },  { slot: 11, off: 7, dur: 0.8, vel: 0.8 },
-          ],
-          chord: [0, 3, 6, 9].map(s => ({ slot: s, dur: 2.6, vel: 0.6 })),
-        },
       ],
     },
     jazz: {
@@ -1452,18 +1425,6 @@
           ],
         },
         {
-          label: 'Ballad',       // slow swing: quarter-note ride, sparse bass, long comps
-          grid: 12,
-          kick:  [0, 6],
-          kickVel: 0.18,
-          snare: [],
-          hat:   [3, 9],
-          ride:  [0, 3, 6, 9],
-          voice: 'jazz',
-          bass: [{ slot: 0, off: 0, dur: 5, vel: 0.75 }, { slot: 6, off: 7, dur: 5, vel: 0.65 }],
-          chord: [{ slot: 0, dur: 5.5, vel: 0.45 }, { slot: 6, dur: 5.5, vel: 0.45 }],
-        },
-        {
           label: 'Bossa nova',   // straight (unswung) samba-derived bass, syncopated comp
           grid: 16,
           kick:  [0, 6, 10],
@@ -1485,7 +1446,7 @@
       label: 'Pop',
       variants: [
         {
-          label: 'Four-on-the-floor',
+          label: 'Pop',
           grid: 16,
           kick:  [0, 4, 8, 12],
           snare: [4, 12],
@@ -1493,28 +1454,6 @@
           voice: 'triad',
           chord: [0, 4, 8, 12].map(s => ({ slot: s, dur: 3.6, vel: 0.8 })),
           bass:  [0, 4, 8, 12].map(s => ({ slot: s, off: 0, dur: 3.6, vel: 0.85 })),
-        },
-        {
-          label: 'Ballad',
-          grid: 16,
-          kick:  [0, 8],
-          kickVel: 0.6,
-          snare: [4, 12],
-          snareVel: 0.6,
-          hat:   [0, 4, 8, 12],
-          voice: 'triad',
-          chord: [{ slot: 0, dur: 7.5, vel: 0.6 }, { slot: 8, dur: 7.5, vel: 0.55 }],
-          bass:  [{ slot: 0, off: 0, dur: 7.5, vel: 0.75 }, { slot: 8, off: 0, dur: 7.5, vel: 0.7 }],
-        },
-        {
-          label: 'Syncopated',   // contemporary off-beat dance-pop groove
-          grid: 16,
-          kick:  [0, 6, 10],
-          snare: [4, 12],
-          hat:   [0, 2, 4, 6, 8, 10, 12, 14],
-          voice: 'triad',
-          chord: [0, 3, 6, 10, 13].map(s => ({ slot: s, dur: 1.5, vel: 0.72 })),
-          bass:  [0, 6, 10].map(s => ({ slot: s, off: 0, dur: 2.2, vel: 0.85 })),
         },
       ],
     },
@@ -1531,20 +1470,6 @@
           voice: 'dom7',
           chord: [2, 6, 9, 14].map(s => ({ slot: s, dur: 2.4, vel: 0.65 })),
           bass:  [0, 3, 7, 10, 14].map(s => ({ slot: s, off: 0, dur: 1.7, vel: 0.85 })),
-        },
-        {
-          label: '16th-note chop', // constant chord chops, repeating syncopated bass riff
-          grid: 16,
-          kick:  [0, 10],
-          snare: [4, 12],
-          hat:   [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
-          voice: 'dom7',
-          chord: Array.from({ length: 16 }, (_, s) => ({ slot: s, dur: 1.3, vel: s % 4 === 0 ? 0.6 : 0.38 })),
-          bass: [
-            { slot: 0, off: 0, dur: 1.7, vel: 0.85 }, { slot: 3, off: 0, dur: 1.7, vel: 0.7 },
-            { slot: 6, off: 7, dur: 1.7, vel: 0.8 },  { slot: 8, off: 0, dur: 1.7, vel: 0.7 },
-            { slot: 11, off: 7, dur: 1.7, vel: 0.8 }, { slot: 14, off: 0, dur: 1.7, vel: 0.7 },
-          ],
         },
         {
           label: 'Disco',

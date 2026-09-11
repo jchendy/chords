@@ -1047,6 +1047,11 @@
       });
     });
     if (!parts) bad.push('the library is empty');
+    // ...and every feel the picker offers has at least two to choose from
+    Object.keys(STYLES).forEach(style => STYLES[style].variants.forEach(v => {
+      if (partsFor(style, v.label).length < 2) bad.push(`${style}/${v.label} has ${partsFor(style, v.label).length} parts`);
+    }));
+    if (partsFor('simple', GT.parts.SIMPLE_FEEL.label).length < 2) bad.push('Simple has fewer than two parts');
 
     // A chord held for bars is not the same bar over and over: the figure's
     // variants take the phrases in turn, and they come back the same way on

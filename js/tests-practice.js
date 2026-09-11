@@ -35,8 +35,7 @@
   ['tempoVal', 'keyReadout', 'measureReadout', 'chordCountValue', 'styleLabel']
     .forEach(id => add('span', id));
   ['chords', 'chordSlots', 'presetVariantGroup', 'presetVariantRow',
-   'styleVariantGroup', 'styleVariantRow', 'clickRow', 'noteValueRow',
-   'rootOnlyRow'].forEach(id => add('div', id));
+   'clickRow', 'rootOnlyRow'].forEach(id => add('div', id));
   ['genBtn', 'randomKeyBtn', 'quickKeyDice', 'quickRandomChords',
    'chordCountUp', 'chordCountDown', 'shareBtn'].forEach(id => add('button', id, { type: 'button' }));
   // the tab reaches for the label wrapping a checkbox to grey it out
@@ -70,7 +69,6 @@
     });
     root.appendChild(g);
   };
-  segGroup('noteValueGroup', ['1', '2', '4'], 'seg-btn');
   segGroup('voiceGroup', ['piano', 'guitar'], 'seg-btn');
   segGroup('chartViewGroup', ['chart', 'part'], 'seg-btn');
   segGroup('partScaleGroup', ['follow', 'key'], 'seg-btn');
@@ -81,7 +79,7 @@
   ['partPanel', 'partControls', 'partTab', 'partNote'].forEach(id => add('div', id));
   add('span', 'partName');
   ['partPrev', 'partNext', 'partReroll'].forEach(id => add('button', id, { type: 'button' }));
-  segGroup('styleGroup', Object.keys(GT.audio.STYLES), 'genre-btn');
+  add('span', 'styleGroup');          // practice.js fills the list itself
   document.body.appendChild(root);
 
   // ---- driving it ----------------------------------------------------------
@@ -452,26 +450,35 @@
   // both belong there, and "Rock" means the quarter-note one. What it must
   // never do is say one thing while another plays — including when the feel
   // was chosen in the Set up sheet, which the picker doesn't list.
-  function testTheTransportPickerNamesTheFeel(t){
+  // One list of styles, the same everywhere it's offered: the sheet's row of
+  // buttons and the bar's picker carry every feel the engine has, each named
+  // once, and choosing on either puts the same thing on. The sheet used to
+  // ask for a genre and then a feel within it while the bar kept a shortlist
+  // of its own, so the same music had different names in different places.
+  function testTheStyleListIsOneList(t){
     const bad = [];
     const { STYLES } = GT.audio;
     const picker = q('#quickStyle');
-    const at = (style, label) => `${style}.${STYLES[style].variants.findIndex(v => v.label === label)}`;
-    // An entry borrowed for a feel the list doesn't carry may be left over
-    // from an earlier suite; the list proper is what's being checked here.
-    const listed = [...picker.options].filter(o => !o.dataset.extra);
-    const values = listed.map(o => o.value);
-    const names = listed.map(o => o.text);
+    const buttons = () => [...document.querySelectorAll('#styleGroup .genre-btn')];
+    const options = [...picker.options];
 
-    [['rock', 'Quarter drive'], ['blues', 'Shuffle'], ['blues', 'Jump blues']].forEach(([style, label]) => {
-      if (!values.includes(at(style, label))) bad.push(`the picker doesn't offer ${style}'s ${label}`);
+    // everything the engine has, once, in the same order in both places
+    const expect = ['simple.1', 'simple.2', 'simple.4'];
+    Object.keys(STYLES).forEach(style => STYLES[style].variants.forEach((v, i) => expect.push(`${style}.${i}`)));
+    const sheet = buttons().map(b => b.dataset.value), bar = options.map(o => o.value);
+    if (sheet.join() !== expect.join()) bad.push(`the sheet lists ${sheet.join(' ')}`);
+    if (bar.join() !== expect.join()) bad.push(`the bar lists ${bar.join(' ')}`);
+    buttons().forEach((b, i) => {
+      if (b.textContent !== options[i].text) bad.push(`"${b.textContent}" in the sheet is "${options[i].text}" in the bar`);
     });
-    ['Blues shuffle', 'Jump blues'].forEach(name => {
-      if (!names.includes(name)) bad.push(`the picker has no entry called "${name}"`);
+    // every name is its own — no genre-then-feel dressing, no two alike
+    const names = options.map(o => o.text);
+    if (new Set(names).size !== names.length) bad.push('two entries share a name');
+    if (names.some(n => n.indexOf('·') >= 0)) bad.push('an entry is still named genre · feel');
+    ['Simple quarter note', 'Straight rock', 'Rock', 'Half-time rock', 'Blues shuffle', 'Slow blues', 'Jump blues',
+     'Swing', 'Bossa nova', 'Pop', 'Classic funk', 'Disco'].forEach(n => {
+      if (!names.includes(n)) bad.push(`no entry called "${n}"`);
     });
-    // a style that offers one feel is named plainly — "Jazz", not "Jazz · Swing"
-    const dressed = listed.filter(o => o.value === `${o.value.split('.')[0]}.0` && o.text.indexOf('·') >= 0);
-    if (dressed.length) bad.push(`a style offering one feel is listed as "${dressed[0].text}"`);
 
     // the default is named rather than left inline, and it is a feel that exists
     const { DEFAULT_FEEL } = GT.practice;
@@ -481,44 +488,32 @@
       bad.push(`the default names a feel rock hasn't got: ${DEFAULT_FEEL.variant}`);
     }
 
-    const activeStyle = () => { const b = document.querySelector('#styleGroup .genre-btn.active'); return b && b.dataset.value; };
-    const activeFeel = () => { const b = document.querySelector('#styleVariantGroup .seg-btn.active'); return b && b.textContent; };
-
-    // every entry puts on what it says
-    listed.forEach(opt => {
-      const [style, arg] = opt.value.split('.');
+    // choosing on either side puts the same thing on everywhere
+    const active = () => { const b = buttons().find(x => x.classList.contains('active')); return b && b.dataset.value; };
+    options.forEach(opt => {
       picker.value = opt.value;
       picker.dispatchEvent(new Event('change'));
-      if (activeStyle() !== style) bad.push(`"${opt.text}" put on ${activeStyle()} instead of ${style}`);
-      if (style !== 'simple'){
-        const wanted = STYLES[style].variants[Number(arg)].label;
-        if (activeFeel() !== wanted) bad.push(`"${opt.text}" put on the ${activeFeel()} feel instead of ${wanted}`);
-      }
+      if (active() !== opt.value) bad.push(`the bar chose "${opt.text}" and the sheet shows ${active()}`);
+      if (q('#styleLabel').textContent !== opt.text) bad.push(`the bar names "${q('#styleLabel').textContent}" for ${opt.text}`);
     });
-
-    // ...and a feel chosen in the sheet, which the short list doesn't carry,
-    // is still named rather than leaving the picker showing something else
-    q('#styleGroup .genre-btn[data-value="rock"]').click();
-    const sheetFeels = [...document.querySelectorAll('#styleVariantGroup .seg-btn')];
-    const halfTime = sheetFeels.find(b => b.textContent === 'Half-time');
-    if (!halfTime){ bad.push('the sheet lost its Half-time feel'); }
-    else {
-      halfTime.click();
-      const shown = picker.options[picker.selectedIndex];
-      if (!shown || !/half-time/i.test(shown.text)){
-        bad.push(`after choosing Half-time the picker says "${shown ? shown.text : 'nothing'}"`);
-      }
-      if (q('#styleLabel').textContent.indexOf('Half-time') < 0){
-        bad.push(`the bar says "${q('#styleLabel').textContent}" while Half-time plays`);
-      }
-      // and going back to a listed feel clears that entry away again
-      picker.value = at('rock', 'Quarter drive');
-      picker.dispatchEvent(new Event('change'));
-      if ([...picker.options].some(o => /half-time/i.test(o.text))){
-        bad.push('the borrowed entry outstayed the feel it was for');
-      }
-    }
-    t.equal(bad.join('; '), '', 'The transport picker names the feel that is playing');
+    buttons().forEach(b => {
+      b.click();
+      if (picker.value !== b.dataset.value) bad.push(`the sheet chose "${b.textContent}" and the bar sits on ${picker.value}`);
+    });
+    // Simple's note value is part of the choice, and rides in the link
+    q('#styleGroup .genre-btn[data-value="simple.2"]').click();
+    q('#shareBtn').click();
+    if (!/[#&]s=simple\.2(&|$)/.test(location.hash)) bad.push(`the link carries Simple half notes as "${(location.hash.match(/s=[^&]*/) || [''])[0]}"`);
+    q('#styleGroup .genre-btn[data-value="simple.1"]').click();
+    q('#shareBtn').click();
+    if (/[#&]s=/.test(location.hash)) bad.push('Simple on quarters is written into the link');
+    // a link for a feel that has gone falls back rather than breaking
+    picker.value = 'rock.1'; picker.dispatchEvent(new Event('change'));
+    location.hash = '#caged-practice?k=major%3AC&c=0.2.&s=jazz.7';
+    if (!active() || active().split('.')[0] !== 'jazz') bad.push(`a link to a jazz feel that has gone put on ${active()}`);
+    picker.value = 'rock.1'; picker.dispatchEvent(new Event('change'));
+    history.replaceState(null, '', location.pathname);
+    t.equal(bad.join('; '), '', 'The styles are one list, the same in the sheet and the bar');
   }
 
   // Typing a progression: one chord per bar, so a chord held for four bars is
@@ -584,7 +579,7 @@
     const notesOf = () => JSON.stringify(GT.practice.partState().notes);
 
     // a blues feel in one position, so there is a part to have
-    q('#styleGroup .genre-btn[data-value="blues"]').click();
+    q('#styleGroup .genre-btn[data-value="blues.0"]').click();
     view.applyViewState('m:penta.p:position');
     q('#chartViewGroup .seg-btn[data-value="part"]').click();
     const first = notesOf();
@@ -646,7 +641,7 @@
     start();
     const bad = [];
     const view = GT.fretboardView;
-    q('#styleGroup .genre-btn[data-value="blues"]').click();
+    q('#styleGroup .genre-btn[data-value="blues.0"]').click();
     view.applyViewState('m:penta.p:position');
     // A held for three bars, D for two, then E, D, A: eight bars, five names
     GT.practice.loadProgression({ chords: ['A', 'A', 'A', 'D', 'D', 'E', 'D', 'A'], key: 'A' });
@@ -707,7 +702,7 @@
 
   GT.practiceSuites = [
     ['Practice: a shared link round-trips', testShareLinkRoundTrips],
-    ['Practice: the transport picker names the feel', testTheTransportPickerNamesTheFeel],
+    ['Practice: the styles are one list', testTheStyleListIsOneList],
     ['Practice: a hit ends when the next begins', testAHitEndsWhenTheNextBegins],
     ['Practice: the downbeat is an accent, not another instrument', testTheDownbeatIsAnAccentNotAnInstrument],
     ['Practice: every root is on the picker', testEveryRootIsOnThePicker],

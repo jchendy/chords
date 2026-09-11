@@ -889,24 +889,15 @@
       </section>
       <section class="sheet-col">
         <h3>Playback</h3>
-        <div class="frow" id="styleRow"><span class="tb-lbl">Style</span><span class="segmented" id="styleGroup">
-          <button type="button" class="seg-btn genre-btn active" data-value="simple">Simple</button>
-          <button type="button" class="seg-btn genre-btn" data-value="rock">Rock</button>
-          <button type="button" class="seg-btn genre-btn" data-value="blues">Blues</button>
-          <button type="button" class="seg-btn genre-btn" data-value="jazz">Jazz</button>
-          <button type="button" class="seg-btn genre-btn" data-value="pop">Pop</button>
-          <button type="button" class="seg-btn genre-btn" data-value="funk">Funk</button></span></div>
-        <div class="frow" id="styleVariantRow" hidden><span class="tb-lbl">Feel</span><span class="segmented" id="styleVariantGroup"></span></div>
+        <!-- one list of styles, the same one the bar's picker offers; built by
+             practice.js from audio.js's STYLES so it's written once -->
+        <div class="frow" id="styleRow"><span class="tb-lbl">Style</span><span class="segmented style-list" id="styleGroup"></span></div>
         <!-- the chords can play on the recorded guitar instead of the piano;
              the piano stays the default because it keeps out of the way of
              the guitar you're playing over it -->
         <div class="frow" id="voiceRow"><span class="tb-lbl">Voice</span><span class="segmented" id="voiceGroup">
           <button type="button" class="seg-btn active" data-value="piano">Piano</button>
           <button type="button" class="seg-btn" data-value="guitar">Guitar</button></span></div>
-        <div class="frow" id="noteValueRow"><span class="tb-lbl">Note value</span><span class="segmented" id="noteValueGroup">
-          <button type="button" class="seg-btn active" data-value="1">Quarter</button>
-          <button type="button" class="seg-btn" data-value="2">Half</button>
-          <button type="button" class="seg-btn" data-value="4">Whole</button></span></div>
         <div class="frow checks">
           <label class="check" id="clickRow"><input type="checkbox" id="clickToggle" checked><span>Click</span></label>
           <label class="check" id="rootOnlyRow"><input type="checkbox" id="rootOnlyToggle"><span>Roots only</span></label>

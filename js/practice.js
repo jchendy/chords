@@ -772,146 +772,93 @@
   // What a fresh page plays: rock on the quarter-note feel — a backing that
   // keeps time without filling the bar, which is what you want under
   // practice. Named rather than inlined so the test can hold it.
-  const DEFAULT_FEEL = { style: 'rock', variant: 'Quarter drive' };
+  const DEFAULT_FEEL = { style: 'rock', variant: 'Rock' };
   // 'simple' | a key of STYLES, and an index into its variants
   let currentStyle = DEFAULT_FEEL.style;
   let currentVariant = Math.max(0,
     STYLES[DEFAULT_FEEL.style].variants.findIndex(v => v.label === DEFAULT_FEEL.variant));
 
-  const noteValueRow = document.getElementById('noteValueRow');
   const rootOnlyRow = document.getElementById('rootOnlyRow');
   const clickRow = document.getElementById('clickRow');
-  const styleVariantRow = document.getElementById('styleVariantRow');
-  const styleVariantGroup = document.getElementById('styleVariantGroup');
+  const styleGroup = document.getElementById('styleGroup');
+  const quickStyle = document.getElementById('quickStyle');
+  const styleLabel = document.getElementById('styleLabel');
 
-  function renderVariantButtons(){
-    styleVariantGroup.innerHTML = '';
-    if (currentStyle === 'simple') return;
-    STYLES[currentStyle].variants.forEach((variant, i) => {
-      const b = document.createElement('button');
-      b.type = 'button';
-      b.className = 'seg-btn' + (i === currentVariant ? ' active' : '');
-      b.textContent = variant.label;
-      b.addEventListener('click', () => {
-        currentVariant = i;
-        renderVariantButtons();
-        syncQuickStyle();          // the bar names the feel, not just the style
-        partFills = [];            // a different feel is a different part
-        rebuildPart();
-      });
-      styleVariantGroup.appendChild(b);
-    });
-  }
-
-  // The transport carries the style as a name you can tap rather than six
-  // buttons it has no room for — the chart head's move, and like the key
-  // there it's a view of the same state, not a second copy of it. The options
-  // are built from the buttons, so the list is written once.
-  //
-  // Simple's note value belongs in that list too: on its own "Simple" says
-  // nothing about what you'll hear, and quarter/half/whole is the only thing
-  // left to choose once you've picked it. So Simple appears once per note
-  // value, and picking one sets both.
-  // A picker entry names a feel, not a style. Most styles put up one entry —
-  // the feel you'd expect when you tap that name — but a style can offer
-  // more than one where the difference is the reason you'd choose it: the two
-  // blues feels are different music, not two shadings of the same thing. The
-  // Set up sheet still has every variant; this is the short list.
-  const QUICK_FEELS = {
-    rock:  [{ variant: 'Quarter drive', label: 'Rock' }],
-    blues: [{ variant: 'Shuffle', label: 'Blues shuffle' }, { variant: 'Jump blues', label: 'Jump blues' }],
+  // ---- the one list of styles ----
+  // A style to play under the chords is a feel — Rock, Blues shuffle, Bossa
+  // nova — and there is one list of them, offered whole in the Set up sheet
+  // and whole again in the bar: the sheet used to ask for a genre and then a
+  // feel within it, and the bar a shortlist, and the same thing had three
+  // names depending on where you looked. Simple's note value belongs in the
+  // list too: on its own "Simple" says nothing about what you'll hear, and
+  // quarter/half/whole is the only thing left to choose once you've picked
+  // it. Every entry carries `style.arg`: the note value in beats for Simple,
+  // the index into STYLES[style].variants for the rest.
+  const SIMPLE_NAMES = { 1: 'Simple quarter note', 2: 'Simple half note', 4: 'Simple whole note' };
+  const simpleName = beats => SIMPLE_NAMES[beats] || 'Simple';
+  const feelName = (style, index) => {
+    if (style === 'simple') return simpleName(index);
+    const variant = STYLES[style] && STYLES[style].variants[index];
+    return variant ? variant.label : style;
   };
+  const STYLE_LIST = [
+    ...Object.keys(SIMPLE_NAMES).map(beats => ({ value: `simple.${beats}`, label: simpleName(beats) })),
+    ...Object.keys(STYLES).flatMap(style =>
+      STYLES[style].variants.map((v, i) => ({ value: `${style}.${i}`, label: v.label }))),
+  ];
+  styleGroup.innerHTML = '';
+  STYLE_LIST.forEach(({ value, label }) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'seg-btn genre-btn';
+    b.dataset.value = value;
+    b.textContent = label;
+    b.addEventListener('click', () => setFeel(value));
+    styleGroup.appendChild(b);
+    quickStyle.appendChild(new Option(label, value));
+  });
+  quickStyle.addEventListener('change', () => setFeel(quickStyle.value));
+
+  // The one way a style is chosen, wherever from. `value` is an entry of the
+  // list; anything else — a link written for a feel that has since gone —
+  // falls back to that style's first feel, or to the default.
+  function setFeel(value){
+    let [style, arg] = String(value || '').split('.');
+    if (style === 'simple'){
+      noteBeats = SIMPLE_NAMES[arg] ? Number(arg) : 1;
+    } else if (STYLES[style]){
+      currentVariant = Math.min(Math.max(0, Number(arg) || 0), STYLES[style].variants.length - 1);
+    } else {
+      style = DEFAULT_FEEL.style;
+      currentVariant = variantIndex(DEFAULT_FEEL.style, DEFAULT_FEEL.variant);
+    }
+    const changed = style !== currentStyle || feelValue() !== value;
+    currentStyle = style;
+    updatePlaybackUI();
+    if (changed) partFills = [];          // a different feel is a different part
+    rebuildPart();
+  }
+  const feelValue = () => currentStyle === 'simple' ? `simple.${noteBeats}` : `${currentStyle}.${currentVariant}`;
   const variantIndex = (style, name) => {
     const list = (STYLES[style] && STYLES[style].variants) || [];
     const i = list.findIndex(v => v.label === name);
     return i < 0 ? 0 : i;
   };
-  const feelName = (style, index) => {
-    const entry = (QUICK_FEELS[style] || []).find(e => variantIndex(style, e.variant) === index);
-    if (entry) return entry.label;
-    const btn = document.querySelector(`#styleGroup .genre-btn[data-value="${style}"]`);
-    const styleName = btn ? btn.textContent : style;
-    // a style that names no feels is offered under its own name, and that
-    // name means its first one
-    if (!QUICK_FEELS[style] && index === 0) return styleName;
-    const variant = STYLES[style] && STYLES[style].variants[index];
-    return variant ? `${styleName} · ${variant.label}` : styleName;
-  };
 
-  const quickStyle = document.getElementById('quickStyle');
-  const styleLabel = document.getElementById('styleLabel');
-  const noteValueButtons = () => [...document.querySelectorAll('#noteValueGroup .seg-btn')];
-  const simpleName = beats => {
-    const btn = noteValueButtons().find(b => b.dataset.value === String(beats));
-    return btn ? `Simple ${btn.textContent.toLowerCase()} note` : 'Simple';
-  };
-  document.querySelectorAll('#styleGroup .genre-btn').forEach(btn => {
-    const style = btn.dataset.value;
-    if (style === 'simple'){
-      // Simple's note value belongs in the list too: on its own "Simple" says
-      // nothing about what you'll hear, and quarter/half/whole is the only
-      // thing left to choose once you've picked it.
-      noteValueButtons().forEach(nv =>
-        quickStyle.appendChild(new Option(simpleName(nv.dataset.value), `simple.${nv.dataset.value}`)));
-      return;
-    }
-    const feels = QUICK_FEELS[style] || [{ variant: null, label: btn.textContent }];
-    feels.forEach(feel => {
-      const i = feel.variant ? variantIndex(style, feel.variant) : 0;
-      quickStyle.appendChild(new Option(feel.label, `${style}.${i}`));
-    });
-  });
-  quickStyle.addEventListener('change', () => {
-    const [style, arg] = quickStyle.value.split('.');
-    const btn = document.querySelector(`#styleGroup .genre-btn[data-value="${style}"]`);
-    if (btn) btn.click();                       // resets the variant to the first
-    if (style === 'simple'){
-      const nv = noteValueButtons().find(b => b.dataset.value === arg);
-      if (nv) nv.click();
-    } else {
-      currentVariant = Math.min(Number(arg) || 0, STYLES[style].variants.length - 1);
-      renderVariantButtons();
-    }
-    syncQuickStyle();
-  });
-
-  // the name in the bar, and which option the picker is sitting on. A feel
-  // chosen in the Set up sheet that the short list doesn't carry gets an
-  // entry of its own rather than leaving the picker showing the wrong thing.
+  // the sheet's list, the bar's picker and the bar's name, all told the same
   function syncQuickStyle(){
-    const simple = currentStyle === 'simple';
-    const want = simple ? `simple.${noteBeats}` : `${currentStyle}.${currentVariant}`;
-    [...quickStyle.options].forEach(o => { if (o.dataset.extra) o.remove(); });
-    if (![...quickStyle.options].some(o => o.value === want)){
-      const extra = new Option(feelName(currentStyle, currentVariant), want);
-      extra.dataset.extra = '1';
-      quickStyle.appendChild(extra);
-    }
+    const want = feelValue();
+    styleGroup.querySelectorAll('.genre-btn').forEach(b => b.classList.toggle('active', b.dataset.value === want));
     quickStyle.value = want;
-    styleLabel.textContent = simple ? simpleName(noteBeats) : feelName(currentStyle, currentVariant);
+    styleLabel.textContent = feelName(currentStyle, currentStyle === 'simple' ? noteBeats : currentVariant);
   }
 
   function updatePlaybackUI(){
     const simple = currentStyle === 'simple';
-    noteValueRow.hidden = !simple;
     rootOnlyRow.hidden = !simple;
     clickRow.hidden = !simple;
-    styleVariantRow.hidden = simple;
     syncQuickStyle();
   }
-
-  document.querySelectorAll('.genre-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.genre-btn')
-        .forEach(b => b.classList.toggle('active', b.dataset.value === btn.dataset.value));
-      currentStyle = btn.dataset.value;
-      currentVariant = 0;
-      renderVariantButtons();
-      updatePlaybackUI();
-      partFills = [];
-      rebuildPart();
-    });
-  });
 
   // Swaps triads for sevenths in place: the roots, the degrees, the bar
   // lengths and any chord you've set yourself all stay exactly as they are.
@@ -958,15 +905,6 @@
     setChordCount(chordCount + 1);
   });
 
-
-  document.querySelectorAll('#noteValueGroup .seg-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('#noteValueGroup .seg-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      noteBeats = Number(btn.dataset.value);
-      syncQuickStyle();      // Simple is named for its note value in the bar
-    });
-  });
 
   function getTempo(){ return Number(tempoInput.value); }
   // how many measures a given chord in the progression lasts, and the beats
@@ -1273,7 +1211,7 @@
       if (loadedLabel) p.set('l', loadedLabel);
     }
     p.set('t', String(getTempo()));
-    if (currentStyle !== 'simple') p.set('s', `${currentStyle}.${currentVariant}`);
+    if (feelValue() !== 'simple.1') p.set('s', feelValue());   // Simple on quarters is what a link means by nothing
     if (chordVoice !== 'piano') p.set('v', chordVoice);
     // ...and what the neck under the chart is showing, as one field. It's
     // empty whenever the neck is at its defaults, which is most of the time.
@@ -1320,16 +1258,9 @@
       tempoInput.value = p.get('t');
       tempoInput.dispatchEvent(new Event('input'));
     }
-    if (p.get('s')){
-      const [style, variant] = p.get('s').split('.');
-      const btn = document.querySelector(`#styleGroup .genre-btn[data-value="${style}"]`);
-      if (btn && STYLES[style]){
-        btn.click();                       // which resets the feel to the first
-        currentVariant = Math.min(Number(variant) || 0, STYLES[style].variants.length - 1);
-        renderVariantButtons();
-        syncQuickStyle();                  // ...so the bar has to be told again
-      }
-    }
+    // a link that names no style means Simple on quarters — which is also
+    // what a link written for a feel that has since gone falls back to
+    setFeel(p.get('s') || 'simple.1');
 
     // the neck is set before the chords, so the redraw that follows them
     // draws the view the link asked for rather than the one that was up
@@ -1481,7 +1412,7 @@
 
   // Why there is nothing to show, in the words that say what to do about it.
   function partExcuse(){
-    if (!partsNow().length) return `No parts written for ${feelName(currentStyle, currentVariant)} yet. The blues feels and the feels the playback bar offers have theirs.`;
+    if (!partsNow().length) return `No parts written for ${feelName(currentStyle, currentVariant)} yet.`;
     const pv = view.positionView();
     if (!PART_READINGS.includes(pv.reading)) return 'A part is realised into the notes a reading offers: switch the neck to Chords, Triads, Pentatonic or Scales.';
     if (!pv.inPosition || !pv.window) return 'A part is written into one position: switch the neck to \u201cIn one position\u201d.';
@@ -1915,11 +1846,7 @@
         // this tab's — so it says when it has redrawn and the link follows
         viewChanged: () => { writeShareState(); rebuildPart(); },
       });
-      // the style buttons are markup, so the default has to be put on them
-      document.querySelectorAll('.genre-btn').forEach(b =>
-        b.classList.toggle('active', b.dataset.value === currentStyle));
-      renderVariantButtons();
-      updatePlaybackUI();
+      updatePlaybackUI();       // the list is built above; this marks the default on it
       setPlayLabel('Play');
       // A shared link doesn't only arrive on a cold page: it gets pasted into
       // the bar of a tab already open here, and back/forward walks between two

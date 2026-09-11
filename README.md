@@ -226,28 +226,29 @@ doesn't overrule you. The bar itself can fold away too, from a button at its
 right end, leaving Play floating clear of the page and giving the neck the
 eighty-odd pixels the bar was using; that button is there wherever there's
 room for it, which is everywhere but a phone held upright, where the neck
-already fits and the bar has no space to spare. A "Style" picker chooses the backing:
-  Simple — the plain piano voicing, with note value (quarter / half / whole),
-  metronome click and a roots-only mode;
-  Rock — driving 8th-note piano chords and a basic kit, with three alternate
-  Feels: **Quarter drive**, which keeps the full backbeat and the eighth-note
-  hats but thins the comping to a chord per quarter, with the bass filling
-  the "and" of 2 and 4 — so it sits between the busy one and the half-time
-  one; a half-time feel; and a 16th-note "1 & a" gallop (Punk drive);
-  Blues — a 12/8 shuffle: boogie-woogie walking bass (1-3-5-6-♭7-6-5-3),
-  long-ringing dominant-7th chord stabs on the shuffle upbeats, and a
-  shuffled kick/snare/hat — plus **Jump blues**, the one that isn't swung:
-  the same boogie figure with the eighths square, a hard backbeat, and two
-  short chord stabs a bar on 2 and 4 and nothing else, which is the jump /
-  rock-and-roll side of the music rather than the shuffle;
-  Jazz — a swung "spang-a-lang" ride pattern with hi-hat on 2 & 4, a quarter-note
-  walking bass (root–5th–3rd–chromatic approach to the next chord), and
-  rootless Charleston-comped 7th-chord voicings;
-  Pop — four-on-the-floor, ballad, and syncopated dance-pop grooves;
-  Funk — a hard-hitting "on the One" groove, a 16th-note guitar-chop groove,
-  and a four-on-the-floor disco groove.
-  Every style (except Simple) offers a canonical groove plus common
-  alternatives — three Feels each, four for rock and blues
+already fits and the bar has no space to spare. A "Style" picker chooses the backing,
+  from one list that is the same in the Set up sheet and in the bar (it
+  used to be a genre and then a feel within it in the sheet, and a shortlist
+  in the bar, so the same music went by different names in different
+  places):
+  Simple quarter / half / whole note — the plain piano voicing at that
+  spacing, with a metronome click and a roots-only mode;
+  Straight rock — driving 8th-note chords and a basic kit; Rock — the
+  same backbeat and eighth-note hats with the comping thinned to a chord
+  per quarter and the bass filling the "and" of 2 and 4, which is what a
+  fresh page plays; Half-time rock — the snare on 3 alone under sustained
+  chords;
+  Blues shuffle — 12/8: boogie-woogie walking bass (1-3-5-6-♭7-6-5-3),
+  long-ringing dominant-7th stabs on the shuffle upbeats, a shuffled kit;
+  Slow blues — sparse 12/8, a held chord and the turnaround bass; Jump
+  blues — the boogie figure with the eighths square, a hard backbeat and two
+  short stabs a bar, the rock-and-roll side of the music;
+  Swing — a "spang-a-lang" ride with hi-hat on 2 & 4, a quarter-note walking
+  bass (root–5th–3rd–chromatic approach), rootless Charleston-comped 7ths;
+  Bossa nova — straight, the samba-derived bass and a syncopated comp;
+  Pop — four on the floor;
+  Classic funk — the hit on the One, ghost kicks, constant 16th hats; Disco
+  — four on the floor with off-beat chords and an octave-jumping bass.
 - Live chord highlighting synced to playback, with a measure.beat position
   readout under the chords (the key itself is shown plainly above them,
   e.g. "C major" / "C#m")
@@ -723,14 +724,12 @@ using only the five, and in the scales reading using the scale; a note the
 reading can't offer within a tone is dropped rather than forced, so a sparse
 reading gives a sparser part, not a wrong one.
 
-Written that way because parts belong to feels — sixteen of them — and
-appear in four readings. Written per reading they'd be sixteen times four
-times several examples, hundreds of hand-written parts none of which could
-be given real attention. Written once and snapped, they're sixteen times a
-few. The four blues feels have theirs, and so do the four the playback
-bar's picker offers for the other styles — Rock's Quarter drive, Jazz's
-Swing, Pop's Four-on-the-floor and Funk's Classic funk; the remaining eight
-are still to write. Simple has no feels of its own — quarter, half and
+Written that way because parts belong to feels — eleven of them, and
+Simple — and appear in four readings. Written per reading they'd be twelve
+times four times several examples, hundreds of hand-written parts none of
+which could be given real attention. Written once and snapped, they're twelve times a
+few. Every feel the picker offers has two, and a test holds it to that.
+Simple has no feels of its own — quarter, half and
 whole notes are one hit at three spacings — so its parts are written for a
 stand-in on a sixteenth grid: the chord struck whole and a run through part
 of the scale between the strikes, in quarter notes or in eighths.
