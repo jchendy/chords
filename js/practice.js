@@ -1226,19 +1226,12 @@
     return true;
   }
 
-  // Only the notes this progression will actually strike, rather than the
-  // whole keyboard: the piano is 66 recordings and a handful of chords needs
-  // a dozen of them. Rolling new chords warms again, and what was already
-  // fetched costs nothing the second time.
-  function warmThePiano(){
-    const freqs = [];
-    currentProgression.forEach(chord => {
-      if (!chord) return;
-      chordFrequencies(chord).forEach(f => freqs.push(f));
-      freqs.push(noteFreq(chord.note, ROOT_OCTAVE));      // roots-only mode
-    });
-    if (freqs.length) audio.warmPiano(freqs);
-  }
+  // The stretch of piano this app can reach, fetched in one go. Not the whole
+  // keyboard (see audio.js: decoded, that would be 125 MB of it) and no
+  // longer chord by chord either — the style picks the voicing, the style can
+  // change mid-progression, and warming what this chord needs is what left
+  // the jazz comp playing a synthesized piano over sampled everything else.
+  function warmThePiano(){ audio.warmPiano(); }
 
   const voiceGroup = document.getElementById('voiceGroup');
   voiceGroup.querySelectorAll('.seg-btn').forEach(btn => {

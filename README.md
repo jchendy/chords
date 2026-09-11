@@ -779,8 +779,16 @@ Ab, Gb, C#, A9, E9, C7, D7, Cm7, CM7):
    shape the `.sfz` has — all 88 keys covered, no gap, no note claimed twice,
    no sample stretched further than its layer allows — and every note the
    practice tab can play is checked to have a sample on both sides of the
-   velocity split.
-13. **The genre library and the presets are well-formed.** Every progression
+   velocity split. It also walks every style in the library rather than the
+   voices that exist today: a style added later either voices inside the
+   warmed range or this fails, and a style asking for a voice nothing can
+   place fails too. That is the guard the jazz comp needed and didn't have.
+13. **Every note the genre examples play has a recording too.** The examples
+   are written as string and fret, so a note added to a lead line or a
+   voicing added to a rhythm reaches the guitar samples without anyone
+   thinking about it. Every genre, progression, rhythm and lead is walked and
+   held to the line the neck is held to.
+14. **The genre library and the presets are well-formed.** Every progression
    has a key and parseable chords, a "twelve-bar" has twelve bars, hits sit
    inside their grid, a six-slot bar declares itself a waltz, every chord can
    be voiced the way its rhythm asks, lead lines stay on the neck and inside
@@ -841,11 +849,15 @@ fall back to the style's implied seventh for a plain triad. Notes are
 scheduled against the audio clock by a 25 ms lookahead loop, so timing
 doesn't drift when the main thread is busy.
 
-The chord finder, the reverse finder and the ear trainer are the exception:
-they play a **real guitar**, fifteen notes of a 2017 Martin HD-28 recorded by
-Jeff Learman and released CC0, one sample every two or three semitones with
-the notes between reached by pitching the nearest one. They sit in
-`audio/guitar/`, and `audio/guitar/SOURCE.md` records where they came from
+Wherever a guitar rings undistorted it is a **real guitar**: fifteen notes of
+a 2017 Martin HD-28 recorded by Jeff Learman and released CC0, one sample
+every two or three semitones with the notes between reached by pitching the
+nearest one. That is the chord finder, the reverse finder, the ear trainer,
+the practice tab's guitar voice, and the genre examples' clean tone — the
+jazz, rockabilly and surf patterns. The palm-muted chug and the overdriven
+tone stay synthesized on purpose: they are different articulations rather
+than a note made shorter or dirtier, and a struck acoustic pushed through a
+clipping stage is neither of them. The samples sit in `audio/guitar/`, and `audio/guitar/SOURCE.md` records where they came from
 and why we believe we may use them, along with two libraries that were
 rejected and the reason — the Philharmonia's, whose terms forbid making the
 samples available as-is, which is what a public repository does; and VCSL,
@@ -854,9 +866,16 @@ which is genuinely CC0 but has no guitar in it.
 Two more CC0 sets sit beside them, recorded for the FreePats project and
 taken whole rather than in the slice we need. The piano (`audio/piano/`, a
 Kawai upright, 66 samples in two velocity layers) is the one every piano note
-in the app now comes from; only the notes a progression actually strikes are
-fetched, at the press of Play, so a handful of chords costs a dozen files
-rather than the whole keyboard. The bass (`audio/bass/`, a Yamaha RBX, finger
+in the app now comes from. What gets fetched is the range the app can
+actually reach, C3 to G♯5 — every chord it can build, voiced every way its
+styles voice them, lands inside that — which is 25 of the 66 files, 10.6 MB
+to fetch and about 42 MB once decoded. The whole keyboard would be 33 MB to
+fetch, which is nothing much, and 125 MB decoded, which is not: Web Audio
+holds a buffer as 32-bit floats, four times the size of the file, and this is
+325 seconds of piano. Warming per chord instead would save a few megabytes
+and leave a hole wherever a style voiced somewhere the warm didn't look —
+which it did, and the jazz comp came out synthesized over sampled everything
+else until a test was written to catch it. The bass (`audio/bass/`, a Yamaha RBX, finger
 and picked, chromatic through its first octave) is still waiting: it stops at
 A2 while the walking line can ask for a D♯4, so those notes get voiced lower
 or left to the synth, and that is a decision rather than a download. Each

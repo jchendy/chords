@@ -853,6 +853,36 @@
         });
       }));
     if (!(PIANO_SPLIT > 0 && PIANO_SPLIT < 1)) bad.push('the velocity split is outside 0..1');
+    // ...and every note any style can voice is inside the stretch that gets
+    // warmed before playback. A voice that reached above it would still
+    // sound — on the synthesized piano, one voice out of an otherwise
+    // sampled arrangement — which is exactly how the jazz comp went
+    // unnoticed. Every style in the library is walked rather than the three
+    // voice names known today, so a style added later is held to the same
+    // line: either it voices inside the warmed range or this fails.
+    const { PIANO_RANGE, STYLE_VOICES, STYLES, ROOT_OCTAVE, noteFreq } = GT.audio;
+    const declared = new Set();
+    Object.keys(STYLES).forEach(key => (STYLES[key].variants || []).forEach(v => {
+      declared.add(v.voice || 'triad');
+      if (!STYLE_VOICES[v.voice || 'triad']){
+        bad.push(`${key}/${v.label} asks for the "${v.voice}" voice, which nothing here can place`);
+      }
+    }));
+    ['C', 'Db', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'].forEach(root =>
+      ['', 'm', '7', 'maj7', 'm7', 'm7b5', 'dim7', '6', '9', '13', 'sus4', 'add9'].forEach(suffix => {
+        const chord = chordFromName(root + suffix);
+        if (!chord) return;
+        const reach = [noteFreq(chord.note, ROOT_OCTAVE)];   // the roots-only mode's lone root
+        declared.forEach(voice => reach.push(...STYLE_VOICES[voice].freqs(chord)));
+        reach.forEach(freq => {
+          const midi = midiOf(freq);
+          if (midi < PIANO_RANGE.lo || midi > PIANO_RANGE.hi){
+            bad.push(`${root}${suffix} voices MIDI ${midi}, outside the warmed ${PIANO_RANGE.lo}-${PIANO_RANGE.hi}`);
+          } else if (!pianoSampleFor(midi, true) || !pianoSampleFor(midi, false)){
+            bad.push(`${root}${suffix}: MIDI ${midi} has no sample in one of the layers`);
+          }
+        });
+      }));
     t.equal(bad.join('; '), '', `The piano map covers both layers end to end (${checked} notes)`);
   }
 
@@ -970,6 +1000,43 @@
     const cShape = cagedPlacements(0, CAGED_MAJOR).find(p => p.name === 'C' && p.fretMin === 0);
     t.equal(grip(seventhCells(cShape, 0, 10)), 'x-3-2-3-1-0', 'open C-shape C7 raises the 5th to the flat 7th');
     t.equal(grip(seventhCells(cShape, 0, 11)), 'x-3-2-0-0-0', 'open C-shape Cmaj7 flattens the doubled root');
+  }
+
+  // ---- 4z. every note the genre examples play has a recording behind it ----
+  // The examples are written as string and fret, so a note added to a lead
+  // line or a voicing added to a rhythm reaches the guitar samples without
+  // anyone thinking about it. This walks every genre, every progression,
+  // every rhythm and every lead, and holds each note to the same line the
+  // neck is held to: inside some sample's own range, and near enough to it
+  // to still be that note played on that guitar. A pattern written outside
+  // the recorded range would play — on the synthesized guitar, one voice in
+  // an otherwise sampled arrangement, which is the kind of thing you only
+  // notice as "something sounds off".
+  function testGenreNotesHaveRecordings(t){
+    const { GUITAR_SAMPLES, sampleFor } = GT.audio;
+    const { voiceChord, midiFor } = GT.genres;
+    const bad = [];
+    let checked = 0;
+    const check = (midi, where) => {
+      checked++;
+      const spec = sampleFor(midi);
+      if (midi < GUITAR_SAMPLES[0].lo || midi > GUITAR_SAMPLES[GUITAR_SAMPLES.length - 1].hi){
+        bad.push(`${where}: MIDI ${midi} is outside every sample's range`);
+      } else if (midi < spec.lo || midi > spec.hi){
+        bad.push(`${where}: MIDI ${midi} got ${spec.file}, whose range is ${spec.lo}-${spec.hi}`);
+      } else if (Math.abs(midi - spec.key) > 3){
+        bad.push(`${where}: MIDI ${midi} is ${Math.abs(midi - spec.key)} semitones from ${spec.file}`);
+      }
+    };
+    GT.genreData.forEach(g => {
+      g.rhythms.forEach(r => g.progressions.forEach(p => p.chords.forEach(chord => {
+        const voiced = voiceChord(chord, r.voicing);
+        if (!voiced) return;                       // testData already reports this
+        voiced.cells.forEach(c => check(midiFor(c.string, c.fret), `${g.name} ${r.name} ${chord}`));
+      })));
+      g.leads.forEach(l => l.notes.forEach(n => check(midiFor(n.s, n.f), `${g.name} lead ${l.name}`)));
+    });
+    t.equal(bad.join('; '), '', `Every note the genre examples play has a recording (${checked} notes)`);
   }
 
   // ---- 5. the genre library and the presets are well-formed ----
@@ -1750,6 +1817,7 @@
       ['Every note the neck can play has a recording near it', testEveryNoteHasARecording],
       ['Every chord the practice tab plays has recordings for it', testEveryChordFitsTheRecordings],
       ['The piano map covers both layers end to end', testThePianoMapIsWhole],
+      ['Every note the genre examples play has a recording', testGenreNotesHaveRecordings],
       ['Theory: naming and identification', testTheory],
       ['Theory: one answer for what degree a note is', testDegreeNamesAgree],
       ['Fretboard: the pentatonic boxes are unchanged', testPentatonicBoxesAreUnchanged],

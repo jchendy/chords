@@ -122,6 +122,11 @@
     if (!example) return;
     audio.ensureAudio();
     if (audio.ctx().state === 'suspended') audio.ctx().resume();
+    // An example plays to a clock, so the recordings are fetched at the press
+    // rather than a note at a time. Nothing waits on it: whatever hasn't
+    // landed is played by the synthesized voice, which is also what a page
+    // opened straight from disk gets for good.
+    audio.warmGuitar();
     clearTimeout(stopTimer);      // a stop armed by an earlier run mustn't cut this one short
     playing = true;
     secondsPerSlot = slotSeconds();

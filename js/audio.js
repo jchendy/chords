@@ -613,15 +613,31 @@
   // that needs them. Both layers, because one progression played straight
   // through uses both: the practice tab strikes a downbeat at full velocity
   // and everything else at 0.62, which lands either side of the split.
-  function warmPiano(freqs){
+  // Every pitch a chord can be played at, whichever voice the style picks:
+  // the plain triad, the 7th, and the rootless 7th the jazz styles comp with.
+  function chordVoicings(chord){
+    return Object.keys(STYLE_VOICES)
+      .reduce((all, name) => all.concat(STYLE_VOICES[name].freqs(chord)), []);
+  }
+
+  // WHAT GETS WARMED, AND WHY IT ISN'T THE WHOLE PIANO. Every chord this app
+  // can build, voiced every way it can be voiced, lands between C3 and G#5 —
+  // 1656 notes checked, and a test holds it there. That stretch is 25 of the
+  // 66 recordings: 10.6 MB to fetch and about 42 MB once decoded. The whole
+  // keyboard would be 33 MB to fetch, which is nothing much, and 125 MB
+  // decoded, which is not — Web Audio keeps a buffer as 32-bit floats, four
+  // times the size of the file, and these are long samples: 325 seconds of
+  // piano altogether. So the range is the unit, not the chord: warming per
+  // chord saves a few megabytes and leaves a hole the moment a style voices
+  // somewhere the warm didn't look, which is exactly how the jazz comp came
+  // out synthesized.
+  const PIANO_RANGE = { lo: 48, hi: 80 };
+
+  function warmPiano(){
     if (!audioCtx || !pianoBank.reachable) return Promise.resolve(false);
-    const wanted = new Set();
-    freqs.forEach(f => {
-      const midi = midiOf(f);
-      wanted.add(pianoSampleFor(midi, true));
-      wanted.add(pianoSampleFor(midi, false));
-    });
-    return Promise.all([...wanted].map(spec => loadInto(pianoBank, spec)))
+    const wanted = [...PIANO_SOFT, ...PIANO_HARD]
+      .filter(spec => spec.hi >= PIANO_RANGE.lo && spec.lo <= PIANO_RANGE.hi);
+    return Promise.all(wanted.map(spec => loadInto(pianoBank, spec)))
       .then(all => all.every(Boolean));
   }
 
@@ -667,7 +683,12 @@
   // A chord that carries its own 7th — one the practice tab's shape picker
   // set — is played as written. A plain triad still gets the style's 7th,
   // since that's the style's sound: a blues comps in dominants.
-  function playChord7(chord, time, duration, velocity, rootless){
+  // Where the notes of a 7th chord land, worked out apart from playing them:
+  // the styles voice much higher than a plain triad does — the rootless one
+  // starts an octave up and climbs from there — and anything wanting the
+  // recordings on hand before the beat has to know that. Warming the triad
+  // and hoping is what leaves a jazz comp synthesized.
+  function chord7Frequencies(chord, rootless){
     const r = SEMITONE[chord.note], third = SEMITONE[chord.third], fifth = SEMITONE[chord.fifth];
     const isDom = chord.numeral === 'V' || chord.numeral === 'VII' || chord.numeral === 'v';
     const seventh = chord.seventh
@@ -675,11 +696,16 @@
       : (r + (isDom || chord.quality !== 'maj' ? 10 : 11)) % 12;
     const pcs = rootless ? [third, fifth, seventh, r] : [r, third, fifth, seventh];
     let octave = rootless ? 4 : 3, prev = -1;
-    pcs.forEach(pc => {
+    return pcs.map(pc => {
       if (pc <= prev) octave++;
       prev = pc;
-      playNote(pcFreq(pc, octave), time, duration, velocity);
+      return pcFreq(pc, octave);
     });
+  }
+
+  function playChord7(chord, time, duration, velocity, rootless){
+    chord7Frequencies(chord, rootless)
+      .forEach(freq => playNote(freq, time, duration, velocity));
   }
 
   function playBass(freq, time, duration, velocity){
@@ -770,10 +796,21 @@
     osc.stop(time + 0.13);
   }
 
+  // Where each style voice puts its notes, and how it plays them, declared
+  // together. Anything that needs to know what a style will reach for — the
+  // warm, and the test that holds the warmed range honest — asks `freqs`, so
+  // a voice added here can't quietly start playing notes nothing warmed.
+  const STYLE_VOICES = {
+    triad: { freqs: chord => chordFrequencies(chord),
+             play: (chord, t, d, v) => playChord(chord, t, d, v) },
+    dom7:  { freqs: chord => chord7Frequencies(chord, false),
+             play: (chord, t, d, v) => playChord7(chord, t, d, v, false) },
+    jazz:  { freqs: chord => chord7Frequencies(chord, true),
+             play: (chord, t, d, v) => playChord7(chord, t, d, v, true) },
+  };
+
   function playStyleVoice(voice, chord, time, duration, velocity){
-    if (voice === 'dom7') return playChord7(chord, time, duration, velocity, false);
-    if (voice === 'jazz') return playChord7(chord, time, duration, velocity, true);
-    return playChord(chord, time, duration, velocity);   // 'triad'
+    (STYLE_VOICES[voice] || STYLE_VOICES.triad).play(chord, time, duration, velocity);
   }
 
   // A plucked-string voice for the genre examples. Sawtooth pairs give the
@@ -783,6 +820,7 @@
   //   clean  — hollowbody/ringing, for rockabilly, jazz, surf
   //   muted  — palm-muted chug, short and thumpy
   //   drive  — overdriven and sustaining, for punk and metal
+  const CLEAN_SAMPLE_TRIM = 1.6;
   const GUITAR_TONES = {
     clean: { cutoff: 3400, close: 0.5, ring: 1,    level: 0.30, drive: false },
     muted: { cutoff: 1100, close: 0.3, ring: 0.16, level: 0.34, drive: false },
@@ -790,6 +828,16 @@
   };
 
   function playGuitar(freq, time, duration, velocity = 1, tone = 'clean'){
+    // The clean tone is a string ringing undistorted, which is the one thing
+    // the recordings actually are — so when they're here they play it. The
+    // other two stay synthesized on purpose: a palm-muted chug and an
+    // overdriven sustain are different articulations, not one note made
+    // shorter or dirtier, and a struck Martin pushed through a clipping
+    // stage is neither of them. CLEAN_SAMPLE_TRIM matches the recording's
+    // level to the synthesized tone it replaces; measured, like the piano's.
+    if (tone === 'clean' && pluckReady(freq)){
+      return playPluck(freq, time, duration, velocity * CLEAN_SAMPLE_TRIM);
+    }
     const spec = GUITAR_TONES[tone] || GUITAR_TONES.clean;
     const ring = Math.min(duration, duration * spec.ring + 0.02);
 
@@ -1072,7 +1120,8 @@
     ensureAudio, keepAwake, cancelScheduled, stepsToSkip, noteFreq, chordFrequencies, pcFreq, bassFreqAt, walkBassFreq, ROOT_OCTAVE,
     playNote, playChord, playChord7, playBass, playGuitar,
     playPluck, readyForPluck, pluckReady, warmGuitar,
-    PIANO_SOFT, PIANO_HARD, PIANO_SPLIT, pianoSampleFor, warmPiano, pianoReady: pianoSampleReady,
+    PIANO_SOFT, PIANO_HARD, PIANO_SPLIT, PIANO_RANGE, pianoSampleFor, warmPiano, pianoReady: pianoSampleReady,
+    chord7Frequencies, chordVoicings, STYLE_VOICES,
     playHiHat, playRide, playKick, playSnare, playStyleVoice,
     STYLES,
   };
