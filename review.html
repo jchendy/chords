@@ -62,6 +62,10 @@
   .bandcard, .partcard{ margin:8px 0; padding:10px 12px; border:1px solid var(--line); border-radius:10px; background:var(--bg); }
   .bandcard.playing, .partcard.playing{ border-color:var(--a); }
   .part-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .btns{ display:inline-flex; align-items:center; gap:8px; }
+  .roll{ font-size:11px; color:var(--muted2); font-variant-numeric:tabular-nums; }
+  .reroll{ font:600 12px Inter,system-ui,sans-serif; padding:5px 10px; border-radius:999px; border:1px solid transparent; background:transparent; color:var(--muted); cursor:pointer; white-space:nowrap; }
+  .reroll:hover{ color:var(--ink); border-color:var(--line2); }
   .play{ font:600 12px Inter,system-ui,sans-serif; padding:5px 12px; border-radius:999px; border:1px solid var(--line2); background:var(--panel2); color:var(--ink); cursor:pointer; white-space:nowrap; }
   .play:hover{ border-color:var(--a); }
   .playing .play[data-on]{ background:var(--a); color:#0c0b0a; border-color:var(--a); }

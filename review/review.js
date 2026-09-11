@@ -355,7 +355,11 @@
   }
 
   // ---- realising a part for a card ----
-  function realiseCard(part, entry, style, advanced){
+  // `seed` is the card's own roll: the existing parts roll their fills the
+  // way the app does (rollFills, one pick a phrase), the proposed ones
+  // through realiseAdvanced — so "New fills" on a card shows how much
+  // variety each version actually has.
+  function realiseCard(part, entry, style, advanced, seed){
     const chords = chordsOf(entry);
     const bars = chords.map(chord => ({ chord }));
     const opts = {
@@ -364,8 +368,8 @@
       tech: opt.tech ? null : { double: false, bend: false, hammer: false, pull: false, slide: false },
     };
     const notes = advanced
-      ? realiseAdvanced(part, bars, opts, { seed: opt.seed, phrase: opt.phrase })
-      : parts.realise(part, bars, [0, 1, 2, 0, 1, 2].slice(0, Math.ceil(bars.length / 2)), opts);
+      ? realiseAdvanced(part, bars, opts, { seed: seed || opt.seed, phrase: opt.phrase })
+      : parts.realise(part, bars, seed ? parts.rollFills(part, bars.length, rng(seed)) : [0, 1, 2, 0, 1, 2].slice(0, Math.ceil(bars.length / 2)), opts);
     return { chords, notes };
   }
 
@@ -427,16 +431,17 @@
     if (allWritten.some(bar => bar.some(n => n.strum && n.voicing === 'shell'))) flags.push('shell voicings');
     if (allWritten.some(bar => bar.some(n => n.tech === 'double' && n.up))) flags.push('double-stop bends');
     card.innerHTML = `
-      <div class="part-head"><h4>${esc(part.name)}${tag ? ` <span class="tag">${esc(tag)}</span>` : ''}</h4><button type="button" class="play">Play</button></div>
+      <div class="part-head"><h4>${esc(part.name)}${tag ? ` <span class="tag">${esc(tag)}</span>` : ''}</h4>
+        <span class="btns"><button type="button" class="reroll" title="Roll the fills again, as New fills does in the app">New fills</button><span class="roll"></span><button type="button" class="play">Play</button></span></div>
       ${part.why ? `<p class="why">${part.why}</p>` : ''}
       ${flags.length ? `<p class="flags">Needs: ${flags.map(f => `<span>${esc(f)}</span>`).join(' ')}</p>` : ''}
       <div class="tab"></div>`;
     host.appendChild(card);
     const tabHost = card.querySelector('.tab');
-    let state = null;
+    let state = null, seed = 0, rolls = 0;
     const build = () => {
       try {
-        const { chords, notes } = realiseCard(part, entry, style, advanced);
+        const { chords, notes } = realiseCard(part, entry, style, advanced, seed);
         const metrics = drawTab(tabHost, pattern.grid, chords, notes);
         state = { chords, notes, metrics };
       } catch (err){
@@ -450,6 +455,16 @@
       if (playing && playing.host === card){ stop(); return; }
       if (!state) return;
       play(card, btn, { pattern, style, chords: state.chords, tempo: entry.tempo, notes: state.notes, metrics: state.metrics, tabHost });
+    });
+    card.querySelector('.reroll').addEventListener('click', () => {
+      // the same roll the app makes on "New fills", with this card's own seed;
+      // what was playing starts again on the new roll
+      const wasPlaying = playing && playing.host === card;
+      seed = Math.floor(Math.random() * 1e6) + 1; rolls++;
+      card.querySelector('.roll').textContent = `roll ${rolls}`;
+      if (wasPlaying) stop();
+      build();
+      if (wasPlaying && state) play(card, card.querySelector('.play'), { pattern, style, chords: state.chords, tempo: entry.tempo, notes: state.notes, metrics: state.metrics, tabHost });
     });
     card.rebuild = () => { if (playing && playing.host === card) stop(); build(); };
     return card;
