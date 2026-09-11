@@ -31,6 +31,8 @@
   const sheet = $('earShapeSheet'), scrim = $('earScrim'), choicesEl = $('earShapeChoices');
   const quizEl = $('earQuiz'), answersEl = $('earAnswers'), verdictEl = $('earVerdict');
   const rootFirst = $('earRootFirst');
+  const exactGroup = $('earExactGroup');
+  let exactNote = false;         // ...or just the note's name, which is the default
   const scoreEl = $('earScore');
 
   // The chords worth drilling: the everyday triads and sevenths, and the
@@ -317,10 +319,39 @@
   // The buttons the drill offers. A note mode answers with the notes of what's
   // on the neck; the quality mode answers with the qualities you've switched
   // on. Same shape of thing either way, so the drill below never asks which.
-  const choicesOf = s => s.choices || s.notes.map(n => ({
-    key: String(n.pc), name: n.name, degree: n.degree, note: n,
-    says: `${n.name} · ${n.degree}`,
-  }));
+  // Where a note is, said in the shortest way that tells it from its twins:
+  // the octave it's in, and the string as well when two of them are the same
+  // pitch played in two places. Sorted low to high, so the buttons read the
+  // way the neck does rather than by which came first out of the map.
+  const STRING_NAMES = ['e', 'B', 'G', 'D', 'A', 'E'];
+  const octaveOf = c => Math.floor(midiOf(c) / 12) - 1;
+
+  function placeOf(cell, siblings){
+    const octave = octaveOf(cell);
+    const sameOctave = siblings.filter(c => octaveOf(c) === octave);
+    return sameOctave.length > 1
+      ? `${octave} · ${STRING_NAMES[cell.string]} string`
+      : String(octave);
+  }
+
+  const choicesOf = s => {
+    if (s.choices) return s.choices;                       // the quality drill answers with qualities
+    if (!exactNote || s.kind === 'quality'){
+      return s.notes.map(n => ({
+        key: String(n.pc), name: n.name, degree: n.degree, note: n,
+        says: `${n.name} · ${n.degree}`,
+      }));
+    }
+    // One button per place the note is played, rather than one per note.
+    const all = s.notes.reduce((cells, n) => cells.concat(n.cells), []);
+    return s.notes
+      .reduce((out, n) => out.concat(n.cells.map(cell => ({
+        key: `${cell.string}:${cell.fret}`, name: n.name, degree: n.degree, note: n, cell,
+        where: placeOf(cell, all.filter(c => pcOf(c) === n.pc)),
+        says: `${n.name}${octaveOf(cell)} · ${n.degree}`,
+      }))), [])
+      .sort((a, b) => midiOf(a.cell) - midiOf(b.cell));
+  };
 
   // ---- drawing ------------------------------------------------------------
   // A chord shape is drawn as a chord diagram, because that's how a chord is
@@ -440,6 +471,7 @@
       `<button type="button" class="ear-answer" data-key="${c.key}">`
       + `<span class="ear-answer-name">${c.name}</span>`
       + (c.degree ? `<span class="ear-answer-degree">${c.degree}</span>` : '')
+      + (c.where ? `<span class="ear-answer-where">${c.where}</span>` : '')
       + `</button>`).join('');
     if (keep) resetRound();      // the same question, put back as it was
     else ask();
@@ -550,6 +582,11 @@
     scaleRow.hidden = mode === 'chord' || mode === 'quality';
     octaveRow.hidden = mode === 'chord' || mode === 'quality';
     qualityRow.hidden = mode !== 'quality';
+    // naming the exact note means nothing when the question is what kind of
+    // chord you're hearing
+    $('earExactRow').hidden = mode === 'quality';
+    exactGroup.querySelectorAll('.seg-btn')
+      .forEach(b => b.classList.toggle('active', (b.dataset.value === 'exact') === exactNote));
     if (mode === 'chord' || mode === 'quality') return;
     const pool = mode === 'penta' ? PENTAS : SCALES;
     if (!pool.some(s => s.id === scaleId)) scaleId = pool[0].id;
@@ -647,6 +684,7 @@
       else if (octaveIdx) p.set('o', octaveIdx);
     }
     if (!rootFirst.checked) p.set('r', '0');
+    if (exactNote) p.set('x', '1');
     GT.tabs.setState('ear', p);
   }
 
@@ -656,6 +694,7 @@
     if (!['chord', 'quality', 'penta', 'scale'].includes(want)) return false;
     mode = want;
     rootFirst.checked = p.get('r') !== '0';
+    exactNote = p.get('x') === '1';
     syncMode();
     if (mode === 'chord'){
       if (!loadChord(p.get('c') || 'C')) return false;
@@ -740,7 +779,11 @@
       const cls = i < runMarks.length ? (runMarks[i] ? 'hit' : 'miss') : (i === runMarks.length ? 'now' : '');
       return `<i class="${cls}"></i>`;
     }).join('');
-    scoreEl.textContent = `${runAsked + 1} of ${runLength}`;
+    // The question you're on, which is the one after everything answered —
+    // until the last one is answered, when you're still on it and the result
+    // is a beat away. Without the clamp the tenth answer reads "11 of 10"
+    // for as long as the pause lasts.
+    scoreEl.textContent = `${Math.min(runAsked + 1, runLength)} of ${runLength}`;
   }
 
   function begin(length){
@@ -869,14 +912,23 @@
     // two notes is the fewest that can be told apart; below that there's no
     // question to ask
     if (choices.length < 2){ asked = askedCell = null; return; }
-    const pool = asked ? choices.filter(c => c.key !== asked.key) : choices;
+    let pool = asked ? choices.filter(c => c.key !== asked.key) : choices;
+    // When the root has already sounded as the reference, don't then ask for
+    // the very note that just played: the same pitch twice is no question at
+    // all, where root against its own octave is one worth being able to hear.
+    // Naming the note, that means asking a different cell of the same note;
+    // naming the exact one, it means not offering that cell as the question.
+    if (exactNote && rootFirst.checked && rootCell){
+      const elsewhere = pool.filter(c => c.cell !== rootCell);
+      if (elsewhere.length) pool = elsewhere;
+    }
     asked = pick(pool.length ? pool : choices);
-    // When the root is the answer and the root has already sounded as the
-    // reference, ask it an octave up rather than at the very pitch just
-    // played: the same note twice is no question at all, where root against
-    // its own octave is one worth being able to hear.
-    const spare = asked.note.cells.filter(c => c !== rootCell);
-    askedCell = pick(rootFirst.checked && spare.length ? spare : asked.note.cells);
+    if (exactNote){
+      askedCell = asked.cell;
+    } else {
+      const spare = asked.note.cells.filter(c => c !== rootCell);
+      askedCell = pick(rootFirst.checked && spare.length ? spare : asked.note.cells);
+    }
     remember();
   }
 
@@ -932,9 +984,16 @@
   function answer(btn){
     if (!asked || nextRound) return;         // the round is won; the next one is coming
     if (btn.dataset.key !== String(asked.key)){
-      btn.classList.add('wrong');
-      setTimeout(() => btn.classList.remove('wrong'), 700);
-      say('Not that one — listen again', '');
+      // Told the note but not the place: a different mistake from hearing the
+      // wrong note, and the one this drill exists to train, so it's named as
+      // such rather than lumped in with a plain miss. It still costs the
+      // question — the answer was the other one.
+      const pressed = choicesOf(subject).find(c => String(c.key) === btn.dataset.key);
+      const nearly = exactNote && pressed && pressed.note && pressed.note.pc === asked.note.pc;
+      btn.classList.add(nearly ? 'close' : 'wrong');
+      setTimeout(() => btn.classList.remove(nearly ? 'close' : 'wrong'), 700);
+      say(nearly ? `That's the ${asked.degree}, but not that one — listen again`
+                 : 'Not that one — listen again', '');
       missed = true;
       return;
     }
@@ -960,6 +1019,14 @@
         () => (mode === 'chord' && shapes[shapeIdx] ? [shapes[shapeIdx]] : []));
       modeGroup.querySelectorAll('.seg-btn').forEach(btn =>
         btn.addEventListener('click', () => setMode(btn.dataset.value)));
+      exactGroup.querySelectorAll('.seg-btn').forEach(btn =>
+        btn.addEventListener('click', () => {
+          const want = btn.dataset.value === 'exact';
+          if (want === exactNote) return;
+          exactNote = want;
+          syncMode();
+          render();               // different buttons, so a fresh question
+        }));
       $('earRandom').addEventListener('click', randomSubject);
       $('earShapePrev').addEventListener('click', () => stepShape(-1));
       $('earShapeNext').addEventListener('click', () => stepShape(1));

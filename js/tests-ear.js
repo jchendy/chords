@@ -36,8 +36,9 @@
 
   segs('earModeGroup', ['chord', 'quality', 'penta', 'scale']);
   segs('earOctaveGroup', ['octave', 'whole']);
+  segs('earExactGroup', ['name', 'exact']);
   add('span', 'earQualityGroup', 'segmented');
-  ['earChordRow', 'earScaleRow', 'earOctaveRow', 'earQualityRow', 'earShapeRow',
+  ['earChordRow', 'earScaleRow', 'earOctaveRow', 'earQualityRow', 'earShapeRow', 'earExactRow',
    'earOctaveStep', 'earShape', 'earShapeSheet', 'earScrim', 'earShapeChoices',
    'earQuiz', 'earAnswers', 'earSetup', 'earGo', 'earRunBar', 'earRunDots',
    'earResult'].forEach(id => add('div', id));
@@ -296,7 +297,7 @@
     if (q('#earRunBar').hidden) bad.push('the run bar never appeared');
     if (q('#earQuiz').hidden) bad.push('the quiz never appeared');
 
-    let answered = 0;
+    let answered = 0, overCounted = '';
     for (let i = 0; i < 14 && q('#earResult').hidden; i++){
       const btns = answers();
       if (!btns.length) break;
@@ -304,8 +305,14 @@
       if (i % 2) btns.forEach(b => b.click());
       else for (const b of btns){ b.click(); if (b.classList.contains('right')) break; }
       answered++;
+      // The count is read here, between the answer and the pause that moves
+      // on — which is exactly the moment the tenth answer used to read
+      // "11 of 10" for as long as the pause lasted.
+      const shown = Number((q('#earScore').textContent.match(/^(\d+)/) || [])[1]);
+      if (shown > 10) overCounted = q('#earScore').textContent;
       GT.earTraining.tick();        // stand in for the pause between questions
     }
+    if (overCounted) bad.push(`the counter read "${overCounted}" in a run of ten`);
     if (q('#earResult').hidden) bad.push(`no result after ${answered} questions`);
     else if (answered !== 10) bad.push(`the run ended after ${answered} questions, not 10`);
     const score = q('#earResultScore').textContent;
@@ -320,7 +327,52 @@
     t.equal(bad.join('; '), '', 'A run is ten questions and then a result');
   }
 
+  // Naming the exact note: a shape holds the same note two or three times
+  // over, and by default any of them answers, because the question is what
+  // you heard. Turned on, the question becomes which one — and the button
+  // that names the right note in the wrong place is a near miss rather than
+  // a wrong answer, since it is a different mistake and the one this drill
+  // is for.
+  function testNamingTheExactNote(t){
+    start();
+    const bad = [];
+    setMode('scale');
+    const names = () => [...document.querySelectorAll('#earAnswers .ear-answer')]
+      .map(b => b.querySelector('.ear-answer-name').textContent);
+    const keys = () => [...document.querySelectorAll('#earAnswers .ear-answer')].map(b => b.dataset.key);
+
+    const byName = keys().length;
+    if (new Set(names()).size !== byName) bad.push('the ordinary drill offers a button per note, but some repeat');
+
+    q('#earExactGroup .seg-btn[data-value="exact"]').click();
+    const exact = keys().length;
+    if (exact <= byName) bad.push(`naming the exact note offered ${exact} buttons where naming it offered ${byName}`);
+    if (new Set(keys()).size !== exact) bad.push('two buttons carry the same answer');
+    // ...and the extra ones are the repeats: the same note in another place
+    const repeated = names().filter((n, i) => names().indexOf(n) !== i);
+    if (!repeated.length) bad.push('no note appears twice, so nothing was told apart');
+    const where = [...document.querySelectorAll('#earAnswers .ear-answer-where')];
+    if (!where.length) bad.push('the buttons never say where the note is');
+
+    // the twin is refused, and told apart from a plain wrong answer
+    const btns = [...document.querySelectorAll('#earAnswers .ear-answer')];
+    const right = btns.find(b => { b.click(); return b.classList.contains('right'); });
+    if (!right){ bad.push('no button was accepted at all'); }
+    else {
+      const name = right.querySelector('.ear-answer-name').textContent;
+      const twin = btns.find(b => b !== right && b.querySelector('.ear-answer-name').textContent === name);
+      if (twin && !twin.classList.contains('close') && !twin.classList.contains('wrong')){
+        bad.push('the twin was neither accepted nor refused');
+      }
+    }
+
+    q('#earExactGroup .seg-btn[data-value="name"]').click();
+    GT.earTraining.stop();
+    t.equal(bad.join('; '), '', 'Naming the exact note asks which one, not just which note');
+  }
+
   GT.earSuites = [
+    ['Ear: naming the exact note', testNamingTheExactNote],
     ['Ear trainer: every question has exactly one answer', testEveryQuestionHasExactlyOneAnswer],
     ['Ear trainer: the score counts questions', testTheScoreCountsQuestions],
     ['Ear trainer: Back restores the question', testBackRestoresTheQuestion],

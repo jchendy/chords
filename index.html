@@ -422,6 +422,11 @@
   .ear-answer.right{ border-color:var(--good); color:var(--good); }
   .ear-answer.right .ear-answer-degree{ color:var(--good); }
   .ear-answer.wrong{ border-color:var(--bad); }
+  /* the right note in the wrong place: a different mistake from a wrong note,
+     and worth saying so while you're learning to tell two octaves apart */
+  .ear-answer.close{ border-color:var(--a); color:var(--a); }
+  .ear-answer-where{ font-size:.72rem; color:var(--muted); font-variant-numeric:tabular-nums; }
+  .ear-answer.right .ear-answer-where{ color:var(--good); }
   .ear-back-row{ margin-top:12px; }
   .ear-verdict{ margin:14px 0 0; min-height:1.3em; font-size:.88rem; color:var(--muted); }
   .ear-verdict.good{ color:var(--good); }
@@ -968,6 +973,18 @@
             <button type="button" class="seg-btn arrow" id="earOctaveDown" aria-label="The octave below">↓</button>
             <button type="button" class="seg-btn arrow" id="earOctaveUp" aria-label="The octave above">↑</button>
           </span>
+        </span>
+      </div>
+      <!-- A shape holds the same note in two or three places, and by default
+           any of them answers: you're being asked what you heard, not where
+           it was. Turned on, the question becomes which one — the 5th on the
+           D string or the 5th an octave up — which is the harder and more
+           useful thing to be able to hear. -->
+      <div class="setup-row" id="earExactRow">
+        <span class="tb-lbl">Answer</span>
+        <span class="segmented" id="earExactGroup">
+          <button type="button" class="seg-btn active" data-value="name">Which note</button>
+          <button type="button" class="seg-btn" data-value="exact">Which one exactly</button>
         </span>
       </div>
     </div>

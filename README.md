@@ -629,6 +629,20 @@ ever be the root. When the root *is* the answer it's asked an octave up from
 the reference wherever the shape has one: the same note twice is no question
 at all, where a root against its own octave is one worth being able to hear.
 
+**Which note, or which one exactly.** A shape holds the same note two or
+three times over, and by default any of them answers: the question is what
+you heard, not where it was. Switch the Answer setting to "Which one exactly"
+and the question becomes which — the 5th on the D string, or the 5th an
+octave up — which is the harder thing to hear and the more useful one to be
+able to do. The buttons then name one place each, carrying the octave (and
+the string too, where two of them are the same pitch played in two places),
+and they read low to high, the way the neck does. Pressing the right note in
+the wrong place is marked as its own kind of miss and says so — "that's the
+5, but not that one" — because it's a different mistake from hearing the
+wrong note, and it's the mistake this setting exists to train. It still costs
+the question. The setting applies to the three note drills and is meaningless
+in the quality one, so it isn't offered there.
+
 ## Bookmarking an exercise
 
 Every tool keeps its state in the address bar, so a particular chord, box,
