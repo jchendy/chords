@@ -479,7 +479,12 @@
   .tab-note.now text{ fill:var(--ink); font-weight:700; }
   .tab-playhead{ fill:var(--ink); opacity:.12; }
   /* the suggested part: its tab under the chart, and its notes on the neck */
-  .chart-view{ margin-left:6px; }
+  .chart-view-row{ margin:10px 0 0; }
+  /* T56: on a wide screen the tab wraps to as many bars as fit and shows two
+     rows, scrolling down to the row being played; on a phone it stays one
+     strip that scrolls sideways */
+  .part-tab.wrapped{ overflow-x:hidden; overflow-y:auto; }
+  .tab-numeral{ fill:var(--muted); font:600 10px Inter,system-ui,sans-serif; }
   .part-view{ margin:12px 0 4px; }
   .part-controls{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-bottom:8px; }
   .part-note{ margin:10px 0; color:var(--muted); font-size:.9rem; max-width:60ch; }
@@ -630,16 +635,6 @@
         <svg class="key-caret" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 6l4.5 4.5L12.5 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         <select id="quickKey" class="key-select" aria-label="Key"></select>
       </span>
-      <!-- The chart, or the part to play over it: two readings of the same
-           bars. The part is realised into the neck's position, so this is
-           also what turns the part on — a part you're not looking at isn't
-           one you're playing. Not a .ctl: the phone layout folds those away,
-           and a view switch has to be reachable on the screen it matters
-           most on. -->
-      <span class="segmented chart-view" id="chartViewGroup" title="The chords, or a part to play over them">
-        <button type="button" class="seg-btn active" data-value="chart">Chart</button>
-        <button type="button" class="seg-btn" data-value="part">Part</button>
-      </span>
       <button type="button" class="ib ctl" id="quickKeyDice" aria-label="Random key" title="Random key"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="2" y="2" width="16" height="16" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="6.3" cy="6.3" r="1.6"/><circle cx="13.7" cy="6.3" r="1.6"/><circle cx="10" cy="10" r="1.6"/><circle cx="6.3" cy="13.7" r="1.6"/><circle cx="13.7" cy="13.7" r="1.6"/></svg></button>
       <!-- the progression, beside the key: the two things this chart is -->
       <div class="quick ctl">
@@ -659,6 +654,18 @@
     <!-- practice.js renders one .bar per measure in here, four to a row like a
          chart, and marks the sounding one .active; stage.js draws the beat
          line along the top from the readout in the transport -->
+    <!-- The chart, or the part to play over it: two readings of the same
+         bars, on a line of their own under the title. The part is realised
+         into the neck's position, so this is also what turns the part on — a
+         part you're not looking at isn't one you're playing. Not a .ctl: the
+         phone layout folds those away, and a view switch has to be reachable
+         on the screen it matters most on. -->
+    <div class="chart-view-row">
+      <span class="segmented chart-view" id="chartViewGroup" title="The chords, or a part to play over them">
+        <button type="button" class="seg-btn active" data-value="chart">Chart</button>
+        <button type="button" class="seg-btn" data-value="part">Part</button>
+      </span>
+    </div>
     <div class="chart-grid" id="chords"></div>
     <!-- The part view: a rhythm figure and its fills, written for the feel
          that's playing and realised into the notes the neck's reading offers

@@ -73,11 +73,20 @@
     }
 
     // a bar line at the start of every bar, with its chord above
-    example.bars.forEach(bar => {
+    example.bars.forEach((bar, i) => {
       const p = positionOf(bar.startSlot, m);
       els.push(`<line class="tab-bar" x1="${p.x}" y1="${stringY(p.top, 0)}" x2="${p.x}" y2="${stringY(p.top, 5)}"/>`);
+      // a name only where the caller gave one, tagged with its bar: a bar
+      // that carries a chord through has no name of its own, so whoever
+      // lights the name for a bar looks for the nearest one at or before it
       if (bar.chord){
-        els.push(`<text class="tab-chord" x="${p.x + 4}" y="${p.top - 12}">${bar.chord}</text>`);
+        els.push(`<text class="tab-chord" data-bar="${i}" x="${p.x + 4}" y="${p.top - 12}">${bar.chord}</text>`);
+        // the Nashville numeral after the name, quieter, when the caller has
+        // one — the genre examples have no key and pass none
+        if (bar.numeral){
+          const dx = 4 + bar.chord.length * 7.2 + 5;
+          els.push(`<text class="tab-numeral" x="${p.x + dx}" y="${p.top - 12}">${bar.numeral}</text>`);
+        }
       }
     });
 

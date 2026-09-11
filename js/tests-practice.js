@@ -635,6 +635,35 @@
     t.equal(bad.join('; '), '', 'A part stays in the window it was set in until you move it');
   }
 
+  // The tab names a chord where it arrives and not over the bars it holds
+  // through, so the follower has fewer names than bars. Walked bar by bar it
+  // has to light the name the bar is under and, above all, get to the end:
+  // it once threw at the first bar past the last name, and the tab stood
+  // still from there while the band played on.
+  function testTheTabFollowsHeldBars(t){
+    start();
+    const bad = [];
+    const view = GT.fretboardView;
+    q('#styleGroup .genre-btn[data-value="blues"]').click();
+    view.applyViewState('m:penta.p:position');
+    // A held for three bars, D for two, then E, D, A: eight bars, five names
+    GT.practice.loadProgression({ chords: ['A', 'A', 'A', 'D', 'D', 'E', 'D', 'A'], key: 'A' });
+    q('#chartViewGroup .seg-btn[data-value="part"]').click();
+    const names = [...document.querySelectorAll('#partTab .tab-chord')].map(el => `${el.dataset.bar}:${el.textContent}`);
+    t.equal(names.join(' '), '0:A 3:D 5:E 6:D 7:A', 'The tab names a chord where it arrives, tagged with its bar');
+    const expect = ['A', 'A', 'A', 'D', 'D', 'E', 'D', 'A'];
+    for (let bar = 0; bar < 8; bar++){
+      try {
+        GT.practice.showPartBar(bar);
+        const lit = GT.practice.partState().named;
+        if (lit.join() !== expect[bar]) bad.push(`bar ${bar} lit ${JSON.stringify(lit)}, wanted ${expect[bar]}`);
+      } catch (err){ bad.push(`bar ${bar} threw: ${err.message}`); }
+    }
+    q('#chartViewGroup .seg-btn[data-value="chart"]').click();
+    view.applyViewState('');
+    t.equal(bad.join('; '), '', 'Every bar of a held progression lights the name it is under');
+  }
+
   GT.practiceSuites = [
     ['Practice: a shared link round-trips', testShareLinkRoundTrips],
     ['Practice: the transport picker names the feel', testTheTransportPickerNamesTheFeel],
@@ -650,5 +679,6 @@
     // last: it types a progression of its own in, and the fixture is shared
     ['Practice: typing a progression', testTypingAProgression],
     ['Practice: a part stays put until you move it', testThePartStaysPut],
+    ['Practice: the tab follows held bars', testTheTabFollowsHeldBars],
   ];
 })();

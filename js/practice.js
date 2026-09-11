@@ -1181,7 +1181,11 @@
         `${Math.min(active.measure, measuresFor(active.idx))}.${active.beat}`;
       view.followChord(active);
     }
-    followPart(now, active);
+    // The part's follower is not allowed to take the chart down with it: an
+    // exception here once ended this loop, and the page sat frozen on one
+    // bar while the scheduler, on its own timer, played on.
+    try { followPart(now, active); }
+    catch (err){ if (!partFollowFailed){ partFollowFailed = true; console.error('followPart', err); } }
     requestAnimationFrame(syncHighlight);
   }
 
@@ -1382,6 +1386,8 @@
   // you're on.
   const PART_READINGS = ['caged', 'triads3', 'penta', 'scale'];
   let partOn = false;
+  let partFollowFailed = false;      // logged once, not sixty times a second
+  let partBars = [];                 // what the tab was last drawn from, for a redraw on resize
   let partIdx = 0;                  // which of the feel's parts
   let partFills = [];               // one fill choice per two-bar phrase
   let partScale = 'follow';         // 'follow' the chords | stay on the 'key'
@@ -1507,24 +1513,54 @@
   // The part as tablature, the way the genre examples write theirs, one bar
   // per bar of the progression with the chord above it.
   function drawPartTab(bars){
+    partBars = bars;
     const grid = feelNow().grid;
+    // a chord is named where it arrives, with its numeral, and not over the
+    // bars it carries through — the way the chart reads
+    const cells = barCells();
     const example = {
       grid,
-      bars: bars.map((b, i) => ({ startSlot: i * grid, chord: displayName(b.chord) })),
+      bars: bars.map((b, i) => ({
+        startSlot: i * grid,
+        chord: cells[i] && cells[i].held ? '' : displayName(b.chord),
+        numeral: cells[i] && cells[i].held ? '' : (b.chord.numeral || ''),
+      })),
       notes: partNotes.map(n => ({ string: n.string, fret: n.fret, at: n.bar * grid + n.at, dur: n.dur })),
       totalSlots: bars.length * grid,
     };
-    // One row, however long, rather than wrapped to the width: a wrapped tab
-    // is all on screen at once but there is no "current bar" to keep in view
-    // when it's taller than the window. A strip scrolls sideways, and the
-    // frame loop keeps the bar being played in it.
-    const built = GT.tab.build(example, Number.MAX_SAFE_INTEGER);
+    // On a wide screen the tab wraps to as many bars as fit across, and the
+    // viewport shows two rows of it, scrolling down to the row being played
+    // — a page of tab, turned when the bottom row runs out. On a phone a
+    // wrapped tab holds one bar a row and reads worse than a strip, so there
+    // it stays one row that scrolls sideways a bar at a time.
+    // shown before it is measured: hidden, its width reads as nothing and
+    // every screen counted as a phone
+    partTabEl.hidden = false;
+    const avail = partTabEl.clientWidth || partPanel.clientWidth;
+    const wide = avail >= 700;
+    const built = GT.tab.build(example, wide ? avail : Number.MAX_SAFE_INTEGER);
     partTab = built.metrics;
     partTabEl.innerHTML = `<svg viewBox="${built.viewBox}" width="${built.width}" height="${built.height}"`
       + ` role="img" aria-label="${partNow().name}, written out">${built.markup}</svg>`;
-    partTabEl.hidden = false;
+    partTabEl.classList.toggle('wrapped', wide);
+    partTabEl.style.height = wide && built.metrics.rows > 2 ? `${2 * built.metrics.rowSpan}px` : '';
+    partTabEl.dataset.drawnAt = avail;
     partTabEl.scrollLeft = 0;
+    partTabEl.scrollTop = 0;
+    partBarShown = -1;
   }
+
+  // The wrap is decided by width, so a window that changes size gets the tab
+  // drawn again for the new one — settled, not on every pixel of a drag.
+  let partResizeTimer = 0;
+  window.addEventListener('resize', () => {
+    clearTimeout(partResizeTimer);
+    partResizeTimer = setTimeout(() => {
+      if (!partOn || !partNotes.length || partTabEl.hidden) return;
+      const avail = partTabEl.clientWidth || partPanel.clientWidth;
+      if (String(avail) !== partTabEl.dataset.drawnAt) drawPartTab(partBars);
+    }, 150);
+  });
 
   // Sound and log the part's notes for one slot of one bar. Called from the
   // style scheduler, which already walks the grid slot by slot.
@@ -1562,16 +1598,37 @@
       head.removeAttribute('hidden');
       head.setAttribute('x', pos.x);
       head.setAttribute('y', pos.y);
-      if (barIdx !== partBarShown){
-        partBarShown = barIdx;
-        // the bar being played, named in the tab and brought into view — the
-        // strip scrolls a bar at a time, when the bar changes, so it reads
-        // like a page turning rather than a ticker
-        partTabEl.querySelectorAll('.tab-chord').forEach((el, i) => el.classList.toggle('now', i === barIdx));
-        const barStart = GT.tab.playheadPos(barIdx * grid, partTab).x;
-        const scale = partTabEl.querySelector('svg').getBoundingClientRect().width / partTab.width;
-        partTabEl.scrollTo({ left: Math.max(0, barStart * scale - 24), behavior: 'smooth' });
-      }
+      if (barIdx !== partBarShown) showPartBar(barIdx);
+    }
+  }
+
+  // The bar being played, named in the tab and brought into view — the
+  // strip scrolls a bar at a time, when the bar changes, so it reads like a
+  // page turning rather than a ticker. On its own so a test can walk every
+  // bar of a progression through it: it once indexed the names by bar when
+  // the tab names only the bars a chord arrives in, and the walk ended in
+  // an exception at the first bar past the last name, which took the
+  // follower with it — the tab stood still while the band played on.
+  function showPartBar(barIdx){
+    if (!partTab) return;
+    partBarShown = barIdx;
+    const grid = feelNow().grid;
+    // the name over this bar, or over the bar the chord arrived in — the
+    // tab names only those, tagged with the bar they sit over
+    let arrival = -1;
+    partTabEl.querySelectorAll('.tab-chord').forEach(el => {
+      const b = Number(el.dataset.bar);
+      if (b <= barIdx && b > arrival) arrival = b;
+    });
+    partTabEl.querySelectorAll('.tab-chord').forEach(el => el.classList.toggle('now', Number(el.dataset.bar) === arrival));
+    const scale = partTabEl.querySelector('svg').getBoundingClientRect().width / partTab.width;
+    if (partTabEl.classList.contains('wrapped')){
+      // two rows at a time: turn the page when the bar goes past them
+      const row = Math.floor(barIdx / partTab.barsPerRow);
+      partTabEl.scrollTo({ top: Math.floor(row / 2) * 2 * partTab.rowSpan * scale, behavior: 'smooth' });
+    } else {
+      const barStart = GT.tab.playheadPos(barIdx * grid, partTab).x;
+      partTabEl.scrollTo({ left: Math.max(0, barStart * scale - 24), behavior: 'smooth' });
     }
   }
 
@@ -1801,7 +1858,9 @@
     // the realised part and the window it was realised in, so a test can
     // hold it still across the things that must not move it
     partState: () => ({ notes: partNotes.map(n => ({ ...n })), window: partWindow && { ...partWindow },
-                        fills: partFills.slice(), signature: partSignature() }),
+                        fills: partFills.slice(), signature: partSignature(),
+                        named: [...partTabEl.querySelectorAll('.tab-chord.now')].map(el => el.textContent) }),
+    showPartBar,
     init(){
       view.init({
         progression: () => currentProgression,

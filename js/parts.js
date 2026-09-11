@@ -279,6 +279,16 @@
   // The order a pick sweeps, low string first, this far apart.
   const STRUM_SPREAD = 0.016;
 
+  // A strum's strings share the strum's weight rather than each carrying it.
+  // Six strings each at a single note's level summed to 1.27 going into the
+  // limiter — over full scale — which clamped nearly 5 dB on every strum and
+  // flattened the attack into something that read as a synth. Scaled by the
+  // square root of the count, a strum carries about the energy of one note
+  // and a half, whatever its size: full, and not a wall. Measured at this
+  // setting: 1.02 into the limiter and a strum bar sitting within a decibel
+  // of a fill bar, where 1.25 left the strums understated.
+  const strumStringLevel = strings => Math.min(1, 1.45 / Math.sqrt(strings));
+
   // Realise one written bar against one chord: a list of playable notes.
   function realiseBar(written, chord, opts){
     const { root, allowed } = palette(chord, opts);
@@ -291,8 +301,9 @@
         // every string of the grip, low to high, spread the way a pick sweeps
         const grip = gripIn(chord, opts.window);
         if (!grip) return;
+        const each = w.vel * strumStringLevel(grip.length);
         grip.sort((a, b) => b.string - a.string).forEach((c, k) => {
-          out.push({ at: w.at, dur: w.dur, vel: w.vel, string: c.string, fret: c.fret, midi: c.midi,
+          out.push({ at: w.at, dur: w.dur, vel: each, string: c.string, fret: c.fret, midi: c.midi,
                      strum: true, spread: k * STRUM_SPREAD });
         });
         prev = grip[grip.length - 1];
@@ -336,5 +347,5 @@
   const rollFills = (part, barCount, rng = Math.random) =>
     Array.from({ length: Math.ceil(barCount / 2) }, () => Math.floor(rng() * part.fills.length));
 
-  GT.parts = { LIBRARY, partsFor, palette, snap, realiseBar, realise, rollFills, cellsIn, homeMidi, gripIn };
+  GT.parts = { LIBRARY, partsFor, palette, snap, realiseBar, realise, rollFills, cellsIn, homeMidi, gripIn, strumStringLevel };
 })();

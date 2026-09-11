@@ -104,8 +104,8 @@ names the tab you're on.
   a chord held for two reads `F C C`, wrapping four bars to a line the way a
   chart does, with the numeral under each bar and the carried-over bars
   dimmed so you can still see where the chord changes
-- "Chart / Part" — beside the key, the chart's two readings: the chords as
-  bars, or a guitar part to play over them. The part is a two-bar figure
+- "Chart / Part" — on its own line under the key, the chart's two
+  readings: the chords as bars, or a guitar part to play over them. The part is a two-bar figure
   and its answer — rhythm guitar with fills, chord strums on the feel's
   beat and single-note lines between — written for the feel that's playing
   and realised into the notes the neck's reading offers in its position.
@@ -121,10 +121,15 @@ names the tab you're on.
   with each change using whatever the neck is showing; "Stay on the I"
   keeps them on the key's scale throughout. When there's no part to show —
   the neck across the whole neck, or a feel with none written yet — the
-  view says why. The tab is one long strip that scrolls a bar at a time to
-  keep the bar being played in view, with the bar's chord lit and a
-  playhead on the slot. See **Suggested parts** below for how a
-  part written once ends up in four readings
+  view says why. The tab names a chord where it arrives, with its Nashville
+  numeral after it, and not over the bars it holds through — the way the
+  chart reads — with the name of the bar being played lit and a playhead
+  on the slot. On a wide screen (700 px or more for the tab) it wraps to as
+  many bars as fit across and shows two rows at a time, turning the page
+  down when the bottom row runs out; narrower than that it's one long strip
+  that scrolls sideways a bar at a time, since a wrapped tab on a phone
+  holds one bar a row. See **Suggested parts** below for how a part written
+  once ends up in four readings
 - "Type it" — a text field in Set up that takes the progression as chord
   names, one per bar: `E E E E A7 A7 E E Bm7 Bm7` is four chords held for
   four, two, two and two. Bar lines and commas are allowed (`A | D | E`,
