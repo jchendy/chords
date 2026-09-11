@@ -20,15 +20,22 @@
     const titleEl = document.querySelector('.site-title');
     const siteName = (titleEl ? titleEl.textContent : document.title).trim();
     const bySlug = new Map(buttons.map(b => [slugify(b.textContent), b]));
+    // the practice tab was "CAGED practice" for its first year; links carry
+    // the old name, and still open it
+    if (bySlug.has('practice')) bySlug.set('caged-practice', bySlug.get('practice'));
     // the fragment is "slug" or "slug?state" — a shared progression rides
     // along after the question mark, and only the slug names the tab
     const currentSlug = () => location.hash.slice(1).split('?')[0];
 
     function writeHash(slug, replace){
       if (currentSlug() === slug) return;
+      // a replaced slug keeps the state that came with it — an old link's
+      // progression is still that progression under the tab's new name
+      const state = replace ? (location.hash.split('?')[1] || '') : '';
+      const hash = '#' + slug + (state ? '?' + state : '');
       try {
-        if (replace) history.replaceState(null, '', '#' + slug);
-        else history.pushState(null, '', '#' + slug);
+        if (replace) history.replaceState(null, '', hash);
+        else history.pushState(null, '', hash);
       } catch (e) {
         location.hash = slug;      // some browsers refuse history entries on file://
       }

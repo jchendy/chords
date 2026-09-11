@@ -1,4 +1,4 @@
-// The fretboard panel on the CAGED practice tab: the six views (roots, chord
+// The fretboard panel on the practice tab: the six views (roots, chord
 // positions, Chords/pentatonic/scales), their legend, the hover spotlight
 // and the follow-playback highlighting.
 (function(){

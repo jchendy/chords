@@ -2,7 +2,7 @@
 
 A single-page, dependency-free site with four tabs under one header:
 
-- **CAGED practice** — generates random diatonic chord progressions and
+- **Practice** — generates random diatonic chord progressions and
   plays them back on a recorded piano or a recorded guitar, over a recorded
   double bass, with an optional hi-hat click.
 - **Chord finder** — type a chord name (e.g. `G#9`, `Cmaj7`, `Dm7b5`), or
@@ -20,7 +20,7 @@ fragment (`#chord-finder`, `#reverse-chord-finder`), so a tab can be
 bookmarked or linked to, and back/forward move between them; the page title
 names the tab you're on.
 
-## CAGED practice
+## Practice
 
 ## Features
 
@@ -100,8 +100,9 @@ names the tab you're on.
   a chord held for two reads `F C C`, wrapping four bars to a line the way a
   chart does, with the numeral under each bar and the carried-over bars
   dimmed so you can still see where the chord changes
-- "Chart / Part" — on its own line under the key, the chart's two
-  readings: the chords as bars, or a guitar part to play over them. The part is a two-bar figure
+- "Chord chart / Tabbed guitar part" — on its own line under the key, the
+  chart's two readings: the chords as bars, or a guitar part to play over
+  them. The part is a two-bar figure
   and its answer — rhythm guitar with fills, chord strums on the feel's
   beat and single-note lines between — written for the feel that's playing
   and realised into the notes the neck's reading offers in its position.
@@ -201,13 +202,14 @@ names the tab you're on.
   preset, the per-chord pickers and what the dice may use; style and feel,
   the Simple-only note value, the click / roots-only / count-in options;
   dot colour and the fret range; the share link — lives in the Set up sheet,
-  which slides up over the stage so nothing scrolls. The style and the click
-  are the two you reach for mid-progression, so they appear in the transport
-  as well once the window is wide enough. Neither is a second setting: the
-  style is named there rather than laid out, the chart head's move, with the
-  real picker lying over the name; and the click's own row moves out of the
-  sheet into the bar and back again — into it whenever the sheet is open, so
-  a settings sheet is never missing a setting. On a phone the site
+  which slides up over the stage so nothing scrolls. The style is the third
+  thing on the top row, after the key and the progression — what's playing,
+  on one line — named rather than laid out, with the real picker lying over
+  the name, the key's move; it's a view of the sheet's Style list, not a
+  second setting, and it stays on a phone with the controls folded away.
+  The click's own row moves out of the sheet into the bar when the window is
+  wide enough and back again — into it whenever the sheet is open, so a
+  settings sheet is never missing a setting. On a phone the site
   name drops out and the tools row scrolls sideways. A Controls button in
   the transport, at every width, hides every control on the neck so the
   picture has the screen — a phone needs it most, but a desktop can want the
@@ -265,7 +267,7 @@ already fits and the bar has no space to spare. A "Style" picker chooses the bac
   readout under the chords (the key itself is shown plainly above them,
   e.g. "C major" / "C#m")
 - Fretboard panel (6 strings, 15 frets) with five views, each named in one
-  word — the tab is already CAGED practice and the legend already says
+  word — the tab is already Practice and the legend already says
   "C shape", so the prefix was carrying nothing. One **View** toggle above
   them all decides whether you're looking at the whole neck or at one hand
   position, and it stays put when you switch view, so following a chord into
@@ -830,7 +832,7 @@ drill or example can be bookmarked or sent to someone:
 | `#reverse-chord-finder?n=x-x-5-6-7-7` | those notes picked, written the way this app writes a grip |
 | `#ear-training?m=scale&k=Eb&s=dorian&i=2&o=1` | that drill, that box, that octave |
 | `#ear-training?m=quality&q=maj.m.7.9.13` | the quality drill, asking about those five |
-| `#caged-practice?k=major:C&c=0.2.,4.2.&t=120` | the practice tab's own share link |
+| `#practice?k=major:C&c=0.2.,4.2.&t=120` | the practice tab's own share link (`#caged-practice`, its old name, still opens it) |
 
 It's the exercise that's saved, not the question it happens to be asking: a
 bookmark should reopen the drill rather than one moment of it, and Random is
@@ -1182,7 +1184,7 @@ by what each part does:
 | `parts-guide.js` | The parts page (`parts.html`): every part written out and playable, in any reading. Has a small player of its own. |
 | `audio.js` | The Web Audio synth voices (piano, bass, drums) and the per-style groove patterns. Owns the `AudioContext` and the queue both players schedule into — how far a stall has put a cursor behind the clock, and calling off notes that haven't sounded — but knows nothing about the UI. |
 | `fretboard-view.js` | The practice tab's fretboard panel: the six views, the legend, the hover spotlight, the follow-playback highlighting. |
-| `practice.js` | The CAGED practice tab: progression generation, the chord display and settings, and the playback transport. |
+| `practice.js` | The practice tab: progression generation, the chord display and settings, and the playback transport. |
 | `stage.js` | The practice tab's chrome: the Set up sheet, the phone's controls toggle, the progression name in the chart head, the beat line, the draggable position window, and the site menu. Reads what the other modules draw; keeps no state. |
 | `chord-finder.js` | Chord finder tab: voicing search, fingering, chord diagrams. |
 | `reverse-finder.js` | Reverse chord finder tab: click targets over the shared neck, and the name lookup. |

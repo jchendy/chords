@@ -107,6 +107,9 @@
   .key-edit:hover .key-caret, .key-edit:focus-within .key-caret, .pick-edit:hover .key-caret, .pick-edit:focus-within .key-caret{ color:var(--ink); }
   .key-select{ position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer; font-size:16px; }
   .quick{ display:inline-flex; align-items:center; gap:6px; margin-left:4px; padding-left:14px; border-left:1px solid var(--line2); }
+  /* the style, named rather than laid out: the third thing on the row */
+  .quick-style{ display:inline-flex; align-items:center; margin-left:4px; padding-left:14px; border-left:1px solid var(--line2); }
+  .styleline{ font-family:Fraunces,Georgia,serif; font-size:1.15rem; color:var(--ink); line-height:1; white-space:nowrap; }
   .pick-edit{ position:relative; display:inline-flex; align-items:center; gap:8px; padding:4px 6px; margin:-4px 0 -4px -6px; border-radius:6px; cursor:pointer; }
   .pick-edit:hover, .pick-edit:focus-within{ background:var(--panel); }
   .pick-edit:hover .progline, .pick-edit:focus-within .progline,
@@ -238,10 +241,6 @@
   .tempo #tempo{ flex:1 1 110px; min-width:70px; accent-color:var(--ink); }
   .tempo .val{ font-variant-numeric:tabular-nums; color:var(--muted); font-size:.85rem; min-width:64px; text-align:right; white-space:nowrap; }
   .bpm-row .seg-btn{ font-size:.72rem; padding:2px 1px; margin:0 9px 0 0; font-variant-numeric:tabular-nums; }
-  /* the style, named rather than laid out — the chart head's move, at the
-     bar's size */
-  .bar-style{ display:inline-flex; align-items:center; flex:none; }
-  .styleline{ font-family:Fraunces,Georgia,serif; font-size:1rem; color:var(--ink); line-height:1; white-space:nowrap; }
   /* The metronome when the bar is wide enough to hold it: the same row the
      sheet uses, so it reads the same wherever it is. */
   .bar-slot{ display:inline-flex; align-items:center; min-width:0; }
@@ -521,7 +520,6 @@
     .bpm-row{ flex-wrap:nowrap; }
     .bpm-row .seg-btn{ font-size:.68rem; margin:0 6px 0 0; }
     .tbtn{ padding:7px 11px; font-size:.78rem; }
-    .bar-style{ display:none; }        /* no room beside Play; it's in Set up */
     /* Held upright the neck already fits under the bar, so the one thing the
        bar can give up is the button that folds it away — there isn't room for
        it beside the tempo. Sideways it comes back, which is where it earns
@@ -543,6 +541,8 @@
     .key-edit, .pick-edit{ min-height:44px; padding:8px 8px; margin:-8px -8px; }   /* thumb-sized targets over the titles */
     .progline{ font-size:1.05rem; white-space:normal; }
     .quick{ flex:1 1 100%; flex-wrap:wrap; margin-left:0; padding-left:0; border-left:0; }
+    .quick-style{ margin-left:0; padding-left:0; border-left:0; }
+    .styleline{ font-size:1.05rem; }
     .chord-row{ grid-template-columns:20px 1fr 72px 96px; gap:6px; }
     .big-input{ font-size:1.35rem; }
   }
@@ -571,7 +571,7 @@
     /* sideways there is width to spare and height there is not, so the key
        and the progression go back onto one line rather than stacking the way
        they do on a phone held upright */
-    .quick{ flex:0 1 auto; margin-left:4px; padding-left:12px; border-left:1px solid var(--line2); }
+    .quick, .quick-style{ flex:0 1 auto; margin-left:4px; padding-left:12px; border-left:1px solid var(--line2); }
     .key-edit, .pick-edit{ min-height:0; padding:4px 6px; margin:-4px -6px; }
     .play-sm{ width:32px; height:32px; }
     .play-sm svg{ width:12px; height:12px; }
@@ -588,7 +588,7 @@
   <!-- the tools, in the same vocabulary as every other choice on the page;
        tabs.js switches pages by data-tab and keeps the slug in the URL -->
   <nav class="tools" id="siteTabs" aria-label="Tools">
-    <button type="button" class="seg-btn site-tab active" data-tab="caged">CAGED practice</button>
+    <button type="button" class="seg-btn site-tab active" data-tab="caged">Practice</button>
     <button type="button" class="seg-btn site-tab" data-tab="finder">Chord finder</button>
     <button type="button" class="seg-btn site-tab" data-tab="reverse">Reverse chord finder</button>
     <button type="button" class="seg-btn site-tab" data-tab="ear">Ear training</button>
@@ -609,7 +609,7 @@
 
 <main class="site-main">
 
-<!-- ================= CAGED practice ======================================= -->
+<!-- ================= Practice ============================================ -->
 <div class="tab-page" id="page-caged">
 
   <!-- the chart: the key is its title, and the title is the control — the
@@ -641,6 +641,18 @@
         <!-- the rest of the settings, from here as well as from the bar below -->
         <button type="button" class="ib" id="setupOpenQuick" aria-label="Set up" title="Set up"><svg viewBox="0 0 20 20" aria-hidden="true"><path fill-rule="evenodd" d="M16.46,8.63 L19.23,8.87 L19.23,11.13 L16.46,11.37 L15.54,13.59 L17.33,15.73 L15.73,17.33 L13.59,15.54 L11.37,16.46 L11.13,19.23 L8.87,19.23 L8.63,16.46 L6.41,15.54 L4.27,17.33 L2.67,15.73 L4.46,13.59 L3.54,11.37 L0.77,11.13 L0.77,8.87 L3.54,8.63 L4.46,6.41 L2.67,4.27 L4.27,2.67 L6.41,4.46 L8.63,3.54 L8.87,0.77 L11.13,0.77 L11.37,3.54 L13.59,4.46 L15.73,2.67 L17.33,4.27 L15.54,6.41 Z M10,7 a3,3 0 1,0 0.01,0 Z"/></svg></button>
       </div>
+      <!-- The style, third on the row with the key and the progression: what
+           is playing, all on one line. The value as text with the real picker
+           lying over it, the key's move; a second view of the sheet's Style
+           list, not a second setting. Not a .ctl, so a phone with the
+           controls folded away still has it. -->
+      <div class="quick-style">
+        <span class="pick-edit" title="Change the backing style">
+          <span class="styleline" id="styleLabel">Simple</span>
+          <svg class="key-caret" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 6l4.5 4.5L12.5 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <select id="quickStyle" class="key-select" aria-label="Backing style"></select>
+        </span>
+      </div>
     </div>
     <!-- practice.js renders one .bar per measure in here, four to a row like a
          chart, and marks the sounding one .active; stage.js draws the beat
@@ -653,8 +665,8 @@
          on the screen it matters most on. -->
     <div class="chart-view-row">
       <span class="segmented chart-view" id="chartViewGroup" title="The chords, or a part to play over them">
-        <button type="button" class="seg-btn active" data-value="chart">Chart</button>
-        <button type="button" class="seg-btn" data-value="part">Part</button>
+        <button type="button" class="seg-btn active" data-value="chart">Chord chart</button>
+        <button type="button" class="seg-btn" data-value="part">Tabbed guitar part</button>
       </span>
     </div>
     <div class="chart-grid" id="chords"></div>
@@ -818,17 +830,6 @@
           <button type="button" class="seg-btn bpm-preset" data-bpm="180">180</button>
         </span>
       </div>
-    </div>
-    <!-- The backing style, condensed the way the key is at the top of the
-         chart: the value as text with the real picker lying over it. It's a
-         second view of the sheet's own Style row, not a second setting. -->
-    <div class="bar-style">
-      <span class="tb-lbl">Style</span>
-      <span class="pick-edit" title="Change the backing style">
-        <span class="styleline" id="styleLabel">Simple</span>
-        <svg class="key-caret" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 6l4.5 4.5L12.5 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        <select id="quickStyle" class="key-select" aria-label="Backing style"></select>
-      </span>
     </div>
     <!-- Where the metronome sits when the bar is wide enough for it: stage.js
          moves the sheet's own row here, so there's one of it, not two. -->

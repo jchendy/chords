@@ -517,7 +517,7 @@
     if (/[#&]s=/.test(location.hash)) bad.push('Simple on quarters is written into the link');
     // a link for a feel that has gone falls back rather than breaking
     picker.value = 'rock.1'; picker.dispatchEvent(new Event('change'));
-    location.hash = '#caged-practice?k=major%3AC&c=0.2.&s=jazz.7';
+    location.hash = '#practice?k=major%3AC&c=0.2.&s=jazz.7';
     if (!active() || active().split('.')[0] !== 'jazz') bad.push(`a link to a jazz feel that has gone put on ${active()}`);
     picker.value = 'rock.1'; picker.dispatchEvent(new Event('change'));
     history.replaceState(null, '', location.pathname);
@@ -708,6 +708,32 @@
     t.equal(bad.join('; '), '', 'The band has a volume of its own that the link remembers');
   }
 
+  // The tab was "CAGED practice" for its first year and its links carry that
+  // name. Renamed, the old slug still opens it, and the state after the
+  // question mark comes through the rename rather than being dropped when
+  // the address is rewritten to the new name.
+  function testTheOldTabNameStillOpensIt(t){
+    const bad = [];
+    const tabs = document.createElement('div');
+    tabs.innerHTML = '<button type="button" class="site-tab active" data-tab="caged">Practice</button>'
+      + '<button type="button" class="site-tab" data-tab="finder">Chord finder</button>';
+    document.body.appendChild(tabs);
+    const page = document.getElementById('page-caged');
+    page.classList.add('tab-page');
+    const other = document.createElement('div'); other.className = 'tab-page'; other.id = 'page-finder';
+    document.body.appendChild(other);
+    history.replaceState(null, '', '#caged-practice?k=major%3AD&c=0.2.');
+    GT.tabs.init({});
+    if (page.hidden) bad.push('the old name did not open the practice tab');
+    if (location.hash !== '#practice?k=major%3AD&c=0.2.') bad.push(`the address became ${location.hash}`);
+    // wired up, the tabs would go on writing the practice tab's state into
+    // this page's address — which the next run would then open on
+    GT.tabs.setState = () => {};
+    GT.tabs.goTo = () => {};
+    history.replaceState(null, '', location.pathname);
+    t.equal(bad.join('; '), '', 'A link to "CAGED practice" opens Practice with its state intact');
+  }
+
   GT.practiceSuites = [
     ['Practice: a shared link round-trips', testShareLinkRoundTrips],
     ['Practice: the styles are one list', testTheStyleListIsOneList],
@@ -725,5 +751,6 @@
     ['Practice: a part stays put until you move it', testThePartStaysPut],
     ['Practice: the tab follows held bars', testTheTabFollowsHeldBars],
     ['Practice: the band has a volume', testTheBandHasAVolume],
+    ['Practice: the old tab name still opens it', testTheOldTabNameStillOpensIt],
   ];
 })();

@@ -1,4 +1,4 @@
-// The CAGED practice tab: rolling a progression, the chord display and its
+// The practice tab: rolling a progression, the chord display and its
 // settings, and the playback transport that drives both the audio and the
 // on-screen highlighting.
 (function(){
@@ -1195,7 +1195,7 @@
 
   // ---- sharing a progression by link ---------------------------------------
   // The state rides in the URL fragment after the tab name:
-  //   #caged-practice?k=major:C&c=0.2.maj7,3.1,4.1.7&t=90&s=blues.0
+  //   #practice?k=major:C&c=0.2.maj7,3.1,4.1.7&t=90&s=blues.0
   // k = mode:tonic; c = one entry per chord as root.bars.shape, where a root is
   // a scale degree or a 'c'-prefixed interval above the tonic (shape blank
   // for the key's own triad); t = tempo; s = style.variant. A progression that
@@ -1706,7 +1706,7 @@
   // way — and hands back the link for the ones that show it.
   let shareUrl = '';
   async function copyShareLink(){
-    const slug = location.hash.slice(1).split('?')[0] || 'caged-practice';
+    const slug = location.hash.slice(1).split('?')[0] || 'practice';
     shareUrl = `${location.href.split('#')[0]}#${slug}?${shareState()}`;
     try { history.replaceState(null, '', `#${slug}?${shareState()}`); } catch (e) { /* file:// can refuse */ }
     try { await navigator.clipboard.writeText(shareUrl); return true; } catch (e) { return false; }
