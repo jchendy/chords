@@ -397,9 +397,48 @@
     t.equal(bad.join('; '), '', 'A Simple-style chord ends as the next one is struck');
   }
 
+  // The downbeat should be an accent, and an accent is a couple of decibels.
+  // It used to be 4.4 dB, and — because the two velocities fell either side
+  // of the sample layers' split — it also changed which strike was playing,
+  // so every bar went hard-soft-soft-soft between two different recordings
+  // of the instrument. That reads as a jolt, not as time. Two things are
+  // pinned here: the size of the accent, and that both velocities land in the
+  // layers' overlap, where the cross-fade means neither is a switch.
+  function testTheDownbeatIsAnAccentNotAnInstrument(t){
+    const bad = [];
+    const { SIMPLE_ACCENT } = GT.practice;
+    const { pianoLayerMix } = GT.audio;
+    const dB = 20 * Math.log10(SIMPLE_ACCENT.downbeat / SIMPLE_ACCENT.other);
+    if (!(dB > 0)) bad.push('the downbeat is not the louder of the two');
+    if (dB > 3.5) bad.push(`the downbeat is ${dB.toFixed(1)} dB above the rest, which is a jolt rather than an accent`);
+
+    const down = pianoLayerMix(SIMPLE_ACCENT.downbeat);
+    const other = pianoLayerMix(SIMPLE_ACCENT.other);
+    // they have to share a layer: if one is pure hard and the other pure
+    // soft, the cross-fade never happens and the bar changes instrument
+    const shares = Math.min(down.hard, other.hard) > 0.3 || Math.min(down.soft, other.soft) > 0.3;
+    if (!shares) bad.push('the downbeat and the other beats come from different layers with nothing in common');
+
+    // ...and the fade itself has to be a fade: continuous, and equal-power
+    // through the middle so the note doesn't dip as it crosses
+    let last = pianoLayerMix(0);
+    for (let v = 0; v <= 1.0001; v += 0.01){
+      const m = pianoLayerMix(v);
+      if (Math.abs(m.hard - last.hard) > 0.08 || Math.abs(m.soft - last.soft) > 0.08){
+        bad.push(`the layer mix jumps at velocity ${v.toFixed(2)}`);
+        break;
+      }
+      const power = m.hard * m.hard + m.soft * m.soft;
+      if (power < 0.99 || power > 1.01){ bad.push(`the mix at ${v.toFixed(2)} is ${power.toFixed(2)} of full power`); break; }
+      last = m;
+    }
+    t.equal(bad.join('; '), '', 'The downbeat is an accent, and the layers cross-fade rather than switch');
+  }
+
   GT.practiceSuites = [
     ['Practice: a shared link round-trips', testShareLinkRoundTrips],
     ['Practice: a hit ends when the next begins', testAHitEndsWhenTheNextBegins],
+    ['Practice: the downbeat is an accent, not another instrument', testTheDownbeatIsAnAccentNotAnInstrument],
     ['Practice: every root is on the picker', testEveryRootIsOnThePicker],
     ['Practice: a root outside the key travels with it', testAnOutsideRootTravels],
     ['Practice: a variant the mode drops takes its preset with it', testModeLockedVariantDropsItsPreset],

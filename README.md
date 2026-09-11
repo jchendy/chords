@@ -833,9 +833,15 @@ instruments, with the synthesized ones behind them for any page that can't
 reach the files.
 
 Every piano note in the app is a Kawai upright, recorded in a living room and
-released CC0 (see below). Sixty-six samples in two velocity layers: a
-downbeat is a hard strike and everything after it a soft one, which is the
-difference between a piano and a piano-shaped noise repeated. Where a note
+released CC0 (see below). Sixty-six samples in two velocity layers — a hard strike and a soft one,
+which is the difference between a piano and a piano-shaped noise repeated.
+The layers are two different strikes rather than one strike at two volumes,
+so choosing between them at a threshold made a bar of quarter notes
+alternate between two instruments: velocities near the split play both, with
+equal-power gains a quarter-turn of sine apart, and the sound moves from one
+to the other instead of jumping. (The obvious square-root pair holds the
+power just as well, but arrives with infinite slope — it moves the lurch to
+a quieter velocity rather than removing it, which a test now catches.) Where a note
 falls between samples it is the nearest one moved, by a semitone in the soft
 layer and no more than three in the hard one. The synthesized piano still
 stands behind it — a single periodic wave (five harmonics baked into one

@@ -297,9 +297,20 @@
   // reach audio/piano/ gets the Kawai everywhere the app plays a piano note,
   // and a page that can't never learns there was a choice.
   function playNote(freq, time, duration, velocity){
-    const spec = pianoSampleReady(freq, velocity);
-    if (spec){ voiceUse.pianoSampled++; playRecordedPiano(spec, freq, time, duration, velocity); }
-    else { voiceUse.pianoSynth++; synthPiano(freq, time, duration, velocity); }
+    const mix = pianoLayerMix(velocity);
+    const parts = [];
+    [[true, mix.hard], [false, mix.soft]].forEach(([hard, gain]) => {
+      if (gain < 0.02) return;
+      const spec = pianoSampleIfReady(freq, hard);
+      if (spec) parts.push({ spec, gain });
+    });
+    if (!parts.length){ voiceUse.pianoSynth++; synthPiano(freq, time, duration, velocity); return; }
+    // One note, whether it took one layer or two — and if only one of them
+    // has arrived it carries the whole note rather than a share of it, so a
+    // half-finished warm is quiet in nobody's ears.
+    const total = Math.sqrt(parts.reduce((sum, p) => sum + p.gain * p.gain, 0));
+    voiceUse.pianoSampled++;
+    parts.forEach(p => playRecordedPiano(p.spec, freq, time, duration, velocity, p.gain / total));
   }
 
   function synthPiano(freq, time, duration, velocity){
@@ -663,17 +674,33 @@
     src.stop(time + duration + 0.06);
   }
 
-  // The layer the velocity asks for, if we have it — the other layer if that
-  // is the one that arrived instead. A note in the wrong dynamic is far
-  // closer to right than a note in the wrong instrument, and while a warm is
-  // still running that is exactly the choice on offer.
-  function pianoSampleReady(freq, velocity){
+  // One layer's sample for this note, if it's here.
+  function pianoSampleIfReady(freq, hard){
     if (!audioCtx || !pianoBank.reachable) return null;
-    const midi = midiOf(freq), hard = velocity >= PIANO_SPLIT;
-    const asked = pianoSampleFor(midi, hard);
-    if (pianoBank.buffers.has(asked.file)) return asked;
-    const other = pianoSampleFor(midi, !hard);
-    return pianoBank.buffers.has(other.file) ? other : null;
+    const spec = pianoSampleFor(midiOf(freq), hard);
+    return pianoBank.buffers.has(spec.file) ? spec : null;
+  }
+
+  // HOW HARD THE NOTE WAS STRUCK, WITHOUT A STEP. The two layers are two
+  // different strikes, not one strike at two volumes: the hard one has a
+  // brighter attack and more of the hammer in it. Choosing one or the other
+  // at a threshold meant a bar of quarter notes in the Simple style — a
+  // downbeat either side of the split from everything after it — alternated
+  // between two instruments rather than two dynamics, which is audible as a
+  // jolt rather than as an accent. So velocities near the split play both,
+  // with equal-power gains, and the sound moves from one to the other
+  // instead of jumping.
+  const PIANO_XFADE = 0.15;              // half-width of the overlap, in velocity
+
+  // sin/cos rather than the obvious sqrt pair: both hold the power constant
+  // through the middle, but sqrt has infinite slope at nought, so the layer
+  // would come in with a lurch at the edge of the window — the very thing
+  // this exists to remove, moved to a quieter place. A quarter-turn of sine
+  // arrives and leaves flat.
+  function pianoLayerMix(velocity){
+    const t = (velocity - (PIANO_SPLIT - PIANO_XFADE)) / (2 * PIANO_XFADE);
+    const x = Math.max(0, Math.min(1, t));
+    return { hard: Math.sin(x * Math.PI / 2), soft: Math.cos(x * Math.PI / 2) };
   }
 
   // One note of the real piano. The sample is a whole note with its own
@@ -681,7 +708,7 @@
   // takes it away when the note's time is up, and the only thing scaled by
   // velocity is the level, since which layer plays has already answered the
   // question of how hard it was struck.
-  function playRecordedPiano(spec, freq, time, duration, velocity){
+  function playRecordedPiano(spec, freq, time, duration, velocity, share = 1){
     const src = audioCtx.createBufferSource();
     src.buffer = pianoBank.buffers.get(spec.file);
     // the note it was recorded at, moved to the note asked for: at most a
@@ -697,7 +724,7 @@
     // Uncapped for the same reason the synth is — the practice tab's
     // roots-only mode deliberately asks for more than 1 to make a lone root
     // sit where a triad did, and the limiter catches the rest.
-    const level = PIANO_LEVEL * velocity;
+    const level = PIANO_LEVEL * velocity * share;
     env.gain.setValueAtTime(level, time);
     const fade = Math.min(0.3, duration * 0.3);
     env.gain.setValueAtTime(level, time + Math.max(0.02, duration - fade));
@@ -1364,7 +1391,8 @@
     ensureAudio, keepAwake, cancelScheduled, stepsToSkip, noteFreq, chordFrequencies, pcFreq, bassFreqAt, walkBassFreq, ROOT_OCTAVE,
     playNote, playChord, playChord7, playBass, playGuitar,
     playPluck, readyForPluck, pluckReady, warmGuitar,
-    PIANO_SOFT, PIANO_HARD, PIANO_SPLIT, PIANO_RANGE, pianoSampleFor, warmPiano, pianoReady: pianoSampleReady,
+    PIANO_SOFT, PIANO_HARD, PIANO_SPLIT, PIANO_RANGE, PIANO_XFADE, pianoSampleFor, warmPiano,
+    pianoLayerMix, pianoReady: (freq, velocity) => pianoSampleIfReady(freq, velocity >= PIANO_SPLIT),
     chord7Frequencies, chordVoicings, STYLE_VOICES, lastVoiceAsked: () => lastVoiceAsked,
     BASS_SOFT, BASS_MID, BASS_HARD, BASS_BANDS, BASS_TOP, BASS_RANGE, bassSampleFor, bassFold,
     warmBass, bassWarmList, bassNote, bassRootOctave,

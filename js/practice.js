@@ -962,6 +962,15 @@
   // still queued, so the cushion costs nothing at the button.
   const SCHEDULE_AHEAD_SEC = 0.4;
 
+  // How hard the Simple style strikes: an accent on the downbeat, not a
+  // different instrument. This was 1 against 0.62 — 4.4 dB, half again as
+  // loud — and worse, those two straddle the sample layers' split, so beat
+  // one came off a hard strike and beats two to four off soft ones, and a bar
+  // alternated between two pianos. A player leans on the downbeat by a couple
+  // of decibels. The layers cross-fade now (see audio.js), and this is the
+  // other half of the fix.
+  const SIMPLE_ACCENT = { downbeat: 0.86, other: 0.68 };
+
   // How long a hit in the Simple style rings: until the next one lands, and no
   // longer. It used to ring 2.3 times that, on the reasoning that a piano's
   // notes overlap — which they do, and the synthesized voice fell away far
@@ -980,7 +989,7 @@
     if (chord && shouldTrigger){
       const interval = secondsPerBeat * noteBeats;
       const duration = simpleHitSeconds(secondsPerBeat, noteBeats);
-      const velocity = isDownbeat ? 1 : 0.62;
+      const velocity = isDownbeat ? SIMPLE_ACCENT.downbeat : SIMPLE_ACCENT.other;
       if (rootOnlyToggle.checked){
         // boost the lone root so it sits at a similar loudness to a full triad
         playNote(noteFreq(chord.note, ROOT_OCTAVE), nextNoteTime, duration, velocity * 1.9);
@@ -1346,7 +1355,7 @@
     stop(){ if (isPlaying) togglePlay(); },
     loadProgression,
     copyShareLink,
-    simpleHitSeconds,
+    simpleHitSeconds, SIMPLE_ACCENT,
     init(){
       view.init({
         progression: () => currentProgression,
