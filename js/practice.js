@@ -623,6 +623,7 @@
   // render everything from the current progression WITHOUT re-rolling it
   function renderAll(){
     syncChordText();
+    writeShareState();
     document.getElementById('keyReadout').textContent =
       loadedLabel || (currentMode === 'major' ? `${currentTonic} major` : `${currentTonic}m`);
     renderChordDisplay();
@@ -1252,7 +1253,25 @@
     p.set('t', String(getTempo()));
     if (currentStyle !== 'simple') p.set('s', `${currentStyle}.${currentVariant}`);
     if (chordVoice !== 'piano') p.set('v', chordVoice);
+    // ...and what the neck under the chart is showing, as one field. It's
+    // empty whenever the neck is at its defaults, which is most of the time.
+    const fretboard = view.viewState();
+    if (fretboard) p.set('f', fretboard);
     return p;
+  }
+
+  // T46 left this tab writing its state only when you pressed Copy link, on
+  // the grounds that it has more state than the others and a long fragment is
+  // an ugly thing to look at. Two things settled it the other way. The view
+  // state this now carries is exactly what you'd want a bookmark to hold —
+  // you were on the third box of the A-shape pentatonic, not just in A minor
+  // — and a setting you have to remember to press a button to keep is a
+  // setting you lose. So it writes as you go, like the other four tabs, and
+  // the defaults are left out so the link only grows as far as you've
+  // strayed from them. Copy link stays: it puts the address on the clipboard,
+  // which is the part the address bar can't do for you.
+  function writeShareState(){
+    GT.tabs.setState('caged', shareState().toString());
   }
 
   // Bring a shared link's state in. Returns false if there wasn't one, so the
@@ -1275,11 +1294,16 @@
       const [style, variant] = p.get('s').split('.');
       const btn = document.querySelector(`#styleGroup .genre-btn[data-value="${style}"]`);
       if (btn && STYLES[style]){
-        btn.click();
+        btn.click();                       // which resets the feel to the first
         currentVariant = Math.min(Number(variant) || 0, STYLES[style].variants.length - 1);
         renderVariantButtons();
+        syncQuickStyle();                  // ...so the bar has to be told again
       }
     }
+
+    // the neck is set before the chords, so the redraw that follows them
+    // draws the view the link asked for rather than the one that was up
+    view.applyViewState(p.get('f') || '');
 
     if (p.get('n')){
       const entries = p.get('n').split(',').map(e => e.split('.'));
@@ -1493,6 +1517,9 @@
         mode:        () => currentMode,
         tonic:       () => currentTonic,
         activeChord: () => scheduledLog[0],
+        // the neck's own controls are its business, but the address bar is
+        // this tab's — so it says when it has redrawn and the link follows
+        viewChanged: writeShareState,
       });
       // the style buttons are markup, so the default has to be put on them
       document.querySelectorAll('.genre-btn').forEach(b =>
@@ -1526,6 +1553,10 @@
           presetSelect.value = String(first);
         }
       }
+      // The address bar should describe the page from the moment it settles,
+      // not from the first time something is touched. It's written after the
+      // header has wired the tabs up, since only the tab on show may write.
+      setTimeout(writeShareState, 0);
     },
   };
 })();

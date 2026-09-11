@@ -137,11 +137,16 @@ names the tab you're on.
   can't wait for a download; any chord whose notes haven't arrived — or that
   are out of reach, as they are on a `file://` page — is played on the piano
   instead, so choosing the guitar can never leave you with silence
-- "Copy link to this progression" writes the key, every chord's degree, bar
-  count and shape, the tempo and the style into the page's URL and copies it,
-  so a progression can be bookmarked or sent to someone; opening the link
-  brings it all back. A progression loaded from a genre example is written as
-  chord names instead, since its chords aren't degrees of anything
+- The address bar follows the tab, the way it does on the other four: the
+  key, every chord's degree, bar count and shape, the tempo, the style and
+  feel, the voice — and what the neck below the chart is showing, packed into
+  one field. A setting left at its default is left out, so the fragment only
+  grows as far as you've strayed from them, and a bookmark holds what you
+  were actually looking at: the third box of the A-shape pentatonic coloured
+  by interval, not merely the key you were in. A progression loaded from a
+  genre example is written as chord names instead, since its chords aren't
+  degrees of anything. "Copy link to this progression" stays, because putting
+  that address on the clipboard is the part the address bar can't do for you
 - An info tooltip (ⓘ) beside the position method, the one choice that
   needs explaining — hover on desktop, tap on touch, tap elsewhere to dismiss
 - The tab is laid out as a stage: near-black ground and high-contrast ink,

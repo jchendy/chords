@@ -25,13 +25,18 @@
 
   // Everything the view needs to know about the practice tab's state arrives
   // through this host object, so the view never reaches into it directly.
-  let host = {
+  // What the view needs from whoever is showing it. A host supplies what it
+  // cares about; anything it leaves out keeps the harmless version here, so a
+  // hook added later doesn't break a host written before it existed.
+  const HOST_DEFAULTS = {
     progression: () => [],
     isPlaying: () => false,
     mode: () => 'major',
     tonic: () => 'C',
     activeChord: () => null,
+    viewChanged: () => {},
   };
+  let host = { ...HOST_DEFAULTS };
 
   let fretMode = 'caged';        // 'roots' | 'caged' | 'penta' | 'scale' | 'positions'
   let cagedChordIdx = 0;
@@ -1367,6 +1372,13 @@
       stuckShape = null;
       fretboardSvg.classList.remove('shape-focus');
     }
+
+    // The neck has just been drawn, which is the one moment its settings are
+    // certainly settled — every control ends here. Whoever is hosting it can
+    // decide whether that's worth recording; the tab that does puts it in the
+    // address bar, and a redraw that changed nothing it cares about writes
+    // nothing, because the address is compared before it is replaced.
+    host.viewChanged();
   }
 
   // in Root notes mode, ring + spotlight the root(s) of whichever chord is playing
@@ -1402,8 +1414,85 @@
     }
   }
 
+  // ---- the toolbar as one field, for the address bar ----
+  // What you are looking at is a dozen small settings, and a dozen query
+  // parameters would swamp the rest of the link, so they travel as one: a
+  // letter, a colon, a value, joined by dots. Anything sitting at its default
+  // is left out, so the common case adds nothing at all and a link stays
+  // readable.
+  //
+  // Restoring works by pressing the controls rather than by assigning to the
+  // variables behind them: every one of these settings has a handler that
+  // does more than store a value — re-basing the box, greying out what no
+  // longer applies, re-drawing — and pressing the control runs all of that
+  // the way a hand would. The one exception is the box number, which has no
+  // control of its own, only arrows.
+  const VIEW_FIELDS = [
+    { key: 'm', get: () => fretMode,      def: 'caged',     set: v => segClick('#fretModeGroup', v) },
+    { key: 'p', get: () => inPosition ? 'position' : 'neck', def: 'neck', set: v => segClick('#viewGroup', v) },
+    { key: 'c', get: () => colorBy,       def: 'shape',     set: v => segClick('#colorByGroup', v) },
+    { key: 't', get: () => scaleTheory,   def: 'parallel',  set: v => segClick('#scaleTheoryGroup', v) },
+    { key: 'q', get: () => cagedPosMethod, def: 'box',      set: v => segClick('#cagedPosMethodGroup', v) },
+    { key: 'g', get: () => String(stringSetLow), def: '2',  set: v => segClick('#stringSetGroup', v) },
+    { key: 'r', get: () => fretRange,     def: 'all',       set: v => setSelect(fretRangeSelect, v) },
+    { key: 'a', get: () => wholeArpeggioToggle.checked ? '1' : '0', def: '0',
+      set: v => setCheck(wholeArpeggioToggle, v === '1') },
+    { key: 'f', get: () => cagedFollowToggle.checked ? '1' : '0', def: '1',
+      set: v => setCheck(cagedFollowToggle, v === '1') },
+    // which shapes are on, as the letters themselves: "AE" is A and E
+    { key: 's', get: () => CAGED_ORDER.filter(shapeOn).join(''), def: 'CAGED',
+      set: v => CAGED_ORDER.forEach(name => {
+        const wanted = v.indexOf(name) >= 0;
+        if (shapeOn(name) !== wanted){
+          const btn = cagedShapeGroup.querySelector(`.seg-btn[data-value="${name}"]`);
+          if (btn) btn.click();
+        }
+      }) },
+    // no control of its own: the arrows step it, so it's set directly and
+    // held against being re-picked by position
+    { key: 'b', get: () => String(boxIndex), def: '0',
+      set: v => { boxIndex = Math.max(0, Number(v) || 0); rebaseBox = false; } },
+  ];
+
+  const segClick = (group, value) => {
+    const btn = document.querySelector(`${group} .seg-btn[data-value="${value}"]`);
+    if (btn && !btn.classList.contains('active')) btn.click();
+  };
+  const setSelect = (el, value) => {
+    if (!el || el.value === value) return;
+    el.value = value;
+    el.dispatchEvent(new Event('change'));
+  };
+  const setCheck = (el, on) => {
+    if (!el || el.checked === on) return;
+    el.checked = on;
+    el.dispatchEvent(new Event('change'));
+  };
+
+  function viewState(){
+    return VIEW_FIELDS
+      .filter(f => f.get() !== f.def)
+      .map(f => `${f.key}:${f.get()}`)
+      .join('.');
+  }
+
+  function applyViewState(text){
+    const given = new Map(String(text || '').split('.').filter(Boolean)
+      .map(part => [part.slice(0, 1), part.slice(2)]));
+    // Everything is set, not just what the link carried: a field left out
+    // means "the default", and a link should land the same way on a fresh
+    // page and on one somebody has been playing with.
+    VIEW_FIELDS.forEach(f => {
+      const want = given.has(f.key) ? given.get(f.key) : f.def;
+      if (f.get() !== want) f.set(want);
+    });
+    updateFretUI();
+    renderFretboard();
+  }
+
   GT.fretboardView = {
-    init(hostImpl){ host = hostImpl; updateFretUI(); },
+    init(hostImpl){ host = { ...HOST_DEFAULTS, ...hostImpl }; updateFretUI(); },
+    viewState, applyViewState,
     render: renderFretboard,
     updateVisibility: updateFretUI,
     rebuildChordPicker: rebuildCagedPicker,

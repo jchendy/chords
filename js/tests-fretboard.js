@@ -812,8 +812,63 @@
     t.equal(bad.join('; '), '', 'The position holds while the chord in front changes');
   }
 
+  // ---- what the neck is showing, as a string and back again ----
+  // The practice tab's link carries the view in one field, so that a bookmark
+  // holds what you were actually looking at — the third box of the A-shape
+  // pentatonic, coloured by interval — and not merely the key you were in.
+  // Two things have to hold. A setting left at its default writes nothing, or
+  // every link carries a dozen fields nobody needs. And applying a state has
+  // to set everything, not only what the string mentions: a link should land
+  // the same way on a fresh page as on one somebody has been playing with,
+  // which means the fields it leaves out are defaults rather than "don't
+  // touch".
+  function testTheViewTravelsAsAString(t){
+    const view = GT.fretboardView;
+    const bad = [];
+    const active = group => {
+      const b = document.querySelector(`#${group} .seg-btn.active`);
+      return b && b.dataset.value;
+    };
+    const seg = (group, value) => document.querySelector(`#${group} .seg-btn[data-value="${value}"]`).click();
+
+    view.applyViewState('');
+    if (view.viewState() !== ''){
+      bad.push(`the defaults write "${view.viewState()}" rather than nothing`);
+    }
+
+    // somewhere worth bookmarking: a pentatonic box, in position, by interval
+    seg('fretModeGroup', 'penta');
+    seg('viewGroup', 'position');
+    seg('colorByGroup', 'interval');
+    const there = view.viewState();
+    ['m:penta', 'p:position', 'c:interval'].forEach(part => {
+      if (there.indexOf(part) < 0) bad.push(`"${part}" went missing from "${there}"`);
+    });
+
+    // wander off, then follow the string back
+    seg('fretModeGroup', 'caged');
+    seg('viewGroup', 'neck');
+    seg('colorByGroup', 'shape');
+    view.applyViewState(there);
+    if (active('fretModeGroup') !== 'penta') bad.push(`the view came back as ${active('fretModeGroup')}`);
+    if (active('viewGroup') !== 'position') bad.push(`the reading came back as ${active('viewGroup')}`);
+    if (active('colorByGroup') !== 'interval') bad.push(`the colouring came back as ${active('colorByGroup')}`);
+    if (view.viewState() !== there) bad.push(`the round trip wrote "${view.viewState()}" for "${there}"`);
+
+    // a string that mentions one thing still puts everything else back
+    view.applyViewState('c:interval');
+    if (active('fretModeGroup') !== 'caged' || active('viewGroup') !== 'neck'){
+      bad.push('a link that named only the colouring left the rest where it was');
+    }
+    if (active('colorByGroup') !== 'interval') bad.push('...and did not even set the colouring');
+
+    view.applyViewState('');     // leave the neck as it was found
+    t.equal(bad.join('; '), '', 'The neck travels as a string, defaults and all');
+  }
+
   GT.fretboardSuites = [
     ['Fretboard: chords are drawn as shapes you can hold', testGripsAreGrips],
+    ['Fretboard: the view travels as a string', testTheViewTravelsAsAString],
     ['Fretboard: whole arpeggio opens the shapes out', testArpeggioReallyOpensOut],
     ['Fretboard: triads are drawn whole', testTriadsAreWhole],
     ['Fretboard: the progression is all there, in both views', testEveryChordIsDrawn],
