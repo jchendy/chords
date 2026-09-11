@@ -239,6 +239,9 @@ already fits and the bar has no space to spare. A "Style" picker chooses the bac
   beat, the bass pumping eighths with an octave leap, the chords chugging
   every eighth; Surf rock — straight and dry, a push into 1 and 3, eighth
   notes in the bass with the fifth under three, short chords every eighth;
+  Country — a two-feel with a train under it, the bass alternating root and
+  fifth, the comp chanking on 2 and 4; Bluegrass — no drums, the bass in
+  two and the chop on 2 and 4;
   Blues shuffle — 12/8: boogie-woogie walking bass (1-3-5-6-♭7-6-5-3),
   long-ringing dominant-7th stabs on the shuffle upbeats, a shuffled kit;
   Slow blues — sparse 12/8, a held chord and the turnaround bass; Jump
@@ -249,9 +252,15 @@ already fits and the bar has no space to spare. A "Style" picker chooses the bac
   Bossa nova — straight, the samba-derived bass and a syncopated comp;
   Gypsy jazz — no drums at all: la pompe, four short chords a bar with a
   lift into 2 and 4, over a bass in two;
+  6/8 ballad — slow, twelve to the bar, the ride on every one of them, the
+  chord on each beat; Reggae — the one drop, kick and rim together on 3,
+  the skank on every and, the bass in the space; Ska — quick, every and an
+  upstroke, a walking bass in eighths; Soul — a pocket, 7th-chord shells
+  off the beat, a bass line through the octave and ♭7;
   Pop — four on the floor;
   Classic funk — the hit on the One, ghost kicks, constant 16th hats; Disco
-  — four on the floor with off-beat chords and an octave-jumping bass.
+  — four on the floor with off-beat chords and an octave-jumping bass;
+  Metal — the kick on every eighth, chords and bass chugging with it.
 - Live chord highlighting synced to playback, with a measure.beat position
   readout under the chords (the key itself is shown plainly above them,
   e.g. "C major" / "C#m")
@@ -703,15 +712,33 @@ interval above a root: 0 is the root, 7 the fifth, 10 the flat seventh, 12
 the octave; or, marked as such, an interval above the *next* bar's root —
 how a fill points where the music is going, the ♭7 falling to the IV's 3rd,
 a chromatic step up under the root that's coming — and an interval below
-zero is below that root. A strum is the chord itself: the CAGED grip the box is built on,
+zero is below that root. A single note can also be a **technique**: a
+double stop (a second note on another string, funk's 4ths and rockabilly's
+6ths), a bend (the note pushed up a semitone or a tone to a note the
+reading allows — measured from the note as placed, so a 4th the chords
+reading moved to the 3rd doesn't bend to a ♯4 it doesn't offer, it plays
+plain), a hammer-on or pull-off (the second note on the same string,
+without the pick, eased in), or a slide into the note from a fret below or
+above. The part view has a toggle for each; switched off, the technique
+plays plain — a double stop as its first note, a bend as the note it bent
+to, a hammer-on as two picked notes, a slide as the note slid to — and
+where the window can't hold it (no higher fret on that string, an open
+string under a bend) it plays plain too, rather than not at all. The tab
+writes them the way tab does: "3/5", "5b1", "4 h 6", and an "x" over a
+palm-muted strum. In the engine a bend and a slide are the recording's
+playback rate ramped, which is what a bend does to a string; a hammered
+note is the same recording without its pick, eased in over 25 ms; a
+palm-muted strum has its top rolled off. A strum is the chord itself: the CAGED grip the box is built on,
 the strings of it that sit in the window (three at the least, or it isn't
 a chord), swept low to high 16 ms a string the way a pick does, with a 7th
 chord getting its 7th the way the chords reading draws it. A strum says how
 much of the grip it wants, as the style does: the whole thing, the bottom
 three strings where a shuffle keeps its weight, the top three for a stab or
-a chop, or the root alone — the low note an alternating-bass strum puts
+a chop, the root alone — the low note an alternating-bass strum puts
 before the chord (the 5th when the window has cut the root off, the other
-note such a bass goes to). In the triads reading every strum is the triad
+note such a bass goes to) — or the 5th alone, the note that bass alternates
+to, which is how country's and bluegrass's boom-chick is written. A strum
+can also be palm-muted, for the chug of metal. In the triads reading every strum is the triad
 the neck is showing on its string set and nothing more, the root alone
 being its lowest note. A figure also has **variants** — the same bar with
 its weight moved, a pickup added, a strum opened out — that the phrases
@@ -730,11 +757,11 @@ using only the five, and in the scales reading using the scale; a note the
 reading can't offer within a tone is dropped rather than forced, so a sparse
 reading gives a sparser part, not a wrong one.
 
-Written that way because parts belong to feels — fifteen of them, and
-Simple — and appear in four readings. Written per reading they'd be sixteen
-times four times several examples, hundreds of hand-written parts none of
-which could be given real attention. Written once and snapped, they're sixteen times a
-few. Every feel the picker offers has two, and a test holds it to that.
+Written that way because parts belong to feels — twenty-two of them, and
+Simple — and appear in four readings. Written per reading they'd be
+twenty-three times four times several examples, hundreds of hand-written
+parts none of which could be given real attention. Written once and
+snapped, they're twenty-three times a few. Every feel the picker offers has two, and a test holds it to that.
 Simple has no feels of its own — quarter, half and
 whole notes are one hit at three spacings — so its parts are written for a
 stand-in on a sixteenth grid: the chord struck whole on one and nowhere
@@ -768,8 +795,12 @@ A test holds every part to its feel's grid and every realisation to its
 promise: on every reading, in every key, in three positions, every note it
 produces is inside the window and is one the reading allows (a note written
 against the next chord is held to *that* chord's palette, and one test
-plays the IV's root over the I and expects the IV's root); every part has a
-fill that points at the next chord; a strum is as
+plays the IV's root over the I and expects the IV's root; a bend's target
+too, and a bend never sits on an open string; a hammer-on's second note is
+on the same string, above, a pull-off's below, and lands where the first
+said it would); every part has a fill that points at the next chord; every
+technique is written somewhere and comes out somewhere, and switched off
+one at a time each leaves no trace and loses no written note; a strum is as
 many strings as it asked for, its bass note the root or the 5th, and in
 triads it is three notes of the triad on the chosen strings — and in the
 generous scales reading, at least four notes in five of what was written

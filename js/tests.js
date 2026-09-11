@@ -1017,6 +1017,7 @@
     const { STYLES } = GT.audio;
     const bad = [];
     let parts = 0;
+    const techniques = {};
 
     Object.keys(LIBRARY).forEach(style => {
       if (style !== 'simple' && !STYLES[style]){ bad.push(`parts written for "${style}", which is not a style`); return; }
@@ -1037,7 +1038,13 @@
             if (!(n.at >= 0 && n.at < feel.grid)) bad.push(`${where}: a note at slot ${n.at} on a ${feel.grid}-slot grid`);
             if (!(n.dur > 0)) bad.push(`${where}: a note lasting ${n.dur}`);
             if (n.strum) strums++;
-            else if (!(n.iv >= -3 && n.iv <= 14)) bad.push(`${where}: an interval of ${n.iv}`);
+            else if (!(n.iv >= -5 && n.iv <= 14)) bad.push(`${where}: an interval of ${n.iv}`);
+            if (n.tech) techniques[n.tech] = (techniques[n.tech] || 0) + 1;
+            if (n.tech === 'double' && !(n.iv2 > n.iv && n.iv2 - n.iv <= 12)) bad.push(`${where}: a double stop of ${n.iv} and ${n.iv2}`);
+            if (n.tech === 'bend' && ![1, 2].includes(n.up)) bad.push(`${where}: a bend of ${n.up} semitones`);
+            if (n.tech === 'hammer' && !(n.iv2 > n.iv && n.iv2 - n.iv <= 4)) bad.push(`${where}: a hammer-on from ${n.iv} to ${n.iv2}`);
+            if (n.tech === 'pull' && !(n.iv2 < n.iv && n.iv - n.iv2 <= 4)) bad.push(`${where}: a pull-off from ${n.iv} to ${n.iv2}`);
+            if (n.tech === 'slide' && !(n.from !== n.iv && Math.abs(n.from - n.iv) <= 4)) bad.push(`${where}: a slide from ${n.from} to ${n.iv}`);
             if (!(n.vel > 0 && n.vel <= 1)) bad.push(`${where}: a velocity of ${n.vel}`);
             // Simple's backing is a chord a beat already: a part over it
             // strikes the chord on one and nowhere else
@@ -1053,6 +1060,8 @@
       });
     });
     if (!parts) bad.push('the library is empty');
+    // every technique the part view offers is written somewhere
+    GT.parts.TECHNIQUES.forEach(tech => { if (!techniques[tech]) bad.push(`no part uses a ${tech}`); });
     // ...and every feel the picker offers has at least two to choose from
     Object.keys(STYLES).forEach(style => STYLES[style].variants.forEach(v => {
       if (partsFor(style, v.label).length < 2) bad.push(`${style}/${v.label} has ${partsFor(style, v.label).length} parts`);
@@ -1115,6 +1124,20 @@
             const target = n.next ? bars[(n.bar + 1) % bars.length].chord : chord;
             const { allowed } = palette(target, opts);
             if (!allowed.has(midiPc(n.midi))) bad.push(`${reading} ${root}: ${part.name} plays a note the reading doesn't offer`);
+            // ...and so is where a bend goes; a bend needs a fretted note,
+            // a slide comes from a fret the neck has, a hammer-on's second
+            // note is on the same string, above (a pull-off's below)
+            if (n.bend){
+              if (!allowed.has(midiPc(n.midi + n.bend))) bad.push(`${reading} ${root}: ${part.name} bends to a note the reading doesn't offer`);
+              if (n.fret < 1) bad.push(`${reading} ${root}: ${part.name} bends an open string`);
+            }
+            if (n.slide != null && (n.slide < 1 || n.slide === n.fret)) bad.push(`${reading} ${root}: ${part.name} slides from fret ${n.slide} to ${n.fret}`);
+            if (n.tech === 'h' || n.tech === 'p'){
+              const after = notes.find(m => m.bar === n.bar && m.string === n.string && m.soft && Math.abs(m.at - (n.at + n.dur)) < 1e-9);
+              if (!after) bad.push(`${reading} ${root}: ${part.name}'s ${n.tech === 'h' ? 'hammer-on' : 'pull-off'} at ${n.bar}:${n.at} has no note to land on`);
+              else if (n.tech === 'h' ? after.fret <= n.fret : after.fret >= n.fret) bad.push(`${reading} ${root}: ${part.name}'s ${n.tech} goes the wrong way`);
+              else if (after.fret !== n.to) bad.push(`${reading} ${root}: ${part.name}'s ${n.tech} says ${n.to} and lands on ${after.fret}`);
+            }
           });
           // a strum is as many strings as it asked for: the root alone for
           // 'bass', three for 'low' and 'high', three at the least for the
@@ -1128,8 +1151,8 @@
           });
           Object.entries(strumsAt).forEach(([k, { count, voicing, low }]) => {
             const chord = bars[Number(k.split(':')[0])].chord;
-            if (voicing === 'bass'){
-              if (count !== 1) bad.push(`${reading} ${root}: ${part.name} plays ${count} strings for a bass note at ${k}`);
+            if (voicing === 'bass' || voicing === 'fifth'){
+              if (count !== 1) bad.push(`${reading} ${root}: ${part.name} plays ${count} strings for a ${voicing} note at ${k}`);
               const rootOrFifth = [chord.note, chord.fifth].map(x => GT.theory.SEMITONE[x] % 12);
               if (reading !== 'triads3' && !rootOrFifth.includes(midiPc(low.midi))) bad.push(`${reading} ${root}: ${part.name}'s bass note at ${k} is neither root nor 5th`);
             } else if (reading === 'triads3' || voicing === 'low' || voicing === 'high'){
@@ -1147,6 +1170,31 @@
       }));
     }));
     if (kept < written * 0.8) bad.push(`the scales reading kept only ${kept} of ${written} written notes`);
+
+    // The techniques, switched off one at a time, leave no trace of
+    // themselves — and the part still plays: a double stop as its first
+    // note, a bend as the note bent to, a hammer-on as two picked notes, a
+    // slide as the note slid to. Switched on, each is used somewhere.
+    {
+      const chord = chordFromName('A7');
+      const bars = [chord, chord, chordFromName('D7'), chordFromName('E7')].map(c => ({ chord: c }));
+      const base = { reading: 'scale', window: { min: 4, max: 8 }, scaleTheory: 'parallel', stayOnKey: false, key: { tonic: 'A', mode: 'major' } };
+      const flag = n => n.pair ? 'double' : n.bend ? 'bend' : n.tech === 'h' ? 'hammer' : n.tech === 'p' ? 'pull' : n.slide != null ? 'slide' : null;
+      const seen = {};
+      Object.keys(LIBRARY).forEach(style => Object.keys(LIBRARY[style]).forEach(feelName => partsFor(style, feelName).forEach(part => {
+        const picks = [0, 1, 2, 0, 1, 2];
+        const on = realise(part, bars, picks, base);
+        on.forEach(n => { const f = flag(n); if (f) seen[f] = true; });
+        GT.parts.TECHNIQUES.forEach(tech => {
+          const off = realise(part, bars, picks, { ...base, tech: { [tech]: false } });
+          if (off.some(n => flag(n) === tech)) bad.push(`${part.name}: with ${tech}s off, one is still played`);
+          // the notes that were written are still there, one way or another
+          const moments = list => new Set(list.filter(n => !n.strum && !n.pair && !n.soft).map(n => `${n.bar}:${n.at}`));
+          if (moments(off).size < moments(on).size) bad.push(`${part.name}: with ${tech}s off, a note went missing`);
+        });
+      })));
+      GT.parts.TECHNIQUES.forEach(tech => { if (!seen[tech]) bad.push(`in the scales reading over A7, no part came out with a ${tech}`); });
+    }
 
     // A note written against the next chord lands on that chord: the root
     // of the IV written as nx(…, 0) over the I sounds the IV's root, and the

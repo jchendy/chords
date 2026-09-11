@@ -1220,7 +1220,9 @@
     // the part: on, which one, which fills were rolled, and whether it stays
     // on the I — so the exact part you were working on comes back
     if (partOn){
-      const extras = (partVolume !== PART_VOLUME_DEFAULT ? `.v${partVolume}` : '') + (partMuted ? '.m' : '');
+      const off = Object.keys(partTech).filter(k => !partTech[k]).map(k => TECH_LETTERS[k]).join('');
+      const extras = (partVolume !== PART_VOLUME_DEFAULT ? `.v${partVolume}` : '') + (partMuted ? '.m' : '')
+        + (off ? `.o${off}` : '');            // the techniques switched off, by letter
       p.set('p', `${partIdx}.${partScale === 'key' ? 'k' : 'f'}.${partFills.join('')}${extras}`);
     }
     // the band's volume is heard in both views, so it's its own field
@@ -1274,10 +1276,15 @@
       partFills = (fills || '').split('').map(Number).filter(n => !Number.isNaN(n));
       partVolume = PART_VOLUME_DEFAULT;
       partMuted = false;
+      partTech = { double: true, bend: true, hammer: true, pull: true, slide: true };
       extras.forEach(x => {
         if (x === 'm') partMuted = true;
         else if (/^v\d+$/.test(x)) partVolume = Math.max(0, Math.min(100, Number(x.slice(1))));
+        else if (/^o[dbhps]*$/.test(x)){
+          Object.keys(TECH_LETTERS).forEach(k => { if (x.includes(TECH_LETTERS[k])) partTech[k] = false; });
+        }
       });
+      syncPartTech();
     }
     bandVolume = BAND_VOLUME_DEFAULT;
     bandMuted = false;
@@ -1344,6 +1351,10 @@
   let partMuted = false;            // ...and whether it's heard at all
   let bandVolume = 100;             // the band's, on its own bus in the engine
   let bandMuted = false;
+  // which of the part's techniques are played as written; off, each plays
+  // plain (see parts.js for what plain means for each)
+  let partTech = { double: true, bend: true, hammer: true, pull: true, slide: true };
+  const TECH_LETTERS = { double: 'd', bend: 'b', hammer: 'h', pull: 'p', slide: 's' };
   // The part is the thing you're aiming at, so it sits on top of the band
   // the way a lead does, not inside it. Measured: at the guitar's own level
   // it added half a decibel to the mix, which is to say nobody could hear
@@ -1405,7 +1416,7 @@
     // ...but whether a part CAN be shown is in it: a link opens before the
     // neck has worked out its position, and without this the view stayed on
     // "switch to one position" while looking at one.
-    return JSON.stringify([partOn, partIdx, partFills, partScale, currentMode, currentTonic,
+    return JSON.stringify([partOn, partIdx, partFills, partScale, partTech, currentMode, currentTonic,
       feel && feel.label, pv.reading, pv.inPosition, pv.scaleTheory, partAvailable(),
       currentProgression.map((c, i) => `${displayName(c)}.${measuresFor(i)}`)]);
   }
@@ -1451,7 +1462,7 @@
     }
     partNotes = GT.parts.realise(part, bars, partFills, {
       reading: pv.reading, window: partWindow, scaleTheory: pv.scaleTheory, stringSet: pv.stringSet,
-      stayOnKey: partScale === 'key', key: { tonic: currentTonic, mode: currentMode },
+      stayOnKey: partScale === 'key', key: { tonic: currentTonic, mode: currentMode }, tech: { ...partTech },
     });
     partNameEl.textContent = part.name;
     drawPartTab(bars);
@@ -1477,7 +1488,10 @@
         chord: cells[i] && cells[i].held ? '' : displayName(b.chord),
         numeral: cells[i] && cells[i].held ? '' : (b.chord.numeral || ''),
       })),
-      notes: partNotes.map(n => ({ string: n.string, fret: n.fret, at: n.bar * grid + n.at, dur: n.dur })),
+      notes: partNotes.map(n => ({ string: n.string, fret: n.fret, at: n.bar * grid + n.at, dur: n.dur,
+                                   bend: n.bend, slide: n.slide, tech: n.tech, to: n.to, soft: n.soft, mute: n.mute,
+                                   // the top string of a strum carries its marks, over the tab
+                                   lead: !n.strum || !partNotes.some(m => m.bar === n.bar && m.at === n.at && m.strum && m.spread > n.spread) })),
       totalSlots: bars.length * grid,
     };
     // On a wide screen the tab wraps to as many bars as fit across, and the
@@ -1525,7 +1539,13 @@
       if (n.bar !== barIdx || n.at !== slot) return;
       const dur = n.dur * slotDur;
       const at = t + (n.spread || 0);            // a strum's strings arrive one after another
-      if (partLevel() > 0) audio.playPluck(440 * Math.pow(2, (n.midi - 69) / 12), at, dur, n.vel * partLevel(), 'part');
+      const hz = m => 440 * Math.pow(2, (m - 69) / 12);
+      // what the note's technique asks of the engine, if anything
+      const fx = n.bend ? { bend: n.bend }
+               : n.slide != null ? { slideFrom: hz(n.midi + (n.slide - n.fret)) }
+               : n.soft ? { soft: true }
+               : n.mute ? { mute: true } : null;
+      if (partLevel() > 0) audio.playPluck(hz(n.midi), at, dur, n.vel * partLevel(), 'part', fx);
       partLog.push({ time: at, until: at + dur, string: n.string, fret: n.fret, slot: barIdx * feelNow().grid + n.at });
     });
     if (partLog.length > 256) partLog = partLog.filter(e => e.until > audio.ctx().currentTime);
@@ -1649,6 +1669,18 @@
     syncPartVolume();
     writeShareState();
   });
+  // the techniques: five toggles, each played as written or plain
+  const partTechGroup = document.getElementById('partTechGroup');
+  function syncPartTech(){
+    partTechGroup.querySelectorAll('.tech-btn').forEach(b => b.setAttribute('aria-pressed', String(partTech[b.dataset.tech] !== false)));
+  }
+  partTechGroup.querySelectorAll('.tech-btn').forEach(b => b.addEventListener('click', () => {
+    partTech[b.dataset.tech] = !partTech[b.dataset.tech];
+    syncPartTech();
+    rebuildPart();                 // the same part, played plainer or not
+    writeShareState();
+  }));
+  syncPartTech();
   partScaleGroup.querySelectorAll('.seg-btn').forEach(btn => btn.addEventListener('click', () => {
     partScale = btn.dataset.value;
     partScaleGroup.querySelectorAll('.seg-btn').forEach(b => b.classList.toggle('active', b === btn));
@@ -1832,7 +1864,7 @@
     // the realised part and the window it was realised in, so a test can
     // hold it still across the things that must not move it
     partState: () => ({ notes: partNotes.map(n => ({ ...n })), window: partWindow && { ...partWindow },
-                        fills: partFills.slice(), signature: partSignature(),
+                        fills: partFills.slice(), signature: partSignature(), tech: { ...partTech },
                         named: [...partTabEl.querySelectorAll('.tab-chord.now')].map(el => el.textContent) }),
     showPartBar,
     init(){

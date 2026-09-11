@@ -730,8 +730,15 @@
   // One note of the real guitar. The sample is a whole pluck with its own
   // decay, so the envelope here only fades it out when the note's time is up
   // rather than shaping it from scratch.
-  // `bus` is 'band' (the comp guitar) or 'part' (the suggested part).
-  function playPluck(freq, time, duration, velocity = 1, bus = 'band'){
+  // `bus` is 'band' (the comp guitar) or 'part' (the suggested part). `fx`
+  // is what the part's techniques need of one note:
+  //   bend:      semitones to push the pitch up, after a moment, over ~120 ms
+  //   slideFrom: a frequency to start at and slide to `freq` over ~80 ms
+  //   soft:      no pick — the hammered-on or pulled-off note, eased in
+  //   mute:      palm-muted: short, and the top rolled off
+  // Pitch is moved by the sample's playback rate, which is what a bend or a
+  // slide does to a string — the same recording, faster.
+  function playPluck(freq, time, duration, velocity = 1, bus = 'band', fx = null){
     const spec = sampleFor(midiOf(freq));
     const buffer = guitarBank.buffers.get(spec.file);
     if (!buffer){
@@ -742,16 +749,42 @@
     const src = audioCtx.createBufferSource();
     src.buffer = buffer;
     // the sample's own pitch, moved to the note asked for
-    src.playbackRate.value = freq / (440 * Math.pow(2, (spec.key - 69) / 12));
+    const rateFor = f => f / (440 * Math.pow(2, (spec.key - 69) / 12));
+    const rate = rateFor(freq);
+    if (fx && fx.slideFrom){
+      src.playbackRate.setValueAtTime(rateFor(fx.slideFrom), time);
+      src.playbackRate.linearRampToValueAtTime(rate, time + Math.min(0.08, duration * 0.5));
+    } else if (fx && fx.bend){
+      const start = time + Math.min(0.06, duration * 0.2);
+      src.playbackRate.setValueAtTime(rate, start);
+      src.playbackRate.linearRampToValueAtTime(rate * Math.pow(2, fx.bend / 12), start + Math.min(0.14, duration * 0.5));
+    } else {
+      src.playbackRate.value = rate;
+    }
 
     const env = audioCtx.createGain();
-    const level = 0.9 * velocity;
-    env.gain.setValueAtTime(level, time);
+    const level = 0.9 * velocity * (fx && fx.soft ? 0.8 : 1);
+    if (fx && fx.soft){
+      // a hammered note has no pick on the front of it
+      env.gain.setValueAtTime(0.0001, time);
+      env.gain.exponentialRampToValueAtTime(level, time + 0.025);
+    } else {
+      env.gain.setValueAtTime(level, time);
+    }
     const fade = Math.min(0.35, duration * 0.3);
     env.gain.setValueAtTime(level, time + Math.max(0.02, duration - fade));
     env.gain.exponentialRampToValueAtTime(0.0001, time + duration + 0.02);
 
-    src.connect(env);
+    if (fx && fx.mute){
+      // the heel of the hand on the strings: the top gone, the ring short
+      const damp = audioCtx.createBiquadFilter();
+      damp.type = 'lowpass';
+      damp.frequency.value = 900;
+      damp.Q.value = 0.5;
+      src.connect(damp).connect(env);
+    } else {
+      src.connect(env);
+    }
     if (bus === 'part'){
       env.connect(partGain);
       env.connect(partSend);
@@ -1304,6 +1337,47 @@
         },
       ],
     },
+    country: {
+      label: 'Country',
+      variants: [
+        {
+          // A two-feel with a train under it: the bass alternating root and
+          // fifth on the beat, the snare on 2 and 4 with the hat on the
+          // eighths, and the comp chanking on 2 and 4 with a lighter one on
+          // the ands — the guitar's boom-chick, in the piano's hands.
+          label: 'Country',
+          grid: 16,
+          kick:  [0, 8],
+          snare: [4, 12],
+          hat:   [0, 2, 4, 6, 8, 10, 12, 14],
+          voice: 'triad',
+          chord: [
+            { slot: 2, dur: 1.2, vel: 0.35 }, { slot: 4, dur: 2.5, vel: 0.7 }, { slot: 6, dur: 1.2, vel: 0.35 },
+            { slot: 10, dur: 1.2, vel: 0.35 }, { slot: 12, dur: 2.5, vel: 0.7 }, { slot: 14, dur: 1.2, vel: 0.35 },
+          ],
+          bass: [
+            { slot: 0, off: 0, dur: 3.6, vel: 0.9 }, { slot: 4, off: 7, dur: 3.6, vel: 0.75 },
+            { slot: 8, off: 0, dur: 3.6, vel: 0.85 }, { slot: 12, off: 7, dur: 3.6, vel: 0.75 },
+          ],
+        },
+      ],
+    },
+    bluegrass: {
+      label: 'Bluegrass',
+      variants: [
+        {
+          // No drums: the bass in two — root on one, fifth on three — and
+          // the chop on 2 and 4, short, which is the mandolin's job and here
+          // the comp's. Quick, and everything on the beat.
+          label: 'Bluegrass',
+          grid: 16,
+          kick: [], snare: [], hat: [],
+          voice: 'triad',
+          chord: [{ slot: 4, dur: 1, vel: 0.8 }, { slot: 12, dur: 1, vel: 0.8 }],
+          bass: [{ slot: 0, off: 0, dur: 3.6, vel: 0.9 }, { slot: 8, off: 7, dur: 3.6, vel: 0.8 }],
+        },
+      ],
+    },
     blues: {
       label: 'Blues',
       variants: [
@@ -1432,6 +1506,89 @@
         },
       ],
     },
+    ballad: {
+      label: '6/8 ballad',
+      variants: [
+        {
+          // Slow, in twelve: four beats of three. The kick on 1 and 3, the
+          // snare on 2 and 4, the ride on every one of the twelve, the bass
+          // holding the root and moving to the fifth under three, and the
+          // chord on each beat, softer on the off ones — the piano rolling
+          // where a guitar would arpeggiate.
+          label: '6/8 ballad',
+          grid: 12,
+          kick:  [0, 6],
+          snare: [3, 9],
+          snareVel: 0.6,
+          ride:  [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+          hat:   [],
+          voice: 'triad',
+          chord: [{ slot: 0, dur: 3, vel: 0.7 }, { slot: 3, dur: 3, vel: 0.5 }, { slot: 6, dur: 3, vel: 0.65 }, { slot: 9, dur: 3, vel: 0.5 }],
+          bass:  [{ slot: 0, off: 0, dur: 6, vel: 0.9 }, { slot: 6, off: 7, dur: 3, vel: 0.75 }, { slot: 9, off: 0, dur: 3, vel: 0.7 }],
+        },
+      ],
+    },
+    reggae: {
+      label: 'Reggae',
+      variants: [
+        {
+          // One drop: nothing on one, the kick and the rim together on
+          // three, the hat on the eighths, the skank on every and, short —
+          // and the bass in the space, root on one, off it by three.
+          label: 'Reggae',
+          grid: 16,
+          kick:  [8],
+          snare: [8],
+          snareVel: 0.5,
+          hat:   [0, 2, 4, 6, 8, 10, 12, 14],
+          voice: 'triad',
+          chord: [2, 6, 10, 14].map(s => ({ slot: s, dur: 1.2, vel: 0.7 })),
+          bass: [
+            { slot: 0, off: 0, dur: 5, vel: 0.9 }, { slot: 6, off: 0, dur: 2, vel: 0.6 },
+            { slot: 8, off: 7, dur: 4, vel: 0.8 }, { slot: 12, off: 0, dur: 4, vel: 0.8 },
+          ],
+        },
+      ],
+    },
+    ska: {
+      label: 'Ska',
+      variants: [
+        {
+          // Quick and straight: the kick on 1 and 3, the snare on 2 and 4,
+          // the hat on the eighths, every and an upstroke, short — and a
+          // walking bass in eighths, root, 3rd, 5th, 6th and back.
+          label: 'Ska',
+          grid: 16,
+          kick:  [0, 8],
+          snare: [4, 12],
+          hat:   [0, 2, 4, 6, 8, 10, 12, 14],
+          voice: 'triad',
+          chord: [2, 6, 10, 14].map(s => ({ slot: s, dur: 1, vel: 0.75 })),
+          bass:  [0, 2, 4, 6, 8, 10, 12, 14].map((s, i) => ({ slot: s, off: [0, 4, 7, 9, 12, 9, 7, 4][i], dur: 1.8, vel: i % 2 ? 0.75 : 0.9 })),
+        },
+      ],
+    },
+    soul: {
+      label: 'Soul',
+      variants: [
+        {
+          // A pocket: the kick on 1, the and of 2 and 3, the snare on 2 and
+          // 4, eighth-note hats, 7th-chord shells off the beat, and a bass
+          // line that walks root, octave, fifth, ♭7 back to the root.
+          label: 'Soul',
+          grid: 16,
+          kick:  [0, 6, 8],
+          snare: [4, 12],
+          hat:   [0, 2, 4, 6, 8, 10, 12, 14],
+          voice: 'jazz',
+          chord: [{ slot: 2, dur: 2, vel: 0.55 }, { slot: 6, dur: 2, vel: 0.6 }, { slot: 10, dur: 2, vel: 0.55 }, { slot: 12, dur: 3, vel: 0.65 }],
+          bass: [
+            { slot: 0, off: 0, dur: 3.6, vel: 0.9 }, { slot: 6, off: 12, dur: 1.6, vel: 0.7 },
+            { slot: 8, off: 7, dur: 3.6, vel: 0.85 }, { slot: 12, off: 10, dur: 1.6, vel: 0.7 }, { slot: 14, off: 0, dur: 1.6, vel: 0.75 },
+          ],
+        },
+      ],
+    },
     pop: {
       label: 'Pop',
       variants: [
@@ -1471,6 +1628,25 @@
           chord: [2, 6, 10, 14].map(s => ({ slot: s, dur: 3, vel: 0.7 })),
           // octave-jumping disco bass
           bass: [0, 2, 4, 6, 8, 10, 12, 14].map((s, i) => ({ slot: s, off: i % 2 === 0 ? 0 : 12, dur: 1.85, vel: 0.85 })),
+        },
+      ],
+    },
+    metal: {
+      label: 'Metal',
+      variants: [
+        {
+          // Straight and hard: the kick on every eighth, the snare on 2 and
+          // 4, the hat on the eighths, and the chords and the bass chugging
+          // together on every eighth, the downbeats leaning.
+          label: 'Metal',
+          grid: 16,
+          kick:  [0, 2, 4, 6, 8, 10, 12, 14],
+          snare: [4, 12],
+          snareVel: 0.95,
+          hat:   [0, 2, 4, 6, 8, 10, 12, 14],
+          voice: 'triad',
+          chord: [0, 2, 4, 6, 8, 10, 12, 14].map(s => ({ slot: s, dur: 1.3, vel: s % 8 === 0 ? 0.9 : 0.6 })),
+          bass:  [0, 2, 4, 6, 8, 10, 12, 14].map(s => ({ slot: s, off: 0, dur: 1.6, vel: s % 8 === 0 ? 0.95 : 0.8 })),
         },
       ],
     },

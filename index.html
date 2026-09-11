@@ -468,6 +468,8 @@
   .tab-note.muted text{ fill:var(--muted); }
   .tab-note.now text{ fill:var(--ink); font-weight:700; }
   .tab-playhead{ fill:var(--ink); opacity:.12; }
+  .tab-note.soft text{ font-weight:500; fill:var(--muted); }   /* a hammered-on note: no pick */
+  .tab-tech{ fill:var(--muted); font:italic 600 9px Inter,system-ui,sans-serif; }
   /* the suggested part: its tab under the chart, and its notes on the neck */
   .chart-view-row{ margin:10px 0 0; }
   /* T56: on a wide screen the tab wraps to as many bars as fit and shows two
@@ -478,6 +480,11 @@
   .part-view{ margin:12px 0 4px; }
   .part-controls{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-bottom:8px; }
   .part-note{ margin:10px 0; color:var(--muted); font-size:.9rem; max-width:60ch; }
+  .part-tech{ display:inline-flex; align-items:center; gap:4px; flex-wrap:wrap; }
+  .tech-btn{ font:600 11px Inter,system-ui,sans-serif; letter-spacing:.02em; padding:4px 8px; border-radius:999px;
+    border:1px solid var(--line); background:transparent; color:var(--ink); cursor:pointer; }
+  .tech-btn[aria-pressed="false"]{ color:var(--muted); text-decoration:line-through; opacity:.7; }
+  .tech-btn:hover{ border-color:var(--muted); }
   .part-volume{ display:inline-flex; align-items:center; gap:6px; }
   .part-volume-label{ font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); }
   .part-volume input{ width:96px; accent-color:var(--a); }
@@ -680,6 +687,15 @@
         <span class="segmented" id="partScaleGroup" title="Which notes the part is built from">
           <button type="button" class="seg-btn active" data-value="follow">Follow chords</button>
           <button type="button" class="seg-btn" data-value="key">Stay on the I</button>
+        </span>
+        <!-- the techniques a part may use; off, each plays plain -->
+        <span class="part-tech" id="partTechGroup" title="Techniques the part may use; switched off, it plays them plain">
+          <span class="part-volume-label">Play</span>
+          <button type="button" class="tech-btn" data-tech="double" aria-pressed="true">Double stops</button>
+          <button type="button" class="tech-btn" data-tech="bend" aria-pressed="true">Bends</button>
+          <button type="button" class="tech-btn" data-tech="hammer" aria-pressed="true">Hammer-ons</button>
+          <button type="button" class="tech-btn" data-tech="pull" aria-pressed="true">Pull-offs</button>
+          <button type="button" class="tech-btn" data-tech="slide" aria-pressed="true">Slides</button>
         </span>
       </div>
       <p class="part-note" id="partNote" hidden></p>

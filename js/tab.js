@@ -90,16 +90,33 @@
       }
     });
 
-    // fret numbers, tagged with their slot so the playhead can light them up
+    // fret numbers, tagged with their slot so the playhead can light them
+    // up — and the techniques written the way tab writes them: a slide as
+    // "3/5" (or "7\\5" coming down), a bend as the fret with "b" and how far
+    // ("½" a semitone, "1" a tone), a hammer-on or pull-off as "h" or "p"
+    // between the two frets, and a palm mute as "x" over the number
     example.notes.forEach(n => {
       const p = positionOf(n.at, m);
       const x = p.x + m.slotW / 2, y = stringY(p.top, n.string);
-      const label = String(n.fret);
-      const w = label.length > 1 ? 18 : 14;
-      els.push(`<g class="tab-note${n.tone === 'muted' ? ' muted' : ''}" data-slot="${n.at}">
+      let label = String(n.fret);
+      if (n.slide != null) label = `${n.slide}${n.slide < n.fret ? '/' : '\\'}${n.fret}`;
+      if (n.bend) label = `${n.fret}b${n.bend === 1 ? '½' : n.bend === 2 ? '1' : n.bend}`;
+      const w = 8 + label.length * 6;
+      const cls = ['tab-note', n.tone === 'muted' || n.mute ? 'muted' : '', n.soft ? 'soft' : ''].filter(Boolean).join(' ');
+      els.push(`<g class="${cls}" data-slot="${n.at}">
         <rect x="${x - w / 2}" y="${y - 6}" width="${w}" height="12" rx="2"/>
         <text x="${x}" y="${y + 3.5}" text-anchor="middle">${label}</text>
       </g>`);
+      // one "x" a strum, over its lowest string, not one a string
+      if (n.mute && n.lead !== false) els.push(`<text class="tab-tech" x="${x}" y="${y - 7}" text-anchor="middle">x</text>`);
+      if (n.tech === 'h' || n.tech === 'p'){
+        // the letter sits over the gap to the note it leads to, which the
+        // realisation put half this note's length later
+        const q = positionOf(n.at + n.dur, m);
+        const x2 = q.x + m.slotW / 2;
+        const mid = q.top === p.top ? (x + x2) / 2 : x + m.slotW / 2;
+        els.push(`<text class="tab-tech" x="${mid}" y="${y - 7}" text-anchor="middle">${n.tech}</text>`);
+      }
     });
 
     els.push(`<rect class="tab-playhead" x="${PAD_L}" y="${ROW_TOP - 8}" width="${m.slotW}" height="${5 * ROW_H + 16}" rx="3" hidden/>`);

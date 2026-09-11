@@ -76,6 +76,14 @@
   add('button', 'partMute', { type: 'button' });
   add('input', 'bandVolume', { type: 'range', min: '0', max: '100', value: '100' });
   add('button', 'bandMute', { type: 'button' });
+  {
+    const g = add('span', 'partTechGroup');
+    ['double', 'bend', 'hammer', 'pull', 'slide'].forEach(tech => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'tech-btn'; b.dataset.tech = tech; b.setAttribute('aria-pressed', 'true');
+      g.appendChild(b);
+    });
+  }
   ['partPanel', 'partControls', 'partTab', 'partNote'].forEach(id => add('div', id));
   add('span', 'partName');
   ['partPrev', 'partNext', 'partReroll'].forEach(id => add('button', id, { type: 'button' }));
