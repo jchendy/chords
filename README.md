@@ -182,9 +182,9 @@ already fits and the bar has no space to spare. A "Style" picker chooses the bac
   Blues — a 12/8 shuffle: boogie-woogie walking bass (1-3-5-6-♭7-6-5-3),
   long-ringing dominant-7th chord stabs on the shuffle upbeats, and a
   shuffled kick/snare/hat — plus **Jump blues**, the one that isn't swung:
-  the same boogie figure with the eighths square, a hard backbeat, and
-  chords comped short and off the beat, which is the jump / rock-and-roll
-  side of the music rather than the shuffle;
+  the same boogie figure with the eighths square, a hard backbeat, and two
+  short chord stabs a bar on 2 and 4 and nothing else, which is the jump /
+  rock-and-roll side of the music rather than the shuffle;
   Jazz — a swung "spang-a-lang" ride pattern with hi-hat on 2 & 4, a quarter-note
   walking bass (root–5th–3rd–chromatic approach to the next chord), and
   rootless Charleston-comped 7th-chord voicings;

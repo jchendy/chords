@@ -1188,13 +1188,12 @@
             { slot: 8,  off: 10, dur: 1.9, vel: 0.9 },  { slot: 10, off: 9,  dur: 1.9, vel: 0.8 },
             { slot: 12, off: 7,  dur: 1.9, vel: 0.9 },  { slot: 14, off: 4,  dur: 1.9, vel: 0.8 },
           ],
-          // comped on the offbeats, the way a piano or a horn section sits on
-          // top of a jump shuffle: short, and out of the way of the bass
+          // Two stabs a bar, on the backbeat, and nothing else. A jump band
+          // doesn't comp through this — the bass boogie is the engine and
+          // the horns punch 2 and 4 — and six hits a bar left no room to
+          // hear either. Short, so they're punches rather than pads.
           chord: [
-            { slot: 0, dur: 1.6, vel: 0.75 },
-            { slot: 3, dur: 1.4, vel: 0.5 }, { slot: 7,  dur: 1.4, vel: 0.5 },
-            { slot: 8, dur: 1.6, vel: 0.65 },
-            { slot: 11, dur: 1.4, vel: 0.5 }, { slot: 15, dur: 1.4, vel: 0.5 },
+            { slot: 4, dur: 1.5, vel: 0.75 }, { slot: 12, dur: 1.5, vel: 0.7 },
           ],
         },
         {
