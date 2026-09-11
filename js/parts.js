@@ -35,111 +35,122 @@
   // the feel's grid: twelve to a bar for a shuffle (three to a beat, the
   // first and third being the swung eighths), sixteen for a straight feel.
   // dur is in slots. vel is 0..1, and the downbeat leans harder.
+  //   n — one note, an interval above the root
+  //   s — a strum of the chord: the grip the box is built on, every string
+  //       of it, spread the way a pick sweeps. A part is rhythm guitar with
+  //       fills, not a lead line, and the rhythm half is these.
   const n = (at, iv, dur, vel) => ({ at, iv, dur, vel });
+  const s = (at, dur, vel) => ({ at, dur, vel, strum: true });
 
   const LIBRARY = {
     blues: {
-      // A straight-shuffle boogie: the figure walks 1-5-6-b7 the way the bass
-      // does, an octave up and with the swing, and the fills answer it.
+      // A straight shuffle: down on the first triplet, up on the third, the
+      // downbeats leaning harder — and a fill every other bar.
       'Shuffle': [
         {
-          name: 'Boogie line',
-          figure: [n(0, 0, 1.6, 0.95), n(2, 7, 0.8, 0.7), n(3, 9, 1.6, 0.85), n(5, 10, 0.8, 0.7),
-                   n(6, 9, 1.6, 0.85), n(8, 7, 0.8, 0.7), n(9, 0, 1.6, 0.85), n(11, 7, 0.8, 0.7)],
+          name: 'Shuffle comp',
+          figure: [s(0, 1.6, 0.8), s(2, 0.8, 0.5), s(3, 1.6, 0.7), s(5, 0.8, 0.5),
+                   s(6, 1.6, 0.8), s(8, 0.8, 0.5), s(9, 1.6, 0.7), s(11, 0.8, 0.5)],
           fills: [
             // a walk down from the octave to the root
             [n(0, 12, 1.6, 0.9), n(2, 10, 0.8, 0.7), n(3, 9, 1.6, 0.8), n(5, 7, 0.8, 0.7),
              n(6, 5, 1.6, 0.8), n(8, 4, 0.8, 0.7), n(9, 3, 1.6, 0.8), n(11, 0, 0.8, 0.7)],
-            // a pentatonic answer that climbs and falls back
+            // a pentatonic answer that climbs, and the chord to land on
             [n(0, 3, 1.6, 0.9), n(2, 5, 0.8, 0.7), n(3, 7, 1.6, 0.85), n(6, 10, 1.6, 0.85),
-             n(8, 12, 0.8, 0.8), n(9, 10, 1.6, 0.8), n(11, 7, 0.8, 0.7)],
-            // space on the one, then a push up to the octave
-            [n(3, 7, 1.6, 0.8), n(5, 10, 0.8, 0.7), n(6, 12, 2.4, 0.9), n(9, 10, 1.6, 0.8), n(11, 7, 0.8, 0.7)],
+             n(8, 12, 0.8, 0.8), s(9, 2.4, 0.75)],
+            // half a bar of chords, then a push up to the octave
+            [s(0, 1.6, 0.8), s(2, 0.8, 0.5), s(3, 1.6, 0.7), n(6, 7, 1.6, 0.85), n(8, 10, 0.8, 0.75),
+             n(9, 12, 2.4, 0.9)],
           ],
         },
         {
-          name: 'Box lick',
-          figure: [n(0, 12, 1.6, 0.95), n(2, 10, 0.8, 0.7), n(3, 7, 1.6, 0.85), n(5, 5, 0.8, 0.7),
-                   n(6, 7, 2.4, 0.85), n(9, 3, 1.6, 0.8), n(11, 0, 0.8, 0.7)],
+          // Stabs on the beat with a lick in the gaps: chords on one and
+          // three, single notes leading into them.
+          name: 'Stabs and licks',
+          figure: [s(0, 2.4, 0.85), n(3, 7, 1.6, 0.75), n(5, 10, 0.8, 0.65),
+                   s(6, 2.4, 0.8), n(9, 3, 1.6, 0.75), n(11, 0, 0.8, 0.65)],
           fills: [
             [n(0, 0, 1.6, 0.9), n(2, 3, 0.8, 0.7), n(3, 5, 1.6, 0.8), n(5, 6, 0.8, 0.7),
              n(6, 7, 2.4, 0.9), n(9, 10, 1.6, 0.8), n(11, 12, 0.8, 0.75)],
             [n(0, 7, 2.4, 0.9), n(3, 10, 1.6, 0.8), n(5, 7, 0.8, 0.7), n(6, 5, 1.6, 0.8),
-             n(8, 3, 0.8, 0.7), n(9, 0, 2.4, 0.85)],
-            [n(2, 3, 0.8, 0.7), n(3, 4, 1.6, 0.85), n(6, 7, 1.6, 0.85), n(8, 10, 0.8, 0.7), n(9, 12, 2.4, 0.9)],
+             n(8, 3, 0.8, 0.7), s(9, 2.4, 0.8)],
+            [s(0, 1.6, 0.8), s(2, 0.8, 0.5), n(3, 4, 1.6, 0.85), n(6, 7, 1.6, 0.85), n(8, 10, 0.8, 0.7),
+             n(9, 12, 2.4, 0.9)],
           ],
         },
       ],
-      // 12/8 and sparse: long notes that land on chord tones, and a fill
-      // that takes its time coming down.
+      // 12/8 and sparse: a chord let ring, and lines that take their time.
       'Slow blues': [
         {
-          name: 'Long notes',
-          figure: [n(0, 7, 3, 0.9), n(6, 10, 2, 0.8), n(9, 12, 3, 0.85)],
+          name: 'Long chords',
+          figure: [s(0, 5, 0.8), s(6, 2.5, 0.65), n(9, 10, 1.5, 0.75), n(11, 12, 1, 0.7)],
           fills: [
             [n(0, 10, 3, 0.85), n(3, 7, 3, 0.8), n(6, 5, 3, 0.8), n(9, 3, 3, 0.8)],
-            [n(3, 12, 2, 0.85), n(6, 10, 1, 0.7), n(8, 7, 1, 0.7), n(9, 5, 3, 0.8)],
-            [n(0, 3, 6, 0.85), n(9, 0, 3, 0.8)],
+            [n(3, 12, 2, 0.85), n(6, 10, 1, 0.7), n(8, 7, 1, 0.7), s(9, 3, 0.75)],
+            [n(0, 3, 6, 0.85), s(9, 3, 0.7)],
           ],
         },
         {
+          // the chord on one, then answering the bass in the space it leaves
           name: 'Answering the bass',
-          figure: [n(3, 3, 2, 0.85), n(6, 4, 1, 0.75), n(8, 7, 4, 0.9)],
+          figure: [s(0, 3, 0.8), n(3, 3, 2, 0.8), n(6, 4, 1, 0.7), n(8, 7, 4, 0.85)],
           fills: [
             [n(0, 12, 2, 0.9), n(3, 10, 2, 0.8), n(6, 7, 2, 0.8), n(9, 10, 3, 0.85)],
-            [n(0, 5, 1, 0.75), n(2, 6, 1, 0.75), n(3, 7, 3, 0.9), n(9, 3, 3, 0.8)],
-            [n(6, 7, 1, 0.75), n(8, 10, 1, 0.75), n(9, 12, 3, 0.9)],
+            [s(0, 3, 0.8), n(3, 7, 3, 0.85), n(6, 5, 1, 0.7), n(8, 6, 1, 0.7), n(9, 7, 3, 0.85)],
+            [n(6, 7, 1, 0.75), n(8, 10, 1, 0.75), s(9, 3, 0.8)],
           ],
         },
       ],
-      // Straight eighths: the drive is the backbeat, so the figure sits on
-      // and around it rather than filling every eighth.
+      // Straight eighths: the chords punch the backbeat with a light upstroke
+      // after each, and the fills run in between.
       'Jump blues': [
         {
-          name: 'Jump riff',
-          figure: [n(0, 7, 2, 0.9), n(2, 9, 2, 0.75), n(4, 10, 2, 0.85), n(8, 9, 2, 0.8),
-                   n(10, 7, 2, 0.75), n(12, 4, 4, 0.9)],
+          name: 'Jump comp',
+          figure: [s(4, 2, 0.85), s(6, 1, 0.45), s(12, 2, 0.85), s(14, 1, 0.45)],
           fills: [
             [n(0, 12, 2, 0.9), n(2, 10, 2, 0.75), n(4, 7, 2, 0.8), n(6, 10, 2, 0.75),
-             n(8, 7, 2, 0.8), n(10, 4, 2, 0.75), n(12, 0, 4, 0.9)],
-            [n(4, 10, 2, 0.8), n(6, 12, 2, 0.85), n(8, 10, 2, 0.8), n(10, 7, 2, 0.75), n(12, 9, 4, 0.85)],
-            [n(0, 3, 2, 0.85), n(2, 4, 2, 0.75), n(4, 7, 4, 0.9), n(8, 3, 2, 0.8), n(10, 4, 2, 0.75), n(12, 7, 4, 0.9)],
+             n(8, 7, 2, 0.8), n(10, 4, 2, 0.75), s(12, 4, 0.8)],
+            [s(4, 2, 0.85), n(8, 9, 2, 0.75), n(10, 10, 2, 0.75), n(12, 12, 2, 0.9), n(14, 10, 2, 0.75)],
+            [n(0, 3, 2, 0.85), n(2, 4, 2, 0.75), n(4, 7, 4, 0.9), n(8, 3, 2, 0.8), n(10, 4, 2, 0.75), s(12, 4, 0.85)],
           ],
         },
         {
-          name: 'Backbeat stabs',
-          figure: [n(4, 7, 2, 0.9), n(6, 10, 1, 0.6), n(12, 7, 2, 0.9), n(14, 4, 1, 0.6)],
+          // a riff under the chords: the chord on the backbeat, the line on
+          // the way there
+          name: 'Riff and stab',
+          figure: [n(0, 7, 2, 0.85), n(2, 9, 2, 0.7), s(4, 2, 0.85), n(8, 10, 2, 0.8),
+                   n(10, 9, 2, 0.7), s(12, 3, 0.85)],
           fills: [
             [n(0, 12, 1, 0.8), n(2, 10, 1, 0.75), n(4, 7, 2, 0.85), n(8, 10, 1, 0.75), n(10, 7, 1, 0.75), n(12, 4, 4, 0.9)],
-            [n(4, 7, 2, 0.9), n(8, 9, 1, 0.75), n(10, 10, 1, 0.75), n(12, 12, 4, 0.9)],
-            [n(2, 3, 1, 0.75), n(4, 4, 2, 0.9), n(8, 7, 1, 0.8), n(10, 3, 1, 0.75), n(12, 0, 4, 0.9)],
+            [s(4, 2, 0.85), n(8, 9, 1, 0.75), n(10, 10, 1, 0.75), n(12, 12, 4, 0.9)],
+            [n(2, 3, 1, 0.75), n(4, 4, 2, 0.9), n(8, 7, 1, 0.8), n(10, 3, 1, 0.75), s(12, 4, 0.8)],
           ],
         },
       ],
-      // Busy: a root-fifth chug on every shuffled eighth, and fills that
-      // run rather than sing.
+      // Busy: a chug on every shuffled eighth, short, and fills that run.
       'Train beat': [
         {
           name: 'Train chug',
-          figure: [n(0, 0, 0.8, 0.9), n(2, 0, 0.8, 0.6), n(3, 7, 0.8, 0.85), n(5, 7, 0.8, 0.6),
-                   n(6, 0, 0.8, 0.9), n(8, 0, 0.8, 0.6), n(9, 7, 0.8, 0.85), n(11, 7, 0.8, 0.6)],
+          figure: [s(0, 0.7, 0.75), s(2, 0.6, 0.45), s(3, 0.7, 0.65), s(5, 0.6, 0.45),
+                   s(6, 0.7, 0.75), s(8, 0.6, 0.45), s(9, 0.7, 0.65), s(11, 0.6, 0.45)],
           fills: [
             [n(0, 10, 0.8, 0.9), n(2, 9, 0.8, 0.7), n(3, 7, 0.8, 0.8), n(5, 5, 0.8, 0.7),
              n(6, 4, 0.8, 0.8), n(8, 3, 0.8, 0.7), n(9, 0, 2.4, 0.9)],
-            [n(3, 3, 0.8, 0.8), n(5, 5, 0.8, 0.7), n(6, 6, 0.8, 0.8), n(8, 7, 0.8, 0.7),
-             n(9, 10, 0.8, 0.8), n(11, 12, 0.8, 0.85)],
-            [n(0, 12, 2.4, 0.9), n(3, 10, 2.4, 0.8), n(6, 7, 2.4, 0.8), n(9, 5, 2.4, 0.8)],
+            [s(0, 0.7, 0.75), s(2, 0.6, 0.45), n(3, 3, 0.8, 0.8), n(5, 5, 0.8, 0.7), n(6, 6, 0.8, 0.8),
+             n(8, 7, 0.8, 0.7), n(9, 10, 0.8, 0.8), n(11, 12, 0.8, 0.85)],
+            [n(0, 12, 2.4, 0.9), n(3, 10, 2.4, 0.8), n(6, 7, 2.4, 0.8), s(9, 2.4, 0.75)],
           ],
         },
         {
+          // the chord held on one and three, a run off the top between
           name: 'Off the top',
-          figure: [n(0, 12, 1.6, 0.9), n(2, 12, 0.8, 0.6), n(3, 10, 1.6, 0.85), n(5, 10, 0.8, 0.6),
-                   n(6, 7, 1.6, 0.85), n(8, 7, 0.8, 0.6), n(9, 5, 1.6, 0.85), n(11, 3, 0.8, 0.7)],
+          figure: [s(0, 2.4, 0.8), n(3, 10, 1.6, 0.8), n(5, 10, 0.8, 0.6),
+                   s(6, 2.4, 0.8), n(9, 5, 1.6, 0.8), n(11, 3, 0.8, 0.7)],
           fills: [
             [n(0, 0, 2.4, 0.9), n(3, 3, 0.8, 0.75), n(5, 5, 0.8, 0.75), n(6, 7, 2.4, 0.9), n(9, 10, 2.4, 0.8)],
             [n(0, 7, 0.8, 0.85), n(2, 10, 0.8, 0.7), n(3, 12, 1.6, 0.9), n(6, 10, 0.8, 0.8),
              n(8, 7, 0.8, 0.7), n(9, 3, 1.6, 0.8), n(11, 0, 0.8, 0.7)],
-            [n(3, 5, 0.8, 0.75), n(5, 6, 0.8, 0.75), n(6, 7, 1.6, 0.9), n(9, 3, 0.8, 0.75), n(11, 0, 0.8, 0.8)],
+            [n(3, 5, 0.8, 0.75), n(5, 6, 0.8, 0.75), n(6, 7, 1.6, 0.9), s(9, 2.4, 0.8)],
           ],
         },
       ],
@@ -243,6 +254,31 @@
     return cells.length ? Math.min(...cells.map(c => c.midi)) : 40;
   }
 
+  // The chord's grip inside this window: the CAGED shape whose every note
+  // sits in the stretch, and if none does, the one with most of itself in
+  // it, kept to the notes that are. Three strings is the least a strum can
+  // be and still be a chord. A 7th chord gets its 7th the way the chords
+  // reading draws it.
+  function gripIn(chord, window){
+    const F = GT.fretboard;
+    const rootPc = pc(chord.note);
+    const isMinor = chord.quality === 'min';
+    const inWin = c => c.fret >= window.min && c.fret <= window.max;
+    let best = null, bestIn = 0;
+    F.cagedPlacements(rootPc, isMinor ? F.CAGED_MINOR : F.CAGED_MAJOR).forEach(p => {
+      const cells = chord.seventh ? F.seventhCells(p, rootPc, pc(chord.seventh)) : p.cells;
+      const inside = cells.filter(inWin).length;
+      if (inside > bestIn || (inside === bestIn && best && cells.length === inside && best.cells.length !== best.inside)){
+        best = { cells, inside }; bestIn = inside;
+      }
+    });
+    if (!best || best.inside < 3) return null;
+    return best.cells.filter(inWin).map(c => ({ string: c.string, fret: c.fret, midi: STRING_MIDI[c.string] + c.fret }));
+  }
+
+  // The order a pick sweeps, low string first, this far apart.
+  const STRUM_SPREAD = 0.016;
+
   // Realise one written bar against one chord: a list of playable notes.
   function realiseBar(written, chord, opts){
     const { root, allowed } = palette(chord, opts);
@@ -251,6 +287,17 @@
     const out = [];
     let prev = null;
     written.forEach(w => {
+      if (w.strum){
+        // every string of the grip, low to high, spread the way a pick sweeps
+        const grip = gripIn(chord, opts.window);
+        if (!grip) return;
+        grip.sort((a, b) => b.string - a.string).forEach((c, k) => {
+          out.push({ at: w.at, dur: w.dur, vel: w.vel, string: c.string, fret: c.fret, midi: c.midi,
+                     strum: true, spread: k * STRUM_SPREAD });
+        });
+        prev = grip[grip.length - 1];
+        return;
+      }
       const s = snap(root, w.iv, allowed);
       if (!s) return;
       const wantMidi = home + w.iv + s.shift;
@@ -289,5 +336,5 @@
   const rollFills = (part, barCount, rng = Math.random) =>
     Array.from({ length: Math.ceil(barCount / 2) }, () => Math.floor(rng() * part.fills.length));
 
-  GT.parts = { LIBRARY, partsFor, palette, snap, realiseBar, realise, rollFills, cellsIn, homeMidi };
+  GT.parts = { LIBRARY, partsFor, palette, snap, realiseBar, realise, rollFills, cellsIn, homeMidi, gripIn };
 })();

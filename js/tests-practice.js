@@ -72,10 +72,11 @@
   };
   segGroup('noteValueGroup', ['1', '2', '4'], 'seg-btn');
   segGroup('voiceGroup', ['piano', 'guitar'], 'seg-btn');
-  segGroup('partToggle', ['off', 'on'], 'seg-btn');
+  segGroup('chartViewGroup', ['chart', 'part'], 'seg-btn');
   segGroup('partScaleGroup', ['follow', 'key'], 'seg-btn');
-  segGroup('partSoundGroup', ['on', 'off'], 'seg-btn');
-  ['partRow', 'partControls', 'partTab'].forEach(id => add('div', id));
+  add('input', 'partVolume', { type: 'range', min: '0', max: '100', value: '70' });
+  add('button', 'partMute', { type: 'button' });
+  ['partPanel', 'partControls', 'partTab', 'partNote'].forEach(id => add('div', id));
   add('span', 'partName');
   ['partPrev', 'partNext', 'partReroll'].forEach(id => add('button', id, { type: 'button' }));
   segGroup('styleGroup', Object.keys(GT.audio.STYLES), 'genre-btn');
@@ -583,7 +584,7 @@
     // a blues feel in one position, so there is a part to have
     q('#styleGroup .genre-btn[data-value="blues"]').click();
     view.applyViewState('m:penta.p:position');
-    q('#partToggle .seg-btn[data-value="on"]').click();
+    q('#chartViewGroup .seg-btn[data-value="part"]').click();
     const first = notesOf();
     if (first === '[]'){ bad.push('turning the part on gave no notes'); }
     else {
@@ -610,15 +611,32 @@
       const figureOf = ns => JSON.stringify(ns.filter(n => n.bar % 2 === 0));
       if (figureOf(was) !== figureOf(now)) bad.push('re-rolling the fills changed the figure');
     }
-    q('#partToggle .seg-btn[data-value="off"]').click();
-    if (notesOf() !== '[]') bad.push('turning the part off left notes behind');
+    q('#chartViewGroup .seg-btn[data-value="chart"]').click();
+    if (notesOf() !== '[]') bad.push('going back to the chart left notes behind');
+    if (q('#chords').hidden) bad.push('the chart did not come back');
+
+    // The part view chosen while the neck has no position yet — which is
+    // how a link opens — has to come good once the neck settles, without
+    // anyone pressing anything. It stayed on "switch to one position" while
+    // looking at one, because the window wasn't a reason to look again.
+    // In position, but with no window: the box readings skip diminished
+    // chords, so a progression of nothing else gives the neck no box to be
+    // in — the same state a link is in before its chords have loaded.
+    view.applyViewState('m:penta.p:position');
+    const type = text => { q('#chordText').value = text; q('#chordTextApply').click(); };
+    type('Bdim Bdim Bdim Bdim');
+    q('#chartViewGroup .seg-btn[data-value="part"]').click();
+    if (q('#partNote').hidden) bad.push('with no box to be in, the part view gave no reason for being empty');
+    if (view.positionView().window) bad.push('(the diminished progression still had a window, so this proves nothing)');
+    type('C F G C');                                // now there is a box, and nothing else changed
+    if (!q('#partNote').hidden || notesOf() === '[]') bad.push('the part view did not come good once the neck had a box');
+    q('#chartViewGroup .seg-btn[data-value="chart"]').click();
     view.applyViewState('');
     t.equal(bad.join('; '), '', 'A part stays in the window it was set in until you move it');
   }
 
   GT.practiceSuites = [
     ['Practice: a shared link round-trips', testShareLinkRoundTrips],
-    ['Practice: a part stays put until you move it', testThePartStaysPut],
     ['Practice: the transport picker names the feel', testTheTransportPickerNamesTheFeel],
     ['Practice: a hit ends when the next begins', testAHitEndsWhenTheNextBegins],
     ['Practice: the downbeat is an accent, not another instrument', testTheDownbeatIsAnAccentNotAnInstrument],
@@ -631,5 +649,6 @@
     ['Practice: stopping calls off the queue and mutes what is ringing', testStoppingCallsOffWhatIsQueued],
     // last: it types a progression of its own in, and the fixture is shared
     ['Practice: typing a progression', testTypingAProgression],
+    ['Practice: a part stays put until you move it', testThePartStaysPut],
   ];
 })();

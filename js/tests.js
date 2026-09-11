@@ -1029,12 +1029,16 @@
           const where = `${style}/${feelName}/${part.name}`;
           if (!part.figure || !part.figure.length) bad.push(`${where} has no figure`);
           if (!part.fills || part.fills.length < 2) bad.push(`${where} has fewer than two fills`);
+          let strums = 0;
           [part.figure, ...(part.fills || [])].forEach(bar => (bar || []).forEach(n => {
             if (!(n.at >= 0 && n.at < feel.grid)) bad.push(`${where}: a note at slot ${n.at} on a ${feel.grid}-slot grid`);
             if (!(n.dur > 0)) bad.push(`${where}: a note lasting ${n.dur}`);
-            if (!(n.iv >= 0 && n.iv <= 14)) bad.push(`${where}: an interval of ${n.iv}`);
+            if (n.strum) strums++;
+            else if (!(n.iv >= 0 && n.iv <= 14)) bad.push(`${where}: an interval of ${n.iv}`);
             if (!(n.vel > 0 && n.vel <= 1)) bad.push(`${where}: a velocity of ${n.vel}`);
           }));
+          // rhythm guitar with fills, not a lead line: every part strums somewhere
+          if (!strums) bad.push(`${where} never strums the chord`);
         });
       });
     });
@@ -1057,17 +1061,33 @@
           const notes = realise(part, bars, picks, opts);
           const again = realise(part, bars, picks, opts);
           if (JSON.stringify(notes) !== JSON.stringify(again)) bad.push(`${part.name} realised differently twice`);
+          const chordTones = chord => new Set([chord.note, chord.third, chord.fifth, chord.seventh]
+            .filter(Boolean).map(n => GT.theory.SEMITONE[n] % 12));
           notes.forEach(n => {
             checked++;
             const chord = bars[n.bar].chord;
+            if (n.fret < window.min || n.fret > window.max) bad.push(`${reading} ${root}: ${part.name} left the window`);
+            if (n.strum){
+              // a strum is the chord itself, whatever the reading: its notes
+              // are chord tones by construction, and that is what's held
+              if (!chordTones(chord).has(midiPc(n.midi))) bad.push(`${reading} ${root}: ${part.name} strums a note that isn't in the chord`);
+              return;
+            }
             const { allowed } = palette(chord, opts);
             if (!allowed.has(midiPc(n.midi))) bad.push(`${reading} ${root}: ${part.name} plays a note the reading doesn't offer`);
-            if (n.fret < window.min || n.fret > window.max) bad.push(`${reading} ${root}: ${part.name} left the window`);
           });
-          // in the scales reading nearly everything written should survive
+          // a strum is three strings at the least, or it isn't a chord
+          const strumsAt = {};
+          notes.filter(n => n.strum).forEach(n => { const k = `${n.bar}:${n.at}`; strumsAt[k] = (strumsAt[k] || 0) + 1; });
+          Object.entries(strumsAt).forEach(([k, count]) => {
+            if (count < 3) bad.push(`${reading} ${root}: ${part.name} strums ${count} strings at ${k}`);
+          });
+          // in the scales reading nearly everything written should survive:
+          // counted by moment, since a strum is one written thing that
+          // comes out as several
           if (reading === 'scale' && !stayOnKey){
             written += part.figure.length * 2 + part.fills[0].length * 2;
-            kept += notes.length;
+            kept += new Set(notes.map(n => `${n.bar}:${n.at}`)).size;
           }
         })));
       }));

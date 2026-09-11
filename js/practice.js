@@ -1268,7 +1268,10 @@
     if (fretboard) p.set('f', fretboard);
     // the part: on, which one, which fills were rolled, and whether it stays
     // on the I — so the exact part you were working on comes back
-    if (partOn) p.set('p', `${partIdx}.${partScale === 'key' ? 'k' : 'f'}.${partFills.join('')}${partSound ? '' : '.s'}`);
+    if (partOn){
+      const extras = (partVolume !== PART_VOLUME_DEFAULT ? `.v${partVolume}` : '') + (partMuted ? '.m' : '');
+      p.set('p', `${partIdx}.${partScale === 'key' ? 'k' : 'f'}.${partFills.join('')}${extras}`);
+    }
     return p;
   }
 
@@ -1319,14 +1322,18 @@
     const part = p.get('p');
     partOn = !!part;
     if (part){
-      const [idx, scale, fills, silent] = part.split('.');
+      const [idx, scale, fills, ...extras] = part.split('.');
       partIdx = Number(idx) || 0;
       partScale = scale === 'k' ? 'key' : 'follow';
       partFills = (fills || '').split('').map(Number).filter(n => !Number.isNaN(n));
-      partSound = silent !== 's';
+      partVolume = PART_VOLUME_DEFAULT;
+      partMuted = false;
+      extras.forEach(x => {
+        if (x === 'm') partMuted = true;
+        else if (/^v\d+$/.test(x)) partVolume = Math.max(0, Math.min(100, Number(x.slice(1))));
+      });
     }
-    partSoundGroup.querySelectorAll('.seg-btn').forEach(b => b.classList.toggle('active', (b.dataset.value === 'on') === partSound));
-    partToggle.querySelectorAll('.seg-btn').forEach(b => b.classList.toggle('active', (b.dataset.value === 'on') === partOn));
+    syncPartVolume();
     partScaleGroup.querySelectorAll('.seg-btn').forEach(b => b.classList.toggle('active', b.dataset.value === (partScale === 'key' ? 'key' : 'follow')));
 
     if (p.get('n')){
@@ -1378,12 +1385,15 @@
   let partIdx = 0;                  // which of the feel's parts
   let partFills = [];               // one fill choice per two-bar phrase
   let partScale = 'follow';         // 'follow' the chords | stay on the 'key'
-  let partSound = true;             // sounded, or shown for you to play yourself
+  let partVolume = 70;              // 0..100, where the slider sits
+  let partMuted = false;            // ...and whether it's heard at all
   // The part is the thing you're aiming at, so it sits on top of the band
   // the way a lead does, not inside it. Measured: at the guitar's own level
   // it added half a decibel to the mix, which is to say nobody could hear
-  // it — the reason "New fills" seemed to do nothing.
-  const PART_LEVEL = 2.4;
+  // it — the reason "New fills" seemed to do nothing. 2.4 is where the
+  // slider's default lands; there's room above it.
+  const PART_LEVEL_AT_DEFAULT = 2.4, PART_VOLUME_DEFAULT = 70;
+  const partLevel = () => partMuted ? 0 : PART_LEVEL_AT_DEFAULT * (partVolume / PART_VOLUME_DEFAULT);
   let partNotes = [];               // realised: bar, at, dur, vel, string, fret, midi
   let partLog = [];                 // what's been scheduled, for lighting as it sounds
   let partTab = null;               // the drawn tab's metrics, for the playhead
@@ -1391,9 +1401,11 @@
   let partWindow = null;            // the stretch of neck it was realised in
   let partBarShown = -1;            // which bar the tab is scrolled to
 
-  const partRow = document.getElementById('partRow');
-  const partToggle = document.getElementById('partToggle');
+  const chartViewGroup = document.getElementById('chartViewGroup');
+  const chordsEl = document.getElementById('chords');
+  const partPanel = document.getElementById('partPanel');
   const partControls = document.getElementById('partControls');
+  const partNoteEl = document.getElementById('partNote');
   const partNameEl = document.getElementById('partName');
   const partTabEl = document.getElementById('partTab');
   const partScaleGroup = document.getElementById('partScaleGroup');
@@ -1430,14 +1442,30 @@
   function partSignature(){
     const pv = view.positionView();
     const feel = feelNow();
+    // ...but whether a part CAN be shown is in it: a link opens before the
+    // neck has worked out its position, and without this the view stayed on
+    // "switch to one position" while looking at one.
     return JSON.stringify([partOn, partIdx, partFills, partScale, currentMode, currentTonic,
-      feel && feel.label, pv.reading, pv.inPosition, pv.scaleTheory,
+      feel && feel.label, pv.reading, pv.inPosition, pv.scaleTheory, partAvailable(),
       currentProgression.map((c, i) => `${displayName(c)}.${measuresFor(i)}`)]);
   }
 
+  // Why there is nothing to show, in the words that say what to do about it.
+  function partExcuse(){
+    const feel = feelNow();
+    if (!feel) return 'Parts are written for a style\u2019s feel; Simple has none. Pick a style in Set up.';
+    if (!partsNow().length) return `No parts written for ${feelName(currentStyle, currentVariant)} yet. The blues feels have theirs.`;
+    const pv = view.positionView();
+    if (!PART_READINGS.includes(pv.reading)) return 'A part is realised into the notes a reading offers: switch the neck to Chords, Triads, Pentatonic or Scales.';
+    if (!pv.inPosition || !pv.window) return 'A part is written into one position: switch the neck to \u201cIn one position\u201d.';
+    return '';
+  }
+
   function rebuildPart(force){
-    partRow.hidden = !partsNow().length || !view.positionView().inPosition;
-    partControls.hidden = !partOn;
+    // the chart or the part, never both: two readings of the same bars
+    chartViewGroup.querySelectorAll('.seg-btn').forEach(b => b.classList.toggle('active', (b.dataset.value === 'part') === partOn));
+    chordsEl.hidden = partOn;
+    partPanel.hidden = !partOn;
     if (!force && partSignature() === partSig) return;
     partWindow = view.positionView().window;
     partBarShown = -1;
@@ -1448,9 +1476,15 @@
       partTabEl.hidden = true;
       partTabEl.innerHTML = '';
       view.lightSounding([]);
+      const why = partOn ? partExcuse() : '';
+      partNoteEl.textContent = why;
+      partNoteEl.hidden = !why;
+      partControls.hidden = !!why;
       partSig = partSignature();
       return;
     }
+    partNoteEl.hidden = true;
+    partControls.hidden = false;
     const part = partNow(), bars = progressionBars(), pv = view.positionView();
     // a roll for every phrase this progression has, keeping the ones it had
     const phrases = Math.ceil(bars.length / 2);
@@ -1499,8 +1533,9 @@
     partNotes.forEach(n => {
       if (n.bar !== barIdx || n.at !== slot) return;
       const dur = n.dur * slotDur;
-      if (partSound) audio.playPluck(440 * Math.pow(2, (n.midi - 69) / 12), t, dur, n.vel * PART_LEVEL);
-      partLog.push({ time: t, until: t + dur, string: n.string, fret: n.fret, slot: barIdx * feelNow().grid + n.at });
+      const at = t + (n.spread || 0);            // a strum's strings arrive one after another
+      if (partLevel() > 0) audio.playPluck(440 * Math.pow(2, (n.midi - 69) / 12), at, dur, n.vel * partLevel());
+      partLog.push({ time: at, until: at + dur, string: n.string, fret: n.fret, slot: barIdx * feelNow().grid + n.at });
     });
     if (partLog.length > 256) partLog = partLog.filter(e => e.until > audio.ctx().currentTime);
   }
@@ -1550,9 +1585,8 @@
     partBarShown = -1;
   }
 
-  partToggle.querySelectorAll('.seg-btn').forEach(btn => btn.addEventListener('click', () => {
-    partOn = btn.dataset.value === 'on';
-    partToggle.querySelectorAll('.seg-btn').forEach(b => b.classList.toggle('active', b === btn));
+  chartViewGroup.querySelectorAll('.seg-btn').forEach(btn => btn.addEventListener('click', () => {
+    partOn = btn.dataset.value === 'part';
     if (partOn){ ensureAudio(); audio.warmGuitar(); }
     rebuildPart();
     writeShareState();
@@ -1566,12 +1600,24 @@
     const b = document.getElementById(id);
     if (b) b.addEventListener('click', () => rebuildPart(true));
   });
-  const partSoundGroup = document.getElementById('partSoundGroup');
-  partSoundGroup.querySelectorAll('.seg-btn').forEach(btn => btn.addEventListener('click', () => {
-    partSound = btn.dataset.value === 'on';
-    partSoundGroup.querySelectorAll('.seg-btn').forEach(b => b.classList.toggle('active', b === btn));
+  const partVolumeEl = document.getElementById('partVolume');
+  const partMuteBtn = document.getElementById('partMute');
+  function syncPartVolume(){
+    partVolumeEl.value = String(partVolume);
+    partMuteBtn.setAttribute('aria-pressed', String(partMuted));
+    partMuteBtn.setAttribute('aria-label', partMuted ? 'Unmute the part' : 'Mute the part');
+    partMuteBtn.title = partMuted ? 'Unmute the part' : 'Mute the part';
+  }
+  partVolumeEl.addEventListener('input', () => {
+    partVolume = Math.max(0, Math.min(100, Number(partVolumeEl.value) || 0));
+    if (partVolume > 0 && partMuted){ partMuted = false; syncPartVolume(); }   // moving the slider is asking to hear it
     writeShareState();
-  }));
+  });
+  partMuteBtn.addEventListener('click', () => {
+    partMuted = !partMuted;
+    syncPartVolume();
+    writeShareState();
+  });
   partScaleGroup.querySelectorAll('.seg-btn').forEach(btn => btn.addEventListener('click', () => {
     partScale = btn.dataset.value;
     partScaleGroup.querySelectorAll('.seg-btn').forEach(b => b.classList.toggle('active', b === btn));

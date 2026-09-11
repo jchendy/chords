@@ -479,6 +479,16 @@
   .tab-note.now text{ fill:var(--ink); font-weight:700; }
   .tab-playhead{ fill:var(--ink); opacity:.12; }
   /* the suggested part: its tab under the chart, and its notes on the neck */
+  .chart-view{ margin-left:6px; }
+  .part-view{ margin:12px 0 4px; }
+  .part-controls{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-bottom:8px; }
+  .part-note{ margin:10px 0; color:var(--muted); font-size:.9rem; max-width:60ch; }
+  .part-volume{ display:inline-flex; align-items:center; gap:6px; }
+  .part-volume input{ width:110px; accent-color:var(--a); }
+  .part-volume .i-cross{ display:none; }
+  .part-volume [aria-pressed="true"] .i-waves{ display:none; }
+  .part-volume [aria-pressed="true"] .i-cross{ display:block; }
+  .part-volume [aria-pressed="true"] + input{ opacity:.45; }
   .part-tab{ margin:6px 0 2px; overflow-x:auto; scroll-behavior:smooth; }
   .part-tab svg{ display:block; height:auto; }
   .part-tab .tab-chord.now{ fill:var(--a); }
@@ -620,6 +630,16 @@
         <svg class="key-caret" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 6l4.5 4.5L12.5 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         <select id="quickKey" class="key-select" aria-label="Key"></select>
       </span>
+      <!-- The chart, or the part to play over it: two readings of the same
+           bars. The part is realised into the neck's position, so this is
+           also what turns the part on — a part you're not looking at isn't
+           one you're playing. Not a .ctl: the phone layout folds those away,
+           and a view switch has to be reachable on the screen it matters
+           most on. -->
+      <span class="segmented chart-view" id="chartViewGroup" title="The chords, or a part to play over them">
+        <button type="button" class="seg-btn active" data-value="chart">Chart</button>
+        <button type="button" class="seg-btn" data-value="part">Part</button>
+      </span>
       <button type="button" class="ib ctl" id="quickKeyDice" aria-label="Random key" title="Random key"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="2" y="2" width="16" height="16" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="6.3" cy="6.3" r="1.6"/><circle cx="13.7" cy="6.3" r="1.6"/><circle cx="10" cy="10" r="1.6"/><circle cx="6.3" cy="13.7" r="1.6"/><circle cx="13.7" cy="13.7" r="1.6"/></svg></button>
       <!-- the progression, beside the key: the two things this chart is -->
       <div class="quick ctl">
@@ -640,8 +660,33 @@
          chart, and marks the sounding one .active; stage.js draws the beat
          line along the top from the readout in the transport -->
     <div class="chart-grid" id="chords"></div>
-    <!-- the suggested part written out, when there is one -->
-    <div class="part-tab" id="partTab" hidden></div>
+    <!-- The part view: a rhythm figure and its fills, written for the feel
+         that's playing and realised into the notes the neck's reading offers
+         in its position. Its settings live here, with it. When there is no
+         part to show — the neck across the whole neck, or a feel with none
+         written yet — the view says why instead of showing an empty strip. -->
+    <div class="part-view" id="partPanel" hidden>
+      <div class="part-controls" id="partControls">
+        <span class="pair">
+          <button type="button" class="seg-btn arrow" id="partPrev" aria-label="Previous part">‹</button>
+          <button type="button" class="seg-btn arrow" id="partNext" aria-label="Next part">›</button>
+        </span>
+        <span class="part-name" id="partName"></span>
+        <button type="button" class="tbtn" id="partReroll" title="Different fills, same part">New fills</button>
+        <!-- how loud the part is against the band, and a mute for when you're
+             playing it yourself; the slider keeps its place while muted -->
+        <span class="part-volume" title="How loud the part is against the band">
+          <button type="button" class="ib" id="partMute" aria-label="Mute the part" aria-pressed="false" title="Mute the part"><svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path class="i-speaker" d="M3.5 7.5h3l4-3.2v11.4l-4-3.2h-3z"/><path class="i-waves" d="M13.2 7.2a3.6 3.6 0 0 1 0 5.6M15.4 5a6.6 6.6 0 0 1 0 10"/><path class="i-cross" d="M13 8l5 4M18 8l-5 4"/></svg></button>
+          <input type="range" id="partVolume" min="0" max="100" value="70" aria-label="Part volume">
+        </span>
+        <span class="segmented" id="partScaleGroup" title="Which notes the part is built from">
+          <button type="button" class="seg-btn active" data-value="follow">Follow chords</button>
+          <button type="button" class="seg-btn" data-value="key">Stay on the I</button>
+        </span>
+      </div>
+      <p class="part-note" id="partNote" hidden></p>
+      <div class="part-tab" id="partTab" hidden></div>
+    </div>
   </section>
 
   <!-- ---------------- the instrument ---------------- -->
@@ -699,33 +744,6 @@
           <span id="boxStep" class="pair">
             <button type="button" class="seg-btn arrow" id="boxPrev" aria-label="Previous position">‹</button>
             <button type="button" class="seg-btn arrow" id="boxNext" aria-label="Next position">›</button>
-          </span>
-        </span>
-        <!-- A part to play over the progression, in this position: a figure
-             and its fills, written for the feel that's playing and realised
-             into whatever notes this reading offers. Only in one position,
-             and only when the style has a feel to write for. -->
-        <span class="tb-group" id="partRow" hidden>
-          <span class="tb-lbl">Part</span>
-          <span class="segmented" id="partToggle">
-            <button type="button" class="seg-btn active" data-value="off">Off</button>
-            <button type="button" class="seg-btn" data-value="on">On</button>
-          </span>
-          <span id="partControls" hidden>
-            <span class="pair">
-              <button type="button" class="seg-btn arrow" id="partPrev" aria-label="Previous part">‹</button>
-              <button type="button" class="seg-btn arrow" id="partNext" aria-label="Next part">›</button>
-            </span>
-            <span class="part-name" id="partName"></span>
-            <button type="button" class="tbtn" id="partReroll" title="Different fills, same part">New fills</button>
-            <span class="segmented" id="partSoundGroup" title="Hear the part, or play it yourself">
-              <button type="button" class="seg-btn active" data-value="on">Sound</button>
-              <button type="button" class="seg-btn" data-value="off">Silent</button>
-            </span>
-            <span class="segmented" id="partScaleGroup">
-              <button type="button" class="seg-btn active" data-value="follow">Follow chords</button>
-              <button type="button" class="seg-btn" data-value="key">Stay on the I</button>
-            </span>
           </span>
         </span>
       </div>

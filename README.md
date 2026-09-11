@@ -104,22 +104,26 @@ names the tab you're on.
   a chord held for two reads `F C C`, wrapping four bars to a line the way a
   chart does, with the numeral under each bar and the carried-over bars
   dimmed so you can still see where the chord changes
-- "Part" — in any of the neck's in-one-position readings, a suggested
-  guitar part to play over the progression: a two-bar figure and its answer,
-  written for the feel that's playing and realised into the notes that
-  reading offers in that position. It's lit on the neck as it goes, written
-  out as tab under the chart, and sounded on the recorded guitar so you can
-  hear what you're aiming at — on top of the band, the way a lead sits,
-  with "Silent" for when you'd rather play it yourself. ‹ › steps through
-  the feel's parts and "New fills" re-rolls the answering bars of the one
-  you're on; nothing changes otherwise, however long you practise, and
-  in particular the neck following the playing chord into another box
-  does not move it — the part stays in the window it was set in, and only
+- "Chart / Part" — beside the key, the chart's two readings: the chords as
+  bars, or a guitar part to play over them. The part is a two-bar figure
+  and its answer — rhythm guitar with fills, chord strums on the feel's
+  beat and single-note lines between — written for the feel that's playing
+  and realised into the notes the neck's reading offers in its position.
+  It's lit on the neck as it goes, written out as tab with its own controls
+  above it, and sounded on the recorded guitar so you can hear what you're
+  aiming at, on top of the band the way a lead sits, with a volume slider
+  and a mute for when you'd rather play it yourself. ‹ › steps through the
+  feel's parts and "New fills" re-rolls the answering bars of the one
+  you're on; nothing changes otherwise, however long you practise — in
+  particular the neck following the playing chord into another box does
+  not move it. The part stays in the window it was set in, and only
   stepping the box yourself takes it along. "Follow chords" moves the notes
   with each change using whatever the neck is showing; "Stay on the I"
-  keeps them on the key's scale throughout. The tab is one long strip that
-  scrolls a bar at a time to keep the bar being played in view, with the
-  bar's chord lit and a playhead on the slot. See **Suggested parts** below for how a
+  keeps them on the key's scale throughout. When there's no part to show —
+  the neck across the whole neck, or a feel with none written yet — the
+  view says why. The tab is one long strip that scrolls a bar at a time to
+  keep the bar being played in view, with the bar's chord lit and a
+  playhead on the slot. See **Suggested parts** below for how a
   part written once ends up in four readings
 - "Type it" — a text field in Set up that takes the progression as chord
   names, one per bar: `E E E E A7 A7 E E Bm7 Bm7` is four chords held for
@@ -680,8 +684,13 @@ the pointer is coarse.
 ## Suggested parts
 
 A part is written **once per feel**, as two bars on the feel's own grid —
-a figure, then a fill — with every note an interval above a root: 0 is the
-root, 7 the fifth, 10 the flat seventh, 12 the octave. It isn't written for
+a figure, then a fill — out of two kinds of note. A single note is an
+interval above a root: 0 is the root, 7 the fifth, 10 the flat seventh, 12
+the octave. A strum is the chord itself: the CAGED grip the box is built on,
+every string of it that sits in the window (three at the least, or it isn't
+a chord), swept low to high 16 ms a string the way a pick does, with a 7th
+chord getting its 7th the way the chords reading draws it. A part is rhythm
+guitar with fills, so every one strums somewhere, and a test says so. It isn't written for
 a key, a box or a reading. Those come at realisation: the interval becomes a
 pitch class against the chord (or the key, when the part stays on the I), is
 snapped to a note the reading allows — the note itself if it's there, else
