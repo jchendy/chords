@@ -64,6 +64,9 @@
   .part-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
   .btns{ display:inline-flex; align-items:center; gap:8px; }
   .roll{ font-size:11px; color:var(--muted2); font-variant-numeric:tabular-nums; }
+  .easytag{ font:600 10px Inter,system-ui,sans-serif; letter-spacing:.05em; text-transform:uppercase; color:var(--muted); padding:2px 7px; border:1px solid var(--line2); border-radius:999px; }
+  .easytag.written{ color:var(--new); border-color:#2f5a3a; }
+  body.easy .easy-check span{ color:var(--new); }
   .reroll{ font:600 12px Inter,system-ui,sans-serif; padding:5px 10px; border-radius:999px; border:1px solid transparent; background:transparent; color:var(--muted); cursor:pointer; white-space:nowrap; }
   .reroll:hover{ color:var(--ink); border-color:var(--line2); }
   .play{ font:600 12px Inter,system-ui,sans-serif; padding:5px 12px; border-radius:999px; border:1px solid var(--line2); background:var(--panel2); color:var(--ink); cursor:pointer; white-space:nowrap; }
@@ -109,6 +112,7 @@
     <button type="button" data-value="scale" class="active">Scales</button>
   </span>
   <label class="check"><input type="checkbox" id="techToggle" checked><span>Techniques</span></label>
+  <label class="check easy-check"><input type="checkbox" id="easyToggle"><span>Easy mode (proposed)</span></label>
   <label class="check"><input type="checkbox" id="humanToggle"><span>Humanize (proposed)</span></label>
   <label class="check"><input type="checkbox" id="slapToggle" checked><span>Slapback where the style wants it (proposed)</span></label>
   <label class="check"><span class="lbl">Fill every</span><select id="phraseSel"><option value="2">2 bars</option><option value="4">4 bars</option></select></label>
@@ -143,6 +147,7 @@
 <script src="review/proposals-3.js"></script>
 <script src="review/proposals-4.js"></script>
 <script src="review/proposals-more.js"></script>
+<script src="review/proposals-easy.js"></script>
 <script src="review/review.js"></script>
 </body>
 </html>

@@ -20,7 +20,7 @@
           {
             name: 'Chords with space (Young-inspired)', replaces: 'Driving eighths',
             why: 'The chord on one, the and of two, and four — downstroked, left to ring — with a muted chug on the eighths that are empty, and nothing on the ones that are not. The sus4 pull-off is the fill.',
-            figure: [s(0, 5, 0.95, 'low'), g(6, 1, 0.3, 'low'), s(6, 5, 0.85, 'low'), s(12, 3, 0.9, 'low'), g(15, 1, 0.3, 'low')],
+            figure: [s(0, 5, 0.95, 'low'), g(5, 1, 0.3, 'low'), s(6, 5, 0.85, 'low'), s(12, 3, 0.9, 'low'), g(15, 1, 0.3, 'low')],
             variants: [
               [s(0, 3, 0.95, 'low'), s(3, 1, 0.5, 'low', 'mute'), s(4, 2, 0.8, 'low'), s(6, 5, 0.85, 'low'), s(12, 3, 0.9), g(15, 1, 0.3, 'low')],
               [s(0, 6, 0.95), s(6, 2, 0.8, 'low'), s(8, 4, 0.85, 'low'), s(12, 2, 0.85, 'low'), s(14, 2, 0.6, 'low', 'mute')],

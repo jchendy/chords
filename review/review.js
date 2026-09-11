@@ -25,7 +25,47 @@
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
   // ---- page options ----
-  const opt = { reading: 'scale', tech: true, humanize: false, phrase: 2, seed: 1, slapback: true };
+  const opt = { reading: 'scale', tech: true, humanize: false, phrase: 2, seed: 1, slapback: true, easy: false };
+
+  // ---- easy mode ----
+  // A part with an `easy` block plays that (its author's simplification);
+  // any other part is simplified by rule: ghost notes go, so do rakes,
+  // tremolo, chord slides and colour tones; bends, hammer-ons, pull-offs and
+  // slides play plain (double stops stay — they are not the hard part);
+  // sixteenths move back onto the eighth before them (and drop if that
+  // eighth already has a note), the middle of a triplet drops, and nothing
+  // is shorter than an eighth. Tails, pickups and stop-time are left out.
+  const EASY_TECH = { double: true, bend: false, hammer: false, pull: false, slide: false };
+  function simplify(written, grid){
+    const per = grid % 3 === 0 ? 3 : 4;
+    const out = [];
+    (written || []).forEach(w => {
+      if (w.ghost) return;
+      const x = { ...w };
+      delete x.rake; delete x.trem; delete x.chordSlide; delete x.add; delete x.up;
+      if (per === 4 && x.at % 2 === 1) x.at = x.at - 1;
+      if (per === 3 && x.at % 3 === 1) return;
+      if (per === 4 && x.dur < 2) x.dur = 2;
+      if (per === 3 && x.dur < 1.5) x.dur = 1.5;
+      out.push(x);
+    });
+    const seen = new Set();
+    // a moved sixteenth that lands on a note, or on a strum of the same
+    // voicing, is dropped; a bass strum under a chord on the same slot (the
+    // batida's thumb and fingers) is two voicings and stays
+    return out.filter(x => { const k = `${x.at}${x.strum ? 's' + (x.voicing || 'full') : 'n'}`; if (seen.has(k)) return false; seen.add(k); return true; });
+  }
+  function easyVersion(part, grid){
+    // tails, pickups and stop-time stay in the part with their chance at zero,
+    // so the seed draws the same fills as it does with easy mode off: the same
+    // roll, simplified, not another roll
+    const off = { tailChance: 0, pickupChance: 0, stopChance: 0 };
+    if (part.easy) return { ...part, ...off, turnarounds: null, turnaround: null, ...part.easy, easyKind: 'written' };
+    const lists = {};
+    ['figure', 'turnaround'].forEach(k => { if (part[k]) lists[k] = simplify(part[k], grid); });
+    ['variants', 'fills', 'fillsOnChange', 'fillsOnStay', 'turnarounds'].forEach(k => { if (part[k]) lists[k] = part[k].map(bar => simplify(bar, grid)); });
+    return { ...part, ...lists, ...off, easyKind: 'auto' };
+  }
 
   // ---- a seeded roll, so a proposal's fills are the same on every play until asked otherwise ----
   function rng(seed){
@@ -399,10 +439,11 @@
   function realiseCard(part, entry, style, advanced, seed, grid){
     const chords = chordsOf(entry);
     const bars = chords.map(chord => ({ chord }));
+    if (opt.easy) part = easyVersion(part, grid);
     const opts = {
       reading: opt.reading, window: windowFor(entry.key), scaleTheory: entry.scaleTheory || 'parallel', stringSet: 2,
       stayOnKey: false, key: { tonic: entry.key, mode: entry.mode || 'major' },
-      tech: opt.tech ? null : { double: false, bend: false, hammer: false, pull: false, slide: false },
+      tech: !opt.tech ? { double: false, bend: false, hammer: false, pull: false, slide: false } : opt.easy ? EASY_TECH : null,
     };
     const notes = advanced
       ? realiseAdvanced(part, bars, opts, { seed: seed || opt.seed, phrase: opt.phrase, grid })
@@ -476,7 +517,7 @@
     if (allWritten.some(bar => bar.some(n => n.tech === 'double' && n.up))) flags.push('double-stop bends');
     card.innerHTML = `
       <div class="part-head"><h4>${esc(part.name)}${tag ? ` <span class="tag">${esc(tag)}</span>` : ''}</h4>
-        <span class="btns"><button type="button" class="reroll" title="Roll the fills again, as New fills does in the app">New fills</button><span class="roll"></span><button type="button" class="play">Play</button></span></div>
+        <span class="btns"><span class="easytag" hidden></span><button type="button" class="reroll" title="Roll the fills again, as New fills does in the app">New fills</button><span class="roll"></span><button type="button" class="play">Play</button></span></div>
       ${part.why ? `<p class="why">${part.why}</p>` : ''}
       ${advanced ? `<p class="counts">${(part.variants || []).length + 1} figures · fills ${counts[0]} plain, ${counts[1]} into a change, ${counts[2]} staying put${part.tails ? ` · ${part.tails.length} tails` : ''}${part.pickups ? ` · ${part.pickups.length} pickups` : ''}${part.stops ? ` · ${part.stops.length} stop-time` : ''}</p>` : `<p class="counts">${(part.variants || []).length + 1} figures · ${(part.fills || []).length} fills</p>`}
       ${flags.length ? `<p class="flags">Needs: ${flags.map(f => `<span>${esc(f)}</span>`).join(' ')}</p>` : ''}
@@ -489,6 +530,10 @@
         const { chords, notes } = realiseCard(part, entry, style, advanced, seed, pattern.grid);
         const metrics = drawTab(tabHost, pattern.grid, chords, notes);
         state = { chords, notes, metrics };
+        const tag = card.querySelector('.easytag');
+        tag.hidden = !opt.easy;
+        tag.textContent = !opt.easy ? '' : part.easy ? 'easy · written for it' : 'easy · simplified by rule';
+        tag.classList.toggle('written', !!part.easy);
       } catch (err){
         tabHost.innerHTML = `<p class="err">Could not realise: ${esc(err.message)}</p>`;
         console.error(part.name, err);
@@ -606,6 +651,7 @@
     rebuildAll();
   }));
   $('techToggle').addEventListener('change', () => { opt.tech = $('techToggle').checked; rebuildAll(); });
+  $('easyToggle').addEventListener('change', () => { opt.easy = $('easyToggle').checked; document.body.classList.toggle('easy', opt.easy); rebuildAll(); });
   $('humanToggle').addEventListener('change', () => { opt.humanize = $('humanToggle').checked; });
   $('slapToggle').addEventListener('change', () => { opt.slapback = $('slapToggle').checked; });
   $('phraseSel').addEventListener('change', () => { opt.phrase = Number($('phraseSel').value); rebuildAll(); });
@@ -620,5 +666,5 @@
   window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(() => { if (window.innerWidth !== drawnWidth){ drawnWidth = window.innerWidth; rebuildAll(); } }, 200); });
 
   render();
-  GT.reviewPage = { realiseAdvanced, describeBand, decisions: () => decisions, stop };
+  GT.reviewPage = { realiseAdvanced, describeBand, simplify, easyVersion, decisions: () => decisions, stop };
 })();
