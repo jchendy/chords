@@ -409,6 +409,16 @@
   /* a box lives across the whole neck, so its picture is the whole neck */
   .ear-shape-neck{ max-width:none; }
   .ear-shape-neck .fret-scroll{ margin-top:6px; }
+  /* A cropped neck sets its own width from how many frets it draws, so it can
+     be as big as the space allows rather than as wide as a 15-fret neck. The
+     dots are the thing you tap, and on a phone they were about 9px across. */
+  .ear-shape .fret-scroll svg{ min-width:0; }
+  .ear-shape .note-tap{ fill:transparent; }
+  @media (pointer: coarse){
+    /* a fingertip is about 9mm; the ring stays where it is and the target
+       around it grows to meet it */
+    .ear-shape .note-tap{ r:16; }
+  }
   .box-choices{ display:grid; gap:12px; margin-top:8px; }
   .box-choices .diagram-card{ padding:6px 10px 8px; }
   .box-choices .diagram-caption{ text-align:left; }

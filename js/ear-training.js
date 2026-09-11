@@ -389,6 +389,21 @@
   // shape inside that box traced through it. Knowing which chord shape a box
   // sits on is most of what makes a box worth learning, so it's drawn rather
   // than described.
+  // The stretch of neck worth drawing: the box, and a fret either side so it
+  // doesn't sit against the edge. A box is four or five frets, and drawing it
+  // on a 15-fret neck spent three quarters of the width on neck nobody is
+  // being asked about — and made every dot a third of the size it could be,
+  // which matters when the dot is the thing you tap.
+  function boxGeometry(cells){
+    const frets = cells.map(c => c.fret).filter(f => f > 0);
+    if (!frets.length) return GT.neck.geometry(0, 5);        // all open strings
+    const lo = Math.min(...frets), hi = Math.max(...frets);
+    // open strings belong to the box as much as anything else, so the nut
+    // comes with them
+    const from = cells.some(c => c.fret === 0) ? 0 : Math.max(0, lo - 1);
+    return GT.neck.geometry(from, hi + 1);
+  }
+
   function neckSVG(s){
     const key = c => `${c.string}:${c.fret}`;
     const inPlay = new Set(s.cells.map(key));
@@ -411,8 +426,10 @@
     // the filter says so without being told.
     const lines = gripOutlines(s.rootPc, scaleById(scaleId).minor)
       .filter(ln => ln.cells.every(c => inBox.has(key(c))));
-    return `<svg viewBox="${GT.neck.viewBox}" role="img" aria-label="${s.label}, ${s.shapeName}">`
-      + GT.neck.buildSVG(markers, lines) + hitsFor(s.shown) + '</svg>';
+    const geo = boxGeometry(s.shown);
+    return `<svg viewBox="${geo.viewBox}" role="img" aria-label="${s.label}, ${s.shapeName}"`
+      + ` style="max-width:${geo.maxWidth}px;min-width:${geo.minWidth}px">`
+      + geo.buildSVG(markers, lines) + hitsFor(s.shown, geo) + '</svg>';
   }
 
   // All you get to see: where the root is, and what it's called. The quality
@@ -421,15 +438,21 @@
     const c = s.shown[0];
     const markers = [{ string: c.string, fret: c.fret, label: s.rootName,
                        color: '#bfb7a8', isRoot: true }];
-    return `<svg viewBox="${GT.neck.viewBox}" role="img" aria-label="The root, ${s.rootName}">`
-      + GT.neck.buildSVG(markers, []) + hitsFor(s.shown) + '</svg>';
+    // A lone root wants more neck around it than a box does — where it sits is
+    // most of what you're being shown — but not fifteen frets of it.
+    const geo = GT.neck.geometry(Math.max(0, c.fret - 3), c.fret + 3);
+    return `<svg viewBox="${geo.viewBox}" role="img" aria-label="The root, ${s.rootName}"`
+      + ` style="max-width:${geo.maxWidth}px;min-width:${geo.minWidth}px">`
+      + geo.buildSVG(markers, []) + hitsFor(s.shown, geo) + '</svg>';
   }
 
   // the click targets that go over a drawing, one per note, in the same
   // groups a chord diagram uses so they light and sound the same way
-  function hitsFor(cells){
+  // Drawn in whatever geometry the neck above them was drawn in, or the taps
+  // land a fret or two from the dots they belong to.
+  function hitsFor(cells, geo = GT.neck){
     return cells.map(c => {
-      const x = GT.neck.fretX(c.fret), y = GT.neck.stringY(c.string);
+      const x = geo.fretX(c.fret), y = geo.stringY(c.string);
       return `<g class="note-hit" data-string="${c.string}" data-fret="${c.fret}">`
         + `<circle class="note-ring" cx="${x}" cy="${y}" r="10.5"/>`
         + `<circle class="note-tap" cx="${x}" cy="${y}" r="10.5"/></g>`;

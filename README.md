@@ -642,6 +642,14 @@ answers. The question is what you heard, not where it was.
 of them are the same pitch played in two places, and they read low to high
 the way the neck does.
 
+The neck under the question is drawn as the box and a fret either side,
+rather than as the whole fifteen. A box is four or five frets, so drawing it
+full-length spent three quarters of the width on neck nobody was being asked
+about and left every dot a third of the size it could be — which matters most
+where the dot is the thing you tap. On a phone the box now fills the screen
+with 40px targets, and the tap area grows a little further where the pointer
+is coarse.
+
 *Point to it* — the same question as "exact", answered by clicking the dot
 instead of reading a list. It's offered only as an exact answer, and that
 isn't a limitation so much as what the gesture means: you can't point vaguely
@@ -695,13 +703,18 @@ folder over http instead — a page opened from disk isn't allowed to read the
 sample files beside it (see **Sound**). Anything will do:
 
 ```
-python3 -m http.server 8777 --bind 127.0.0.1
+python3 serve.py
 ```
 
 Then <http://127.0.0.1:8777/>, and <http://127.0.0.1:8777/tests.html> for the
-tests. Dropping `--bind 127.0.0.1` opens it to the rest of the network, which
-is how to reach it from a phone on the same wifi — at the price of serving
-the whole folder, `.git` included, to anything on that network.
+tests. `serve.py` is `python3 -m http.server` with one thing fixed: it sends
+`Cache-Control: no-store`. Plain `http.server` sends no caching instructions
+at all, and a browser given none caches heuristically — roughly a tenth of the
+time since the file was last modified — so on a folder you're editing every
+few minutes the page you reload is quietly the page you had before, and you
+end up debugging code that no longer exists on disk. Add `--lan` to reach it
+from a phone on the same wifi, at the price of serving the whole folder,
+`.git` included, to anything on that network.
 
 ## Genre examples
 
