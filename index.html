@@ -489,7 +489,8 @@
   .part-controls{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-bottom:8px; }
   .part-note{ margin:10px 0; color:var(--muted); font-size:.9rem; max-width:60ch; }
   .part-volume{ display:inline-flex; align-items:center; gap:6px; }
-  .part-volume input{ width:110px; accent-color:var(--a); }
+  .part-volume-label{ font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); }
+  .part-volume input{ width:96px; accent-color:var(--a); }
   .part-volume .i-cross{ display:none; }
   .part-volume [aria-pressed="true"] .i-waves{ display:none; }
   .part-volume [aria-pressed="true"] .i-cross{ display:block; }
@@ -508,7 +509,6 @@
   }
 
   /* ---------- phone ---------- */
-  .phone-only{ display:none; }
   body.controls-off .ctl{ display:none !important; }
   @media (max-width:760px){
     #page-caged{ padding-bottom:90px; }
@@ -535,7 +535,6 @@
        it beside the tempo. Sideways it comes back, which is where it earns
        its place. */
     #transportCollapse{ display:none; }
-    .phone-only{ display:inline-block; }
     .sheet-cols{ grid-template-columns:1fr; gap:6px; }
     .chart-grid{ gap:8px 10px; }
     .chart-grid .chord-name{ font-size:clamp(24px, 8vw, 34px); }
@@ -682,9 +681,17 @@
         <button type="button" class="tbtn" id="partReroll" title="Different fills, same part">New fills</button>
         <!-- how loud the part is against the band, and a mute for when you're
              playing it yourself; the slider keeps its place while muted -->
-        <span class="part-volume" title="How loud the part is against the band">
+        <span class="part-volume" title="How loud the part is">
+          <span class="part-volume-label">Part</span>
           <button type="button" class="ib" id="partMute" aria-label="Mute the part" aria-pressed="false" title="Mute the part"><svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path class="i-speaker" d="M3.5 7.5h3l4-3.2v11.4l-4-3.2h-3z"/><path class="i-waves" d="M13.2 7.2a3.6 3.6 0 0 1 0 5.6M15.4 5a6.6 6.6 0 0 1 0 10"/><path class="i-cross" d="M13 8l5 4M18 8l-5 4"/></svg></button>
           <input type="range" id="partVolume" min="0" max="100" value="70" aria-label="Part volume">
+        </span>
+        <!-- ...and the band under it: comp, bass and drums together, so the
+             part can be brought up against them or they pulled down under it -->
+        <span class="part-volume" title="How loud the band is">
+          <span class="part-volume-label">Band</span>
+          <button type="button" class="ib" id="bandMute" aria-label="Mute the band" aria-pressed="false" title="Mute the band"><svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path class="i-speaker" d="M3.5 7.5h3l4-3.2v11.4l-4-3.2h-3z"/><path class="i-waves" d="M13.2 7.2a3.6 3.6 0 0 1 0 5.6M15.4 5a6.6 6.6 0 0 1 0 10"/><path class="i-cross" d="M13 8l5 4M18 8l-5 4"/></svg></button>
+          <input type="range" id="bandVolume" min="0" max="100" value="100" aria-label="Band volume">
         </span>
         <span class="segmented" id="partScaleGroup" title="Which notes the part is built from">
           <button type="button" class="seg-btn active" data-value="follow">Follow chords</button>
@@ -827,7 +834,8 @@
     <span class="bar-slot" id="barClickSlot"></span>
     <span class="counter" id="measureReadout"></span>
     <span class="sp"></span>
-    <button type="button" class="tbtn phone-only" id="controlsToggle" aria-pressed="true" title="Show or hide the controls on the neck">Controls</button>
+    <!-- at every width: a desktop can want the neck on its own too (T62) -->
+    <button type="button" class="tbtn" id="controlsToggle" aria-pressed="true" title="Show or hide the controls on the neck">Controls</button>
     <button type="button" class="tbtn" id="setupOpen">Set up</button>
     <button type="button" class="ib" id="transportCollapse" aria-label="Collapse the playback bar" title="Collapse the playback bar">
       <svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 8.5L10 13l4.5-4.5"/></svg>

@@ -1501,6 +1501,7 @@
       inPosition,
       window: shownWindow ? { min: shownWindow.min, max: shownWindow.max } : null,
       scaleTheory,
+      stringSet: stringSetLow,       // the triads reading's set, by its lowest string
     };
   }
 

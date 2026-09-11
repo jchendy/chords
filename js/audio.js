@@ -52,6 +52,10 @@
   let driveIn = null;           // the shared overdrive stage's input
   let reverb = null;
   let reverbSends = {};         // per-voice send gains into the reverb
+  let bandGain = null;          // everything the band plays, before the limiter
+  let partGain = null;          // the suggested part, on its own bus beside it
+  let partSend = null;          // ...and its own send into its own room
+  let bandLevelWanted = 1;      // the band's volume, kept for a context not yet built
 
   // A room for the convolver: stereo noise dying away over `seconds`, its
   // top end rolling off as it goes, so the tail darkens the way a real one
@@ -212,6 +216,13 @@
       limiter.release.value = 0.12;
       limiter.connect(audioCtx.destination);
 
+      // The band — comp, bass, drums, the genre examples' guitar and the
+      // room they share — meets on one bus before the limiter, so it has one
+      // volume against the suggested part, which has a bus of its own.
+      bandGain = audioCtx.createGain();
+      bandGain.gain.value = bandLevelWanted;
+      bandGain.connect(limiter);
+
       masterGain = audioCtx.createGain();
       masterGain.gain.value = 0.3;
       const tone = audioCtx.createBiquadFilter();
@@ -219,29 +230,29 @@
       tone.frequency.value = 4800;
       tone.Q.value = 0.7;
       masterGain.connect(tone);
-      tone.connect(limiter);
+      tone.connect(bandGain);
 
       // separate percussion chain so the hi-hat's high end isn't
       // swallowed by the piano voice's lowpass filter
       hihatGain = audioCtx.createGain();
       hihatGain.gain.value = 0.4;
-      hihatGain.connect(limiter);
+      hihatGain.connect(bandGain);
 
       // bass and kick/snare buses for the genre styles
       bassGain = audioCtx.createGain();
       bassGain.gain.value = 0.42;
-      bassGain.connect(limiter);
+      bassGain.connect(bandGain);
 
       drumGain = audioCtx.createGain();
       drumGain.gain.value = 0.55;
-      drumGain.connect(limiter);
+      drumGain.connect(bandGain);
 
       pianoWave = pianoWaveFor(audioCtx);
 
       // the guitar in the genre examples gets its own bus
       guitarGain = audioCtx.createGain();
       guitarGain.gain.value = 0.5;
-      guitarGain.connect(limiter);
+      guitarGain.connect(bandGain);
 
       // a soft-clipping curve — the overdrive the punk and metal tones run through
       driveCurve = new Float32Array(1024);
@@ -274,7 +285,7 @@
       reverb.buffer = roomImpulse(audioCtx, 1.8);
       const reverbOut = audioCtx.createGain();
       reverbOut.gain.value = 0.5;
-      reverb.connect(reverbOut).connect(limiter);
+      reverb.connect(reverbOut).connect(bandGain);
       reverbSends = {};
       [['piano', 0.14], ['clean', 0.32], ['drive', 0.14], ['muted', 0.05], ['drums', 0.08]].forEach(([name, level]) => {
         const g = audioCtx.createGain();
@@ -282,6 +293,24 @@
         g.connect(reverb);
         reverbSends[name] = g;
       });
+
+      // The part's bus: the same tone the comp guitar has (masterGain's
+      // lowpass) and the same room, but its own copies, so turning the band
+      // down takes the band's reverb with it and leaves the part's alone.
+      partGain = audioCtx.createGain();
+      partGain.gain.value = 0.3;
+      const partTone = audioCtx.createBiquadFilter();
+      partTone.type = 'lowpass';
+      partTone.frequency.value = 4800;
+      partTone.Q.value = 0.7;
+      partGain.connect(partTone).connect(limiter);
+      const partRoom = audioCtx.createConvolver();
+      partRoom.buffer = reverb.buffer;
+      const partRoomOut = audioCtx.createGain();
+      partRoomOut.gain.value = 0.5;
+      partSend = audioCtx.createGain();
+      partSend.gain.value = 0.32;           // the clean guitar's send, the same
+      partSend.connect(partRoom).connect(partRoomOut).connect(limiter);
 
       const bufferSize = Math.floor(audioCtx.sampleRate * 0.5);
       noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
@@ -735,7 +764,8 @@
   // One note of the real guitar. The sample is a whole pluck with its own
   // decay, so the envelope here only fades it out when the note's time is up
   // rather than shaping it from scratch.
-  function playPluck(freq, time, duration, velocity = 1){
+  // `bus` is 'band' (the comp guitar) or 'part' (the suggested part).
+  function playPluck(freq, time, duration, velocity = 1, bus = 'band'){
     const spec = sampleFor(midiOf(freq));
     const buffer = guitarBank.buffers.get(spec.file);
     if (!buffer){
@@ -756,11 +786,26 @@
     env.gain.exponentialRampToValueAtTime(0.0001, time + duration + 0.02);
 
     src.connect(env);
-    env.connect(masterGain);
-    env.connect(reverbSends.clean);
+    if (bus === 'part'){
+      env.connect(partGain);
+      env.connect(partSend);
+    } else {
+      env.connect(masterGain);
+      env.connect(reverbSends.clean);
+    }
     startVoice(src, time, env);
     src.stop(time + duration + 0.06);
   }
+
+  // The band's volume, 0..1, as one gain on its bus — the comp, the bass,
+  // the drums and their room, all at once. Held if the engine isn't built
+  // yet and applied when it is; ramped, not stepped, so a slider being
+  // dragged doesn't click.
+  function setBandLevel(level){
+    bandLevelWanted = Math.max(0, Math.min(1, level));
+    if (bandGain) bandGain.gain.setTargetAtTime(bandLevelWanted, audioCtx.currentTime, 0.02);
+  }
+  const bandLevel = () => bandLevelWanted;
 
   // One layer's sample for this note, if it's here.
   function pianoSampleIfReady(freq, hard){
@@ -1534,6 +1579,7 @@
     ensureAudio, keepAwake, planSleep, sleepDelay, IDLE_SLEEP_SEC, HIDDEN_SLEEP_SEC, cancelScheduled, stepsToSkip, noteFreq, chordFrequencies, pcFreq, bassFreqAt, walkBassFreq, ROOT_OCTAVE,
     playNote, playChord, playChord7, playBass, playGuitar,
     playPluck, readyForPluck, pluckReady, warmGuitar,
+    setBandLevel, bandLevel, partBus: () => partGain,
     PIANO_SOFT, PIANO_HARD, PIANO_SPLIT, PIANO_RANGE, PIANO_XFADE, pianoSampleFor, warmPiano,
     pianoLayerMix, pianoReady: (freq, velocity) => pianoSampleIfReady(freq, velocity >= PIANO_SPLIT),
     chord7Frequencies, chordVoicings, STYLE_VOICES, COMP_CENTRE, COMP_DRIFT, settleVoicing, lastVoiceAsked: () => lastVoiceAsked,

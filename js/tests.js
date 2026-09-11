@@ -1029,8 +1029,9 @@
           const where = `${style}/${feelName}/${part.name}`;
           if (!part.figure || !part.figure.length) bad.push(`${where} has no figure`);
           if (!part.fills || part.fills.length < 2) bad.push(`${where} has fewer than two fills`);
+          if (!part.variants || part.variants.length < 2) bad.push(`${where} has fewer than two variants of its figure`);
           let strums = 0;
-          [part.figure, ...(part.fills || [])].forEach(bar => (bar || []).forEach(n => {
+          [part.figure, ...(part.variants || []), ...(part.fills || [])].forEach(bar => (bar || []).forEach(n => {
             if (!(n.at >= 0 && n.at < feel.grid)) bad.push(`${where}: a note at slot ${n.at} on a ${feel.grid}-slot grid`);
             if (!(n.dur > 0)) bad.push(`${where}: a note lasting ${n.dur}`);
             if (n.strum) strums++;
@@ -1043,6 +1044,22 @@
       });
     });
     if (!parts) bad.push('the library is empty');
+
+    // A chord held for bars is not the same bar over and over: the figure's
+    // variants take the phrases in turn, and they come back the same way on
+    // the next realisation — a cycle, not a roll.
+    Object.keys(LIBRARY).forEach(style => Object.keys(LIBRARY[style]).forEach(feelName => {
+      partsFor(style, feelName).forEach(part => {
+        const chord = chordFromName('A7');
+        const bars = [chord, chord, chord, chord, chord, chord].map(c => ({ chord: c }));
+        const opts = { reading: 'scale', window: { min: 3, max: 8 }, scaleTheory: 'parallel', stayOnKey: false, key: { tonic: 'A', mode: 'major' } };
+        const picks = rollFills(part, bars.length, () => 0);
+        const barOf = (notes, b) => JSON.stringify(notes.filter(n => n.bar === b).map(n => [n.at, n.string, n.fret, n.voicing || '']));
+        const one = realise(part, bars, picks, opts), two = realise(part, bars, picks, opts);
+        if (barOf(one, 0) === barOf(one, 2) && barOf(one, 2) === barOf(one, 4)) bad.push(`${part.name}: six bars on one chord play the figure the same way three times`);
+        [0, 2, 4].forEach(b => { if (barOf(one, b) !== barOf(two, b)) bad.push(`${part.name}: bar ${b} came out differently the second time`); });
+      });
+    }));
 
     // realisation keeps its promise, on every reading, in every key
     const roots = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'];
@@ -1069,18 +1086,39 @@
             if (n.fret < window.min || n.fret > window.max) bad.push(`${reading} ${root}: ${part.name} left the window`);
             if (n.strum){
               // a strum is the chord itself, whatever the reading: its notes
-              // are chord tones by construction, and that is what's held
+              // are chord tones by construction, and that is what's held —
+              // and in the triads reading it is the triad the neck shows,
+              // on its string set, with no 7th however the chord is spelt
               if (!chordTones(chord).has(midiPc(n.midi))) bad.push(`${reading} ${root}: ${part.name} strums a note that isn't in the chord`);
+              if (reading === 'triads3'){
+                const triad = new Set([chord.note, chord.third, chord.fifth].map(x => GT.theory.SEMITONE[x] % 12));
+                if (!triad.has(midiPc(n.midi))) bad.push(`triads ${root}: ${part.name} strums a note outside the triad`);
+                if (n.string > 2) bad.push(`triads ${root}: ${part.name} strums string ${n.string}, off the e-B-G set`);
+              }
               return;
             }
             const { allowed } = palette(chord, opts);
             if (!allowed.has(midiPc(n.midi))) bad.push(`${reading} ${root}: ${part.name} plays a note the reading doesn't offer`);
           });
-          // a strum is three strings at the least, or it isn't a chord
+          // a strum is as many strings as it asked for: the root alone for
+          // 'bass', three for 'low' and 'high', three at the least for the
+          // whole grip — or it isn't a chord. In triads, three (or the one).
           const strumsAt = {};
-          notes.filter(n => n.strum).forEach(n => { const k = `${n.bar}:${n.at}`; strumsAt[k] = (strumsAt[k] || 0) + 1; });
-          Object.entries(strumsAt).forEach(([k, count]) => {
-            if (count < 3) bad.push(`${reading} ${root}: ${part.name} strums ${count} strings at ${k}`);
+          notes.filter(n => n.strum).forEach(n => {
+            const k = `${n.bar}:${n.at}`;
+            strumsAt[k] = strumsAt[k] || { count: 0, voicing: n.voicing, low: n };
+            strumsAt[k].count++;
+            if (n.midi < strumsAt[k].low.midi) strumsAt[k].low = n;
+          });
+          Object.entries(strumsAt).forEach(([k, { count, voicing, low }]) => {
+            const chord = bars[Number(k.split(':')[0])].chord;
+            if (voicing === 'bass'){
+              if (count !== 1) bad.push(`${reading} ${root}: ${part.name} plays ${count} strings for a bass note at ${k}`);
+              const rootOrFifth = [chord.note, chord.fifth].map(x => GT.theory.SEMITONE[x] % 12);
+              if (reading !== 'triads3' && !rootOrFifth.includes(midiPc(low.midi))) bad.push(`${reading} ${root}: ${part.name}'s bass note at ${k} is neither root nor 5th`);
+            } else if (reading === 'triads3' || voicing === 'low' || voicing === 'high'){
+              if (count !== 3) bad.push(`${reading} ${root}: ${part.name} strums ${count} strings for a ${voicing} strum at ${k}`);
+            } else if (count < 3) bad.push(`${reading} ${root}: ${part.name} strums ${count} strings at ${k}`);
           });
           // in the scales reading nearly everything written should survive:
           // counted by moment, since a strum is one written thing that
@@ -1093,6 +1131,24 @@
       }));
     }));
     if (kept < written * 0.8) bad.push(`the scales reading kept only ${kept} of ${written} written notes`);
+
+    // the parts of a grip are its parts: 'low' is the bottom of the same
+    // grip 'high' is the top of, and 'bass' is its lowest root
+    windows.forEach(window => roots.forEach(root => {
+      const chord = chordFromName(root + '7');
+      const opts = { reading: 'caged', window };
+      const full = GT.parts.strumCells(chord, opts, 'full');
+      if (!full) return;
+      const low = GT.parts.strumCells(chord, opts, 'low'), high = GT.parts.strumCells(chord, opts, 'high');
+      const bass = GT.parts.strumCells(chord, opts, 'bass');
+      const key = c => `${c.string}:${c.fret}`;
+      if (low.map(key).join() !== full.slice(0, 3).map(key).join()) bad.push(`${root}7 in ${window.min}-${window.max}: 'low' is not the bottom of the grip`);
+      if (high.map(key).join() !== full.slice(-3).map(key).join()) bad.push(`${root}7 in ${window.min}-${window.max}: 'high' is not the top of the grip`);
+      const roots = full.filter(c => c.midi % 12 === GT.theory.SEMITONE[root] % 12);
+      if (bass.length !== 1) bad.push(`${root}7 in ${window.min}-${window.max}: 'bass' is ${bass.length} notes`);
+      else if (roots.length && bass[0].midi !== Math.min(...roots.map(c => c.midi))) bad.push(`${root}7 in ${window.min}-${window.max}: 'bass' is not the lowest root`);
+      else if (!roots.length && bass[0].midi % 12 !== GT.theory.SEMITONE[chord.fifth] % 12) bad.push(`${root}7 in ${window.min}-${window.max}: no root in the grip, and 'bass' is not the 5th`);
+    }));
 
     t.equal(bad.join('; '), '', `The suggested parts are well-formed and realise inside the reading (${parts} parts, ${checked} notes)`);
   }

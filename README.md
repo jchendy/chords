@@ -112,7 +112,9 @@ names the tab you're on.
   It's lit on the neck as it goes, written out as tab with its own controls
   above it, and sounded on the recorded guitar so you can hear what you're
   aiming at, on top of the band the way a lead sits, with a volume slider
-  and a mute for when you'd rather play it yourself. ‹ › steps through the
+  and a mute for when you'd rather play it yourself, and a second pair for
+  the band — comp, bass and drums together — so it can be pulled down under
+  the part or under you. ‹ › steps through the
   feel's parts and "New fills" re-rolls the answering bars of the one
   you're on; nothing changes otherwise, however long you practise — in
   particular the neck following the playing chord into another box does
@@ -209,9 +211,10 @@ names the tab you're on.
   real picker lying over the name; and the click's own row moves out of the
   sheet into the bar and back again — into it whenever the sheet is open, so
   a settings sheet is never missing a setting. On a phone the site
-  name drops out, the tools row scrolls sideways, and a Controls button in
-  the transport hides every control on the neck so the picture has the
-  screen. Turned sideways it goes further, because that is the shape with the
+  name drops out and the tools row scrolls sideways. A Controls button in
+  the transport, at every width, hides every control on the neck so the
+  picture has the screen — a phone needs it most, but a desktop can want the
+  neck on its own too. Turned sideways a phone goes further, because that is the shape with the
 least height and the most need of it: the chart sets its chord names small
 and tight, and the controls come off by default. A phone in landscape is
 told apart from a tablet by its height and from a desktop window someone has
@@ -692,9 +695,20 @@ A part is written **once per feel**, as two bars on the feel's own grid —
 a figure, then a fill — out of two kinds of note. A single note is an
 interval above a root: 0 is the root, 7 the fifth, 10 the flat seventh, 12
 the octave. A strum is the chord itself: the CAGED grip the box is built on,
-every string of it that sits in the window (three at the least, or it isn't
+the strings of it that sit in the window (three at the least, or it isn't
 a chord), swept low to high 16 ms a string the way a pick does, with a 7th
-chord getting its 7th the way the chords reading draws it. A part is rhythm
+chord getting its 7th the way the chords reading draws it. A strum says how
+much of the grip it wants, as the style does: the whole thing, the bottom
+three strings where a shuffle keeps its weight, the top three for a stab or
+a chop, or the root alone — the low note an alternating-bass strum puts
+before the chord (the 5th when the window has cut the root off, the other
+note such a bass goes to). In the triads reading every strum is the triad
+the neck is showing on its string set and nothing more, the root alone
+being its lowest note. A figure also has **variants** — the same bar with
+its weight moved, a pickup added, a strum opened out — that the phrases
+take in turn, so four bars on one chord aren't the same bar four times
+over; they cycle rather than roll, so the part stays what it was until you
+ask for a change, and the fills are where the dice are. A part is rhythm
 guitar with fills, so every one strums somewhere, and a test says so. It isn't written for
 a key, a box or a reading. Those come at realisation: the interval becomes a
 pitch class against the chord (or the key, when the part stays on the I), is
@@ -725,9 +739,13 @@ says so at the top, beside the parts themselves.
 
 A test holds every part to its feel's grid and every realisation to its
 promise: on every reading, in every key, in three positions, every note it
-produces is inside the window and is one the reading allows — and in the
+produces is inside the window and is one the reading allows; a strum is as
+many strings as it asked for, its bass note the root or the 5th, and in
+triads it is three notes of the triad on the chosen strings — and in the
 generous scales reading, at least four notes in five of what was written
-survive, so a part can't quietly snap itself away to nothing.
+survive, so a part can't quietly snap itself away to nothing. Six bars on
+one chord must not play the figure the same way three times, and must come
+out the same on a second realisation.
 
 ## Bookmarking an exercise
 

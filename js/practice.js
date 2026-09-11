@@ -500,6 +500,8 @@
         slotMeasures[i] = Number(bars.value) || DEFAULT_MEASURES;
         clearPreset();      // once the bar lengths change it isn't that preset any more
         renderChordDisplay();
+        rebuildPart();      // the part is written over the bars, so it has more or fewer now
+        writeShareState();
         resetPlaybackCursor();
       });
       slot.appendChild(bars);
@@ -1276,6 +1278,8 @@
       const extras = (partVolume !== PART_VOLUME_DEFAULT ? `.v${partVolume}` : '') + (partMuted ? '.m' : '');
       p.set('p', `${partIdx}.${partScale === 'key' ? 'k' : 'f'}.${partFills.join('')}${extras}`);
     }
+    // the band's volume is heard in both views, so it's its own field
+    if (bandVolume !== BAND_VOLUME_DEFAULT || bandMuted) p.set('b', `${bandVolume}${bandMuted ? '.m' : ''}`);
     return p;
   }
 
@@ -1337,6 +1341,13 @@
         else if (/^v\d+$/.test(x)) partVolume = Math.max(0, Math.min(100, Number(x.slice(1))));
       });
     }
+    bandVolume = BAND_VOLUME_DEFAULT;
+    bandMuted = false;
+    if (p.get('b')){
+      const [vol, m] = p.get('b').split('.');
+      bandVolume = Math.max(0, Math.min(100, Number(vol) || 0));
+      bandMuted = m === 'm';
+    }
     syncPartVolume();
     partScaleGroup.querySelectorAll('.seg-btn').forEach(b => b.classList.toggle('active', b.dataset.value === (partScale === 'key' ? 'key' : 'follow')));
 
@@ -1393,6 +1404,8 @@
   let partScale = 'follow';         // 'follow' the chords | stay on the 'key'
   let partVolume = 70;              // 0..100, where the slider sits
   let partMuted = false;            // ...and whether it's heard at all
+  let bandVolume = 100;             // the band's, on its own bus in the engine
+  let bandMuted = false;
   // The part is the thing you're aiming at, so it sits on top of the band
   // the way a lead does, not inside it. Measured: at the guitar's own level
   // it added half a decibel to the mix, which is to say nobody could hear
@@ -1400,6 +1413,8 @@
   // slider's default lands; there's room above it.
   const PART_LEVEL_AT_DEFAULT = 2.4, PART_VOLUME_DEFAULT = 70;
   const partLevel = () => partMuted ? 0 : PART_LEVEL_AT_DEFAULT * (partVolume / PART_VOLUME_DEFAULT);
+  const BAND_VOLUME_DEFAULT = 100;
+  const bandLevel = () => bandMuted ? 0 : bandVolume / BAND_VOLUME_DEFAULT;
   let partNotes = [];               // realised: bar, at, dur, vel, string, fret, midi
   let partLog = [];                 // what's been scheduled, for lighting as it sounds
   let partTab = null;               // the drawn tab's metrics, for the playhead
@@ -1498,7 +1513,7 @@
       partFills = partFills.concat(GT.parts.rollFills(part, (phrases - partFills.length) * 2));
     }
     partNotes = GT.parts.realise(part, bars, partFills, {
-      reading: pv.reading, window: partWindow, scaleTheory: pv.scaleTheory,
+      reading: pv.reading, window: partWindow, scaleTheory: pv.scaleTheory, stringSet: pv.stringSet,
       stayOnKey: partScale === 'key', key: { tonic: currentTonic, mode: currentMode },
     });
     partNameEl.textContent = part.name;
@@ -1570,7 +1585,7 @@
       if (n.bar !== barIdx || n.at !== slot) return;
       const dur = n.dur * slotDur;
       const at = t + (n.spread || 0);            // a strum's strings arrive one after another
-      if (partLevel() > 0) audio.playPluck(440 * Math.pow(2, (n.midi - 69) / 12), at, dur, n.vel * partLevel());
+      if (partLevel() > 0) audio.playPluck(440 * Math.pow(2, (n.midi - 69) / 12), at, dur, n.vel * partLevel(), 'part');
       partLog.push({ time: at, until: at + dur, string: n.string, fret: n.fret, slot: barIdx * feelNow().grid + n.at });
     });
     if (partLog.length > 256) partLog = partLog.filter(e => e.until > audio.ctx().currentTime);
@@ -1659,11 +1674,18 @@
   });
   const partVolumeEl = document.getElementById('partVolume');
   const partMuteBtn = document.getElementById('partMute');
+  const bandVolumeEl = document.getElementById('bandVolume');
+  const bandMuteBtn = document.getElementById('bandMute');
   function syncPartVolume(){
     partVolumeEl.value = String(partVolume);
     partMuteBtn.setAttribute('aria-pressed', String(partMuted));
     partMuteBtn.setAttribute('aria-label', partMuted ? 'Unmute the part' : 'Mute the part');
     partMuteBtn.title = partMuted ? 'Unmute the part' : 'Mute the part';
+    bandVolumeEl.value = String(bandVolume);
+    bandMuteBtn.setAttribute('aria-pressed', String(bandMuted));
+    bandMuteBtn.setAttribute('aria-label', bandMuted ? 'Unmute the band' : 'Mute the band');
+    bandMuteBtn.title = bandMuteBtn.getAttribute('aria-label');
+    audio.setBandLevel(bandLevel());       // the band's is a bus in the engine, not a note-by-note level
   }
   partVolumeEl.addEventListener('input', () => {
     partVolume = Math.max(0, Math.min(100, Number(partVolumeEl.value) || 0));
@@ -1672,6 +1694,17 @@
   });
   partMuteBtn.addEventListener('click', () => {
     partMuted = !partMuted;
+    syncPartVolume();
+    writeShareState();
+  });
+  bandVolumeEl.addEventListener('input', () => {
+    bandVolume = Math.max(0, Math.min(100, Number(bandVolumeEl.value) || 0));
+    if (bandVolume > 0 && bandMuted) bandMuted = false;
+    syncPartVolume();
+    writeShareState();
+  });
+  bandMuteBtn.addEventListener('click', () => {
+    bandMuted = !bandMuted;
     syncPartVolume();
     writeShareState();
   });

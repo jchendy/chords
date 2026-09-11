@@ -76,6 +76,8 @@
   segGroup('partScaleGroup', ['follow', 'key'], 'seg-btn');
   add('input', 'partVolume', { type: 'range', min: '0', max: '100', value: '70' });
   add('button', 'partMute', { type: 'button' });
+  add('input', 'bandVolume', { type: 'range', min: '0', max: '100', value: '100' });
+  add('button', 'bandMute', { type: 'button' });
   ['partPanel', 'partControls', 'partTab', 'partNote'].forEach(id => add('div', id));
   add('span', 'partName');
   ['partPrev', 'partNext', 'partReroll'].forEach(id => add('button', id, { type: 'button' }));
@@ -659,9 +661,48 @@
         if (lit.join() !== expect[bar]) bad.push(`bar ${bar} lit ${JSON.stringify(lit)}, wanted ${expect[bar]}`);
       } catch (err){ bad.push(`bar ${bar} threw: ${err.message}`); }
     }
+    // The bars a chord lasts, changed in Set up, are bars the part has to
+    // cover: it once redrew the chart and left the tab as it was until the
+    // view was switched away and back.
+    const barsSel = q('#chordSlots .bars-select');
+    barsSel.value = '1';
+    barsSel.dispatchEvent(new Event('change', { bubbles: true }));
+    const now = [...document.querySelectorAll('#partTab .tab-chord')].map(el => `${el.dataset.bar}:${el.textContent}`);
+    t.equal(now.join(' '), '0:A 1:D 3:E 4:D 5:A', 'The tab follows a change to how long a chord lasts');
     q('#chartViewGroup .seg-btn[data-value="chart"]').click();
     view.applyViewState('');
     t.equal(bad.join('; '), '', 'Every bar of a held progression lights the name it is under');
+  }
+
+  // The band has a volume of its own — one gain on its bus in the engine —
+  // beside the part's, and it travels in the link like the rest.
+  function testTheBandHasAVolume(t){
+    start();
+    const bad = [];
+    const slider = q('#bandVolume'), mute = q('#bandMute');
+    const set = v => { slider.value = String(v); slider.dispatchEvent(new Event('input', { bubbles: true })); };
+    set(40);
+    if (Math.abs(GT.audio.bandLevel() - 0.4) > 1e-9) bad.push(`slider at 40 gave the engine ${GT.audio.bandLevel()}`);
+    mute.click();
+    if (GT.audio.bandLevel() !== 0) bad.push(`muted, the engine still has ${GT.audio.bandLevel()}`);
+    if (mute.getAttribute('aria-pressed') !== 'true') bad.push('the mute button does not show as pressed');
+    if (slider.value !== '40') bad.push(`muting moved the slider to ${slider.value}`);
+    q('#shareBtn').click();
+    const link = location.hash;
+    if (!/[#&]b=40\.m(&|$)/.test(link)) bad.push(`the link carries the band as "${(link.match(/b=[^&]*/) || [''])[0]}"`);
+    mute.click(); set(100);                    // back to nothing to say
+    q('#shareBtn').click();
+    if (/[#&]b=/.test(location.hash)) bad.push('at its default the band is still in the link');
+    location.hash = '#practice-elsewhere';
+    location.hash = link;                      // and the link brings it back
+    if (GT.audio.bandLevel() !== 0 || slider.value !== '40') bad.push(`the link brought back level ${GT.audio.bandLevel()}, slider ${slider.value}`);
+    set(60);                                   // moving the slider unmutes, as the part's does
+    if (Math.abs(GT.audio.bandLevel() - 0.6) > 1e-9 || mute.getAttribute('aria-pressed') !== 'false') bad.push('moving the slider did not unmute');
+    set(100);
+    // the link this left in the address bar would be the next run's starting
+    // state — a page loaded on a link doesn't round-trip that same link
+    history.replaceState(null, '', location.pathname);
+    t.equal(bad.join('; '), '', 'The band has a volume of its own that the link remembers');
   }
 
   GT.practiceSuites = [
@@ -680,5 +721,6 @@
     ['Practice: typing a progression', testTypingAProgression],
     ['Practice: a part stays put until you move it', testThePartStaysPut],
     ['Practice: the tab follows held bars', testTheTabFollowsHeldBars],
+    ['Practice: the band has a volume', testTheBandHasAVolume],
   ];
 })();

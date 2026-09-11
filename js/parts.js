@@ -31,16 +31,28 @@
 
   // ---- the library ---------------------------------------------------------
   // Keyed by the style, then the feel's label as audio.js's STYLES names it.
-  // `figure` is bar one; `fills` are the choices for bar two. Slots are on
+  // `figure` is bar one; `fills` are the choices for bar two. `variants` are
+  // other ways of playing bar one — the same figure with its weight moved,
+  // a pickup added, a strum opened out — that the phrases take in turn, so
+  // four bars on one chord don't come out as the same bar four times over.
+  // They cycle rather than roll: the part stays what it was until you ask
+  // for a change, and the fills are where the dice are. Slots are on
   // the feel's grid: twelve to a bar for a shuffle (three to a beat, the
   // first and third being the swung eighths), sixteen for a straight feel.
   // dur is in slots. vel is 0..1, and the downbeat leans harder.
   //   n — one note, an interval above the root
-  //   s — a strum of the chord: the grip the box is built on, every string
-  //       of it, spread the way a pick sweeps. A part is rhythm guitar with
-  //       fills, not a lead line, and the rhythm half is these.
+  //   s — a strum of the chord: the grip the box is built on, spread the
+  //       way a pick sweeps. A part is rhythm guitar with fills, not a lead
+  //       line, and the rhythm half is these. A fourth argument says how
+  //       much of the grip: 'full' (the default) is every string; 'low' the
+  //       bottom three, where a shuffle or a boogie keeps its weight; 'high'
+  //       the top three, a stab or a chop; 'bass' the root alone, the way
+  //       an alternating-bass strum puts a single low note before the
+  //       chord. In the triads reading every one of these is the triad the
+  //       neck is showing ('bass' its lowest note), since that is the whole
+  //       of what that reading offers.
   const n = (at, iv, dur, vel) => ({ at, iv, dur, vel });
-  const s = (at, dur, vel) => ({ at, dur, vel, strum: true });
+  const s = (at, dur, vel, voicing = 'full') => ({ at, dur, vel, strum: true, voicing });
 
   const LIBRARY = {
     blues: {
@@ -49,8 +61,17 @@
       'Shuffle': [
         {
           name: 'Shuffle comp',
-          figure: [s(0, 1.6, 0.8), s(2, 0.8, 0.5), s(3, 1.6, 0.7), s(5, 0.8, 0.5),
-                   s(6, 1.6, 0.8), s(8, 0.8, 0.5), s(9, 1.6, 0.7), s(11, 0.8, 0.5)],
+          // on the low strings, where a shuffle keeps its weight
+          figure: [s(0, 1.6, 0.8, 'low'), s(2, 0.8, 0.5, 'low'), s(3, 1.6, 0.7, 'low'), s(5, 0.8, 0.5, 'low'),
+                   s(6, 1.6, 0.8, 'low'), s(8, 0.8, 0.5, 'low'), s(9, 1.6, 0.7, 'low'), s(11, 0.8, 0.5, 'low')],
+          variants: [
+            // the last beat walks up to the octave instead of chugging
+            [s(0, 1.6, 0.8, 'low'), s(2, 0.8, 0.5, 'low'), s(3, 1.6, 0.7, 'low'), s(5, 0.8, 0.5, 'low'),
+             s(6, 1.6, 0.8, 'low'), s(8, 0.8, 0.5, 'low'), n(9, 10, 1.6, 0.75), n(11, 12, 0.8, 0.7)],
+            // the whole chord on one, and a bass note to lead out
+            [s(0, 1.6, 0.85), s(2, 0.8, 0.5, 'low'), s(3, 1.6, 0.7, 'low'), s(5, 0.8, 0.5, 'low'),
+             s(6, 1.6, 0.8, 'low'), s(8, 0.8, 0.5, 'low'), s(9, 1.6, 0.7, 'low'), s(11, 0.8, 0.6, 'bass')],
+          ],
           fills: [
             // a walk down from the octave to the root
             [n(0, 12, 1.6, 0.9), n(2, 10, 0.8, 0.7), n(3, 9, 1.6, 0.8), n(5, 7, 0.8, 0.7),
@@ -59,7 +80,7 @@
             [n(0, 3, 1.6, 0.9), n(2, 5, 0.8, 0.7), n(3, 7, 1.6, 0.85), n(6, 10, 1.6, 0.85),
              n(8, 12, 0.8, 0.8), s(9, 2.4, 0.75)],
             // half a bar of chords, then a push up to the octave
-            [s(0, 1.6, 0.8), s(2, 0.8, 0.5), s(3, 1.6, 0.7), n(6, 7, 1.6, 0.85), n(8, 10, 0.8, 0.75),
+            [s(0, 1.6, 0.8, 'low'), s(2, 0.8, 0.5, 'low'), s(3, 1.6, 0.7, 'low'), n(6, 7, 1.6, 0.85), n(8, 10, 0.8, 0.75),
              n(9, 12, 2.4, 0.9)],
           ],
         },
@@ -67,14 +88,23 @@
           // Stabs on the beat with a lick in the gaps: chords on one and
           // three, single notes leading into them.
           name: 'Stabs and licks',
-          figure: [s(0, 2.4, 0.85), n(3, 7, 1.6, 0.75), n(5, 10, 0.8, 0.65),
-                   s(6, 2.4, 0.8), n(9, 3, 1.6, 0.75), n(11, 0, 0.8, 0.65)],
+          // the stabs on the top strings, out of the bass's way
+          figure: [s(0, 2.4, 0.85, 'high'), n(3, 7, 1.6, 0.75), n(5, 10, 0.8, 0.65),
+                   s(6, 2.4, 0.8, 'high'), n(9, 3, 1.6, 0.75), n(11, 0, 0.8, 0.65)],
+          variants: [
+            // a second, lighter stab on the and of two
+            [s(0, 2.4, 0.85, 'high'), n(3, 10, 1.6, 0.75), s(5, 0.8, 0.55, 'high'),
+             s(6, 2.4, 0.8, 'high'), n(9, 7, 1.6, 0.75), n(11, 5, 0.8, 0.65)],
+            // the stabs on two and four, the root on one
+            [n(0, 0, 1.6, 0.8), s(3, 2.4, 0.85, 'high'), n(6, 7, 1.6, 0.75), n(8, 10, 0.8, 0.65),
+             s(9, 2.4, 0.8, 'high')],
+          ],
           fills: [
             [n(0, 0, 1.6, 0.9), n(2, 3, 0.8, 0.7), n(3, 5, 1.6, 0.8), n(5, 6, 0.8, 0.7),
              n(6, 7, 2.4, 0.9), n(9, 10, 1.6, 0.8), n(11, 12, 0.8, 0.75)],
             [n(0, 7, 2.4, 0.9), n(3, 10, 1.6, 0.8), n(5, 7, 0.8, 0.7), n(6, 5, 1.6, 0.8),
-             n(8, 3, 0.8, 0.7), s(9, 2.4, 0.8)],
-            [s(0, 1.6, 0.8), s(2, 0.8, 0.5), n(3, 4, 1.6, 0.85), n(6, 7, 1.6, 0.85), n(8, 10, 0.8, 0.7),
+             n(8, 3, 0.8, 0.7), s(9, 2.4, 0.8, 'high')],
+            [s(0, 1.6, 0.8, 'high'), s(2, 0.8, 0.5, 'high'), n(3, 4, 1.6, 0.85), n(6, 7, 1.6, 0.85), n(8, 10, 0.8, 0.7),
              n(9, 12, 2.4, 0.9)],
           ],
         },
@@ -83,7 +113,14 @@
       'Slow blues': [
         {
           name: 'Long chords',
-          figure: [s(0, 5, 0.8), s(6, 2.5, 0.65), n(9, 10, 1.5, 0.75), n(11, 12, 1, 0.7)],
+          // the whole chord let ring on one, the top of it again on three
+          figure: [s(0, 5, 0.8), s(6, 2.5, 0.65, 'high'), n(9, 10, 1.5, 0.75), n(11, 12, 1, 0.7)],
+          variants: [
+            // the line at the end comes from below instead
+            [s(0, 5, 0.8), s(6, 2.5, 0.65, 'high'), n(9, 7, 1.5, 0.7), n(11, 10, 1, 0.7)],
+            // the chord restruck on two, softly, and left to ring
+            [s(0, 3, 0.8), s(3, 3, 0.5, 'high'), s(6, 5, 0.7, 'high'), n(11, 12, 1, 0.7)],
+          ],
           fills: [
             [n(0, 10, 3, 0.85), n(3, 7, 3, 0.8), n(6, 5, 3, 0.8), n(9, 3, 3, 0.8)],
             [n(3, 12, 2, 0.85), n(6, 10, 1, 0.7), n(8, 7, 1, 0.7), s(9, 3, 0.75)],
@@ -93,7 +130,14 @@
         {
           // the chord on one, then answering the bass in the space it leaves
           name: 'Answering the bass',
-          figure: [s(0, 3, 0.8), n(3, 3, 2, 0.8), n(6, 4, 1, 0.7), n(8, 7, 4, 0.85)],
+          // the root alone on one, the chord's top on three
+          figure: [s(0, 3, 0.8, 'bass'), n(3, 3, 2, 0.8), n(6, 4, 1, 0.7), s(8, 4, 0.85, 'high')],
+          variants: [
+            // the answer from the 5th up to the 7th
+            [s(0, 3, 0.8, 'bass'), n(3, 7, 2, 0.8), n(6, 10, 1, 0.7), s(8, 4, 0.85, 'high')],
+            // the whole chord on one, the line arriving late
+            [s(0, 3, 0.85), n(6, 3, 1, 0.75), n(8, 4, 1, 0.75), n(9, 7, 3, 0.85)],
+          ],
           fills: [
             [n(0, 12, 2, 0.9), n(3, 10, 2, 0.8), n(6, 7, 2, 0.8), n(9, 10, 3, 0.85)],
             [s(0, 3, 0.8), n(3, 7, 3, 0.85), n(6, 5, 1, 0.7), n(8, 6, 1, 0.7), n(9, 7, 3, 0.85)],
@@ -106,11 +150,19 @@
       'Jump blues': [
         {
           name: 'Jump comp',
-          figure: [s(4, 2, 0.85), s(6, 1, 0.45), s(12, 2, 0.85), s(14, 1, 0.45)],
+          // backbeat stabs on the top strings, the upstroke lighter still
+          figure: [s(4, 2, 0.85, 'high'), s(6, 1, 0.45, 'high'), s(12, 2, 0.85, 'high'), s(14, 1, 0.45, 'high')],
+          variants: [
+            // the root under one and three, the stabs as they were
+            [s(0, 2, 0.7, 'bass'), s(4, 2, 0.85, 'high'), s(6, 1, 0.45, 'high'),
+             s(8, 2, 0.7, 'bass'), s(12, 2, 0.85, 'high'), s(14, 1, 0.45, 'high')],
+            // a push: the second stab early, on the and of three
+            [s(4, 2, 0.85, 'high'), s(6, 1, 0.45, 'high'), s(10, 2, 0.8, 'high'), s(14, 1, 0.45, 'high')],
+          ],
           fills: [
             [n(0, 12, 2, 0.9), n(2, 10, 2, 0.75), n(4, 7, 2, 0.8), n(6, 10, 2, 0.75),
              n(8, 7, 2, 0.8), n(10, 4, 2, 0.75), s(12, 4, 0.8)],
-            [s(4, 2, 0.85), n(8, 9, 2, 0.75), n(10, 10, 2, 0.75), n(12, 12, 2, 0.9), n(14, 10, 2, 0.75)],
+            [s(4, 2, 0.85, 'high'), n(8, 9, 2, 0.75), n(10, 10, 2, 0.75), n(12, 12, 2, 0.9), n(14, 10, 2, 0.75)],
             [n(0, 3, 2, 0.85), n(2, 4, 2, 0.75), n(4, 7, 4, 0.9), n(8, 3, 2, 0.8), n(10, 4, 2, 0.75), s(12, 4, 0.85)],
           ],
         },
@@ -118,11 +170,18 @@
           // a riff under the chords: the chord on the backbeat, the line on
           // the way there
           name: 'Riff and stab',
-          figure: [n(0, 7, 2, 0.85), n(2, 9, 2, 0.7), s(4, 2, 0.85), n(8, 10, 2, 0.8),
-                   n(10, 9, 2, 0.7), s(12, 3, 0.85)],
+          figure: [n(0, 7, 2, 0.85), n(2, 9, 2, 0.7), s(4, 2, 0.85, 'high'), n(8, 10, 2, 0.8),
+                   n(10, 9, 2, 0.7), s(12, 3, 0.85, 'high')],
+          variants: [
+            // the riff from the root, and an upstroke after the first stab
+            [n(0, 0, 2, 0.85), n(2, 3, 2, 0.7), s(4, 2, 0.85, 'high'), s(6, 1, 0.45, 'high'),
+             n(8, 10, 2, 0.8), n(10, 12, 2, 0.7), s(12, 3, 0.85, 'high')],
+            // the riff held back to the second half
+            [s(4, 2, 0.85, 'high'), n(8, 7, 2, 0.8), n(10, 9, 2, 0.7), s(12, 2, 0.85, 'high'), n(14, 10, 2, 0.7)],
+          ],
           fills: [
             [n(0, 12, 1, 0.8), n(2, 10, 1, 0.75), n(4, 7, 2, 0.85), n(8, 10, 1, 0.75), n(10, 7, 1, 0.75), n(12, 4, 4, 0.9)],
-            [s(4, 2, 0.85), n(8, 9, 1, 0.75), n(10, 10, 1, 0.75), n(12, 12, 4, 0.9)],
+            [s(4, 2, 0.85, 'high'), n(8, 9, 1, 0.75), n(10, 10, 1, 0.75), n(12, 12, 4, 0.9)],
             [n(2, 3, 1, 0.75), n(4, 4, 2, 0.9), n(8, 7, 1, 0.8), n(10, 3, 1, 0.75), s(12, 4, 0.8)],
           ],
         },
@@ -131,12 +190,22 @@
       'Train beat': [
         {
           name: 'Train chug',
-          figure: [s(0, 0.7, 0.75), s(2, 0.6, 0.45), s(3, 0.7, 0.65), s(5, 0.6, 0.45),
-                   s(6, 0.7, 0.75), s(8, 0.6, 0.45), s(9, 0.7, 0.65), s(11, 0.6, 0.45)],
+          // the root on the beat, the top of the chord on the off — the
+          // alternating-bass strum a train beat is built on
+          figure: [s(0, 0.7, 0.75, 'bass'), s(2, 0.6, 0.45, 'high'), s(3, 0.7, 0.65, 'bass'), s(5, 0.6, 0.45, 'high'),
+                   s(6, 0.7, 0.75, 'bass'), s(8, 0.6, 0.45, 'high'), s(9, 0.7, 0.65, 'bass'), s(11, 0.6, 0.45, 'high')],
+          variants: [
+            // the last beat closes on the low strings together
+            [s(0, 0.7, 0.75, 'bass'), s(2, 0.6, 0.45, 'high'), s(3, 0.7, 0.65, 'bass'), s(5, 0.6, 0.45, 'high'),
+             s(6, 0.7, 0.75, 'bass'), s(8, 0.6, 0.45, 'high'), s(9, 0.7, 0.7, 'low'), s(11, 0.6, 0.5, 'low')],
+            // the bass only on one and three, the chop carrying the rest
+            [s(0, 0.7, 0.75, 'bass'), s(2, 0.6, 0.45, 'high'), s(3, 0.7, 0.6, 'high'), s(5, 0.6, 0.45, 'high'),
+             s(6, 0.7, 0.75, 'bass'), s(8, 0.6, 0.45, 'high'), s(9, 0.7, 0.6, 'high'), s(11, 0.6, 0.45, 'high')],
+          ],
           fills: [
             [n(0, 10, 0.8, 0.9), n(2, 9, 0.8, 0.7), n(3, 7, 0.8, 0.8), n(5, 5, 0.8, 0.7),
              n(6, 4, 0.8, 0.8), n(8, 3, 0.8, 0.7), n(9, 0, 2.4, 0.9)],
-            [s(0, 0.7, 0.75), s(2, 0.6, 0.45), n(3, 3, 0.8, 0.8), n(5, 5, 0.8, 0.7), n(6, 6, 0.8, 0.8),
+            [s(0, 0.7, 0.75, 'bass'), s(2, 0.6, 0.45, 'high'), n(3, 3, 0.8, 0.8), n(5, 5, 0.8, 0.7), n(6, 6, 0.8, 0.8),
              n(8, 7, 0.8, 0.7), n(9, 10, 0.8, 0.8), n(11, 12, 0.8, 0.85)],
             [n(0, 12, 2.4, 0.9), n(3, 10, 2.4, 0.8), n(6, 7, 2.4, 0.8), s(9, 2.4, 0.75)],
           ],
@@ -146,6 +215,14 @@
           name: 'Off the top',
           figure: [s(0, 2.4, 0.8), n(3, 10, 1.6, 0.8), n(5, 10, 0.8, 0.6),
                    s(6, 2.4, 0.8), n(9, 5, 1.6, 0.8), n(11, 3, 0.8, 0.7)],
+          variants: [
+            // the run from the octave
+            [s(0, 2.4, 0.8), n(3, 12, 1.6, 0.8), n(5, 10, 0.8, 0.6),
+             s(6, 2.4, 0.8), n(9, 7, 1.6, 0.8), n(11, 5, 0.8, 0.7)],
+            // an upstroke on the top after one, the chord on three from the top
+            [s(0, 1.6, 0.8), s(2, 0.8, 0.5, 'high'), n(3, 10, 2.4, 0.8),
+             s(6, 2.4, 0.8, 'high'), n(9, 3, 1.6, 0.8), n(11, 0, 0.8, 0.7)],
+          ],
           fills: [
             [n(0, 0, 2.4, 0.9), n(3, 3, 0.8, 0.75), n(5, 5, 0.8, 0.75), n(6, 7, 2.4, 0.9), n(9, 10, 2.4, 0.8)],
             [n(0, 7, 0.8, 0.85), n(2, 10, 0.8, 0.7), n(3, 12, 1.6, 0.9), n(6, 10, 0.8, 0.8),
@@ -276,6 +353,45 @@
     return best.cells.filter(inWin).map(c => ({ string: c.string, fret: c.fret, midi: STRING_MIDI[c.string] + c.fret }));
   }
 
+  // The triad the neck is showing in this window: the close voicing of the
+  // chord's root, 3rd and 5th on the chosen string set (its lowest string,
+  // 5 = E-A-D up to 2 = G-B-e) that sits wholly inside the stretch. The
+  // triads reading draws one shape per box, so there is one; if the window
+  // were somewhere no shape fits, there is nothing to strum rather than a
+  // grip from another reading.
+  function triadIn(chord, window, stringSet){
+    const tones = new Set([chord.note, chord.third, chord.fifth].map(pc));
+    const inWin = c => c.fret >= window.min && c.fret <= window.max;
+    const fits = GT.fretboard.stringSetTriads(stringSet, tones).filter(t => t.cells.every(inWin));
+    if (!fits.length) return null;
+    fits.sort((a, b) => a.startFret - b.startFret);
+    return fits[0].cells.map(c => ({ string: c.string, fret: c.fret, midi: STRING_MIDI[c.string] + c.fret }));
+  }
+
+  // What one strum sounds, low string first: the part of the grip the
+  // written strum asked for — see `s` above — or, in the triads reading,
+  // the triad itself. `null` when there is no chord to be had here.
+  function strumCells(chord, opts, voicing){
+    const rootPc = pc(chord.note), fifthPc = pc(chord.fifth);
+    if (opts.reading === 'triads3'){
+      const tri = triadIn(chord, opts.window, opts.stringSet == null ? 2 : opts.stringSet);
+      if (!tri) return null;
+      const low = tri.sort((a, b) => a.midi - b.midi);
+      return voicing === 'bass' ? [low[0]] : low;
+    }
+    const grip = gripIn(chord, opts.window);
+    if (!grip) return null;
+    const low = grip.sort((a, b) => b.string - a.string);          // string 5 is the low E
+    switch (voicing){
+      // the root, or the 5th when the window has cut the grip's root off —
+      // the other note an alternating bass goes to — or the lowest there is
+      case 'bass': return [low.find(c => c.midi % 12 === rootPc) || low.find(c => c.midi % 12 === fifthPc) || low[0]];
+      case 'low':  return low.slice(0, 3);
+      case 'high': return low.slice(-3);
+      default:     return low;
+    }
+  }
+
   // The order a pick sweeps, low string first, this far apart.
   const STRUM_SPREAD = 0.016;
 
@@ -298,13 +414,14 @@
     let prev = null;
     written.forEach(w => {
       if (w.strum){
-        // every string of the grip, low to high, spread the way a pick sweeps
-        const grip = gripIn(chord, opts.window);
+        // the strings the strum asked for, low to high, spread the way a
+        // pick sweeps
+        const grip = strumCells(chord, opts, w.voicing || 'full');
         if (!grip) return;
         const each = w.vel * strumStringLevel(grip.length);
-        grip.sort((a, b) => b.string - a.string).forEach((c, k) => {
+        grip.forEach((c, k) => {
           out.push({ at: w.at, dur: w.dur, vel: each, string: c.string, fret: c.fret, midi: c.midi,
-                     strum: true, spread: k * STRUM_SPREAD });
+                     strum: true, voicing: w.voicing || 'full', spread: k * STRUM_SPREAD });
         });
         prev = grip[grip.length - 1];
         return;
@@ -330,13 +447,19 @@
   // fill when it is odd — a two-bar call and answer that loops regardless of
   // where the chords change — and which fill is `picks[phrase]`, so the same
   // roll gives the same part until it's re-rolled on purpose.
+  // The figure's variants take the phrases in turn, figure first.
+  function figureFor(part, phrase){
+    const figures = [part.figure, ...(part.variants || [])];
+    return figures[phrase % figures.length];
+  }
+
   function realise(part, bars, picks, opts){
     const notes = [];
     bars.forEach((bar, b) => {
       if (!bar.chord) return;
       const phrase = Math.floor(b / 2);
       const written = b % 2 === 0
-        ? part.figure
+        ? figureFor(part, phrase)
         : part.fills[Math.abs(picks[phrase] || 0) % part.fills.length];
       realiseBar(written, bar.chord, opts).forEach(note => notes.push({ ...note, bar: b }));
     });
@@ -347,5 +470,5 @@
   const rollFills = (part, barCount, rng = Math.random) =>
     Array.from({ length: Math.ceil(barCount / 2) }, () => Math.floor(rng() * part.fills.length));
 
-  GT.parts = { LIBRARY, partsFor, palette, snap, realiseBar, realise, rollFills, cellsIn, homeMidi, gripIn, strumStringLevel };
+  GT.parts = { LIBRARY, partsFor, palette, snap, realiseBar, realise, rollFills, figureFor, cellsIn, homeMidi, gripIn, triadIn, strumCells, strumStringLevel };
 })();
