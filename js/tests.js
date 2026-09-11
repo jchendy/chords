@@ -1060,6 +1060,23 @@
       });
     });
     if (!parts) bad.push('the library is empty');
+    // ...and every feel and every part has its page in the guide: what it
+    // is shown over, what it is made of, where it comes from
+    {
+      const { GUIDE } = GT.partsGuide;
+      const entryFor = (style, label) => GUIDE[`${style}/${label}`] || (GUIDE[style] && GUIDE[style].feel === label ? GUIDE[style] : null);
+      const feels = [['simple', GT.parts.SIMPLE_FEEL.label]];
+      Object.keys(STYLES).forEach(style => STYLES[style].variants.forEach(v => feels.push([style, v.label])));
+      feels.forEach(([style, label]) => {
+        const e = entryFor(style, label);
+        if (!e){ bad.push(`the guide has no page for ${style}/${label}`); return; }
+        if (!(e.progression && e.progression.length === 6 && e.progression.every(c => chordFromName(c)))) bad.push(`${label}'s guide progression is not six readable chords`);
+        if (!(e.tempo >= 40 && e.tempo <= 240)) bad.push(`${label}'s guide tempo is ${e.tempo}`);
+        if (!GT.theory.SEMITONE[e.key] && e.key !== 'C') bad.push(`${label}'s guide key "${e.key}" is not a note`);
+        ['about', 'influences'].forEach(k => { if (!(e[k] && e[k].length > 80)) bad.push(`${label}'s guide has no ${k}`); });
+        partsFor(style, label).forEach(part => { if (!(e.parts && e.parts[part.name] && e.parts[part.name].length > 40)) bad.push(`the guide says nothing about ${label}/${part.name}`); });
+      });
+    }
     // every technique the part view offers is written somewhere
     GT.parts.TECHNIQUES.forEach(tech => { if (!techniques[tech]) bad.push(`no part uses a ${tech}`); });
     // ...and every feel the picker offers has at least two to choose from

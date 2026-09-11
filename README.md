@@ -768,6 +768,17 @@ stand-in on a sixteenth grid: the chord struck whole on one and nowhere
 else (the backing is already a chord a beat) and a run through part of the
 scale for the rest of the bar, in quarter notes or in eighths.
 
+**The parts, explained.** `parts.html` (from the menu: "The parts,
+explained") writes every part out over a six-bar progression that suits its
+style — figure, fill 1, variant 1, fill 2, variant 2, fill 3 — with what its
+rhythm and notes are made of, the players and records the idiom comes from
+(reference points for the style, never sources of lines), and a Play button:
+the style's own band under the part on the guitar, from a small player of
+its own in `js/parts-guide.js`. A switch shows the same parts in the Chords,
+Pentatonic or Scales reading, and another plays the techniques plain. The
+text lives in `js/parts-guide-data.js`, and a test holds every feel and
+every part to having its page there.
+
 **What the fills are made of.** Each style's fills are written from what
 its players actually play between the chords, and the file says so above
 each: which notes carry the style (a blues line is the root, the ♭3 leaning
@@ -1167,6 +1178,8 @@ by what each part does:
 | `neck.js` | Draws a full 15-fret neck as SVG from markers and shape outlines — shared by the practice fretboard, the chord finder's CAGED overview and the reverse finder, so all three necks are one drawing. A fret is close to twice as wide as the gap between two strings, near enough the shape of the real thing to read a grip off, and a note sits close up behind its fret wire where the finger goes rather than in the middle of the gap; the inlays and the fret numbers stay centred, since that's where they are on a guitar. The label and the dot are sized against each other: a single character is set as large as the dot will hold without running into a root's ring, and a longer one ("♭3") a size down so it fits — which is what lets the dots be small enough for the strings to sit that close together. A full neck is wide, so it wants most of a laptop's width — hence the wider cap on how large the drawing may render. |
 | `progressions.js` | The preset progressions, written as scale degrees. Pure data. |
 | `tab.js` | Draws guitar tablature from a note list. |
+| `parts-guide-data.js` | What the parts page says about each style and part: progression, tempo, what the rhythm and notes are made of, where the idiom comes from. Pure data. |
+| `parts-guide.js` | The parts page (`parts.html`): every part written out and playable, in any reading. Has a small player of its own. |
 | `audio.js` | The Web Audio synth voices (piano, bass, drums) and the per-style groove patterns. Owns the `AudioContext` and the queue both players schedule into — how far a stall has put a cursor behind the clock, and calling off notes that haven't sounded — but knows nothing about the UI. |
 | `fretboard-view.js` | The practice tab's fretboard panel: the six views, the legend, the hover spotlight, the follow-playback highlighting. |
 | `practice.js` | The CAGED practice tab: progression generation, the chord display and settings, and the playback transport. |

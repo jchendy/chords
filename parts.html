@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The parts | Jeff's Guitar Tools</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    color-scheme: dark;
+    --bg:#0c0b0a; --panel:#141312; --panel2:#1b1a18; --line:#2a2724; --line2:#3a3631;
+    --ink:#ece7dc; --muted:#a49a8a; --muted2:#6f675b; --a:#e0a84a;
+  }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--bg); color:var(--ink); font:14px/1.55 Inter,system-ui,sans-serif; }
+  a{ color:var(--a); }
+  .top{ display:flex; align-items:baseline; gap:18px; padding:14px 22px; border-bottom:1px solid var(--line); }
+  .top .site{ font-family:Fraunces,Georgia,serif; font-weight:600; color:var(--muted); text-decoration:none; }
+  .top .site:hover{ color:var(--ink); }
+  main{ max-width:1000px; margin:0 auto; padding:22px 22px 80px; }
+  h1{ font:600 2rem/1.15 Fraunces,Georgia,serif; margin:0 0 10px; text-wrap:balance; }
+  h2{ font:600 1.45rem/1.2 Fraunces,Georgia,serif; margin:0 0 6px; }
+  h3{ font:600 1.05rem/1.2 Fraunces,Georgia,serif; margin:0; }
+  .lede{ max-width:66ch; color:var(--ink); font-size:1.02rem; }
+  .how{ max-width:70ch; color:var(--muted); }
+  .how b{ color:var(--ink); }
+  .how p{ margin:0 0 10px; }
+  .controls{ display:flex; flex-wrap:wrap; align-items:center; gap:14px; margin:18px 0 6px; padding:12px 14px; border:1px solid var(--line); border-radius:10px; background:var(--panel); }
+  .lbl{ font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
+  .seg{ display:inline-flex; gap:2px; }
+  .seg button{ font:600 12px Inter,system-ui,sans-serif; padding:6px 10px; border-radius:6px; border:1px solid transparent; background:transparent; color:var(--muted); cursor:pointer; }
+  .seg button.active{ color:var(--ink); border-color:var(--line2); background:var(--panel2); }
+  label.check{ display:inline-flex; gap:6px; align-items:center; color:var(--muted); font-size:13px; }
+  label.check input{ accent-color:var(--a); }
+  .toc{ display:flex; flex-wrap:wrap; gap:6px 14px; margin:14px 0 30px; font-size:13px; }
+  .toc a{ color:var(--muted); text-decoration:none; }
+  .toc a:hover{ color:var(--a); }
+  .missing{ margin:10px 0; padding:8px 12px; border-radius:8px; background:#3a2020; color:#f0b0b0; }
+  section.style{ margin:0 0 40px; padding-top:22px; border-top:1px solid var(--line); }
+  .meta{ display:flex; flex-wrap:wrap; gap:6px 16px; margin:0 0 10px; color:var(--muted); font-size:13px; font-variant-numeric:tabular-nums; }
+  .about{ max-width:72ch; margin:0 0 8px; }
+  .influences{ max-width:72ch; margin:0 0 16px; color:var(--muted); }
+  .influences b{ color:var(--ink); font-weight:600; }
+  .parts{ display:grid; gap:14px; }
+  article.part{ border:1px solid var(--line); border-radius:12px; background:var(--panel); padding:12px 14px 10px; }
+  article.part.playing{ border-color:var(--a); }
+  .part-head{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
+  .play{ font:600 13px Inter,system-ui,sans-serif; padding:6px 16px; border-radius:999px; border:1px solid var(--line2); background:var(--panel2); color:var(--ink); cursor:pointer; min-width:74px; }
+  .play:hover{ border-color:var(--a); }
+  .playing .play{ background:var(--a); color:#0c0b0a; border-color:var(--a); }
+  .blurb{ margin:6px 0 4px; color:var(--muted); max-width:80ch; }
+  .legend{ margin:0 0 6px; font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted2); }
+  .tab{ overflow-x:auto; }
+  .tab svg{ display:block; height:auto; max-width:100%; }
+  /* the tab itself, as the app draws it */
+  .tab-string{ stroke:var(--line2); stroke-width:1; }
+  .tab-bar{ stroke:var(--muted); stroke-width:1.2; opacity:.55; }
+  .tab-label{ fill:var(--muted); font:500 10px Inter,system-ui,sans-serif; }
+  .tab-chord{ fill:var(--ink); font:600 11px Inter,system-ui,sans-serif; }
+  .tab-numeral{ fill:var(--muted); font:600 10px Inter,system-ui,sans-serif; }
+  .tab-note rect{ fill:var(--panel); }
+  .tab-note text{ fill:var(--ink); font:600 10px Inter,system-ui,sans-serif; }
+  .tab-note.muted text{ fill:var(--muted); }
+  .tab-note.soft text{ font-weight:500; fill:var(--muted); }
+  .tab-note.now text{ fill:var(--a); font-weight:700; }
+  .tab-tech{ fill:var(--muted); font:italic 600 9px Inter,system-ui,sans-serif; }
+  .tab-playhead{ fill:var(--a); opacity:.22; }
+  @media (max-width:640px){
+    main{ padding:16px 12px 60px; }
+    h1{ font-size:1.5rem; }
+    .top{ padding:12px 14px; }
+  }
+</style>
+</head>
+<body>
+<div class="top"><a class="site" href="index.html">Jeff's Guitar Tools</a><span class="lbl">The parts</span></div>
+<main>
+  <h1>Every part the practice tab can suggest, and how it is made</h1>
+  <p class="lede">
+    Under <b>Part</b> in the practice tab, the app suggests a guitar part to
+    play over the progression: rhythm guitar with fills, in the style that is
+    playing. There are forty-six of them, two for every style. This page
+    writes each one out over a progression that suits its style, says what
+    its rhythm and its notes are made of and where the idiom comes from, and
+    plays it — press Play on any of them; the band plays the style, the guitar
+    plays the part.
+  </p>
+  <div class="how">
+    <p><b>How a part is written.</b> Once per style, as two bars on the style’s
+    own grid — twelve slots to the bar when it swings or is in 12/8, sixteen
+    when it is straight — a <b>figure</b> and then a <b>fill</b>, in a
+    two-bar call and answer that loops whatever the chords do. A figure has
+    two <b>variants</b>, the same bar with its weight moved, that the phrases
+    take in turn; a part has three fills, and the practice tab rolls which
+    fill each phrase gets (“New fills”). Here every bar is shown: figure,
+    fill 1, variant 1, fill 2, variant 2, fill 3.</p>
+    <p><b>How the notes are chosen.</b> A part is not written in a key, a box
+    or a scale. Every single note is an <em>interval above the chord’s root</em>
+    — 0 the root, 4 the 3rd, 7 the 5th, 10 the ♭7, 12 the octave, or a
+    negative number for a note below the root — and some are written against
+    the <em>next</em> bar’s chord, which is how a fill points where the music
+    is going: the ♭7 falling onto the IV’s 3rd, a chromatic step up under the
+    root that is coming. At realisation each interval becomes a pitch, is
+    <b>snapped</b> to a note the neck’s reading allows — the note itself if it
+    is there, else the nearest within a tone, downward first, else it is
+    dropped — and is placed on the nearest such note inside the position
+    window. So the same part plays chord tones only in the Chords reading, the
+    five notes of the box in Pentatonic, and the whole scale in Scales, and
+    the switch above lets you see and hear the difference.</p>
+    <p><b>Strums</b> are the chord the box is built on, swept low to high the
+    way a pick does, and each one says how much of the grip it wants: the
+    whole thing, the bottom three strings, the top three, the root alone, or
+    the 5th alone (the two notes an alternating bass goes between), and
+    whether it is palm-muted. <b>Techniques</b> — double stops, bends,
+    hammer-ons, pull-offs, slides — are written into the fills where the
+    style has them, held to the same rule (a bend only to a note the reading
+    allows; a hammer-on only where the string has the fret), and each plays
+    plain when it cannot be done or is switched off: a bend as the note it
+    bent to, a hammer-on as two picked notes, a double stop as its first note,
+    a slide as the note slid to.</p>
+    <p><b>Where the parts come from.</b> Every part is written from the idiom
+    of its style — where the weight falls, which strings carry it, which notes
+    it leans on, how a phrase ends — and not from any recording. The players
+    and records named under each style are the reference points for the
+    style; none of their lines is here. A boogie figure, a chromatic walk-up,
+    a G-run, the Charleston figure: these are the common property of the
+    music, the way a twelve-bar form is. What would be somebody’s is a
+    signature riff, and none is used.</p>
+  </div>
+
+  <div class="controls">
+    <span class="lbl">Reading</span>
+    <span class="seg" id="readingGroup">
+      <button type="button" data-value="caged">Chords</button>
+      <button type="button" data-value="penta">Pentatonic</button>
+      <button type="button" data-value="scale" class="active">Scales</button>
+    </span>
+    <label class="check"><input type="checkbox" id="techToggle" checked><span>Play the techniques (off: everything plain)</span></label>
+  </div>
+  <p class="missing" id="missing" hidden></p>
+  <nav class="toc" id="toc"></nav>
+  <div id="guide"></div>
+</main>
+
+<script src="js/theory.js"></script>
+<script src="js/fretboard.js"></script>
+<script src="js/parts.js"></script>
+<script src="js/tab.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/parts-guide-data.js"></script>
+<script src="js/parts-guide.js"></script>
+</body>
+</html>
