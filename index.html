@@ -293,6 +293,45 @@
   .chord-row .mini-select{ font:inherit; font-size:.85rem; color:var(--ink); background:var(--panel2); border:1px solid var(--line2); border-radius:6px; padding:5px 8px; width:100%; min-width:0; }
   .share-out{ flex:1 1 220px; min-width:0; font-size:.78rem; }
 
+  /* ---------- the song panel beside the chart, the menus, the bar editor ---------- */
+  .chart-body{ display:grid; grid-template-columns:minmax(0, 1fr); gap:16px 28px; }
+  @media (min-width:900px){ .chart-body{ grid-template-columns:minmax(0, 1fr) 320px; align-items:start; } }
+  .chart-main{ min-width:0; }
+  .song-panel{ border:1px solid var(--line); border-radius:12px; background:var(--panel); padding:6px 16px 12px; }
+  .song-panel h3{ font-size:.66rem; text-transform:uppercase; letter-spacing:.12em; color:var(--muted2); margin:12px 0 6px; }
+  .song-panel .frow{ padding:5px 0; }
+  .song-panel .sel{ max-width:220px; }
+  .song-hint{ margin:6px 0 2px; font-size:.75rem; color:var(--muted2); }
+  /* below the wide layout the panel is a drawer the Song button opens */
+  @media (max-width:899px){ body:not(.song-open) .song-panel{ display:none; } }
+  .popover{ position:absolute; z-index:25; background:var(--panel); border:1px solid var(--line2); border-radius:10px; padding:10px 12px; box-shadow:0 10px 30px rgba(0,0,0,.45); }
+  .pop-wrap{ position:relative; display:inline-flex; }
+  .menu-pop{ top:calc(100% + 6px); left:0; min-width:220px; display:flex; flex-direction:column; gap:8px; }
+  .menu-tbtn[aria-expanded="true"]{ border-color:var(--a); color:var(--a); }
+  .settings-menu{ position:fixed; top:64px; right:16px; width:min(340px, calc(100vw - 32px)); z-index:32; }
+  .settings-menu h3{ font-size:.66rem; text-transform:uppercase; letter-spacing:.12em; color:var(--muted2); margin:8px 0 4px; }
+  .settings-menu .frow{ padding:4px 0; }
+  .bar-editor{ width:min(440px, calc(100vw - 24px)); z-index:26; }
+  .bar-editor .chord-row, .bar-editor .chord-head{ grid-template-columns:22px 1fr 72px 110px 28px; }
+  .bar-editor .chord-row[hidden]{ display:none; }
+  .chord-row .ib.remove{ width:26px; height:26px; }
+  .chart-grid .add-bar{ border:1px dashed var(--line2); border-radius:6px; color:var(--muted2); display:flex; align-items:center; justify-content:center; font-size:.9rem; min-height:56px; cursor:pointer; }
+  .chart-grid .add-bar:hover, .chart-grid .add-bar:focus-visible{ color:var(--ink); border-color:var(--muted); outline:none; }
+  .chart-grid .bar.editing{ background:var(--panel); outline:1px solid var(--line2); }
+  /* the style picker: genres as headed groups, the current one lit */
+  .style-list{ display:flex; flex-direction:column; gap:10px; padding:4px 0 8px; }
+  .style-genre h4{ margin:0 0 4px; font-size:.66rem; text-transform:uppercase; letter-spacing:.12em; color:var(--muted2); }
+  .style-genre h4 small{ margin-left:6px; color:var(--muted2); font-weight:500; letter-spacing:0; }
+  .style-genre .segmented{ flex-wrap:wrap; }
+  .style-genre[hidden], .genre-btn[hidden]{ display:none !important; }
+  .style-list .genre-btn{ margin:0 8px 4px 0; }
+  .style-edit{ cursor:pointer; }
+  #quickStyle{ pointer-events:none; }    /* the name opens the picker; the select stays for the keyboard */
+  .style-edit:focus-visible #quickStyle{ pointer-events:auto; }
+  /* on a phone the strip comes before its controls, so the tab is the first thing you see */
+  @media (max-width:760px){ .part-view{ display:flex; flex-direction:column; } .part-controls{ order:2; margin:8px 0 0; } .part-note{ order:1; } .part-tab{ order:1; } }
+  .tempo-btn{ font-size:.72rem; padding:2px 6px; margin:0 6px 0 0; }
+
   /* ---------- chord finder ---------- */
   .finder-head{ display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; }
   /* the chord you typed is the page's title, the way the key is the chart's */
@@ -631,7 +670,7 @@
       </span>
       <button type="button" class="ib ctl" id="quickKeyDice" aria-label="Random key" title="Random key"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="2" y="2" width="16" height="16" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="6.3" cy="6.3" r="1.6"/><circle cx="13.7" cy="6.3" r="1.6"/><circle cx="10" cy="10" r="1.6"/><circle cx="6.3" cy="13.7" r="1.6"/><circle cx="13.7" cy="13.7" r="1.6"/></svg></button>
       <!-- the progression, beside the key: the two things this chart is -->
-      <div class="quick ctl">
+      <div class="quick">
         <span class="pick-edit" title="Change progression">
           <span class="progline" id="progLabel">—</span>
           <svg class="key-caret" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 6l4.5 4.5L12.5 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -642,7 +681,7 @@
              than at the bottom of the Set up sheet -->
         <button type="button" class="ib" id="quickShare" aria-label="Copy link to this progression" title="Copy link to this progression"><svg class="i-link" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8.2 11.8a3.4 3.4 0 0 0 5 .3l2.6-2.6a3.4 3.4 0 0 0-4.8-4.8l-1.5 1.5"/><path d="M11.8 8.2a3.4 3.4 0 0 0-5-.3L4.2 10.5a3.4 3.4 0 0 0 4.8 4.8l1.5-1.5"/></svg><svg class="i-tick" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 10.5l3.5 3.5 7.5-8"/></svg></button>
         <!-- the rest of the settings, from here as well as from the bar below -->
-        <button type="button" class="ib" id="setupOpenQuick" aria-label="Set up" title="Set up"><svg viewBox="0 0 20 20" aria-hidden="true"><path fill-rule="evenodd" d="M16.46,8.63 L19.23,8.87 L19.23,11.13 L16.46,11.37 L15.54,13.59 L17.33,15.73 L15.73,17.33 L13.59,15.54 L11.37,16.46 L11.13,19.23 L8.87,19.23 L8.63,16.46 L6.41,15.54 L4.27,17.33 L2.67,15.73 L4.46,13.59 L3.54,11.37 L0.77,11.13 L0.77,8.87 L3.54,8.63 L4.46,6.41 L2.67,4.27 L4.27,2.67 L6.41,4.46 L8.63,3.54 L8.87,0.77 L11.13,0.77 L11.37,3.54 L13.59,4.46 L15.73,2.67 L17.33,4.27 L15.54,6.41 Z M10,7 a3,3 0 1,0 0.01,0 Z"/></svg></button>
+        <button type="button" class="ib" id="setupOpenQuick" aria-label="Settings" title="Settings" data-pop="settingsMenu" aria-expanded="false"><svg viewBox="0 0 20 20" aria-hidden="true"><path fill-rule="evenodd" d="M16.46,8.63 L19.23,8.87 L19.23,11.13 L16.46,11.37 L15.54,13.59 L17.33,15.73 L15.73,17.33 L13.59,15.54 L11.37,16.46 L11.13,19.23 L8.87,19.23 L8.63,16.46 L6.41,15.54 L4.27,17.33 L2.67,15.73 L4.46,13.59 L3.54,11.37 L0.77,11.13 L0.77,8.87 L3.54,8.63 L4.46,6.41 L2.67,4.27 L4.27,2.67 L6.41,4.46 L8.63,3.54 L8.87,0.77 L11.13,0.77 L11.37,3.54 L13.59,4.46 L15.73,2.67 L17.33,4.27 L15.54,6.41 Z M10,7 a3,3 0 1,0 0.01,0 Z"/></svg></button>
       </div>
       <!-- The style, third on the row with the key and the progression: what
            is playing, all on one line. The value as text with the real picker
@@ -650,7 +689,7 @@
            list, not a second setting. Not a .ctl, so a phone with the
            controls folded away still has it. -->
       <div class="quick-style">
-        <span class="pick-edit" title="Change the backing style">
+        <span class="pick-edit style-edit" id="stylePickerOpen" title="Change the backing style" role="button" tabindex="0">
           <span class="styleline" id="styleLabel">Simple</span>
           <svg class="key-caret" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 6l4.5 4.5L12.5 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
           <select id="quickStyle" class="key-select" aria-label="Backing style"></select>
@@ -666,6 +705,8 @@
          part you're not looking at isn't one you're playing. Not a .ctl: the
          phone layout folds those away, and a view switch has to be reachable
          on the screen it matters most on. -->
+    <div class="chart-body">
+    <div class="chart-main">
     <div class="chart-view-row">
       <span class="segmented chart-view" id="chartViewGroup" title="The chords, or a part to play over them">
         <button type="button" class="seg-btn active" data-value="chart">Chord chart</button>
@@ -688,37 +729,85 @@
         <button type="button" class="tbtn" id="partReroll" title="Different fills, same part">New fills</button>
         <span class="part-lead" id="partLead" title="This roll puts the part's lead lines in the fill bars" hidden>lead roll</span>
         <label class="part-check" title="The beginner's version: fewer notes, on the beat, no bends or slides"><input type="checkbox" id="partEasy"><span>Easy</span></label>
-        <label class="part-check" title="Timing and loudness moved a little, the way a player does"><input type="checkbox" id="partHumanize"><span>Humanize</span></label>
-        <!-- how loud the part is against the band, and a mute for when you're
-             playing it yourself; the slider keeps its place while muted -->
-        <span class="part-volume" title="How loud the part is">
-          <span class="part-volume-label">Part</span>
-          <button type="button" class="ib" id="partMute" aria-label="Mute the part" aria-pressed="false" title="Mute the part"><svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path class="i-speaker" d="M3.5 7.5h3l4-3.2v11.4l-4-3.2h-3z"/><path class="i-waves" d="M13.2 7.2a3.6 3.6 0 0 1 0 5.6M15.4 5a6.6 6.6 0 0 1 0 10"/><path class="i-cross" d="M13 8l5 4M18 8l-5 4"/></svg></button>
-          <input type="range" id="partVolume" min="0" max="100" value="70" aria-label="Part volume">
-        </span>
-        <!-- ...and the band under it: comp, bass and drums together, so the
-             part can be brought up against them or they pulled down under it -->
-        <span class="part-volume" title="How loud the band is">
-          <span class="part-volume-label">Band</span>
-          <button type="button" class="ib" id="bandMute" aria-label="Mute the band" aria-pressed="false" title="Mute the band"><svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path class="i-speaker" d="M3.5 7.5h3l4-3.2v11.4l-4-3.2h-3z"/><path class="i-waves" d="M13.2 7.2a3.6 3.6 0 0 1 0 5.6M15.4 5a6.6 6.6 0 0 1 0 10"/><path class="i-cross" d="M13 8l5 4M18 8l-5 4"/></svg></button>
-          <input type="range" id="bandVolume" min="0" max="100" value="100" aria-label="Band volume">
-        </span>
         <span class="segmented" id="partScaleGroup" title="Which notes the part is built from">
           <button type="button" class="seg-btn active" data-value="follow">Follow chords</button>
           <button type="button" class="seg-btn" data-value="key">Stay on the I</button>
         </span>
-        <!-- the techniques a part may use; off, each plays plain -->
-        <span class="part-tech" id="partTechGroup" title="Techniques the part may use; switched off, it plays them plain">
-          <span class="part-volume-label">Play</span>
-          <button type="button" class="tech-btn" data-tech="double" aria-pressed="true">Double stops</button>
-          <button type="button" class="tech-btn" data-tech="bend" aria-pressed="true">Bends</button>
-          <button type="button" class="tech-btn" data-tech="hammer" aria-pressed="true">Hammer-ons</button>
-          <button type="button" class="tech-btn" data-tech="pull" aria-pressed="true">Pull-offs</button>
-          <button type="button" class="tech-btn" data-tech="slide" aria-pressed="true">Slides</button>
+        <!-- set once and left: the techniques and the mix, behind two menus -->
+        <span class="pop-wrap">
+          <button type="button" class="tbtn menu-tbtn" id="techMenuBtn" data-pop="techMenu" aria-expanded="false">Techniques ▾</button>
+          <div class="popover menu-pop" id="techMenu" hidden>
+            <span class="part-tech" id="partTechGroup" title="Techniques the part may use; switched off, it plays them plain">
+              <button type="button" class="tech-btn" data-tech="double" aria-pressed="true">Double stops</button>
+              <button type="button" class="tech-btn" data-tech="bend" aria-pressed="true">Bends</button>
+              <button type="button" class="tech-btn" data-tech="hammer" aria-pressed="true">Hammer-ons</button>
+              <button type="button" class="tech-btn" data-tech="pull" aria-pressed="true">Pull-offs</button>
+              <button type="button" class="tech-btn" data-tech="slide" aria-pressed="true">Slides</button>
+            </span>
+            <label class="part-check" title="Timing and loudness moved a little, the way a player does"><input type="checkbox" id="partHumanize"><span>Humanize</span></label>
+          </div>
+        </span>
+        <span class="pop-wrap">
+          <button type="button" class="tbtn menu-tbtn" id="mixMenuBtn" data-pop="mixMenu" aria-expanded="false">Mix ▾</button>
+          <div class="popover menu-pop" id="mixMenu" hidden>
+            <!-- how loud the part is against the band, and a mute for when you're
+                 playing it yourself; the slider keeps its place while muted -->
+            <span class="part-volume" title="How loud the part is">
+              <span class="part-volume-label">Part</span>
+              <button type="button" class="ib" id="partMute" aria-label="Mute the part" aria-pressed="false" title="Mute the part"><svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path class="i-speaker" d="M3.5 7.5h3l4-3.2v11.4l-4-3.2h-3z"/><path class="i-waves" d="M13.2 7.2a3.6 3.6 0 0 1 0 5.6M15.4 5a6.6 6.6 0 0 1 0 10"/><path class="i-cross" d="M13 8l5 4M18 8l-5 4"/></svg></button>
+              <input type="range" id="partVolume" min="0" max="100" value="70" aria-label="Part volume">
+            </span>
+            <!-- ...and the band under it: comp, bass and drums together -->
+            <span class="part-volume" title="How loud the band is">
+              <span class="part-volume-label">Band</span>
+              <button type="button" class="ib" id="bandMute" aria-label="Mute the band" aria-pressed="false" title="Mute the band"><svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path class="i-speaker" d="M3.5 7.5h3l4-3.2v11.4l-4-3.2h-3z"/><path class="i-waves" d="M13.2 7.2a3.6 3.6 0 0 1 0 5.6M15.4 5a6.6 6.6 0 0 1 0 10"/><path class="i-cross" d="M13 8l5 4M18 8l-5 4"/></svg></button>
+              <input type="range" id="bandVolume" min="0" max="100" value="100" aria-label="Band volume">
+            </span>
+          </div>
         </span>
       </div>
       <p class="part-note" id="partNote" hidden></p>
       <div class="part-tab" id="partTab" hidden></div>
+    </div>
+    </div>
+    <!-- the song: the things a session changes — key, progression, chords —
+         beside the chart on a wide screen, a drawer under it on a phone
+         (the Song button in the bar). The things set once are in the
+         Settings menu under the gear. -->
+    <aside class="song-panel" id="songPanel" aria-label="Song">
+      <h3>Song</h3>
+      <div class="frow"><span class="tb-lbl">Key</span><select id="keySelect" class="sel" aria-label="Key"></select><button type="button" class="ib" id="randomKeyBtn" aria-label="Random key" title="Random key"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="2" y="2" width="16" height="16" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="6.3" cy="6.3" r="1.6"/><circle cx="13.7" cy="6.3" r="1.6"/><circle cx="10" cy="10" r="1.6"/><circle cx="6.3" cy="13.7" r="1.6"/><circle cx="13.7" cy="13.7" r="1.6"/></svg></button></div>
+      <div class="frow"><span class="tb-lbl">Preset</span><select id="presetSelect" class="sel" aria-label="Preset progression"></select></div>
+      <div class="frow" id="presetVariantRow" hidden><span class="tb-lbl">Variant</span><span class="segmented" id="presetVariantGroup"></span></div>
+      <div class="frow"><span class="tb-lbl">Chords</span>
+        <span class="stepper"><button type="button" class="ib" id="chordCountDown" aria-label="Fewer chords">−</button><span id="chordCountValue">3</span><button type="button" class="ib" id="chordCountUp" aria-label="More chords">+</button></span>
+        <button type="button" class="ib" id="genBtn" aria-label="Randomize all chords" title="Randomize all chords"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="2" y="2" width="16" height="16" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="6.3" cy="6.3" r="1.6"/><circle cx="13.7" cy="6.3" r="1.6"/><circle cx="10" cy="10" r="1.6"/><circle cx="6.3" cy="13.7" r="1.6"/><circle cx="13.7" cy="13.7" r="1.6"/></svg></button></div>
+      <!-- Typing is the fast way in when you already know the progression:
+           one chord per bar, so a chord held for four bars is written four
+           times. It reads back out of whatever is set, so it doubles as a
+           plain-text view of the chart. Tap a bar of the chart to change
+           one chord. -->
+      <div class="frow chord-type-row"><span class="tb-lbl">Type it</span>
+        <input type="text" id="chordText" class="chord-text" spellcheck="false"
+               autocapitalize="off" autocorrect="off"
+               aria-label="Type the progression as chord names, one per bar"
+               placeholder="E E E E A7 A7 E E Bm7 Bm7">
+        <button type="button" class="tbtn" id="chordTextApply">Set</button></div>
+      <div class="chord-type-note" id="chordTextNote" hidden></div>
+      <p class="song-hint">Tap a bar of the chart to change its chord, how long it lasts, or its quality.</p>
+      <h3>When randomizing</h3>
+      <div class="frow checks">
+        <label class="check"><input type="checkbox" id="randomSeventhsToggle"><span>Use 7ths</span></label>
+        <label class="check"><input type="checkbox" id="commonToggle" checked><span>Common chords only</span></label>
+      </div>
+    </aside>
+    </div>
+    <!-- one chord of the chart, edited where it is: the row for the bar you
+         tapped (practice.js renders one row a chord into #chordSlots and
+         shows the one asked for) -->
+    <div class="popover bar-editor" id="barEditor" hidden>
+      <div class="chord-head" aria-hidden="true"><span class="chord-num"></span><span>Chord</span><span>Bars</span><span>Quality</span><span></span></div>
+      <div id="chordSlots"></div>
     </div>
   </section>
 
@@ -826,14 +915,11 @@
           <input type="range" id="tempo" min="40" max="200" value="120" aria-label="Tempo">
           <span class="val" id="tempoVal">120 BPM</span>
         </div>
-        <!-- the three tempos worth one tap; practice.js binds every
-             .bpm-preset and lights whichever matches the slider -->
-        <span class="segmented bpm-row" aria-label="Tempo shortcuts">
-          <button type="button" class="seg-btn bpm-preset" data-bpm="60">60</button>
-          <button type="button" class="seg-btn bpm-preset" data-bpm="90">90</button>
-          <button type="button" class="seg-btn bpm-preset active" data-bpm="120">120</button>
-          <button type="button" class="seg-btn bpm-preset" data-bpm="150">150</button>
-          <button type="button" class="seg-btn bpm-preset" data-bpm="180">180</button>
+        <!-- nudge it, or tap it in: practice.js reads the taps -->
+        <span class="segmented bpm-row" aria-label="Tempo controls">
+          <button type="button" class="seg-btn tempo-btn" id="tempoDown" aria-label="Slower">−</button>
+          <button type="button" class="seg-btn tempo-btn" id="tempoTap" title="Tap the beat">tap</button>
+          <button type="button" class="seg-btn tempo-btn" id="tempoUp" aria-label="Faster">+</button>
         </span>
       </div>
     </div>
@@ -843,8 +929,8 @@
     <span class="counter" id="measureReadout"></span>
     <span class="sp"></span>
     <!-- at every width: a desktop can want the neck on its own too (T62) -->
-    <button type="button" class="tbtn" id="controlsToggle" aria-pressed="true" title="Show or hide the controls on the neck">Controls</button>
-    <button type="button" class="tbtn" id="setupOpen">Set up</button>
+    <button type="button" class="tbtn" id="controlsToggle" aria-pressed="true" title="Show or hide the controls on the neck">Neck controls</button>
+    <button type="button" class="tbtn" id="setupOpen" aria-pressed="false" title="Key, progression and chords">Song</button>
     <button type="button" class="ib" id="transportCollapse" aria-label="Collapse the playback bar" title="Collapse the playback bar">
       <svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 8.5L10 13l4.5-4.5"/></svg>
     </button>
@@ -860,74 +946,43 @@
     <button class="play-btn play-mini" type="button" aria-label="Play"></button>
   </div>
 
-  <!-- ---------------- set up: a sheet, so the stage never scrolls ---------------- -->
+  <!-- ---------------- the style picker: a sheet, so the stage never scrolls ---------------- -->
   <div class="scrim" id="scrim" hidden></div>
-  <aside class="sheet" id="sheet" hidden aria-label="Set up">
-    <div class="sheet-head"><span class="sheet-title">Set up</span><button type="button" class="tbtn" id="setupClose">Done</button></div>
-    <div class="sheet-cols">
-      <section class="sheet-col">
-        <h3>Progression</h3>
-        <div class="frow"><span class="tb-lbl">Key</span><select id="keySelect" class="sel" aria-label="Key"></select><button type="button" class="ib" id="randomKeyBtn" aria-label="Random key" title="Random key"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="2" y="2" width="16" height="16" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="6.3" cy="6.3" r="1.6"/><circle cx="13.7" cy="6.3" r="1.6"/><circle cx="10" cy="10" r="1.6"/><circle cx="6.3" cy="13.7" r="1.6"/><circle cx="13.7" cy="13.7" r="1.6"/></svg></button></div>
-        <div class="frow"><span class="tb-lbl">Preset</span><select id="presetSelect" class="sel" aria-label="Preset progression"></select></div>
-        <div class="frow" id="presetVariantRow" hidden><span class="tb-lbl">Variant</span><span class="segmented" id="presetVariantGroup"></span></div>
-        <div class="frow"><span class="tb-lbl">Chords</span>
-          <span class="stepper"><button type="button" class="ib" id="chordCountDown" aria-label="Fewer chords">−</button><span id="chordCountValue">3</span><button type="button" class="ib" id="chordCountUp" aria-label="More chords">+</button></span>
-          <button type="button" class="ib" id="genBtn" aria-label="Randomize all chords" title="Randomize all chords"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="2" y="2" width="16" height="16" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="6.3" cy="6.3" r="1.6"/><circle cx="13.7" cy="6.3" r="1.6"/><circle cx="10" cy="10" r="1.6"/><circle cx="6.3" cy="13.7" r="1.6"/><circle cx="13.7" cy="13.7" r="1.6"/></svg></button></div>
-        <!-- Typing is the fast way in when you already know the progression:
-             one chord per bar, so a chord held for four bars is written four
-             times. It reads back out of whatever is set, so it doubles as a
-             plain-text view of the chart. -->
-        <div class="frow chord-type-row"><span class="tb-lbl">Type it</span>
-          <input type="text" id="chordText" class="chord-text" spellcheck="false"
-                 autocapitalize="off" autocorrect="off"
-                 aria-label="Type the progression as chord names, one per bar"
-                 placeholder="E E E E A7 A7 E E Bm7 Bm7">
-          <button type="button" class="tbtn" id="chordTextApply">Set</button></div>
-        <div class="chord-type-note" id="chordTextNote" hidden></div>
-        <!-- one chord per row, with the columns named once at the top -->
-        <div class="chord-table">
-          <div class="chord-row chord-head" aria-hidden="true"><span class="chord-num"></span><span>Chord</span><span>Bars</span><span>Quality</span></div>
-          <div id="chordSlots"></div>
-        </div>
-        <h3>When randomizing</h3>
-        <div class="frow checks">
-          <label class="check"><input type="checkbox" id="randomSeventhsToggle"><span>Use 7ths</span></label>
-          <label class="check"><input type="checkbox" id="commonToggle" checked><span>Common chords only</span></label>
-        </div>
-      </section>
-      <section class="sheet-col">
-        <h3>Playback</h3>
-        <!-- one list of styles, the same one the bar's picker offers; built by
-             practice.js from audio.js's STYLES so it's written once -->
-        <div class="frow" id="styleRow"><span class="tb-lbl">Style</span><span class="segmented style-list" id="styleGroup"></span></div>
-        <!-- the chords can play on the recorded guitar instead of the piano;
-             the piano stays the default because it keeps out of the way of
-             the guitar you're playing over it -->
-        <div class="frow" id="voiceRow"><span class="tb-lbl">Voice</span><span class="segmented" id="voiceGroup">
-          <button type="button" class="seg-btn active" data-value="piano">Piano</button>
-          <button type="button" class="seg-btn" data-value="guitar">Guitar</button></span></div>
-        <div class="frow checks">
-          <label class="check" id="clickRow"><input type="checkbox" id="clickToggle" checked><span>Click</span></label>
-          <label class="check" id="rootOnlyRow"><input type="checkbox" id="rootOnlyToggle"><span>Roots only</span></label>
-          <label class="check"><input type="checkbox" id="countInToggle" checked><span>Count-in</span></label>
-        </div>
-        <!-- set-once things about the picture -->
-        <h3>Display</h3>
-        <div class="frow" id="colorByLabel"><span class="tb-lbl">Colour</span><span class="segmented" id="colorByGroup" aria-label="Colour dots by">
-          <button type="button" class="seg-btn active" data-value="shape">Shape</button>
-          <button type="button" class="seg-btn" data-value="interval">Interval</button></span></div>
-        <div class="frow"><span class="tb-lbl">Frets</span><select id="fretRangeSelect" class="sel" aria-label="Frets shown">
-          <option value="all">All frets</option>
-          <option value="fit">Fit to box</option>
-          <option value="0-7">Frets 0–7</option>
-          <option value="4-11">Frets 4–11</option>
-          <option value="8-15">Frets 8–15</option>
-        </select></div>
-        <h3>Share</h3>
-        <div class="frow"><button type="button" class="tbtn" id="shareBtn">Copy link to this progression</button><input type="text" class="sel share-out" id="shareOut" readonly aria-label="Link to this progression" hidden></div>
-      </section>
-    </div>
+  <aside class="sheet" id="sheet" hidden aria-label="Style">
+    <div class="sheet-head"><span class="sheet-title">Style</span><button type="button" class="tbtn" id="setupClose">Done</button></div>
+    <div class="frow"><input type="search" id="styleSearch" class="chord-text" placeholder="Search the styles…" aria-label="Search the styles"></div>
+    <div class="frow" id="styleRecentRow" hidden><span class="tb-lbl">Recent</span><span class="segmented" id="styleRecent"></span></div>
+    <!-- one list of styles, grouped by genre; built by practice.js from the
+         resolved STYLES so it's written once. The bar's picker (a select over
+         the style name) offers the same list for the keyboard. -->
+    <div class="style-list" id="styleGroup"></div>
   </aside>
+
+  <!-- ---------------- settings: set once and left ---------------- -->
+  <div class="popover settings-menu" id="settingsMenu" hidden aria-label="Settings">
+    <h3>Playback</h3>
+    <div class="frow" id="voiceRow"><span class="tb-lbl">Voice</span><span class="segmented" id="voiceGroup">
+      <button type="button" class="seg-btn active" data-value="piano">Piano</button>
+      <button type="button" class="seg-btn" data-value="guitar">Guitar</button></span></div>
+    <div class="frow checks">
+      <label class="check" id="clickRow"><input type="checkbox" id="clickToggle" checked><span>Click</span></label>
+      <label class="check" id="rootOnlyRow"><input type="checkbox" id="rootOnlyToggle"><span>Roots only</span></label>
+      <label class="check"><input type="checkbox" id="countInToggle" checked><span>Count-in</span></label>
+    </div>
+    <h3>Display</h3>
+    <div class="frow" id="colorByLabel"><span class="tb-lbl">Colour</span><span class="segmented" id="colorByGroup" aria-label="Colour dots by">
+      <button type="button" class="seg-btn active" data-value="shape">Shape</button>
+      <button type="button" class="seg-btn" data-value="interval">Interval</button></span></div>
+    <div class="frow"><span class="tb-lbl">Frets</span><select id="fretRangeSelect" class="sel" aria-label="Frets shown">
+      <option value="all">All frets</option>
+      <option value="fit">Fit to box</option>
+      <option value="0-7">Frets 0–7</option>
+      <option value="4-11">Frets 4–11</option>
+      <option value="8-15">Frets 8–15</option>
+    </select></div>
+    <h3>Share</h3>
+    <div class="frow"><button type="button" class="tbtn" id="shareBtn">Copy link to this progression</button><input type="text" class="sel share-out" id="shareOut" readonly hidden aria-label="Link to this progression"></div>
+  </div>
 </div>
 
 <!-- ================= chord finder ======================================== -->

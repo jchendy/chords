@@ -131,7 +131,7 @@ names the tab you're on.
   that scrolls sideways a bar at a time, since a wrapped tab on a phone
   holds one bar a row. See **Suggested parts** below for how a part written
   once ends up in four readings
-- "Type it" — a text field in Set up that takes the progression as chord
+- "Type it" — a text field in the Song panel that takes the progression as chord
   names, one per bar: `E E E E A7 A7 E E Bm7 Bm7` is four chords held for
   four, two, two and two. Bar lines and commas are allowed (`A | D | E`,
   `C, Am, F, G`) because people write them. The key follows the chords —
@@ -180,54 +180,52 @@ names the tab you're on.
   shapes — a chosen control is ink with a rule under it, not a coloured
   fill. The chart comes first, its key as the title and the progression's
   name beside it, both directly editable (the real pickers lie over the text)
-  with a dice for each, a button that copies the link to what's on screen, and
-  a gear that opens Set up — and a Play at the head of the row, so playback
-  starts without looking away from the chart. The neck sits under the
-  chart with its controls on it: the five views as tabs above, a toolbar for
-  the reading (across the neck / in one position) and whatever the view
-  needs, and a quieter row for the shapes under the legend. In one position
-  the stretch of frets is drawn on the neck as a window you can drag; a
-  joined ‹ › pair at the end of the toolbar and an arrow on each edge of the
-  window step it. One transport is pinned to the bottom of the tab: Play, the
-  tempo slider with its BPM readout and five one-tap tempos under it, the
-  style, the click, and Set up. The style there is a short list of *feels*
-  rather than of styles: most styles put up one entry — "Rock" means the
-  quarter-note feel, which is what a fresh page opens on — but the two blues
-  feels are different music rather than two shadings of one, so "Blues
-  shuffle" and "Jump blues" both appear. Everything else stays in the Set up
-  sheet, and a feel chosen there borrows an entry in the list, so the bar
-  never names one thing while another plays. While it plays, a beat line
-  appears along the top of every bar in the chart and fills through the
-  sounding one a quarter per beat. Everything set once and left alone — key,
-  preset, the per-chord pickers and what the dice may use; style and feel,
-  the Simple-only note value, the click / roots-only / count-in options;
-  dot colour and the fret range; the share link — lives in the Set up sheet,
-  which slides up over the stage so nothing scrolls. The style is the third
-  thing on the top row, after the key and the progression — what's playing,
-  on one line — named rather than laid out, with the real picker lying over
-  the name, the key's move; it's a view of the sheet's Style list, not a
-  second setting, and it stays on a phone with the controls folded away.
-  The click's own row moves out of the sheet into the bar when the window is
-  wide enough and back again — into it whenever the sheet is open, so a
-  settings sheet is never missing a setting. On a phone the site
-  name drops out and the tools row scrolls sideways. A Controls button in
-  the transport, at every width, hides every control on the neck so the
-  picture has the screen — a phone needs it most, but a desktop can want the
-  neck on its own too. Turned sideways a phone goes further, because that is the shape with the
+  with a dice for each, a button that copies the link to what's on screen, a
+  gear that opens the Settings menu, and the style as *genre › feel* — and a
+  Play at the head of the row, so playback starts without looking away from
+  the chart. The chart's bars are the editor: tap a bar to hear it and to
+  change its chord, how many bars it lasts, its quality, or to remove it;
+  "+ bar" at the end adds one. Beside the chart on a wide screen, and a
+  drawer the bar's Song button opens on a phone, the **Song** panel holds the
+  things a session changes — key, preset, the chord count and the dice,
+  "Type it", what the dice may use. The things set once and left — the voice,
+  the click, roots only, the count-in, the dot colour, the fret range, the
+  share link — are in the **Settings** menu under the gear. The style has a
+  picker of its own, a sheet over the page: the sixty-one feels grouped by
+  genre with a count each, a search box, and the last three used at the top;
+  the bar's select over the name offers the same list for the keyboard. The
+  neck sits under the chart with its controls on it: the five views as tabs
+  above, a toolbar for the reading (across the neck / in one position) and
+  whatever the view needs, and a quieter row for the shapes under the
+  legend. In one position the stretch of frets is drawn on the neck as a
+  window you can drag; a joined ‹ › pair at the end of the toolbar and an
+  arrow on each edge of the window step it. One transport is pinned to the
+  bottom of the tab: Play, the tempo slider with its BPM readout and −, tap
+  and + under it (tap the beat and the tempo follows the average gap between
+  the taps), the click, Neck controls and Song. In the Part view the
+  controls are one row — the part's arrows and name, New fills, the
+  lead-roll tag, Easy, Follow chords / Stay on the I — with the techniques
+  (and Humanize) behind a Techniques menu and the part and band volumes
+  behind a Mix menu; on a phone the tab strip comes before that row. While
+  it plays, a beat line appears along the top of every bar in the chart and
+  fills through the sounding one a quarter per beat. The click's own row
+  moves out of the Settings menu into the bar when the window is wide enough
+  and back again whenever the menu is open, so it is never missing a
+  setting. On a phone the site name drops out and the tools row scrolls
+  sideways. A Neck controls button in the transport, at every width, hides
+  every control on the neck so the picture has the screen — a phone needs it
+  most, but a desktop can want the neck on its own too. Turned sideways a phone goes further, because that is the shape with the
 least height and the most need of it: the chart sets its chord names small
 and tight, and the controls come off by default. A phone in landscape is
 told apart from a tablet by its height and from a desktop window someone has
 made short by its pointer — it is the only screen that is both short and
-touched — and once you have pressed the Controls button yourself, rotating
+touched — and once you have pressed the Neck controls button yourself, rotating
 doesn't overrule you. The bar itself can fold away too, from a button at its
 right end, leaving Play floating clear of the page and giving the neck the
 eighty-odd pixels the bar was using; that button is there wherever there's
 room for it, which is everywhere but a phone held upright, where the neck
-already fits and the bar has no space to spare. A "Style" picker chooses the backing,
-  from one list that is the same in the Set up sheet and in the bar (it
-  used to be a genre and then a feel within it in the sheet, and a shortlist
-  in the bar, so the same music went by different names in different
-  places):
+already fits and the bar has no space to spare. The style picker chooses the
+  backing from one list, the same in the picker and in the bar's select:
   Simple quarter / half / whole note — the plain piano voicing at that
   spacing, with a metronome click and a roots-only mode;
   Straight rock — driving 8th-note chords and a basic kit; Rock — the
@@ -1242,7 +1240,7 @@ by what each part does:
 | `audio.js` | The Web Audio synth voices (piano, bass, drums) and the per-style groove patterns. Owns the `AudioContext` and the queue both players schedule into — how far a stall has put a cursor behind the clock, and calling off notes that haven't sounded — but knows nothing about the UI. |
 | `fretboard-view.js` | The practice tab's fretboard panel: the six views, the legend, the hover spotlight, the follow-playback highlighting. |
 | `practice.js` | The practice tab: progression generation, the chord display and settings, and the playback transport. |
-| `stage.js` | The practice tab's chrome: the Set up sheet, the phone's controls toggle, the progression name in the chart head, the beat line, the draggable position window, and the site menu. Reads what the other modules draw; keeps no state. |
+| `stage.js` | The practice tab's chrome: the style picker, the Song drawer, the popover menus, the phone's controls toggle, the progression name in the chart head, the beat line, the draggable position window, and the site menu. Reads what the other modules draw; keeps no state. |
 | `chord-finder.js` | Chord finder tab: voicing search, fingering, chord diagrams. |
 | `reverse-finder.js` | Reverse chord finder tab: click targets over the shared neck, and the name lookup. |
 | `ear-training.js` | Ear training tab: what's on the neck — a chord shape, a pentatonic box or a scale box — and the drill over its notes. Draws and sounds chords from the chord finder's own code and boxes from the practice tab's, so no tab can drift from another. |

@@ -442,6 +442,7 @@
     for (let i = 0; i < chordCount; i++){
       const slot = document.createElement('div');
       slot.className = 'chord-row';
+      slot.dataset.chord = i;
       // the row number, so a chord can be talked about by position
       const num = document.createElement('span');
       num.className = 'chord-num';
@@ -540,6 +541,13 @@
       });
       slot.appendChild(sev);
 
+      const rm = document.createElement('button');
+      rm.type = 'button'; rm.className = 'ib remove'; rm.textContent = '×';
+      rm.setAttribute('aria-label', `Remove chord ${i + 1}`); rm.title = 'Remove this chord';
+      rm.disabled = chordCount <= 1;
+      rm.addEventListener('click', () => removeChord(i));
+      slot.appendChild(rm);
+
       chordSlotsEl.appendChild(slot);
     }
   }
@@ -563,19 +571,72 @@
   }
 
   const chordsRoot = document.getElementById('chords');
+  const barEditor = document.getElementById('barEditor');
+  // The bar you tap is heard and opened for editing: its row of the chord
+  // editor (chord, bars, quality, remove) appears under it. The "+ bar" cell
+  // at the end adds a chord.
+  function openBarEditor(bar){
+    if (!barEditor) return;
+    const idx = Number(bar.dataset.chord);
+    chordsRoot.querySelectorAll('.bar.editing').forEach(b => b.classList.remove('editing'));
+    bar.classList.add('editing');
+    chordSlotsEl.querySelectorAll('.chord-row').forEach(row => { row.hidden = Number(row.dataset.chord) !== idx; });
+    barEditor.hidden = false;
+    // under the bar, kept inside the page
+    const host = barEditor.offsetParent || document.body;
+    const hb = host.getBoundingClientRect(), bb = bar.getBoundingClientRect();
+    const width = barEditor.offsetWidth || 400;
+    barEditor.style.top = `${bb.bottom - hb.top + 6}px`;
+    barEditor.style.left = `${Math.max(8, Math.min(bb.left - hb.left, hb.width - width - 8))}px`;
+  }
+  function closeBarEditor(){
+    if (!barEditor || barEditor.hidden) return;
+    barEditor.hidden = true;
+    chordsRoot.querySelectorAll('.bar.editing').forEach(b => b.classList.remove('editing'));
+  }
   chordsRoot.addEventListener('click', e => {
-    const bar = e.target.closest('.bar');
-    if (bar) auditionBar(bar);
+    const bar = e.target.closest('.bar, .add-bar');
+    if (!bar) return;
+    e.stopPropagation();                      // the editor closes on a tap elsewhere; this isn't elsewhere
+    if (bar.classList.contains('add-bar')){ addChord(); return; }
+    auditionBar(bar);
+    openBarEditor(bar);
   });
   chordsRoot.addEventListener('keydown', e => {
     if (e.key !== 'Enter' && e.key !== ' ') return;
-    const bar = e.target.closest('.bar');
+    const bar = e.target.closest('.bar, .add-bar');
     if (!bar) return;
     // on a focused bar the space bar means "hear this one", not play/pause
     e.preventDefault();
     e.stopPropagation();
+    if (bar.classList.contains('add-bar')){ addChord(); return; }
     auditionBar(bar);
+    openBarEditor(bar);
   });
+  if (barEditor) barEditor.addEventListener('click', e => e.stopPropagation());
+  document.addEventListener('click', closeBarEditor);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeBarEditor(); });
+
+  // one more chord on the end, the key's own for the degree the roll gives it
+  function addChord(){
+    if (chordCount >= MAX_CHORDS) return;
+    closeBarEditor();
+    setChordCount(chordCount + 1);
+  }
+  // one chord out of the middle; the ones after it move up
+  function removeChord(i){
+    if (chordCount <= 1) return;
+    closeBarEditor();
+    slotChoices.splice(i, 1);
+    slotMeasures.splice(i, 1);
+    slotShapes.splice(i, 1);
+    currentProgression.splice(i, 1);
+    chordCount--;
+    chordCountValue.textContent = chordCount;
+    loadedLabel = null;
+    clearPreset();
+    renderAll();
+  }
 
   // The display is laid out a bar at a time, the way a chart reads: a chord
   // held for three bars is written out three times. Four bars to a line.
@@ -620,6 +681,15 @@
       `;
       chordsEl.appendChild(item);
     });
+    if (chordCount < MAX_CHORDS){
+      const add = document.createElement('div');
+      add.className = 'add-bar';
+      add.tabIndex = 0;
+      add.setAttribute('role', 'button');
+      add.title = 'Add a chord';
+      add.textContent = '+ bar';
+      chordsEl.appendChild(add);
+    }
   }
 
   // render everything from the current progression WITHOUT re-rolling it
@@ -806,18 +876,69 @@
     ...Object.keys(STYLES).flatMap(style =>
       STYLES[style].variants.map((v, i) => ({ value: `${style}.${i}`, label: v.label }))),
   ];
+  // the picker's list: a headed group per genre (Simple first), the same
+  // buttons in the same order as the bar's select, so a test can hold them equal
   styleGroup.innerHTML = '';
+  const groupOf = value => value.startsWith('simple.') ? 'simple' : value.split('.')[0];
+  const groupLabel = g => g === 'simple' ? 'Simple' : (STYLES[g] && STYLES[g].label) || g;
+  let groupEl = null, groupId = null;
   STYLE_LIST.forEach(({ value, label }) => {
+    const g = groupOf(value);
+    if (g !== groupId){
+      groupId = g;
+      groupEl = document.createElement('div');
+      groupEl.className = 'style-genre';
+      groupEl.dataset.genre = g;
+      const count = STYLE_LIST.filter(e => groupOf(e.value) === g).length;
+      groupEl.innerHTML = `<h4>${groupLabel(g)}<small>${count}</small></h4><span class="segmented"></span>`;
+      styleGroup.appendChild(groupEl);
+    }
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'seg-btn genre-btn';
     b.dataset.value = value;
     b.textContent = label;
     b.addEventListener('click', () => setFeel(value));
-    styleGroup.appendChild(b);
+    groupEl.querySelector('.segmented').appendChild(b);
     quickStyle.appendChild(new Option(label, value));
   });
   quickStyle.addEventListener('change', () => setFeel(quickStyle.value));
+  // the picker's search: a group stays while any of its feels matches
+  const styleSearch = document.getElementById('styleSearch');
+  if (styleSearch) styleSearch.addEventListener('input', () => {
+    const q = styleSearch.value.trim().toLowerCase();
+    styleGroup.querySelectorAll('.style-genre').forEach(gEl => {
+      let any = false;
+      gEl.querySelectorAll('.genre-btn').forEach(b => {
+        const hit = !q || b.textContent.toLowerCase().includes(q) || groupLabel(gEl.dataset.genre).toLowerCase().includes(q);
+        b.hidden = !hit; if (hit) any = true;
+      });
+      gEl.hidden = !any;
+    });
+  });
+  // the last three styles used, at the top of the picker
+  const RECENT_KEY = 'gt-style-recent';
+  const readRecent = () => { try { return JSON.parse(localStorage.getItem(RECENT_KEY) || '[]').filter(v => STYLE_LIST.some(e => e.value === v)); } catch (e) { return []; } };
+  function noteRecent(value){
+    const list = [value, ...readRecent().filter(v => v !== value)].slice(0, 3);
+    try { localStorage.setItem(RECENT_KEY, JSON.stringify(list)); } catch (e) { /* private mode */ }
+    renderRecent();
+  }
+  function renderRecent(){
+    const row = document.getElementById('styleRecentRow'), host = document.getElementById('styleRecent');
+    if (!row || !host) return;
+    const list = readRecent();
+    row.hidden = !list.length;
+    host.innerHTML = '';
+    list.forEach(v => {
+      const e = STYLE_LIST.find(x => x.value === v); if (!e) return;
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'seg-btn'; b.dataset.value = v; b.textContent = e.label;
+      b.addEventListener('click', () => setFeel(v));
+      host.appendChild(b);
+    });
+  }
+  renderRecent();
 
   // The one way a style is chosen, wherever from. `value` is an entry of the
   // list; anything else — a link written for a feel that has since gone —
@@ -835,6 +956,7 @@
     const changed = style !== currentStyle || feelValue() !== value;
     currentStyle = style;
     updatePlaybackUI();
+    if (changed) noteRecent(feelValue());
     if (changed) partSeed = 0;            // a different feel is a different part
     rebuildPart();
   }
@@ -850,7 +972,9 @@
     const want = feelValue();
     styleGroup.querySelectorAll('.genre-btn').forEach(b => b.classList.toggle('active', b.dataset.value === want));
     quickStyle.value = want;
-    styleLabel.textContent = feelName(currentStyle, currentStyle === 'simple' ? noteBeats : currentVariant);
+    // the name as genre › feel, so sixty-one styles read as families
+    const feel = feelName(currentStyle, currentStyle === 'simple' ? noteBeats : currentVariant);
+    styleLabel.textContent = currentStyle === 'simple' ? feel : `${STYLES[currentStyle].label} › ${feel}`;
   }
 
   function updatePlaybackUI(){
@@ -917,16 +1041,29 @@
 
   tempoInput.addEventListener('input', () => {
     tempoVal.textContent = `${getTempo()} BPM`;
-    document.querySelectorAll('.bpm-preset')
-      .forEach(b => b.classList.toggle('active', Number(b.dataset.bpm) === getTempo()));
   });
-
-  document.querySelectorAll('.bpm-preset').forEach(btn => {
-    btn.addEventListener('click', () => {
-      tempoInput.value = btn.dataset.bpm;
-      tempoInput.dispatchEvent(new Event('input'));
-    });
-  });
+  function setTempo(bpm){
+    tempoInput.value = String(Math.max(Number(tempoInput.min) || 40, Math.min(Number(tempoInput.max) || 200, Math.round(bpm))));
+    tempoInput.dispatchEvent(new Event('input'));
+  }
+  // nudge it by five, or tap the beat: the tempo is the average gap between
+  // the last taps, and a pause of two seconds starts a new count
+  const TAP_STEP = 5, TAP_RESET_MS = 2000;
+  let taps = [];
+  function tapTempo(now = performance.now()){
+    if (taps.length && now - taps[taps.length - 1] > TAP_RESET_MS) taps = [];
+    taps.push(now);
+    if (taps.length > 8) taps.shift();
+    if (taps.length < 2) return null;
+    const gap = (taps[taps.length - 1] - taps[0]) / (taps.length - 1);
+    const bpm = 60000 / gap;
+    setTempo(bpm);
+    return getTempo();
+  }
+  const tempoDown = document.getElementById('tempoDown'), tempoUp = document.getElementById('tempoUp'), tempoTap = document.getElementById('tempoTap');
+  if (tempoDown) tempoDown.addEventListener('click', () => setTempo(getTempo() - TAP_STEP));
+  if (tempoUp) tempoUp.addEventListener('click', () => setTempo(getTempo() + TAP_STEP));
+  if (tempoTap) tempoTap.addEventListener('click', () => tapTempo());
 
   let isPlaying = false;
   let schedulerId = null;
@@ -1876,6 +2013,7 @@
     loadProgression,
     copyShareLink,
     simpleHitSeconds, SIMPLE_ACCENT, DEFAULT_FEEL,
+    tapTempo, setTempo, getTempo,      // the tempo controls, so a test can tap with times of its own
     // the realised part and the window it was realised in, so a test can
     // hold it still across the things that must not move it
     partState: () => ({ notes: partNotes.map(n => ({ ...n })), window: partWindow && { ...partWindow },

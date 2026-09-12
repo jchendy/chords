@@ -25,7 +25,7 @@
         // While the sheet is open everything goes back into it: the bar is
         // behind the scrim then, and a settings sheet missing a setting is a
         // worse trade than the row moving for a moment.
-        const wanted = (h.mq.matches && $('sheet').hidden) ? h.slot : sheetParent;
+        const wanted = (h.mq.matches && $('settingsMenu').hidden) ? h.slot : sheetParent;
         if (h.el.parentElement === wanted) return;
         if (wanted === sheetParent) sheetParent.insertBefore(h.el, nextInSheet);
         else h.slot.appendChild(h.el);
@@ -36,17 +36,47 @@
     homes.forEach(h => h.mq.addEventListener('change', placeHomes));
     window.addEventListener('resize', placeHomes);
 
-    // ---- set-up sheet ----
+    // ---- popovers: the Settings menu, the part's Techniques and Mix menus, the bar editor ----
+    // Any button with data-pop opens the element it names, under itself; a
+    // tap elsewhere or Escape closes whatever is open.
+    const popsOpen = () => [...document.querySelectorAll('.popover:not([hidden])')];
+    const closePops = except => popsOpen().forEach(p => { if (p === except) return; p.hidden = true; document.querySelectorAll(`[data-pop="${p.id}"]`).forEach(b => b.setAttribute('aria-expanded', 'false')); });
+    const openPop = (id, on) => {
+      const p = $(id); if (!p) return;
+      closePops(p);
+      p.hidden = !on;
+      document.querySelectorAll(`[data-pop="${id}"]`).forEach(b => b.setAttribute('aria-expanded', String(on)));
+      placeHomes();
+    };
+    document.querySelectorAll('[data-pop]').forEach(b => b.addEventListener('click', e => {
+      e.stopPropagation();
+      openPop(b.dataset.pop, $(b.dataset.pop).hidden);
+    }));
+    document.querySelectorAll('.popover').forEach(p => p.addEventListener('click', e => e.stopPropagation()));
+    document.addEventListener('click', () => { closePops(); placeHomes(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape'){ closePops(); openSheet(false); placeHomes(); } });
+
+    // ---- the style picker: a sheet over the page ----
     const openSheet = on => {
       $('sheet').hidden = !on;
       $('scrim').hidden = !on;
       document.body.classList.toggle('sheet-open', on);
+      if (on){ const s = $('styleSearch'); if (s){ s.value = ''; s.dispatchEvent(new Event('input')); } }
       placeHomes();
     };
-    $('setupOpen').addEventListener('click', () => openSheet(true));
-    $('setupOpenQuick').addEventListener('click', () => openSheet(true));
+    const pickerOpen = $('stylePickerOpen');
+    pickerOpen.addEventListener('click', e => { if (e.target.id === 'quickStyle') return; openSheet(true); });
+    pickerOpen.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); openSheet(true); } });
     $('setupClose').addEventListener('click', () => openSheet(false));
     $('scrim').addEventListener('click', () => openSheet(false));
+    // picking a style is done with the picker
+    $('styleGroup').addEventListener('click', e => { if (e.target.closest('.genre-btn')) openSheet(false); });
+    const recent = $('styleRecent'); if (recent) recent.addEventListener('click', e => { if (e.target.closest('button')) openSheet(false); });
+
+    // ---- the song panel: beside the chart when wide, a drawer the Song button opens when not ----
+    const songBtn = $('setupOpen');
+    const setSong = on => { document.body.classList.toggle('song-open', on); songBtn.setAttribute('aria-pressed', String(on)); };
+    songBtn.addEventListener('click', () => setSong(!document.body.classList.contains('song-open')));
     placeHomes();
 
     // ---- all the controls on the neck, or none of them ----
@@ -201,9 +231,9 @@
     quickShare.addEventListener('click', async () => {
       const copied = await GT.practice.copyShareLink();
       if (!copied){
-        // no clipboard here, so fall back to the sheet's field, which can be
-        // selected by hand
-        openSheet(true);
+        // no clipboard here, so fall back to the Settings menu's field, which
+        // can be selected by hand
+        openPop('settingsMenu', true);
         $('shareBtn').click();
         return;
       }

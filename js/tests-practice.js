@@ -91,6 +91,10 @@
   add('input', 'partHumanize', { type: 'checkbox' });
   add('span', 'partLead');
   add('span', 'styleGroup');          // practice.js fills the list itself
+  add('input', 'styleSearch', { type: 'search' });
+  add('div', 'styleRecentRow'); add('span', 'styleRecent');
+  ['tempoDown', 'tempoUp', 'tempoTap'].forEach(id => add('button', id, { type: 'button' }));
+  add('div', 'barEditor').appendChild(root.querySelector('#chordSlots'));   // the rows live inside the editor, as on the page
   document.body.appendChild(root);
 
   // ---- driving it ----------------------------------------------------------
@@ -505,7 +509,10 @@
       picker.value = opt.value;
       picker.dispatchEvent(new Event('change'));
       if (active() !== opt.value) bad.push(`the bar chose "${opt.text}" and the sheet shows ${active()}`);
-      if (q('#styleLabel').textContent !== opt.text) bad.push(`the bar names "${q('#styleLabel').textContent}" for ${opt.text}`);
+      // the bar names the feel with its genre in front (Rock › Punk); Simple's note values stand alone
+      const style = opt.value.split('.')[0];
+      const want = style === 'simple' ? opt.text : `${GT.audio.STYLES[style].label} › ${opt.text}`;
+      if (q('#styleLabel').textContent !== want) bad.push(`the bar names "${q('#styleLabel').textContent}" for ${opt.text}`);
     });
     buttons().forEach(b => {
       b.click();
@@ -682,6 +689,66 @@
     t.equal(bad.join('; '), '', 'Every bar of a held progression lights the name it is under');
   }
 
+
+  // The tab as the audit left it: the tempo tapped in or nudged, the chart's
+  // bars edited where they are (a tap opens one chord's row, + bar adds a
+  // chord, × removes one), and the style picker grouped by genre with a
+  // search that keeps a group while any of its feels matches.
+  function testTheTabsControls(t){
+    start();
+    const bad = [];
+    const { tapTempo, setTempo, getTempo } = GT.practice;
+    setTempo(100);
+    if (getTempo() !== 100) bad.push(`set to 100, read ${getTempo()}`);
+    // three taps half a second apart: 120 BPM, whatever it was
+    tapTempo(1000); tapTempo(1500); tapTempo(2000);
+    if (getTempo() !== 120) bad.push(`three taps at 500ms gave ${getTempo()} BPM`);
+    // a long pause starts a new count: one tap after it changes nothing
+    tapTempo(9000);
+    if (getTempo() !== 120) bad.push(`a lone tap after a pause changed the tempo to ${getTempo()}`);
+    tapTempo(9400);
+    if (getTempo() !== 150) bad.push(`taps 400ms apart gave ${getTempo()} BPM, not 150`);
+    q('#tempoUp').click();
+    if (getTempo() !== 155) bad.push(`+ gave ${getTempo()}`);
+    q('#tempoDown').click(); q('#tempoDown').click();
+    if (getTempo() !== 145) bad.push(`− − gave ${getTempo()}`);
+    setTempo(5000);
+    if (getTempo() > Number(q('#tempo').max)) bad.push(`the tempo went past the slider's top: ${getTempo()}`);
+
+    // the chart's bars: one row a chord, shown for the bar tapped
+    while (Number(q('#chordCountValue').textContent) > 1) q('#chordCountDown').click();
+    const rows = () => [...document.querySelectorAll('#chordSlots .chord-row')];
+    const bars = () => [...document.querySelectorAll('#chords .bar')];
+    if (rows().length !== 1) bad.push(`one chord has ${rows().length} editor rows`);
+    q('#chords .add-bar').click();
+    if (rows().length !== 2 || Number(q('#chordCountValue').textContent) !== 2) bad.push(`+ bar left ${rows().length} rows and a count of ${q('#chordCountValue').textContent}`);
+    bars()[bars().length - 1].click();
+    const shown = rows().filter(r => !r.hidden).map(r => r.dataset.chord);
+    if (shown.join() !== '1') bad.push(`tapping the last bar showed rows ${shown.join(',') || 'none'}`);
+    if (q('#barEditor').hidden) bad.push('tapping a bar did not open its editor');
+    rows()[1].querySelector('.remove').click();
+    if (rows().length !== 1) bad.push(`× left ${rows().length} rows`);
+    if (!q('#barEditor').hidden) bad.push('the editor stayed open after the chord went');
+    if (!rows()[0].querySelector('.remove').disabled) bad.push('the last chord can be removed');
+
+    // the picker: a group a genre, the same buttons the bar's select has
+    const groups = [...document.querySelectorAll('#styleGroup .style-genre')];
+    const wantGroups = 1 + Object.keys(GT.audio.STYLES).length;
+    if (groups.length !== wantGroups) bad.push(`${groups.length} genre groups, not ${wantGroups}`);
+    groups.forEach(g => {
+      const n = Number((g.querySelector('h4 small') || {}).textContent);
+      if (n !== g.querySelectorAll('.genre-btn').length) bad.push(`${g.dataset.genre} says ${n} but lists ${g.querySelectorAll('.genre-btn').length}`);
+    });
+    const search = q('#styleSearch');
+    search.value = 'waltz'; search.dispatchEvent(new Event('input'));
+    const seen = [...document.querySelectorAll('#styleGroup .genre-btn')].filter(b => !b.hidden).map(b => b.textContent);
+    if (seen.some(n => !/waltz/i.test(n)) || seen.length < 2) bad.push(`searching "waltz" shows ${seen.join(', ')}`);
+    if ([...document.querySelectorAll('#styleGroup .style-genre')].filter(g => !g.hidden).some(g => !g.querySelector('.genre-btn:not([hidden])'))) bad.push('an empty group stayed after the search');
+    search.value = ''; search.dispatchEvent(new Event('input'));
+    if ([...document.querySelectorAll('#styleGroup .genre-btn')].some(b => b.hidden)) bad.push('clearing the search left a feel hidden');
+    t.equal(bad.join('; '), '', 'The tempo taps in, the chart edits in place, the picker is grouped and searchable');
+  }
+
   // The band has a volume of its own — one gain on its bus in the engine —
   // beside the part's, and it travels in the link like the rest.
   function testTheBandHasAVolume(t){
@@ -755,6 +822,7 @@
     ['Practice: typing a progression', testTypingAProgression],
     ['Practice: a part stays put until you move it', testThePartStaysPut],
     ['Practice: the tab follows held bars', testTheTabFollowsHeldBars],
+    ['Practice: the tempo taps in, the chart edits in place, the picker is grouped', testTheTabsControls],
     ['Practice: the band has a volume', testTheBandHasAVolume],
     ['Practice: the old tab name still opens it', testTheOldTabNameStillOpensIt],
   ];
