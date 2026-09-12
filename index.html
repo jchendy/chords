@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/tab.css">
 <style>
   /* "Stage". Decisions, each with a reason:
      - Near-black ground, high-contrast ink: a phone on a music stand under
@@ -529,24 +530,15 @@
   }
 
   /* ---------- tablature and the suggested part ---------- */
-  .tab-string{ stroke:var(--line2); stroke-width:1; }
-  .tab-bar{ stroke:var(--muted); stroke-width:1.2; opacity:.55; }
-  .tab-label{ fill:var(--muted); font:500 10px Inter,system-ui,sans-serif; }
-  .tab-chord{ fill:var(--ink); font:600 11px Inter,system-ui,sans-serif; }
-  .tab-note rect{ fill:var(--panel); }
-  .tab-note text{ fill:var(--ink); font:600 10px Inter,system-ui,sans-serif; }
-  .tab-note.muted text{ fill:var(--muted); }
-  .tab-note.now text{ fill:var(--ink); font-weight:700; }
+  /* the tab's own look is css/tab.css, shared with the parts and review pages */
+  .tab-note.now text{ fill:var(--ink); }
   .tab-playhead{ fill:var(--ink); opacity:.12; }
-  .tab-note.soft text{ font-weight:500; fill:var(--muted); }   /* a hammered-on note: no pick */
-  .tab-tech{ fill:var(--muted); font:italic 600 9px Inter,system-ui,sans-serif; }
   /* the suggested part: its tab under the chart, and its notes on the neck */
   .chart-view-row{ margin:10px 0 0; }
   /* T56: on a wide screen the tab wraps to as many bars as fit and shows two
      rows, scrolling down to the row being played; on a phone it stays one
      strip that scrolls sideways */
   .part-tab.wrapped{ overflow-x:hidden; overflow-y:auto; }
-  .tab-numeral{ fill:var(--muted); font:600 10px Inter,system-ui,sans-serif; }
   .part-view{ margin:12px 0 4px; }
   .part-controls{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-bottom:8px; }
   .part-note{ margin:10px 0; color:var(--muted); font-size:.9rem; max-width:60ch; }

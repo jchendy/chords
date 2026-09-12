@@ -111,7 +111,13 @@ names the tab you're on.
   beat and single-note lines between — written for the feel that's playing
   and realised into the notes the neck's reading offers in its position.
   It's lit on the neck as it goes, written out as tab with its own controls
-  above it, and sounded on the recorded guitar so you can hear what you're
+  above it — the rhythm under the strings the way printed tab writes it: a
+  stem for every strike, bare for a quarter, flagged for an eighth, twice
+  for a sixteenth, dotted where the value is, a hollow head for a half or a
+  whole; eighths and shorter beamed within the beat and never across one, a
+  sixteenth beside an eighth taking a stub of second beam; a twelve- or
+  nine-slot bar written the 12/8 way, three eighths a beat; the bar numbers
+  small at each bar line — and sounded on the recorded guitar so you can hear what you're
   aiming at, on top of the band the way a lead sits, with a volume slider
   and a mute for when you'd rather play it yourself, and a second pair for
   the band — comp, bass and drums together — so it can be pulled down under
@@ -1385,7 +1391,8 @@ by what each part does:
 | `fretboard.js` | Tuning, CAGED and pentatonic shape templates, the maths that places them on the neck, CAGED shape matching, and the two pieces of box drawing every view shares — `boxColouredNotes`, which colours a note by the box that owns it, and `gripOutlines`, which traces the chord shape underneath. Also pure. |
 | `neck.js` | Draws a full 15-fret neck as SVG from markers and shape outlines — shared by the practice fretboard, the chord finder's CAGED overview and the reverse finder, so all three necks are one drawing. A fret is close to twice as wide as the gap between two strings, near enough the shape of the real thing to read a grip off, and a note sits close up behind its fret wire where the finger goes rather than in the middle of the gap; the inlays and the fret numbers stay centred, since that's where they are on a guitar. The label and the dot are sized against each other: a single character is set as large as the dot will hold without running into a root's ring, and a longer one ("♭3") a size down so it fits — which is what lets the dots be small enough for the strings to sit that close together. A full neck is wide, so it wants most of a laptop's width — hence the wider cap on how large the drawing may render. |
 | `progressions.js` | The preset progressions, written as scale degrees. Pure data. |
-| `tab.js` | Draws guitar tablature from a note list. |
+| `tab.js` | Draws guitar tablature from a note list: the strings, the numbers, the techniques, the bar numbers, and the rhythm under each row (stems, flags, beams within the beat, dots, hollow heads) from each strike's slot length on either grid. |
+| `css/tab.css` | The tab's look, one sheet for the three pages that draw it (practice, parts, review): a 17px string gap, 11px bold numbers, thin strings, the rhythm's stems and beams. Each page keeps only its own playing colour and playhead. |
 | `parts-guide-data.js` | What the parts page says about each style and part: progression, tempo, what the rhythm and notes are made of, where the idiom comes from. Pure data. |
 | `parts-guide.js` | The parts page (`parts.html`): every part written out and playable, in any reading. Has a small player of its own. |
 | `js/styles-base.js` | The band patterns the app started with: the base `STYLES`, one entry per style with its feels. |

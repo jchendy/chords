@@ -1,0 +1,24 @@
+/* The tab as tab.js draws it — one sheet for the three pages that show it
+   (the practice tab, the parts guide, the style review), so the strings,
+   the numbers and the rhythm read the same everywhere. Each page keeps
+   only what is its own: the colour of the note being played and the
+   playhead. Sized after printed tab: a 17px string gap, numbers at 11px
+   bold on a panel-coloured tile, thin strings, a firmer bar line. */
+.tab-string{ stroke:var(--line2); stroke-width:1; }
+.tab-bar{ stroke:var(--muted); stroke-width:1.2; opacity:.7; }
+.tab-label{ fill:var(--muted); font:500 10px Inter,system-ui,sans-serif; }
+.tab-barnum{ fill:var(--muted2); font:italic 500 9.5px Inter,system-ui,sans-serif; }
+.tab-chord{ fill:var(--ink); font:600 12px Inter,system-ui,sans-serif; }
+.tab-numeral{ fill:var(--muted); font:600 10px Inter,system-ui,sans-serif; }
+.tab-note rect{ fill:var(--panel); }
+.tab-note text{ fill:var(--ink); font:700 11px Inter,system-ui,sans-serif; }
+.tab-note.muted text{ fill:var(--muted); }
+.tab-note.soft text{ font-weight:500; fill:var(--muted); }   /* a hammered-on note: no pick */
+.tab-tech{ fill:var(--muted); font:italic 600 9.5px Inter,system-ui,sans-serif; }
+/* the rhythm under the strings: stems, flags, beams, dots, the hollow heads
+   of the long values */
+.tab-stem{ stroke:var(--ink); stroke-width:1.3; stroke-linecap:round; }
+.tab-beam{ stroke:var(--ink); stroke-width:3; }
+.tab-flag{ fill:none; stroke:var(--ink); stroke-width:1.3; stroke-linecap:round; }
+.tab-dot{ fill:var(--ink); }
+.tab-head{ fill:none; stroke:var(--ink); stroke-width:1.2; }

@@ -2466,6 +2466,46 @@
   }
 
   // ---- a very small test runner ----
+  // ---- the tab's rhythm ----
+  // Under the strings every strike gets a stem that says how long: the
+  // values come out of the slot lengths on both grids, a strum is one stem,
+  // eighths inside a beat are beamed and a beat line is not crossed.
+  function testTheTabWritesItsRhythm(t){
+    const { valueOf, onsets, build } = GT.tab;
+    const bad = [];
+    const want16 = { 16: 'whole', 8: 'half', 6: 'quarter.', 4: 'quarter', 3: 'eighth.', 2: 'eighth', 1: 'sixteenth' };
+    const want12 = { 12: 'whole.', 6: 'half.', 3: 'quarter.', 2: 'quarter', 1: 'eighth' };
+    const name = v => v.kind + (v.dotted ? '.' : '');
+    Object.entries(want16).forEach(([d, w]) => { const got = name(valueOf(Number(d), 16)); if (got !== w) bad.push(`${d} of 16 reads ${got}, not ${w}`); });
+    Object.entries(want12).forEach(([d, w]) => { const got = name(valueOf(Number(d), 12)); if (got !== w) bad.push(`${d} of 12 reads ${got}, not ${w}`); });
+    if (valueOf(1, 9).kind !== 'eighth') bad.push('a nine-slot bar is not three eighths a beat');
+    // a strum — six notes at one moment — is one stem
+    const strum = [0, 1, 2, 3, 4, 5].map(s => ({ at: 0.016 * s, dur: 4, string: s, fret: 0 }));
+    const by = onsets({ grid: 16, notes: strum });
+    if (by.get(0).size !== 1) bad.push(`a six-string strum makes ${by.get(0).size} stems`);
+    // two eighths on beat one beam; the eighth on beat two stands alone with
+    // a flag; a dotted quarter takes a dot; a half takes a hollow head
+    const ex = { grid: 16, bars: [{ startSlot: 0 }], notes: [
+      { at: 0, dur: 2, string: 2, fret: 3 }, { at: 2, dur: 2, string: 2, fret: 3 },
+      { at: 4, dur: 2, string: 2, fret: 5 },
+      { at: 8, dur: 6, string: 2, fret: 5 },
+      { at: 14, dur: 2, string: 2, fret: 5 },
+    ] };
+    const html = build(ex, 800).markup;
+    const count = cls => (html.match(new RegExp(`class="${cls}"`, 'g')) || []).length;
+    if (count('tab-stem') !== 5) bad.push(`${count('tab-stem')} stems for five strikes`);
+    if (count('tab-beam') !== 1) bad.push(`${count('tab-beam')} beams: the two eighths of beat one make one, and beat two's eighth is not beamed across`);
+    if (count('tab-flag') !== 2) bad.push(`${count('tab-flag')} flags for the two lone eighths`);
+    if (count('tab-dot') !== 1) bad.push(`${count('tab-dot')} dots for one dotted quarter`);
+    const half = build({ grid: 16, bars: [{ startSlot: 0 }], notes: [{ at: 0, dur: 8, string: 2, fret: 3 }] }, 800).markup;
+    if (!/class="tab-head"/.test(half)) bad.push('a half note has no hollow head');
+    // a sixteenth beside an eighth: the second beam is a stub
+    const mixed = build({ grid: 16, bars: [{ startSlot: 0 }], notes: [{ at: 0, dur: 3, string: 2, fret: 3 }, { at: 3, dur: 1, string: 2, fret: 3 }] }, 800).markup;
+    const mixedBeams = (mixed.match(/class="tab-beam"/g) || []).length;
+    if (mixedBeams !== 2) bad.push(`a dotted eighth and a sixteenth draw ${mixedBeams} beams, not a beam and a stub`);
+    t.equal(bad.join('; '), '', 'The tab writes its rhythm: values, one stem a strum, beams within the beat');
+  }
+
   async function run(){
     const results = [];
     const t = {
@@ -2477,6 +2517,7 @@
     };
     const suites = [
       ['Chord finder keeps its known shapes', testBaselineShapesSurvive],
+      ['The tab writes its rhythm', testTheTabWritesItsRhythm],
       ['Chord finder output is identifiable in reverse', testFinderOutputIsIdentifiable],
       ['Chord finder shows the everyday grips', testCanonicalGrips],
       ['Chord finder sorts common first and names the kind', testShapesAreSortedAndNamed],
