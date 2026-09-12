@@ -1406,6 +1406,45 @@
       t.ok(chord.every((c, i) => i === 0 || c.string === chord[i - 1].string - 1), 'a power chord sits on consecutive strings');
     }
     {
+      // ...and in a window that holds the root but not the two frets above
+      // it (E on the A string at the 7th, in a box ending at the 8th) the
+      // shape reaches past the window, marked so, rather than falling to
+      // whatever chord tones the window has on skipped strings
+      const E = chordFromName('E');
+      const narrow = { ...opts, window: { min: 5, max: 8 } };
+      const out = realise({ name: 'pw2', figure: [s(0, 2, 0.9, 'power')], variants: [], fills: [[s(0, 2, 0.9, 'power')]] }, barsOf([E, E]), 1, narrow, { grid: 16 });
+      const chord = out.filter(x => x.bar === 0 && x.strum).sort((a, b) => b.string - a.string);
+      const where = chord.map(c => `${c.string}:${c.fret}${c.reach ? 'r' : ''}`).join(' ');
+      t.ok(chord.length >= 2 && chord.every((c, i) => i === 0 || c.string === chord[i - 1].string - 1) && chord.every(c => c.midi % 12 === SEMITONE.E % 12 || c.midi % 12 === SEMITONE.B % 12), `a power chord keeps its shape when the window can't hold its 5th (${where})`);
+      t.ok(chord[0].fret >= 5 && chord[0].fret <= 8 && chord.slice(1).every(c => c.reach && c.fret > 8), 'its root is in the window and the notes past it say reach');
+    }
+    {
+      // every strum is a sweep across neighbouring strings: a grip the
+      // window cuts into strings that aren't neighbours is completed past
+      // the window (marked reach) — Bm's A-shape grip at the 2nd fret has
+      // its 4th-fret notes outside a 0–3 window — and a colour tone on top
+      // (the 9th of a 9th grip) sits on the string beside the grip's top one
+      const Bm = chordFromName('Bm'), E9 = chordFromName('E7');
+      const low = { ...opts, window: { min: 0, max: 3 } };
+      const contiguous = ns => { const ss = ns.map(x => x.string).sort((a, b) => a - b); return ss.every((x, i) => i === 0 || x === ss[i - 1] + 1); };
+      const split = realise({ name: 'sp', figure: [s(0, 2, 0.9, 'mid'), s(4, 2, 0.9, 'full')], variants: [], fills: [[s(0, 2, 0.9, 'mid')]] }, barsOf([Bm, Bm]), 1, low, { grid: 16 });
+      const mid = split.filter(x => x.bar === 0 && x.at === 0 && x.strum), full = split.filter(x => x.bar === 0 && x.at === 4 && x.strum);
+      t.ok(mid.length >= 3 && contiguous(mid) && full.length >= 3 && contiguous(full), `a strum the window cuts into keeps to neighbouring strings (${mid.map(x => x.string + ':' + x.fret + (x.reach ? 'r' : '')).join(' ')}; ${full.map(x => x.string + ':' + x.fret + (x.reach ? 'r' : '')).join(' ')})`);
+      t.ok([...mid, ...full].every(x => (x.fret >= 0 && x.fret <= 3) || x.reach), 'the notes it reaches past the window for say so');
+      const nine = realise({ name: 'nine', figure: [{ at: 0, dur: 2, vel: 0.9, strum: true, voicing: 'high', add: 14 }], variants: [], fills: [[s(0)]] }, barsOf([E9, E9]), 1, { ...opts, window: { min: 5, max: 9 } }, { grid: 16 });
+      const stab = nine.filter(x => x.bar === 0 && x.at === 0 && x.strum);
+      t.ok(stab.length >= 3 && contiguous(stab), `a colour tone on top sits on the string beside the grip (${stab.map(x => x.string + ':' + x.fret).join(' ')})`);
+    }
+    {
+      // the thumb's bass note is a bass string: F♯m in a 5–8 window has no
+      // root on the E, A or D strings inside it (its only F♯ is on the B
+      // string), so the thumb reaches for the A-string root a fret above
+      const Fsm = chordFromName('F#m');
+      const out = realise({ name: 'th', figure: [s(0, 2, 0.9, 'bass'), s(4, 2, 0.9, 'mid')], variants: [], fills: [[s(0, 2, 0.9, 'bass')]] }, barsOf([Fsm, Fsm]), 1, { ...opts, window: { min: 5, max: 8 } }, { grid: 16 });
+      const bass = out.find(x => x.bar === 0 && x.at === 0 && x.strum);
+      t.ok(bass && bass.string >= 3 && bass.midi % 12 === SEMITONE['F#'] % 12 && bass.reach, `the thumb's bass note is the root on a bass string, reached past the window (${bass ? bass.string + ':' + bass.fret : 'none'})`);
+    }
+    {
       // easy mode: no bends, hammer-ons, pull-offs or slides; sixteenths back on the eighths; a written easy version used as is
       // (the hammer-on lasts four slots: played plain it is two picked notes, the second halfway)
       const busy = { name: 'e', figure: [s(0), n(1, 4, 1), { at: 3, iv: 5, up: 2, dur: 2, vel: 0.8, tech: 'bend' }, { at: 6, iv: 3, iv2: 4, dur: 4, vel: 0.8, tech: 'hammer' }, n(12, 7, 2, 0.8, { ghost: true })], variants: [], fills: [[n(0, 2)]] };
@@ -1601,6 +1640,8 @@
               if (!n.free && !n.unison && !allowed.has(midiPc(n.midi + n.bend))) bad.push(`${reading} ${root}: ${part.name} bends to a note the reading doesn't offer`);
               if (n.fret < 1) bad.push(`${reading} ${root}: ${part.name} bends an open string`);
             }
+            // ...and an open string can't be shaken either
+            if (n.vib && n.fret < 1) bad.push(`${reading} ${root}: ${part.name} puts vibrato on an open string`);
             if (n.slide != null && (n.slide < 1 || n.slide === n.fret)) bad.push(`${reading} ${root}: ${part.name} slides from fret ${n.slide} to ${n.fret}`);
             if (n.tech === 'h' || n.tech === 'p'){
               const after = notes.find(m => m.bar === n.bar && m.string === n.string && m.soft && Math.abs(m.at - (n.at + n.dur)) < 1e-9);

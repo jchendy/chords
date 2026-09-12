@@ -62,18 +62,25 @@
     playing.card.querySelector('.tab-playhead').setAttribute('hidden', '');
     playing.card.querySelectorAll('.tab-note.now').forEach(g => g.classList.remove('now'));
     playing.card.querySelector('.play').textContent = 'Play';
+    playing.card.querySelectorAll('.note-dot.sounding').forEach(g => g.classList.remove('sounding'));
+    const { hooks } = playing;
     playing = null;
     log = [];
+    if (hooks.onStop) hooks.onStop();
   }
 
-  function play(card, style, feel, chords, notes, tempo, metrics){
+  // `hooks` is what a page wants told as the loop goes round: `onBar(bar)`
+  // when the playhead enters a bar, `onStop()` when the loop ends — the
+  // Hendrix page redraws a neck for the bar's chord on the first and puts
+  // it back on the second.
+  function play(card, style, feel, chords, notes, tempo, metrics, hooks = {}){
     stop();
     audio.ensureAudio();
     const ctx = audio.ctx();
     if (ctx.state === 'suspended') ctx.resume();
     audio.warmGuitar(); audio.warmPiano(); audio.warmBass();
     audio.keepAwake(true);
-    playing = { style, feel, chords, notes, tempo, card, metrics };
+    playing = { style, feel, chords, notes, tempo, card, metrics, hooks, shownBar: null };
     card.classList.add('playing');
     card.querySelector('.play').textContent = 'Stop';
     bar = 0;
@@ -112,7 +119,7 @@
       }
       // the part through the engine's one player, at the practice tab's default level
       audio.playPartNotes(notes.filter(n => n.bar === bar), n => t0 + n.at * slotDur + GT.band.swingOffset(feel, Math.floor(n.at), slotDur), slotDur, audio.PART_LEVEL, { slapback: !!feel.slapback })
-        .forEach(({ note: n, time, until }) => log.push({ time, until, slot: bar * grid + Math.floor(n.at) }));
+        .forEach(({ note: n, time, until }) => log.push({ time, until, slot: bar * grid + Math.floor(n.at), where: `${n.string}:${n.fret}` }));
       for (let slot = 0; slot < grid; slot++) log.push({ time: t0 + slot * slotDur, slot: bar * grid + slot, head: true });
       nextBarTime += barLen;
       bar = (bar + 1) % chords.length;
@@ -135,8 +142,16 @@
       head.removeAttribute('hidden');
       head.setAttribute('x', pos.x); head.setAttribute('y', pos.y);
     }
-    const sounding = new Set(log.filter(e => !e.head && e.time <= now && now < e.until).map(e => e.slot));
+    const live = log.filter(e => !e.head && e.time <= now && now < e.until);
+    const sounding = new Set(live.map(e => e.slot));
     card.querySelectorAll('.tab-note').forEach(g => g.classList.toggle('now', sounding.has(Number(g.dataset.slot))));
+    // a neck on the card, if it has one, lights the same notes where they're fretted
+    const cells = new Set(live.map(e => e.where));
+    card.querySelectorAll('.neck .note-dot').forEach(g => g.classList.toggle('sounding', cells.has(`${g.dataset.string}:${g.dataset.fret}`)));
+    if (at != null){
+      const barNow = Math.floor(at / playing.feel.grid);
+      if (barNow !== playing.shownBar){ playing.shownBar = barNow; if (playing.hooks.onBar) playing.hooks.onBar(barNow); }
+    }
     requestAnimationFrame(follow);
   }
 

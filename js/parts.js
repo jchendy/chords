@@ -1357,22 +1357,44 @@
       const low = tri.sort((a, b) => a.midi - b.midi);
       return voicing === 'bass' || voicing === 'fifth' ? [low[0]] : low;
     }
-    const grip = gripIn(chord, opts.window);
-    if (!grip) return null;
-    const low = grip.sort((a, b) => b.string - a.string);          // string 5 is the low E
-    switch (voicing){
-      // the root, or the 5th when the window has cut the grip's root off —
-      // the other note an alternating bass goes to — or the lowest there is
-      case 'bass': return [low.find(c => c.midi % 12 === rootPc) || low.find(c => c.midi % 12 === fifthPc) || low[0]];
-      // the other note of an alternating bass: the lowest 5th, or the root
-      case 'fifth': return [low.find(c => c.midi % 12 === fifthPc) || low.find(c => c.midi % 12 === rootPc) || low[0]];
-      case 'low':  return low.slice(0, 3);
-      case 'high': return low.slice(-3);
-      // the D, G and B strings: the triad inside an E-shape barre, the part
-      // a thumb-over hand strikes after the bass note (the "split chord")
-      case 'mid':  { const mid = low.filter(c => c.string >= 1 && c.string <= 3); return mid.length >= 3 ? mid : low.slice().sort((a, b) => Math.abs(a.string - 2) - Math.abs(b.string - 2) || a.midi - b.midi).slice(0, 3).sort((a, b) => b.string - a.string); }
-      default:     return low;
+    const pick = grip => {
+      const low = grip.sort((a, b) => b.string - a.string);          // string 5 is the low E
+      switch (voicing){
+        // the root, or the 5th when the window has cut the grip's root off —
+        // the other note an alternating bass goes to — or the lowest there is
+        // (a root or a 5th on a bass string before one anywhere else)
+        case 'bass': return [low.find(c => c.string >= 3 && c.midi % 12 === rootPc) || low.find(c => c.midi % 12 === rootPc) || low.find(c => c.string >= 3 && c.midi % 12 === fifthPc) || low.find(c => c.midi % 12 === fifthPc) || low[0]];
+        // the other note of an alternating bass: the lowest 5th, or the root
+        case 'fifth': return [low.find(c => c.string >= 3 && c.midi % 12 === fifthPc) || low.find(c => c.midi % 12 === fifthPc) || low.find(c => c.string >= 3 && c.midi % 12 === rootPc) || low.find(c => c.midi % 12 === rootPc) || low[0]];
+        case 'low':  return low.slice(0, 3);
+        case 'high': return low.slice(-3);
+        // the D, G and B strings: the triad inside an E-shape barre, the part
+        // a thumb-over hand strikes after the bass note (the "split chord")
+        case 'mid':  { const mid = low.filter(c => c.string >= 1 && c.string <= 3); return mid.length >= 3 ? mid : low.slice().sort((a, b) => Math.abs(a.string - 2) - Math.abs(b.string - 2) || a.midi - b.midi).slice(0, 3).sort((a, b) => b.string - a.string); }
+        default:     return low;
+      }
+    };
+    // A strum is a pick sweep across neighbouring strings. A window that
+    // cuts into a grip can leave its cells on strings that aren't
+    // neighbours (x-7-x-7-x-7 for a chord the window holds three notes
+    // of), which no hand plays as a chord: the grip is then completed a
+    // fret or two past the window, those notes marked `reach`, before the
+    // window's own cells are settled for.
+    const { min, max } = opts.window;
+    if (opts.plucked){ const grip = gripIn(chord, opts.window); return grip ? pick(grip) : null; }
+    let first = null;
+    for (let reach = 0; reach <= 2; reach++){
+      const grip = gripIn(chord, { min: Math.max(0, min - reach), max: max + reach });
+      if (!grip) continue;
+      const sel = pick(grip);
+      if (!sel || !sel.length) continue;
+      if (!first) first = sel;
+      const strings = sel.map(c => c.string).sort((a, b) => a - b);
+      if (strings.every((x, i) => i === 0 || x === strings[i - 1] + 1)){
+        return reach ? sel.map(c => (c.fret < min || c.fret > max) ? { ...c, reach: true } : c) : sel;
+      }
     }
+    return first;
   }
 
   // The order a pick sweeps, low string first, this far apart — the tab's
@@ -1435,7 +1457,8 @@
         const stroke = w.stroke || strokeFor(per, w.at, fine);
         grip.forEach((c, k) => {
           out.push({ at: w.at, dur: w.dur, vel: each, string: c.string, fret: c.fret, midi: c.midi,
-                     strum: true, voicing: w.voicing || 'full', mute: !!w.mute, spread: k * STRUM_SPREAD, stroke });
+                     strum: true, voicing: w.voicing || 'full', mute: !!w.mute, spread: k * STRUM_SPREAD, stroke,
+                     ...(c.reach ? { reach: 2 } : {}) });   // a grip completed past the window says so
         });
         prev = grip[grip.length - 1];
         return;
@@ -1634,9 +1657,33 @@
     // root and 5th, not the palette's (which is the key's when a part
     // stays on the I)
     const rootPc = pc(chord.note);
-    const cells = cellsIn(opts.window).filter(c => c.string >= 3);
-    const roots = cells.filter(c => c.midi % 12 === rootPc).sort((a, b) => a.midi - b.midi);
-    if (!roots.length) return null;
+    const win = opts.window;
+    const bassStrings = w => cellsIn(w).filter(c => c.string >= 3);
+    const cells = bassStrings(win);
+    let roots = cells.filter(c => c.midi % 12 === rootPc).sort((a, b) => a.midi - b.midi);
+    // No root on a bass string inside the window — F♯m in a box of frets
+    // 5 to 8 has its only F♯ on the B string — and the thumb doesn't go
+    // to a treble string for it. It reaches a fret or two past the window
+    // (the A-shape's root on the A string a fret above the box, marked
+    // `reach`), and failing that takes the 5th, or the lowest chord tone
+    // the bass strings have.
+    if (!roots.length){
+      const past = c => c.fret < win.min ? win.min - c.fret : c.fret > win.max ? c.fret - win.max : 0;
+      const wide = bassStrings({ min: Math.max(0, win.min - 2), max: win.max + 2 }).filter(c => c.midi % 12 === rootPc)
+        .sort((a, b) => past(a) - past(b) || b.string - a.string || a.midi - b.midi);   // the nearest, the lower string first
+      if (wide.length) roots = [{ ...wide[0], reach: true }];
+    }
+    if (!roots.length){
+      // no root to be had: the 5th on a bass string, in the window or a
+      // fret or two past it — a bass note is a root or a 5th, never the 3rd
+      const fifthPc = chord.fifth ? pc(chord.fifth) : (rootPc + 7) % 12;
+      const inWin = cells.filter(c => c.midi % 12 === fifthPc).sort((a, b) => a.midi - b.midi)[0];
+      if (inWin) return [inWin];
+      const past = c => c.fret < win.min ? win.min - c.fret : c.fret > win.max ? c.fret - win.max : 0;
+      const wide = bassStrings({ min: Math.max(0, win.min - 2), max: win.max + 2 }).filter(c => c.midi % 12 === fifthPc)
+        .sort((a, b) => past(a) - past(b) || b.string - a.string || a.midi - b.midi)[0];
+      return wide ? [{ ...wide, reach: true }] : null;
+    }
     const r = roots[0];
     if (voicing === 'bass') return [r];
     const fifthPc = chord.fifth ? pc(chord.fifth) : (rootPc + 7) % 12;
@@ -1648,16 +1695,32 @@
   }
   // A power chord: the root on the lowest string that has it, the 5th on the
   // next string up, the octave above that.
+  // A power chord is one hand shape — the root, the 5th two frets up on the
+  // next string, the octave beside it — so it is looked for as that shape.
+  // A window a hand wide can hold the root but not the two frets above it
+  // (E on the A string at the 7th fret, in a box that ends at the 8th), and
+  // it used to fall back to any three chord tones the window had, which
+  // could land on skipped strings: x-7-x-7-x-7, a shape no one plays. Now
+  // the shape reaches past the window for its 5th and octave, marked so
+  // (`reach`), and only a window with no root at all falls back.
   function powerVoicing(chord, opts){
     const rootPc = pc(chord.note);
-    const cells = cellsIn(opts.window);
-    const roots = cells.filter(c => c.midi % 12 === rootPc && c.string >= 2).sort((a, b) => b.string - a.string || a.midi - b.midi);
-    for (const r of roots){
-      const fifth = cells.find(c => c.string === r.string - 1 && c.midi === r.midi + 7);
-      if (!fifth) continue;
-      const oct = cells.find(c => c.string === r.string - 2 && c.midi === r.midi + 12);
-      return oct ? [r, fifth, oct] : [r, fifth];
-    }
+    const win = opts.window;
+    const shapeFrom = cells => {
+      const roots = cells.filter(c => c.midi % 12 === rootPc && c.string >= 2 && c.fret >= win.min && c.fret <= win.max)
+        .sort((a, b) => b.string - a.string || a.midi - b.midi);
+      for (const r of roots){
+        const fifth = cells.find(c => c.string === r.string - 1 && c.midi === r.midi + 7);
+        if (!fifth) continue;
+        const oct = cells.find(c => c.string === r.string - 2 && c.midi === r.midi + 12);
+        return oct ? [r, fifth, oct] : [r, fifth];
+      }
+      return null;
+    };
+    const inWindow = shapeFrom(cellsIn(win));
+    if (inWindow) return inWindow;
+    const reached = shapeFrom(cellsIn({ min: Math.max(0, win.min - 2), max: win.max + 2 }));
+    if (reached) return reached.map(c => (c.fret < win.min || c.fret > win.max) ? { ...c, reach: true } : c);
     return strumCells(chord, opts, 'low');
   }
   // Root, 3rd and 7th (or 5th for a triad) on three strings, the 5th left
@@ -1689,7 +1752,10 @@
   // above it on the top string (x-7-6-7-7-7 for E9) — the T-Bone and
   // B.B. King grip Red House is comped with
   function sharp9Voicing(chord, opts, ninth = false){
-    if (chord.quality !== 'maj') return shellVoicing(chord, opts);
+    // on a chord that isn't major (the part's changes moved to a minor
+    // one) the top of the grip the window has: neighbouring strings, as a
+    // sweep wants, where a shell would mute the string between
+    if (chord.quality !== 'maj') return strumCells(chord, opts, 'high');
     const win = opts.window;
     const cells = cellsIn({ min: Math.max(0, win.min - 1), max: Math.min(FRET_COUNT, win.max + 1) });
     const r = pc(chord.note);
@@ -1706,9 +1772,9 @@
         out.push(c);
       }
       if (ok) return out;
-      if (out.length >= 3) return out;                 // root, 3rd, ♭7: the shell of it
+      if (out.length >= 3) return out;                 // root, 3rd, ♭7 on neighbouring strings: the heart of it
     }
-    return shellVoicing(chord, opts);
+    return strumCells(chord, opts, 'high');
   }
   // One extra note above a grip: a colour tone (the 9th, the 6th) on a strum.
   function placeIv(chord, opts, iv, above){
@@ -1780,7 +1846,9 @@
     }
     const roll = rng(Number(seed) || 1);
     const phrase = feat.phrase || 2;
-    opts = { ...opts, blues: !!part.blues };          // the palette the part asks for
+    // the palette the part asks for; and whether its chords are plucked
+    // (a fingerpicked part's strings needn't be neighbours) or swept
+    opts = { ...opts, blues: !!part.blues, plucked: !!part.fingers };
     const out = [];
     const stopBars = new Set();
     const pick = list => list[Math.floor(roll() * list.length)];
@@ -1859,8 +1927,23 @@
         grip = grip.slice().sort((a, b) => a.midi - b.midi);
         let colour = null;
         if (w.add){
-          const top = grip[grip.length - 1].midi;
-          colour = placeIv(on, opts, w.add, top);
+          const top = grip[grip.length - 1];
+          colour = placeIv(on, opts, w.add, top.midi);
+          // the colour tone sits on the string beside the grip's top one —
+          // a 9th on top is x-7-6-7-7-7, not a note a string away with the
+          // string between left out of the sweep — reached for past the
+          // window if need be, or left out
+          if (colour && colour.string !== top.string - 1){
+            const st = top.string - 1, want = colour.midi % 12;
+            colour = null;
+            if (st >= 0){
+              const { min, max } = opts.window;
+              const frets = [];
+              for (let f = Math.max(0, min - 2); f <= Math.min(FRET_COUNT, max + 2); f++) if ((STRING_MIDI[st] + f) % 12 === want && STRING_MIDI[st] + f > top.midi) frets.push(f);
+              frets.sort((a, b) => Math.abs(a - (min + max) / 2) - Math.abs(b - (min + max) / 2));
+              if (frets.length) colour = { string: st, fret: frets[0], midi: STRING_MIDI[st] + frets[0], ...(frets[0] < min || frets[0] > max ? { reach: true } : {}) };
+            }
+          }
           if (colour) grip.push(colour);
         }
         const each = w.vel * strumStringLevel(grip.length);
@@ -1869,6 +1952,7 @@
         const grips = w.voicing === 'sharp9' || w.voicing === 'ninth' ? { reach: 1 } : {};
         grip.forEach((c, k) => notes.push({ at: w.at, dur: w.dur, vel: each, string: c.string, fret: c.fret, midi: c.midi,
                                              strum: true, voicing: w.voicing, mute: !!w.mute, next: !!w.next, spread: k * STRUM_SPREAD, stroke, ...grips,
+                                             ...(c.reach ? { reach: 2 } : {}),           // a power chord's 5th past the window
                                              ...(c === colour ? { colour: true } : {}) }));
       });
       if (part.fingers) notes = fingersOffThumb(notes, cells);
@@ -1881,7 +1965,7 @@
           if (w.ghost){ n.vel *= 0.35; n.mute = true; n.ghost = true; }
           if (w.stacc) n.dur = Math.min(n.dur, 0.5);
           if (w.pm) n.mute = true;
-          if (w.vib) n.vib = true;
+          if (w.vib && n.fret > 0) n.vib = true;      // an open string can't be shaken
           if (w.rake) n.rake = true;
           // the wah: the pedal rocking with the pick — toe down on a
           // downstroke and on a single note (the filter opening), heel on

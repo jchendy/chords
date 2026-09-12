@@ -78,7 +78,8 @@ beat), nine for a jazz waltz (three beats of three). Every event has a slot
   string and, on the string below, the note a tone under it bent up to
   meet it. `b(at, iv, up, ...)` a bend, `h`/`p` hammer-on and pull-off,
   `sl(at, from, iv, ...)` a slide. `g` is a ghost strum (a muted scratch).
-- Flags: `pm` palm mute, `stacc` short, `vib` vibrato, `rake` a rake into
+- Flags: `pm` palm mute, `stacc` short, `vib` vibrato (dropped where the
+  note lands on an open string, which no hand can shake), `rake` a rake into
   the note, `trem: 8` tremolo picking, `ghost` a dead note, `wah` the pedal
   rocked with the stroke (a sweep up or down per note), `trill: iv2` a
   trill to that interval (written as 32nds, the first note carrying the
@@ -150,7 +151,11 @@ keys reach 24–28. The `tools/reach.js` script prints this per key.
   keeps it on the treble strings the box has, never when its lower note
   bends. (`placePair` in parts.js.)
 - A fingerpicked part keeps its thumb on the bass strings: `bass` is the
-  lowest root on E, A or D, `fifth` the 5th on the string beside it. A dead
+  lowest root on E, A or D, `fifth` the 5th on the string beside it. When
+  the window has no root on those strings (F♯m in a box of frets 5 to 8)
+  the thumb reaches a fret or two past the window for one, marked
+  `reach`, before settling for the 5th or the lowest chord tone the bass
+  strings hold — never a treble string. A dead
   thumb is the root on every beat, by definition; the fingers play the
   treble strings, so their intervals are written an octave up, and a part
   marked `fingers: true` (every fingerpicked part; `liftFingers` in
@@ -160,10 +165,22 @@ keys reach 24–28. The `tools/reach.js` script prints this per key.
   two notes come apart plays plain. `tools/thumb-clash.js` counts the bars
   where that would otherwise happen. (`thumbCell`, `fingersOffThumb`.)
 - `power` is the root on the lowest string that has it, the 5th on the next
-  string up, the octave above. `shell` is root, 3rd and 7th (or 5th for a
-  triad), the way a big-band rhythm guitar plays.
+  string up, the octave above — one hand shape, so when the window holds
+  the root but not the two frets above it the shape reaches past the window
+  (the notes marked `reach`) rather than falling to chord tones on skipped
+  strings; only a window with no root falls back to a low strum. `shell` is
+  root, 3rd and 7th (or 5th for a triad), the way a big-band rhythm guitar
+  plays.
 - In the Triads reading every strum is the triad the neck shows, whatever
   voicing was asked for.
+- A strum is a pick sweep across neighbouring strings. When the window
+  cuts into the grip so that its cells inside sit on strings that aren't
+  neighbours, the grip is completed a fret or two past the window (the
+  notes marked `reach`) rather than played with a string skipped; a colour
+  tone on top (`add`) sits on the string beside the grip's top one, or is
+  left out. A shell mutes the string between its root and its 3rd and 7th,
+  and a fingerpicked part (`fingers: true`) plucks its chords, so neither
+  is held to it. `tools/sweep.js` counts strums that skip a string.
 - A chord with colour the triad-and-7th model can't spell — 7♯9, 9, add9,
   6, sus2, sus4, 7sus4 — carries it as `ext` (semitones beyond the triad)
   and `sus`, and the palette, the strums and the comp voice it: a strum of
@@ -189,8 +206,9 @@ Measure rather than assume. When a claim is made about the parts — that
 they sit low, that double stops land on the wrong strings, that the thumb
 moves, that a list is never heard — realise them and count. The scripts in
 `tools/` do this: `sweep.js` (every part through every reading, key, window,
-easy mode and seed: no exceptions, every note in the window, every bar
-played, no technique left in easy mode), `reach.js` (what each key's box
+easy mode and seed: no exceptions, every note in the window or marked
+reach, every bar played, no technique left in easy mode, no vibrato on an
+open string, no swept strum skipping a string), `reach.js` (what each key's box
 holds), and on the review page each card exposes its realised state
 (`card.getState()`) so a measurement can run in the console.
 

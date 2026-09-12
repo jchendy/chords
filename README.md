@@ -799,7 +799,11 @@ a chord), swept the way a pick crosses the strings — see the strum below — w
 chord getting its 7th the way the chords reading draws it. A strum says how
 much of the grip it wants, as the style does: the whole thing, the bottom
 three strings where a shuffle keeps its weight, the top three for a stab or
-a chop, the root alone — the low note an alternating-bass strum puts
+a chop, a power chord (one hand shape — root, 5th, octave on consecutive
+strings — that reaches two frets past the window for its 5th when the
+window holds only the root, rather than coming out on skipped strings; every
+swept strum keeps to neighbouring strings the same way, completing its grip
+past the window when the window cuts into it), the root alone — the low note an alternating-bass strum puts
 before the chord (the 5th when the window has cut the root off, the other
 note such a bass goes to) — or the 5th alone, the note that bass alternates
 to, which is how country's and bluegrass's boom-chick is written. A strum
@@ -871,14 +875,28 @@ Practice tab's preset list has the changes his songs run on; and one part
 (the Hey Joe walk-up, whose 5th is the next chord's root only because every
 chord is a fourth below the last) says `needs` and opens only with that
 preset. `hendrix.html` and `js/hendrix-guide.js` are the deep dive under
-the **Style Deep Dives** tab: the grips drawn and linked to the finder, the
-scales, forty-odd examples, exercises and studies realised from the genre's
-parts and played by the shared player, each with a "Drill it in Practice"
-link in the share format (key, chords or preset, tempo, feel, part, roll,
-blend, the neck's reading and box), the songs analysed as reference points
-with their tabs linked at Ultimate Guitar and Songsterr, a section saying
-how the page was made — by reading, with no recording listened to — and a
-numbered list of every source.
+the **Style Deep Dives** tab: the grips drawn with their fingering (T for
+the thumb over the neck) and linked to the finder, the common changes
+played with them, the scales drawn on the neck (the box under the thumb
+chord, the box above it, the blue note, the minor pentatonic against the
+7♯9, Dorian, the major pentatonic, the two pentatonics mixed, Mixolydian)
+and played as drills written note by note, then fifty-odd examples,
+exercises and studies realised from the genre's parts and played by the
+shared player. Every card has a **Neck** switch that draws, under the tab,
+the chord as it's fretted (the CAGED grip nearest the hand, with its 7th
+and its colour tones hollow) or the notes the part may play (its palette
+in the position window), redrawn as the playhead enters a bar with a new
+chord and lit note by note as they sound — what the Practice tab's neck
+does for a part — an **Expand** that opens the example in a full-window
+view, the tab drawn to the window's width and the neck beside it — and a
+"Drill it in Practice" link in the share format (key, chords or preset,
+tempo, feel, part, roll, blend, the neck's reading and box). The chord-change
+drills are the chords alone, whole and partial, no runs. The contents sit
+in the left margin and stay there, the section on screen marked and opened
+to list its sub-headings and examples. Then
+the songs analysed as reference points with their tabs linked at Ultimate
+Guitar and Songsterr, a section saying how the page was made — by reading,
+with no recording listened to — and a numbered list of every source.
 
 **The style review.** `review.html` is a page for deciding what the styles
 should become: every existing style beside a proposed revision of it — the
@@ -1470,7 +1488,7 @@ by what each part does:
 | `css/tab.css` | The tab's look, one sheet for the three pages that draw it (practice, parts, review): a 17px string gap, 11px bold numbers, thin strings, the rhythm's stems and beams. Each page keeps only its own playing colour and playhead. |
 | `parts-guide-data.js` | What the parts page says about each style and part: progression, tempo, what the rhythm and notes are made of, where the idiom comes from. Pure data. |
 | `parts-guide.js` | The parts page (`parts.html`): every part written out and playable, in any reading. |
-| `example-player.js` | The player the parts page and the deep dives share: draws a realised part as tab and loops it over the style's band, the tab following. |
+| `example-player.js` | The player the parts page and the deep dives share: draws a realised part as tab and loops it over the style's band, the tab following and, where the card has a neck, its dots lit as the notes sound; tells the page when the playhead enters a bar (`onBar`) and when the loop stops. |
 | `hendrix-guide.js` | The Hendrix deep dive (`hendrix.html`): the grips drawn, the examples, exercises and studies realised from the Hendrix genre and played, each with its link into Practice, the songs and the sources. |
 | `js/styles-base.js` | The band patterns the app started with: the base `STYLES`, one entry per style with its feels. |
 | `js/styles.js` | Resolves what the app plays: the proposals merged over the base patterns, parts and guide at load (`GT.styles`), with the base kept for the review page. |

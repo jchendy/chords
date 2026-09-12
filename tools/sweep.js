@@ -36,11 +36,18 @@ Object.keys(LIBRARY).forEach(style => Object.keys(LIBRARY[style]).forEach(feel =
           if (!Number.isFinite(n.midi) || (!n.reach && (n.fret < window.min || n.fret > window.max))) note('window', `${part.name} ${reading} ${root}: fret ${n.fret} outside ${window.min}-${window.max}`);
           if (n.string < 0 || n.string > 5) note('string', `${part.name}: string ${n.string}`);
           if (n.bend && !(n.fret > 0)) note('bend0', `${part.name}: a bend on an open string`);
+          if (n.vib && !(n.fret > 0)) note('vib0', `${part.name}: vibrato on an open string`);
           if (n.slide != null && (n.slide < 0 || n.slide > 22)) note('slide', `${part.name}: slide from ${n.slide}`);
           if (n.pair && !out.some(m => m.bar === n.bar && Math.abs(m.at - n.at) < 1e-9 && m.tech === 'double' && !m.pair)) note('orphan', `${part.name}: a pair note with no first note`);
           if (easy && (n.bend || n.tech === 'h' || n.tech === 'p' || n.slide != null || n.ghost || n.trem || n.rake)) note('easy', `${part.name}: easy mode still has ${n.bend ? 'a bend' : n.tech || (n.slide != null ? 'a slide' : n.ghost ? 'a ghost' : n.trem ? 'tremolo' : 'a rake')}`);
         });
         out.stopBars.forEach(b => { if (b % 2 !== 1) note('stopbar', `${part.name}: stop bar ${b} is not a fill bar`); });
+        // a strum is a sweep across neighbouring strings — a shell excepted,
+        // which mutes the string between its root and its 3rd and 7th
+        const strumsAt = new Map();
+        // (one strum at a time: a thumb's bass note and a chord written at the same slot are two)
+        if (!part.fingers) out.filter(n => n.strum && n.voicing !== 'shell').forEach(n => { const k = `${n.bar}:${n.at}:${n.voicing}${n.next ? 'n' : ''}`; if (!strumsAt.has(k)) strumsAt.set(k, []); strumsAt.get(k).push(n.string); });
+        strumsAt.forEach((ss, k) => { ss.sort((a, b) => a - b); if (ss.some((x, i) => i > 0 && x !== ss[i - 1] + 1)) note('skip', `${part.name} ${reading} ${root} w${window.min}: the strum at ${k} skips a string (${ss.join(',')})`); });
         // every bar has something in it
         for (let b = 0; b < bars.length; b++) if (!out.some(n => n.bar === b)) note('emptybar', `${part.name} ${reading} ${root} w${window.min} easy=${easy}: bar ${b} is empty`);
       })));

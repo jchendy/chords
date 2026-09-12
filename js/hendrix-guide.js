@@ -7,8 +7,10 @@
 (function(){
   'use strict';
   const GT = (window.GT = window.GT || {});
-  const { chordFromName, SEMITONE, MINOR_KEYS } = GT.theory;
-  const { partsFor, realise } = GT.parts;
+  const { chordFromName, displayName, chordPcs, SEMITONE, MINOR_KEYS } = GT.theory;
+  const { partsFor, realise, palette } = GT.parts;
+  const { STRING_TUNING, STRING_MIDI, FRET_COUNT, CAGED_MAJOR, CAGED_MINOR, CAGED_COLORS,
+          cagedPlacements, seventhCells, susCells, arpeggioCells, pentaBoxPlacements, scaleBoxPlacements } = GT.fretboard;
   const { STYLES } = GT.audio;
   const { drawTab, play, stop, playing } = GT.examplePlayer;
   const $ = id => document.getElementById(id);
@@ -43,8 +45,10 @@
     else p.set('n', chords.map(c => `${c.name}.${c.bars || 1}`).join(','));
     p.set('t', String(tempo));
     p.set('s', `${STYLE}.${feelIndex(feel)}`);
-    const idx = partsFor(STYLE, feel).findIndex(x => x.name === part);
-    p.set('p', `${Math.max(0, idx)}.f.${seed}${easy ? '.e' : ''}${blend === 'lead' ? '.l' : blend === 'rhythm' ? '.r' : ''}`);
+    if (part){
+      const idx = partsFor(STYLE, feel).findIndex(x => x.name === part);
+      p.set('p', `${Math.max(0, idx)}.f.${seed}${easy ? '.e' : ''}${blend === 'lead' ? '.l' : blend === 'rhythm' ? '.r' : ''}`);
+    }
     const first = chordFromName(chords[0].name, SEMITONE[key] % 12, mode || 'major');
     const box = boxIndexFor({ key, mode, reading, window: win }, first);
     p.set('f', `m:${reading || 'penta'}${mode === 'minor' ? '.t:modal' : ''}${box ? `.b:${box}` : ''}`);
@@ -69,70 +73,247 @@
       boxes = fb.scaleBoxPlacements(rootPc, isMinor, new Set(pcs));
     } else boxes = fb.pentaBoxPlacements(rootPc, isMinor);
     const sorted = boxes.filter(b => b.anchor >= 0 && b.anchor <= fb.FRET_COUNT).sort((a, b) => a.anchor - b.anchor);
-    let best = 0, bd = Infinity;
+    // the box that covers most of the window; of two that cover the same,
+    // the one starting nearer; of two of those, the higher
+    let best = 0, bestScore = -Infinity;
     sorted.forEach((b, i) => {
-      const d = Math.abs(Math.min(...b.cells.map(c => c.fret)) - win.min);
-      if (d <= bd){ bd = d; best = i; }
+      const frets = b.cells.map(c => c.fret), lo = Math.min(...frets), hi = Math.max(...frets);
+      const overlap = Math.max(0, Math.min(hi, win.max) - Math.max(lo, win.min) + 1);
+      const score = overlap * 100 - Math.abs(lo - win.min);
+      if (score >= bestScore){ bestScore = score; best = i; }
     });
     return best;
   }
   const finderLink = chord => `index.html#chord-finder?c=${encodeURIComponent(chord)}`;
 
   // ---- realising an example ----
-  function realiseExample(ex){
-    const feel = feelByLabel(ex.feel);
-    const part = partsFor(STYLE, ex.feel).find(p => p.name === ex.part);
-    if (!feel || !part) return null;
+  const optsFor = ex => ({ reading: ex.reading || 'penta', window: ex.window || eShapeWindow(ex.key), scaleTheory: ex.mode === 'minor' ? 'modal' : 'parallel',
+                           stringSet: 2, stayOnKey: false, key: { tonic: ex.key, mode: ex.mode || 'major' }, tech: null });
+  function chordsOf(ex){
     const tonicPc = SEMITONE[ex.key] % 12;
     const chords = [];
     ex.chords.forEach(c => { const ch = chordFromName(c.name, tonicPc, ex.mode || 'major'); for (let k = 0; k < (c.bars || 1); k++) chords.push(ch); });
-    const opts = { reading: ex.reading || 'penta', window: ex.window || eShapeWindow(ex.key), scaleTheory: ex.mode === 'minor' ? 'modal' : 'parallel',
-                   stringSet: 2, stayOnKey: false, key: { tonic: ex.key, mode: ex.mode || 'major' }, tech: null };
-    const notes = realise(part, chords.map(chord => ({ chord })), ex.seed || 7, opts, { grid: feel.grid, blend: ex.blend || 'mixed', easy: !!ex.easy });
+    return chords;
+  }
+  function realiseExample(ex){
+    const feel = feelByLabel(ex.feel);
+    if (!feel) return null;
+    const chords = chordsOf(ex);
+    // a drill writes its own notes — a scale up and down — rather than
+    // realising a part; its last chord holds for as many bars as the run needs
+    if (ex.build){
+      const notes = ex.build(chords, feel);
+      const bars = 1 + Math.max(0, ...notes.map(n => n.bar));
+      while (chords.length < bars) chords.push(chords[chords.length - 1]);
+      return { feel, chords, notes };
+    }
+    let part = partsFor(STYLE, ex.feel).find(p => p.name === ex.part);
+    if (!part) return null;
+    // a chord-change drill is the chords alone: the figure and its variants
+    // in every bar, no fills, no runs — only the strums, whole and partial
+    if (ex.chordsOnly) part = { name: part.name, figure: part.figure, variants: part.variants || [], fills: [part.figure], figureMode: part.figureMode, fingers: part.fingers };
+    let notes = realise(part, chords.map(chord => ({ chord })), ex.seed || 7, optsFor(ex), { grid: feel.grid, blend: ex.blend || 'mixed', easy: !!ex.easy });
+    if (ex.chordsOnly){ const kept = notes.filter(n => n.strum); kept.stopBars = notes.stopBars; notes = kept; }
     return { feel, part, chords, notes };
   }
 
-  function card(host, ex){
+  // ---- the neck under a card ----
+  // What the Practice tab's neck does for a part: the chord as it's fretted
+  // (the CAGED grip nearest the hand, its 7th and its colours), or the notes
+  // the part may play (its palette in the position window), with the notes
+  // lit as they sound. Redrawn when the playhead enters a bar whose chord
+  // is a different one.
+  const DEG = ['1', '♭2', '2', '♭3', '3', '4', '♭5', '5', '♭6', '6', '♭7', '7'];
+  // the label a chord gives an interval: its colours read as 9, ♯9 and 6
+  function labelFor(iv, chord){
+    iv = ((iv % 12) + 12) % 12;
+    const ext = (chord && chord.ext) || [];
+    if (iv === 3 && ext.includes(3)) return '♯9';
+    if (iv === 2 && (ext.includes(2) || ext.includes(14))) return '9';
+    if (iv === 9 && ext.includes(9)) return '6';
+    return DEG[iv];
+  }
+  const pcOf = c => (STRING_TUNING[c.string] + c.fret) % 12;
+  const cellKey = c => `${c.string}:${c.fret}`;
+  const SCALE_COLOR = '#5f8ce8', DIM = '#6b655b';
+  // the neck's stretch for a card: the window, widened to any note the
+  // example reaches past it, a fret either side
+  function neckGeometry(ex, notes){
+    const win = ex.window || eShapeWindow(ex.key);
+    const frets = notes.map(n => n.fret).filter(f => f > 0);
+    const lo = Math.min(win.min, ...frets), hi = Math.max(win.max, ...frets);
+    return GT.neck.geometry(Math.max(0, lo - 1), Math.min(FRET_COUNT, hi + 1));
+  }
+  // a note the part plays that the drawing hasn't got — a fill note, one
+  // past the window — is added hollow, so it can light
+  function addPlayed(markers, played, chord, rootPc){
+    const have = new Set(markers.map(cellKey));
+    played.forEach(c => {
+      if (have.has(cellKey(c))) return;
+      have.add(cellKey(c));
+      markers.push({ string: c.string, fret: c.fret, color: DIM, hollow: true, passing: true, label: labelFor(pcOf(c) - rootPc, chord), isRoot: pcOf(c) === rootPc });
+    });
+  }
+  function chordNeck(chord, win, played){
+    const rootPc = SEMITONE[chord.note] % 12;
+    const isMinor = chord.quality === 'min';
+    const mid = (win.min + win.max) / 2;
+    const all = cagedPlacements(rootPc, isMinor ? CAGED_MINOR : CAGED_MAJOR).filter(p => p.cells.length > 2);
+    const inWin = all.filter(p => p.fretMin >= win.min - 1 && p.fretMax <= win.max + 1);
+    const placement = (inWin.length ? inWin : all).reduce((b, p) => Math.abs(p.meanFret - mid) < Math.abs(b.meanFret - mid) ? p : b);
+    let cells = chord.seventh ? seventhCells(placement, rootPc, SEMITONE[chord.seventh] % 12) : placement.cells.slice();
+    if (chord.sus) cells = susCells(cells, rootPc, chord.sus);
+    const color = CAGED_COLORS[placement.name];
+    const markers = cells.map(c => ({ string: c.string, fret: c.fret, color, label: labelFor(pcOf(c) - rootPc, chord), isRoot: pcOf(c) === rootPc, shapes: [placement.name] }));
+    // the chord's colour tones in the window — the ♯9, the 9th, the 6th — hollow
+    const have = new Set(markers.map(cellKey));
+    arpeggioCells(win.min, win.max, new Set(chordPcs(chord))).forEach(c => {
+      if (have.has(cellKey(c))) return;
+      have.add(cellKey(c));
+      markers.push({ string: c.string, fret: c.fret, color, hollow: true, label: labelFor(pcOf(c) - rootPc, chord), isRoot: pcOf(c) === rootPc });
+    });
+    addPlayed(markers, played, chord, rootPc);
+    const lines = [{ color, shape: placement.name, cells: cells.map(c => ({ string: c.string, fret: c.fret })) }];
+    const coloured = chord.seventh || chord.sus || (chord.ext && chord.ext.length);
+    return { markers, lines, what: `${displayName(chord)} — the ${placement.name} shape${coloured ? ', with its colour hollow' : ''}` };
+  }
+  function paletteName(chord, ex){
+    if (ex.scale) return ex.scale.name;
+    const root = chord.note;
+    const isMinor = chord.quality === 'min';
+    const blues = !!ex.blues;
+    const reading = ex.reading || 'penta';
+    if (reading === 'penta') return `${root} ${isMinor || blues ? 'minor' : 'major'} pentatonic`;
+    if (reading === 'scale'){
+      if (blues && !isMinor) return `the ${root} blues scale`;
+      if (ex.mode === 'minor') return `the key's notes from ${root}`;
+      const flat7 = chord.seventh && (SEMITONE[chord.seventh] - SEMITONE[chord.note] + 12) % 12 === 10;
+      return `${root} ${isMinor ? 'natural minor' : flat7 ? 'Mixolydian' : 'major scale'}`;
+    }
+    return `${displayName(chord)} chord tones`;
+  }
+  function scaleNeck(chord, ex, win, played){
+    const pal = ex.scale ? { root: ex.scale.root, allowed: ex.scale.pcs } : palette(chord, { ...optsFor(ex), blues: !!ex.blues });
+    const rootPc = pal.root;
+    const tones = new Set(chordPcs(chord));
+    const markers = arpeggioCells(win.min, win.max, pal.allowed).map(c => {
+      const pc = pcOf(c);
+      return { string: c.string, fret: c.fret, color: SCALE_COLOR, label: labelFor(pc - rootPc, chord), isRoot: pc === rootPc, passing: !tones.has(pc) };
+    });
+    addPlayed(markers, played, chord, rootPc);
+    return { markers, lines: [], what: `${displayName(chord)} — ${paletteName(chord, ex)} in the position` };
+  }
+  const neckSVG = (geo, markers, lines, scale = 1) => `<div class="fret-scroll"><svg viewBox="${geo.viewBox}" style="max-width:${Math.round(geo.maxWidth * scale)}px;min-width:${geo.minWidth}px" role="img">${geo.buildSVG(markers, lines)}</svg></div>`;
+
+  // `cfg.big` is the card as the full-window view draws it — larger, the
+  // neck on from the start (`cfg.neck`), a Close in place of Expand
+  function card(host, ex, cfg = {}){
     const art = document.createElement('article');
-    art.className = 'ex';
+    art.className = 'ex' + (cfg.big ? ' big' : '');
     art.id = ex.id;
     const link = practiceLink(ex);
+    const kind = ex.build ? 'drill' : ex.blend === 'lead' ? 'lead' : ex.blend === 'rhythm' ? 'rhythm' : 'mixed';
+    const mode0 = cfg.neck || 'off';
     art.innerHTML = `
       <div class="ex-head"><div><h4>${esc(ex.title)}</h4>
-        <div class="meta"><span>${esc(ex.feel)}</span><span>${esc(ex.part)}</span><span>${esc(ex.key)} ${ex.mode === 'minor' ? 'minor' : 'major'}</span><span>${ex.tempo} BPM</span><span>${ex.blend === 'lead' ? 'lead' : ex.blend === 'rhythm' ? 'rhythm' : 'mixed'}</span></div></div>
-        <span class="btns"><button type="button" class="play">Play</button><a class="drill" href="${link}">Drill it in Practice →</a></span></div>
+        <div class="meta"><span>${esc(ex.feel)}</span>${ex.part ? `<span>${esc(ex.part)}</span>` : ''}<span>${esc(ex.key)} ${ex.mode === 'minor' ? 'minor' : 'major'}</span><span>${ex.tempo} BPM</span><span>${kind}</span></div></div>
+        <span class="btns"><span class="seg neck-seg" role="group" aria-label="Neck"><span class="lbl">Neck</span>${['off', 'chords', 'scale'].map(v => `<button type="button" data-value="${v}"${v === mode0 ? ' class="active"' : ''}>${v[0].toUpperCase() + v.slice(1)}</button>`).join('')}</span><button type="button" class="play">Play</button><a class="drill" href="${link}">${ex.part ? 'Drill it in Practice' : 'Open in Practice'} →</a>${cfg.big ? '<button type="button" class="drill close-big">Close ✕</button>' : '<button type="button" class="drill expand" title="The example large, tab and neck side by side">Expand ⤢</button>'}</span></div>
       <p class="blurb">${ex.blurb}</p>
-      <div class="tab"></div>
+      <div class="body"><div class="tab"></div><div class="neck" hidden></div></div>
       ${ex.refs ? `<p class="refs">${ex.refs}</p>` : ''}`;
     host.appendChild(art);
     const r = realiseExample(ex);
     if (!r){ art.querySelector('.tab').innerHTML = `<p class="missing">This example's part is missing: ${esc(ex.feel)} / ${esc(ex.part)}</p>`; return; }
     const tabHost = art.querySelector('.tab');
-    const metrics = drawTab(tabHost, r.feel, r.chords, r.notes);
+    let metrics = drawTab(tabHost, r.feel, r.chords, r.notes);
+    // the tab is drawn to its width, which changes when the neck opens
+    // beside it; redrawn then, and the player told, so the playhead keeps
+    // its place
+    const redrawTab = () => { metrics = drawTab(tabHost, r.feel, r.chords, r.notes); if (playing() && playing().card === art) playing().metrics = metrics; };
+    // the neck: what each chord's bars play, so a fill note has a dot to light
+    const playedByChord = new Map();
+    r.notes.forEach(n => {
+      const name = displayName(r.chords[n.bar]);
+      if (!playedByChord.has(name)) playedByChord.set(name, new Map());
+      playedByChord.get(name).set(cellKey(n), { string: n.string, fret: n.fret });
+    });
+    const neckHost = art.querySelector('.neck');
+    const state = { mode: mode0, geo: null, drawn: null };
+    // the neck's scale is the part's palette: a part marked blues plays the
+    // minor pentatonic over the major chords, and the neck shows that
+    const exN = { ...ex, blues: !!(ex.blues || (r.part && r.part.blues)) };
+    const body = art.querySelector('.body');
+    const draw = bar => {
+      if (state.mode === 'off'){
+        if (!neckHost.hidden){ neckHost.hidden = true; body.classList.remove('with-neck'); redrawTab(); }
+        state.drawn = null; return;
+      }
+      if (neckHost.hidden){ neckHost.hidden = false; body.classList.add('with-neck'); redrawTab(); }
+      const chord = r.chords[(((bar || 0) % r.chords.length) + r.chords.length) % r.chords.length];
+      const name = displayName(chord);
+      if (state.drawn === `${state.mode}|${name}`) return;
+      state.drawn = `${state.mode}|${name}`;
+      if (!state.geo) state.geo = neckGeometry(exN, r.notes);
+      const win = ex.window || eShapeWindow(ex.key);
+      const played = [...(playedByChord.get(name) || new Map()).values()];
+      const { markers, lines, what } = state.mode === 'chords' ? chordNeck(chord, win, played) : scaleNeck(chord, exN, win, played);
+      neckHost.innerHTML = `<p class="neck-title">${esc(what)}</p>${neckSVG(state.geo, markers, lines, cfg.big ? 1.8 : 1)}`;
+    };
+    const barNow = () => (playing() && playing().card === art && playing().shownBar != null) ? playing().shownBar : 0;
+    art.querySelector('.neck-seg').addEventListener('click', e => {
+      const b = e.target.closest('button'); if (!b) return;
+      state.mode = b.dataset.value;
+      art.querySelectorAll('.neck-seg button').forEach(x => x.classList.toggle('active', x === b));
+      draw(barNow());
+    });
     art.querySelector('.play').addEventListener('click', () => {
       if (playing() && playing().card === art){ stop(); return; }
-      play(art, STYLE, r.feel, r.chords, r.notes, ex.tempo, metrics);
+      play(art, STYLE, r.feel, r.chords, r.notes, ex.tempo, metrics, { onBar: draw, onStop: () => draw(0) });
     });
+    if (cfg.big) art.querySelector('.close-big').addEventListener('click', () => big.close());
+    else art.querySelector('.expand').addEventListener('click', () => openBig(ex));
+    draw(0);
   }
+
+  // ---- an example, large ----
+  // A full-window view of one card: the tab drawn to the window's width and
+  // the neck beside it, on from the start. Esc, the backdrop or Close shuts
+  // it, and whatever it was playing stops.
+  const big = document.createElement('dialog');
+  big.className = 'big';
+  document.body.appendChild(big);
+  let bigEx = null;
+  function openBig(ex){
+    stop();
+    bigEx = ex;
+    big.innerHTML = '';
+    if (!big.open) big.showModal();          // open first: the tab is drawn to its width
+    card(big, { ...ex, id: `${ex.id}-big` }, { big: true, neck: ex.build || ex.blend === 'lead' ? 'scale' : 'chords' });
+    big.scrollTop = 0;
+  }
+  big.addEventListener('close', () => { stop(); if (!big.open){ big.innerHTML = ''; bigEx = null; } });   // (the event comes late; not if it has reopened)
+  big.addEventListener('click', e => { if (e.target === big) big.close(); });
 
   // ---- the grips ----
   // pattern low string to high, relative to the lowest fret; `at` is the
-  // fret the pattern's 0 sits at for the chord named
+  // fret the pattern's 0 sits at for the chord named; `fingers` the hand,
+  // string by string — T the thumb over the neck, 1 to 4 the fingers
   const GRIPS = [
-    { name: 'E-shape barre, thumb over the bass', chord: 'G', pattern: '0-2-2-1-0-0', at: 3, what: 'The thumb frets the low E; the four fingers are free. The chord every ballad is built on.' },
-    { name: 'E-shape minor', chord: 'Em', pattern: '0-2-2-0-0-0', at: 0, what: 'The same hand on a minor chord: Little Wing’s Em, Am and Bm.' },
-    { name: 'The split chord', chord: 'G', pattern: 'x-x-2-1-0-x', at: 3, what: 'The D, G and B strings of the E shape struck on their own after the thumb’s bass note.' },
-    { name: 'The 4th hammered on (sus4)', chord: 'Gsus4', pattern: '0-2-2-2-0-0', at: 3, what: 'The pinky hammers the 4th onto the 3rd on the G string and lets it go.' },
-    { name: 'The 6th (The Wind Cries Mary)', chord: 'G6', pattern: '0-2-2-1-2-0', at: 3, what: 'The 6th onto the 5th on the B string — the embellishment that drives that record’s rhythm part.' },
-    { name: 'The 9th on top (add9)', chord: 'Gadd9', pattern: '0-2-2-1-0-2', at: 3, what: 'The 9th hammered onto the octave on the top string.' },
-    { name: 'The Hendrix chord, 7♯9', chord: 'E7#9', pattern: 'x-1-0-1-2-x', at: 6, what: 'Root on the A string at the 7th fret, 3rd, ♭7, ♯9: x-7-6-7-8-x. Both thirds at once.' },
-    { name: 'The 9th chord (Red House)', chord: 'B9', pattern: 'x-1-0-1-1-1', at: 1, what: 'The same grip with the 9th and the 5th on top: the T-Bone and B.B. King comp chord, slid in from a fret below.' },
-    { name: 'A-shape barre', chord: 'A', pattern: 'x-0-2-2-2-0', at: 5, what: 'The 5th-string-root barre, and the slides that connect it to the E shape.' },
-    { name: 'C shape with the 3rd in the bass', chord: 'C/E', pattern: '0-3-2-0-1-0', at: 0, what: 'The C shape voiced from its 3rd — the inversions the ballads move through.' },
-    { name: 'Stacked fifths (Castles Made of Sand)', chord: 'Dsus2', pattern: 'x-x-0-2-5-x', at: 0, what: 'Root, 5th and 9th on the D, G and B strings, slid along the neck.' },
+    { name: 'E-shape barre, thumb over the bass', chord: 'G', pattern: '0-2-2-1-0-0', at: 3, fingers: 'T-3-4-2-1-1', what: 'The thumb frets the low E; the index lies over the top two strings and the others are free. The chord every ballad is built on.' },
+    { name: 'E-shape minor', chord: 'Em', pattern: '0-2-2-0-0-0', at: 0, fingers: '0-2-3-0-0-0', what: 'The same hand on a minor chord: Little Wing’s Em, Am and Bm. Up the neck the thumb takes the bass and the index the top strings.' },
+    { name: 'The split chord', chord: 'G', pattern: 'x-x-2-1-0-x', at: 3, fingers: 'x-x-4-2-1-x', what: 'The D, G and B strings of the E shape struck on their own after the thumb’s bass note.' },
+    { name: 'The 4th hammered on (sus4)', chord: 'Gsus4', pattern: '0-2-2-2-0-0', at: 3, fingers: 'T-3-3-4-1-1', what: 'The ring finger covers the A and D strings so the pinky is free to hammer the 4th onto the G string and let it go.' },
+    { name: 'The 6th (The Wind Cries Mary)', chord: 'G6', pattern: '0-2-2-1-2-0', at: 3, fingers: 'T-3-3-2-4-1', what: 'The pinky hammers the 6th onto the 5th on the B string — the embellishment that drives that record’s rhythm part.' },
+    { name: 'The 9th on top (add9)', chord: 'Gadd9', pattern: '0-2-2-1-0-2', at: 3, fingers: 'T-3-3-2-1-4', what: 'The pinky hammers the 9th onto the octave on the top string.' },
+    { name: 'The Hendrix chord, 7♯9', chord: 'E7#9', pattern: 'x-1-0-1-2-x', at: 6, fingers: 'x-2-1-3-4-x', what: 'Root on the A string at the 7th fret, 3rd, ♭7, ♯9: x-7-6-7-8-x. Both thirds at once.' },
+    { name: 'The 9th chord (Red House)', chord: 'B9', pattern: 'x-1-0-1-1-1', at: 1, fingers: 'x-2-1-3-3-3', what: 'The same grip with the 9th and the 5th on top, the ring finger laid across three strings: the T-Bone and B.B. King comp chord, slid in from a fret below.' },
+    { name: 'A-shape barre', chord: 'A', pattern: 'x-0-2-2-2-0', at: 5, fingers: 'x-1-2-3-4-1', what: 'The 5th-string-root barre with a finger to each string, so they can hammer; and the slides that connect it to the E shape.' },
+    { name: 'C shape with the 3rd in the bass', chord: 'C/E', pattern: '0-3-2-0-1-0', at: 0, fingers: '0-3-2-0-1-0', what: 'The C shape voiced from its 3rd — the inversions the ballads move through.' },
+    { name: 'Stacked fifths (Castles Made of Sand)', chord: 'Dsus2', pattern: 'x-x-0-2-5-x', at: 0, fingers: 'x-x-0-1-4-x', what: 'Root, 5th and 9th on the D, G and B strings, index and pinky, slid along the neck.' },
   ];
-  function gripSVG(pattern, at){
+  function gripSVG(pattern, at, fingers){
     const frets = pattern.split('-').map(f => f === 'x' ? null : Number(f) + at);
+    const hand = (fingers || '').split('-');
     const lo = Math.max(0, Math.min(...frets.filter(f => f != null)));
     const start = lo <= 1 ? 0 : lo;             // draw from the nut, or from the lowest fret
     const W = 150, H = 120, x0 = 24, y0 = 22, sx = 18, sy = 19, n = 5;
@@ -143,19 +324,160 @@
       const x = x0 + s * sx;
       if (f == null){ parts.push(`<text x="${x}" y="${y0 - 8}" text-anchor="middle" fill="#6f675b" font-size="11">x</text>`); return; }
       if (f === 0){ parts.push(`<circle cx="${x}" cy="${y0 - 10}" r="4" fill="none" stroke="#a49a8a" stroke-width="1.3"/>`); return; }
-      const row = f - start;
-      parts.push(`<circle cx="${x}" cy="${y0 + (row - 0.5) * sy}" r="6.2" fill="#e0a84a"/>`);
+      // the first row of the grid is fret 1 from the nut, or the fret the
+      // diagram starts at; only an open string sits above the chart
+      const row = start === 0 ? f : f - start + 1;
+      const cy = y0 + (row - 0.5) * sy;
+      parts.push(`<circle cx="${x}" cy="${cy}" r="7" fill="#e0a84a"/>`);
+      const finger = hand[s];
+      if (finger && finger !== '0' && finger !== 'x') parts.push(`<text x="${x}" y="${cy + 3.4}" text-anchor="middle" fill="#0c0b0a" font-size="9.5" font-weight="700" font-family="Inter,system-ui,sans-serif">${finger}</text>`);
     });
     if (start > 0) parts.push(`<text x="${x0 - 8}" y="${y0 + sy * 0.5 + 4}" text-anchor="end" fill="#a49a8a" font-size="11">${start}</text>`);
     return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img">${parts.join('')}</svg>`;
   }
   function renderGrips(){
     $('grips').innerHTML = GRIPS.map(g => `
-      <div class="grip">${gripSVG(g.pattern, g.at)}
+      <div class="grip">${gripSVG(g.pattern, g.at, g.fingers)}
         <div class="name">${esc(g.name)}</div>
         <div class="what">${esc(g.what)}</div>
         <a href="${finderLink(g.chord)}">${esc(g.chord)} in the finder →</a></div>`).join('');
   }
+
+  // ---- the scales, drawn ----
+  const PENTA_MINOR = [0, 3, 5, 7, 10], PENTA_MAJOR = [0, 2, 4, 7, 9];
+  const DORIAN = [0, 2, 3, 5, 7, 9, 10], MIXO = [0, 2, 4, 5, 7, 9, 10];
+  const pcs = (root, ivs) => new Set(ivs.map(i => (root + i) % 12));
+  const boxAt = (boxes, name, anchor) => boxes.find(b => b.name === name && b.anchor === anchor);
+  // a box's own cells as markers: the shape's colour, degrees from the root,
+  // roots ringed, notes outside the chord dimmed
+  function boxMarkers(box, rootPc, tones, color){
+    return box.cells.map(c => {
+      const pc = pcOf(c);
+      return { string: c.string, fret: c.fret, color: color || CAGED_COLORS[box.name], label: DEG[(pc - rootPc + 12) % 12], isRoot: pc === rootPc, passing: tones ? !tones.has(pc) : false, shapes: [box.name] };
+    });
+  }
+  function figure(title, from, to, markers, caption, lines = []){
+    const geo = GT.neck.geometry(from, to);
+    return `<div class="neck-fig"><h4>${esc(title)}</h4>${neckSVG(geo, markers, lines)}<p class="cap">${caption}</p></div>`;
+  }
+  function renderScaleNecks(){
+    const E = 4, B = 11, G = 7;
+    const figs = [];
+    const eMin = pentaBoxPlacements(E, true), eMaj = pentaBoxPlacements(E, false);
+    const blue = boxAt(eMin, 'E', 12);
+    figs.push(figure('E minor pentatonic: the E-shape box at the 12th fret', 10, 15,
+      boxMarkers(blue, E, pcs(E, [0, 3, 7, 10])),
+      'Root on the low E under the thumb, the fret the thumb chord sits on — so the box is under the hand that holds the chord. Over E7 or Em7 the 1, ♭3, 5 and ♭7 are chord tones; the 4th is the note that bends up to the 5th. The solos on "Hey Joe", "Purple Haze" and "Voodoo Child (Slight Return)" live here.'));
+    const low = boxAt(eMin, 'E', 0), above = boxAt(eMin, 'D', 3);
+    figs.push(figure('The same box at the nut, and the box above it', 0, 6,
+      [...boxMarkers(low, E, null), ...boxMarkers(above, E, null).filter(m => !low.cells.some(c => c.string === m.string && c.fret === m.fret))],
+      'The E shape (blue) with its open strings, and the D shape (green) two frets up, sharing the notes on the seam. A phrase goes up the first box, slides on the top string from the 3rd fret to the 5th into the second, and comes back down — the move the lead parts make between the box at the 12th and the one above it, where this drawing\'s neck runs out.'));
+    const flat5 = arpeggioCells(11, 15, new Set([(E + 6) % 12])).map(c => ({ string: c.string, fret: c.fret, color: CAGED_COLORS.E, hollow: true, label: '♭5' }));
+    figs.push(figure('The blues scale: the ♭5 in the box', 10, 15,
+      [...boxMarkers(blue, E, pcs(E, [0, 3, 7, 10])), ...flat5],
+      'The B♭, hollow: a passing note between the 4th and the 5th on the A string and the G string, and on the B string a fret below the box. Slid or bent through, never sat on.'));
+    figs.push(figure('Minor over major: the E minor pentatonic against E7♯9', 10, 15,
+      boxMarkers(blue, E, pcs(E, [0, 4, 7, 10])),
+      'The same box over a major chord. The 1, 5 and ♭7 sit inside E7♯9; the ♭3 (G) is the ♯9, played against the chord’s G♯ — the tension the fuzz feels keep on purpose — and the 4th is the note that bends. The major 3rd is let in as a passing colour, a hammer-on from the ♭3.'));
+    const dor = scaleBoxPlacements(E, true, pcs(E, DORIAN));
+    figs.push(figure('E Dorian in the E shape: the 6th and the 9th let in', 10, 15,
+      boxMarkers(boxAt(dor, 'E', 12), E, pcs(E, [0, 3, 7, 10])),
+      'The minor pentatonic with the 2nd (F♯, the 9th) and the major 6th (C♯) — the scale Mermikides hears in the "Purple Haze" solo over E5, F♯5 and D5. The 6th against a minor chord is the Dorian colour; the parts write it as a free note.'));
+    figs.push(figure('E major pentatonic: the sweet register of the R&B fills', 10, 15,
+      boxMarkers(boxAt(eMaj, 'E', 12), E, pcs(E, [0, 4, 7])),
+      'The 2nd, the 3rd and the 6th instead of the ♭3 and the ♭7: the scale of the double stops and hammer-ons between the chords on "Wait Until Tomorrow", and of the Mayfield ballads. The 2nd bends to the 3rd here, where the minor box bends the 4th to the 5th.'));
+    const bMin = boxAt(pentaBoxPlacements(B, true), 'E', 7), bMaj = boxAt(pentaBoxPlacements(B, false), 'E', 7);
+    const minSet = pcs(B, PENTA_MINOR), majSet = pcs(B, PENTA_MAJOR);
+    const mixed = new Map();
+    [...bMin.cells, ...bMaj.cells].forEach(c => {
+      const pc = pcOf(c), inMin = minSet.has(pc), inMaj = majSet.has(pc);
+      mixed.set(cellKey(c), { string: c.string, fret: c.fret, label: DEG[(pc - B + 12) % 12], isRoot: pc === B,
+        ...(inMin && inMaj ? { split: [CAGED_COLORS.E, CAGED_COLORS.A] } : { color: inMin ? CAGED_COLORS.E : CAGED_COLORS.A }) });
+    });
+    figs.push(figure('B: the minor and the major pentatonic at the 7th fret, mixed', 5, 11,
+      [...mixed.values()],
+      'Blue is the minor pentatonic (B D E F♯ A), orange the major (B C♯ D♯ F♯ G♯), split where they share a note. The slow blues layers both over B7: the ♭3 bent up towards the 3rd, the 6th and the 9th from the major side, the 4th and ♭7 from the minor — "the B7 chord voicing, B minor pentatonic, and B major pentatonic" of "Red House".'));
+    const mixo = scaleBoxPlacements(G, false, pcs(G, MIXO));
+    figs.push(figure('G Mixolydian at the nut, over G–D–F–C', 0, 5,
+      boxMarkers(boxAt(mixo, 'G', 0), G, pcs(G, [0, 4, 7, 10])),
+      'The major scale with a ♭7 (F): the key of the "Castles Made of Sand" chorus, whose F chord is the ♭VII. Over G the F is the passing colour; over the F chord it is the root.'));
+    $('scaleNecks').innerHTML = figs.join('');
+  }
+
+  // ---- the scales, played ----
+  // A drill is written as notes, not as a part: the box's cells in pitch
+  // order, up and down, in eighths (two slots on a sixteen grid, one on a
+  // twelve), each `dur` the space to the next — what the player and the tab
+  // want from a realised part.
+  const midiOf = c => STRING_MIDI[c.string] + c.fret;
+  const byPitch = cells => cells.slice().sort((a, b) => midiOf(a) - midiOf(b) || b.string - a.string);
+  const upAndDown = cells => { const up = byPitch(cells); return [...up, ...up.slice(0, -1).reverse()]; };
+  function drill(cellsInOrder, { grid = 16, step = grid === 12 ? 1 : 2, vel = 0.82 } = {}){
+    const notes = [];
+    cellsInOrder.forEach((c, i) => {
+      const at = i * step, bar = Math.floor(at / grid);
+      notes.push({ bar, at: at - bar * grid, dur: step, vel, string: c.string, fret: c.fret, midi: midiOf(c), ...(c.fx || {}) });
+    });
+    const last = notes[notes.length - 1];
+    if (last) last.dur = grid - last.at;
+    return notes;
+  }
+  const withFx = (c, fx) => ({ ...c, fx });
+  const cell = (string, fret) => ({ string, fret });
+  const DRILLS = [
+    { id: 'sc1', title: 'The box at the 12th, up and down', feel: 'Fuzz riff (the Hendrix chord)', key: 'E', tempo: 76, chords: [{ name: 'E7', bars: 3 }], window: windowAt(12), reading: 'penta', blues: true,
+      scale: { root: 4, pcs: pcs(4, PENTA_MINOR), name: 'E minor pentatonic' },
+      build: () => drill([...upAndDown(boxAt(pentaBoxPlacements(4, true), 'E', 12).cells), cell(5, 12)]),
+      blurb: 'Two notes a string, twelve frets up: the E minor pentatonic in the E shape, alternate-picked in eighths over the band. Get it even before you get it fast; the box under the thumb is the one every solo starts from.' },
+    { id: 'sc2', title: 'The blue note on the way down', feel: 'Fuzz riff (the Hendrix chord)', key: 'E', tempo: 76, chords: [{ name: 'E7', bars: 3 }], window: windowAt(12), reading: 'scale', blues: true,
+      scale: { root: 4, pcs: pcs(4, [0, 3, 5, 6, 7, 10]), name: 'the E blues scale' },
+      build: () => {
+        const up = byPitch(boxAt(pentaBoxPlacements(4, true), 'E', 12).cells);
+        // down again with the ♭5 slid through on the G string and the A string
+        const down = [cell(0, 15), cell(0, 12), cell(1, 15), cell(1, 12), cell(2, 15), withFx(cell(2, 14), { slide: 15 }), cell(2, 12), cell(3, 14), cell(3, 12), cell(4, 14), withFx(cell(4, 13), { slide: 14 }), cell(4, 12), cell(5, 15), cell(5, 12)];
+        return drill([...up, ...down]);
+      },
+      blurb: 'Up the box as before; on the way down the B♭ is slid into between the 5th and the 4th — on the G string at the 15th fret, on the A string at the 13th. A note to pass through, not to stop on.' },
+    { id: 'sc3', title: 'Up the box, into the box above, and back', feel: 'Fuzz riff (the Hendrix chord)', key: 'E', tempo: 76, chords: [{ name: 'Em7', bars: 4 }], window: { min: 0, max: 5 }, reading: 'penta',
+      scale: { root: 4, pcs: pcs(4, PENTA_MINOR), name: 'E minor pentatonic' },
+      build: () => {
+        const boxes = pentaBoxPlacements(4, true);
+        const low = byPitch(boxAt(boxes, 'E', 0).cells), high = byPitch(boxAt(boxes, 'D', 3).cells);
+        // up the first box, a slide on the top string into the second, and down it
+        const top = high[high.length - 1];
+        return drill([...low, withFx(top, { slide: 3 }), ...high.slice(0, -1).reverse(), cell(5, 0)]);
+      },
+      blurb: 'The E shape at the nut, then the slide on the top string from the 3rd fret to the 5th — the seam between the boxes — and down the D shape to the open E. The same move connects the box at the 12th to the one above it.' },
+    { id: 'sc4', title: 'Minor over major, then major over major', feel: 'Fuzz riff (the Hendrix chord)', key: 'E', tempo: 76, chords: [{ name: 'E', bars: 4 }], window: windowAt(11), reading: 'penta',
+      scale: { root: 4, pcs: new Set([...pcs(4, PENTA_MINOR), ...pcs(4, PENTA_MAJOR)]), name: 'E minor and E major pentatonic' },
+      build: () => {
+        const minor = byPitch(boxAt(pentaBoxPlacements(4, true), 'E', 12).cells).slice(0, 12);
+        const major = byPitch(boxAt(pentaBoxPlacements(4, false), 'E', 12).cells).slice(0, 12);
+        const pad = cells => { while (cells.length < 16) cells.push(cells[cells.length - 1]); return cells; };
+        return drill([...pad([...minor, ...minor.slice(-4).reverse()]), ...pad([...major, ...major.slice(-4).reverse()])]);
+      },
+      blurb: 'Two bars of the minor pentatonic over a plain E major, two bars of the major pentatonic over the same chord. Hear what the ♭3 and the ♭7 do against a major triad, and then what the 2nd, 3rd and 6th do: the blues and the sweet side, the two colours he mixes within one phrase.' },
+    { id: 'sc5', title: 'E Dorian: the 6th and the 9th on the way up', feel: 'Soul ballad (chord melody)', key: 'E', mode: 'minor', tempo: 74, chords: [{ name: 'Em7', bars: 4 }], window: windowAt(11), reading: 'scale',
+      scale: { root: 4, pcs: pcs(4, DORIAN), name: 'E Dorian' },
+      build: () => drill([...upAndDown(boxAt(scaleBoxPlacements(4, true, pcs(4, DORIAN)), 'E', 12).cells), cell(5, 12)]),
+      blurb: 'The minor pentatonic with F♯ and C♯ let in, up and down the E shape over Em7 with the rim click. The C♯ is the Dorian note: a major 6th against a minor chord.' },
+    { id: 'sc6', title: 'B: minor up, major down, in triplets', feel: 'Slow blues in 12/8 (Red House way)', key: 'B', tempo: 60, chords: [{ name: 'B7', bars: 2 }], window: windowAt(6), reading: 'penta',
+      scale: { root: 11, pcs: new Set([...pcs(11, PENTA_MINOR), ...pcs(11, PENTA_MAJOR)]), name: 'B minor and B major pentatonic' },
+      build: () => {
+        const minor = byPitch(boxAt(pentaBoxPlacements(11, true), 'E', 7).cells);
+        const major = byPitch(boxAt(pentaBoxPlacements(11, false), 'E', 7).cells);
+        return drill([...minor, ...major.reverse()], { grid: 12 });
+      },
+      blurb: 'Twelve notes up the minor box and twelve down the major one, an eighth each in 12/8 over B7 — the two scales the slow blues lead draws on, one after the other before they are mixed.' },
+    { id: 'sc7', title: 'G Mixolydian over G–D–F–C', feel: 'Rhythm & blues (Wait Until Tomorrow way)', key: 'G', tempo: 92, chords: [{ name: 'G' }, { name: 'D' }, { name: 'F' }, { name: 'C' }], window: { min: 0, max: 3 }, reading: 'scale',
+      scale: { root: 7, pcs: pcs(7, MIXO), name: 'G Mixolydian' },
+      build: () => {
+        const box = byPitch(boxAt(scaleBoxPlacements(7, false, pcs(7, MIXO)), 'G', 0).cells);
+        const up = box.slice(0, 16), down = box.slice(0, 16).reverse();
+        return drill([...up, ...down]);
+      },
+      blurb: 'The scale in open position, up over G and D, down over F and C: the "Castles Made of Sand" chorus with the ♭7 that makes it Mixolydian. Listen for the F as a colour over G and as home over the F chord.' },
+  ];
 
   // ---- the examples ----
   const E_FUZZ = windowAt(5);        // the 7♯9 grip's home: the E on the A string at the 7th fret
@@ -172,6 +494,21 @@
   const preset = variant => ({ name: 'Hendrix', variant });
   const tab = (song, url) => `<a href="${url}">${esc(song)} tab</a>`;
   const UG = 'https://tabs.ultimate-guitar.com/tab/jimi-hendrix/';
+
+  const CHANGES = [
+    { ...soul, id: 'c-wing', chordsOnly: true, title: 'Em–G–Am–Em: the minor key’s own chords', part: 'Thumb bass and the split chord', blend: 'rhythm', seed: 4, chords: [{ name: 'Em' }, { name: 'G' }, { name: 'Am' }, { name: 'Em' }],
+      blurb: 'The first four bars of the Little Wing form: i, III, iv, i, each an E-shape or A-shape barre with the thumb over, the split chord on the "and" and the hammered colours between. Neck on Chords shows the grip; on Scale, the key’s notes under the hand.' },
+    { ...fuzz, id: 'c-haze', chordsOnly: true, title: 'E7♯9–G–A: the Hendrix chord, the ♭III and the IV', part: '7♯9 stabs and the riff', blend: 'rhythm', seed: 9,
+      blurb: 'The Purple Haze verse: the 7♯9 at the 7th fret as home, then G and A as thumb-over barres a fret apart. The grip is x-7-6-7-8-x; see it on the neck.' },
+    { ...cycle, id: 'c-joe', chordsOnly: true, title: 'C–G–D–A–E: each chord a fourth below the last', part: 'Thumb chords and the walk-up', blend: 'rhythm', seed: 2, preset: HEY_JOE,
+      blurb: 'The cycle of Hey Joe in open chords, the walk-up on the low strings landing on each new root. The neck shows why the bass line works: the 5th of every chord is the root of the next.' },
+    { ...blues, id: 'c-house', chordsOnly: true, title: 'B7–E9: the I and the IV of the slow blues', part: '9th chords with the trill', blend: 'rhythm', seed: 6,
+      blurb: 'The 7th and 9th grips with the root on the A string, slid in from a fret below on the way to the IV. On the neck, the 9th sits where the octave would in the 7th grip.' },
+    { ...soul, id: 'c-bold', chordsOnly: true, title: 'A–E–F♯m–D: the Bold as Love verse', part: 'Thumb bass and the split chord', blend: 'rhythm', seed: 3, key: 'A', mode: 'major', tempo: 84, chords: [{ name: 'A' }, { name: 'E' }, { name: 'F#m' }, { name: 'D' }], window: windowAt(5), reading: 'scale',
+      blurb: 'I–V–vi–IV in A, the E shape at the 5th fret for the A and the shapes around it for the rest: the thumb\'s bass note and the split chord on each. The parallel scale under each chord is on the neck.' },
+    { ...soul, id: 'c-castles', chordsOnly: true, title: 'G–D–F–C: the ♭VII in the chorus', part: 'Thumb bass and the split chord', blend: 'rhythm', seed: 8, key: 'G', mode: 'major', tempo: 76, chords: [{ name: 'G' }, { name: 'D' }, { name: 'F' }, { name: 'C' }], window: windowAt(3), reading: 'scale',
+      blurb: 'The Castles Made of Sand chorus: I, V, ♭VII, IV, thumb chords at the 3rd fret and around it. The F is the chord the key doesn’t own, and the neck shows the scale following it.' },
+  ];
 
   const RHYTHM = [
     { ...soul, id: 'r-split', title: 'Thumb bass and the split chord', part: 'Thumb bass and the split chord', blend: 'rhythm', seed: 7,
@@ -401,24 +738,66 @@
   }
 
   // ---- the page ----
+  const LISTS = { changes: () => CHANGES, scales: () => DRILLS, rhythm: () => RHYTHM, lead: () => LEAD, mixed: () => MIXED, exercises: () => EXERCISES, studies: () => STUDIES };
+  function renderCards(){
+    Object.keys(LISTS).forEach(id => { $(id).innerHTML = ''; LISTS[id]().forEach(ex => card($(id), ex)); });
+  }
+  // The contents, in the margin. The section on screen is marked as you
+  // go, and opens to list what's in it — its sub-headings and the names of
+  // its examples — with the one nearest the top marked too.
+  function renderToc(){
+    const sections = [...document.querySelectorAll('section.part')];
+    const html = sections.map(s => {
+      const items = [...s.querySelectorAll('h3, article.ex > .ex-head h4, .neck-fig h4')].map(h => {
+        const holder = h.closest('article.ex') || h.closest('.neck-fig') || h;
+        if (!holder.id) holder.id = `${s.id}-${h.textContent.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`.slice(0, 60);
+        return `<a class="sub${h.tagName === 'H3' ? ' head' : ''}" href="#${holder.id}">${esc(h.textContent.replace(/^\d+\.\s*/, ''))}</a>`;
+      }).join('');
+      return `<div class="entry" data-for="${s.id}"><a href="#${s.id}">${esc(s.querySelector('h2').textContent.replace(/^\d+\.\s*/, ''))}</a>${items ? `<div class="subs">${items}</div>` : ''}</div>`;
+    }).join('');
+    $('toc').innerHTML = html;
+    const entries = new Map([...$('toc').querySelectorAll('.entry')].map(e => [e.dataset.for, e]));
+    let ticking = false;
+    const mark = () => {
+      ticking = false;
+      const line = Math.min(160, window.innerHeight * 0.3);
+      let current = sections[0];
+      sections.forEach(s => { if (s.getBoundingClientRect().top <= line) current = s; });
+      entries.forEach((e, id) => e.classList.toggle('active', id === current.id));
+      // ...and within it, the item nearest the top
+      const entry = entries.get(current.id);
+      const subs = [...entry.querySelectorAll('.sub')];
+      let near = null;
+      subs.forEach(a => { const t = document.getElementById(a.getAttribute('href').slice(1)); if (t && t.getBoundingClientRect().top <= line + 40) near = a; });
+      subs.forEach(a => a.classList.toggle('active', a === near));
+      // keep the marked item in view in the column
+      const lit = near || entry.querySelector('a');
+      const col = $('toc').closest('.side');
+      if (lit && col && col.scrollHeight > col.clientHeight){
+        const r = lit.getBoundingClientRect(), cr = col.getBoundingClientRect();
+        if (r.top < cr.top + 20 || r.bottom > cr.bottom - 20) col.scrollTop += r.top - cr.top - cr.height / 2;
+      }
+    };
+    window.addEventListener('scroll', () => { if (!ticking){ ticking = true; requestAnimationFrame(mark); } }, { passive: true });
+    mark();
+  }
   function render(){
-    $('toc').innerHTML = [...document.querySelectorAll('section.part h2')].map(h => `<a href="#${h.parentElement.id}">${esc(h.textContent)}</a>`).join('');
     renderGrips();
-    RHYTHM.forEach(ex => card($('rhythm'), ex));
-    LEAD.forEach(ex => card($('lead'), ex));
-    MIXED.forEach(ex => card($('mixed'), ex));
-    EXERCISES.forEach(ex => card($('exercises'), ex));
-    STUDIES.forEach(ex => card($('studies'), ex));
+    renderScaleNecks();
+    renderCards();
     renderSongs();
     renderSources();
   }
   document.addEventListener('keydown', e => { if (e.code === 'Space' && !/input|select|textarea/i.test(e.target.tagName)){ e.preventDefault(); if (playing()) stop(); } });
   render();
+  renderToc();
+  // the tab is built to the width; redrawn when that changes, and not on a
+  // resize that changed nothing, since a redraw stops what's playing
   let resizeTimer = 0, drawnWidth = window.innerWidth;
   window.addEventListener('resize', () => {
     clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(() => { if (window.innerWidth !== drawnWidth){ drawnWidth = window.innerWidth; if (playing()) stop(); ['rhythm', 'lead', 'mixed', 'exercises', 'studies'].forEach(id => { $(id).innerHTML = ''; }); render(); } }, 200);
+    resizeTimer = setTimeout(() => { if (window.innerWidth !== drawnWidth){ drawnWidth = window.innerWidth; if (playing()) stop(); renderCards(); if (bigEx) openBig(bigEx); } }, 200);
   });
 
-  GT.hendrixGuide = { RHYTHM, LEAD, MIXED, EXERCISES, STUDIES, SONGS, SOURCES, GRIPS, practiceLink, realiseExample };
+  GT.hendrixGuide = { CHANGES, DRILLS, RHYTHM, LEAD, MIXED, EXERCISES, STUDIES, SONGS, SOURCES, GRIPS, practiceLink, realiseExample, chordNeck, scaleNeck, gripSVG };
 })();
