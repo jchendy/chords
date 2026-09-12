@@ -25,7 +25,7 @@
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
   // ---- page options ----
-  const opt = { reading: 'scale', tech: true, humanize: false, phrase: 2, seed: 1, slapback: true, easy: false };
+  const opt = { reading: 'scale', tech: true, humanize: false, phrase: 2, seed: 1, slapback: true, easy: false, fast: false };
 
   // ---- easy mode ----
   // A part with an `easy` block plays that (its author's simplification);
@@ -295,7 +295,7 @@
     const ctx = audio.ctx();
     const { pattern: p, style, chords, tempo, notes } = playing;
     const beats = p.beats || 4;
-    const spb = 60 / tempo, barLen = spb * beats, grid = p.grid, slotDur = barLen / grid;
+    const spb = 60 / (tempo * (opt.fast ? 2 : 1)), barLen = spb * beats, grid = p.grid, slotDur = barLen / grid;
     // swung sixteenths: the second of each pair of 16ths late by this much of a 16th
     const swingOf = slot => (p.swing && grid % 4 === 0 && slot % 2 === 1) ? p.swing * slotDur * 0.5 : 0;
     for (let skip = audio.stepsToSkip(nextBarTime, ctx.currentTime, barLen); skip > 0; skip--){ nextBarTime += barLen; bar = (bar + 1) % chords.length; }
@@ -651,6 +651,9 @@
     rebuildAll();
   }));
   $('techToggle').addEventListener('change', () => { opt.tech = $('techToggle').checked; rebuildAll(); });
+  // double speed takes hold from the next bar; the stop button stops whatever plays
+  $('fastToggle').addEventListener('change', () => { opt.fast = $('fastToggle').checked; });
+  $('stopBtn').addEventListener('click', stop);
   $('easyToggle').addEventListener('change', () => { opt.easy = $('easyToggle').checked; document.body.classList.toggle('easy', opt.easy); rebuildAll(); });
   $('humanToggle').addEventListener('change', () => { opt.humanize = $('humanToggle').checked; });
   $('slapToggle').addEventListener('change', () => { opt.slapback = $('slapToggle').checked; });

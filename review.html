@@ -17,6 +17,7 @@
   [hidden]{ display:none !important; }
   body{ margin:0; background:var(--bg); color:var(--ink); font:14px/1.5 Inter,system-ui,sans-serif; }
   a{ color:var(--a); }
+  .tbtn.stop{ border-color:var(--a); color:var(--a); }
   .top{ position:sticky; top:0; z-index:5; display:flex; flex-wrap:wrap; align-items:center; gap:12px 18px; padding:10px 18px; background:var(--panel); border-bottom:1px solid var(--line); }
   .top .site{ font-family:Fraunces,Georgia,serif; font-weight:600; color:var(--muted); text-decoration:none; }
   .top .lbl{ font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
@@ -113,11 +114,12 @@
   </span>
   <label class="check"><input type="checkbox" id="techToggle" checked><span>Techniques</span></label>
   <label class="check easy-check"><input type="checkbox" id="easyToggle"><span>Easy mode (proposed)</span></label>
+  <label class="check"><input type="checkbox" id="fastToggle"><span>Double speed</span></label>
   <label class="check"><input type="checkbox" id="humanToggle"><span>Humanize (proposed)</span></label>
   <label class="check"><input type="checkbox" id="slapToggle" checked><span>Slapback where the style wants it (proposed)</span></label>
   <label class="check"><span class="lbl">Fill every</span><select id="phraseSel"><option value="2">2 bars</option><option value="4">4 bars</option></select></label>
   <button type="button" class="tbtn" id="rerollBtn">Re-roll the proposed fills</button><span id="seedNote" class="lbl">seed 1</span>
-  <span class="status"><span id="summary">0 decided</span><span id="saveNote"></span><button type="button" class="tbtn" id="copyBtn">Copy decisions</button></span>
+  <button type="button" class="tbtn stop" id="stopBtn">Stop</button><span class="status"><span id="summary">0 decided</span><span id="saveNote"></span><button type="button" class="tbtn" id="copyBtn">Copy decisions</button></span>
 </div>
 <main>
   <h1>Every style, as it is and as it could be</h1>
