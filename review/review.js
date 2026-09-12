@@ -63,7 +63,7 @@
     if (part.easy) return { ...part, ...off, turnarounds: null, turnaround: null, ...part.easy, easyKind: 'written' };
     const lists = {};
     ['figure', 'turnaround'].forEach(k => { if (part[k]) lists[k] = simplify(part[k], grid); });
-    ['variants', 'fills', 'fillsOnChange', 'fillsOnStay', 'turnarounds'].forEach(k => { if (part[k]) lists[k] = part[k].map(bar => simplify(bar, grid)); });
+    ['variants', 'fills', 'fillsOnChange', 'fillsOnStay', 'turnarounds', 'leads'].forEach(k => { if (part[k]) lists[k] = part[k].map(bar => simplify(bar, grid)); });
     return { ...part, ...lists, ...off, easyKind: 'auto' };
   }
 
@@ -148,6 +148,10 @@
     const out = [];
     const stopBars = new Set();
     const pick = list => list[Math.floor(roll() * list.length)];
+    const cells = parts.cellsIn(opts.window);
+    // a lead roll: some rolls of a chord part put its lead lines in the fill
+    // bars, so the same part is rhythm on one roll and lead on another
+    const leadRoll = !!(part.leads && part.leads.length) && roll() < (part.leadChance == null ? 0.35 : part.leadChance);
     let figureTurn = 0;
     bars.forEach((bar, b) => {
       if (!bar.chord) return;
@@ -162,6 +166,8 @@
         if (part.stops && part.stops.length && roll() < (part.stopChance == null ? 0.2 : part.stopChance)){
           written = pick(part.stops);
           stopBars.add(b);
+        } else if (leadRoll){
+          written = pick(part.leads);
         } else {
           // the fills for the situation, and the plain ones with them — a
           // plain fill fits either way, and was never heard here while a
@@ -184,14 +190,29 @@
       }
       // strums with a shell voicing, a colour tone or on the next chord are
       // placed here; the rest goes through parts.js
-      const plain = [], extra = [];
+      const plain = [], extra = [], pairs = [];
+      const doubleOk = !(opts.tech && opts.tech.double === false);
       written.forEach(w => {
-        if (w.strum && (w.voicing === 'shell' || w.add || w.next)) extra.push(w); else plain.push(w);
+        if (w.strum && (w.voicing === 'shell' || w.voicing === 'power' || w.voicing === 'bass' || w.voicing === 'fifth' || w.add || w.next)) extra.push(w);
+        else if (w.tech === 'double' && doubleOk) pairs.push(w);
+        else plain.push(w);
       });
       let notes = parts.realiseBar(plain, bar.chord, opts, next);
+      // double stops placed the way a hand plays them: the written interval
+      // kept, 2nds to 5ths on adjacent strings, 6ths and octaves skipping
+      // one, 10ths skipping two (the app places each note by pitch alone)
+      const pal = parts.palette(bar.chord, opts), nextPal = parts.palette(next, opts);
+      pairs.forEach(w => {
+        const placed = placePair(w, cells, w.next ? nextPal : pal, homeMidi(cells, (w.next ? nextPal : pal).root));
+        if (!placed){ notes = notes.concat(parts.realiseBar([w], w.next ? next : bar.chord, opts, next)); return; }
+        const mk = (c, more) => ({ at: w.at, dur: w.dur, vel: w.vel, string: c.string, fret: c.fret, midi: c.midi, iv: w.iv, next: !!w.next, tech: 'double', ...more });
+        notes.push(mk(placed.c1, {}), mk(placed.c2, { pair: true, iv: w.iv2 }));
+      });
       extra.forEach(w => {
         const on = w.next ? next : bar.chord;
-        let grip = w.voicing === 'shell' ? shellVoicing(on, opts) : parts.strumCells(on, opts, w.voicing || 'full');
+        let grip = w.voicing === 'shell' ? shellVoicing(on, opts) : w.voicing === 'power' ? powerVoicing(on, opts)
+                 : (w.voicing === 'bass' || w.voicing === 'fifth') ? (thumbCell(on, opts, w.voicing) || parts.strumCells(on, opts, w.voicing))
+                 : parts.strumCells(on, opts, w.voicing || 'full');
         if (!grip) return;
         grip = grip.slice().sort((a, b) => a.midi - b.midi);
         if (w.add){
@@ -226,7 +247,75 @@
       notes.forEach(n => out.push({ ...n, bar: b }));
     });
     out.stopBars = stopBars;
+    out.leadRoll = leadRoll;
     return out;
+  }
+
+  // where the part's root sits in the window, as parts.js finds it
+  function homeMidi(cells, root){
+    const roots = cells.filter(c => c.midi % 12 === root).sort((a, b) => a.midi - b.midi);
+    const low = roots.filter(c => c.string >= 3);
+    if (low.length) return low[0].midi;
+    if (roots.length) return roots[0].midi;
+    return cells.length ? Math.min(...cells.map(c => c.midi)) : 40;
+  }
+  // two notes at once, on the strings a hand would use: the written interval
+  // first, then the string gap the shape has — adjacent for anything up to a
+  // 5th, one string skipped for 6ths, 7ths and octaves, two for 10ths — and
+  // the root with its 6th (the boogie) adjacent, a stretch, not the 6ths shape
+  function placePair(w, cells, pal, base){
+    const s1 = parts.snap(pal.root, w.iv, pal.allowed), s2 = parts.snap(pal.root, w.iv2, pal.allowed);
+    if (!s1 || !s2) return null;
+    const want1 = base + w.iv + s1.shift, semis = (w.iv2 + s2.shift) - (w.iv + s1.shift);
+    const span = Math.abs(semis);
+    const boogie = span >= 8 && span <= 9 && ((w.iv % 12) + 12) % 12 === 0;
+    const pref = span <= 7 || boogie ? [1, 2] : span <= 12 ? [2, 1, 3] : [3, 2];
+    // the interval may invert (a 3rd voiced as a 6th, the same two notes)
+    // when that is what keeps the pair on the treble strings the box has —
+    // not when the lower note bends, since the bend needs the shape
+    const want2 = want1 + semis;
+    let best = null;
+    cells.filter(c => c.midi % 12 === s1.pc).forEach(c1 => {
+      cells.filter(c => c.midi % 12 === s2.pc && c.string !== c1.string).forEach(c2 => {
+        const diff = (c2.midi - c1.midi) - semis;
+        const interval = diff === 0 ? 0 : (Math.abs(diff) === 12 && !w.up) ? 6 : Math.abs(diff) * 10;
+        const rank = pref.indexOf(Math.abs(c2.string - c1.string));
+        const score = interval + (rank < 0 ? 30 : rank * 8) + Math.abs(c1.midi - want1) + Math.abs(c2.midi - want2) / 2;
+        if (!best || score < best.score) best = { c1, c2, score };
+      });
+    });
+    return best;
+  }
+  // the thumb's note: "bass" is the lowest root on a bass string (E, A or D),
+  // "fifth" the 5th on the bass string next to it — where an alternating
+  // thumb goes — never a note up on the treble strings
+  function thumbCell(chord, opts, voicing){
+    const pal = parts.palette(chord, opts);
+    const cells = parts.cellsIn(opts.window).filter(c => c.string >= 3);
+    const roots = cells.filter(c => c.midi % 12 === pal.root).sort((a, b) => a.midi - b.midi);
+    if (!roots.length) return null;
+    const r = roots[0];
+    if (voicing === 'bass') return [r];
+    const pc = (pal.root + 7) % 12;
+    const byNearness = (a, b) => Math.abs(a.midi - r.midi) - Math.abs(b.midi - r.midi);
+    const beside = cells.filter(c => c.midi % 12 === pc && Math.abs(c.string - r.string) === 1).sort(byNearness);
+    if (beside.length) return [beside[0]];
+    const any = cells.filter(c => c.midi % 12 === pc).sort(byNearness);
+    return any.length ? [any[0]] : null;
+  }
+  // a power chord: the root on the lowest string that has it, the 5th on the
+  // next string up, the octave above that
+  function powerVoicing(chord, opts){
+    const pal = parts.palette(chord, opts);
+    const cells = parts.cellsIn(opts.window);
+    const roots = cells.filter(c => c.midi % 12 === pal.root && c.string >= 2).sort((a, b) => b.string - a.string || a.midi - b.midi);
+    for (const r of roots){
+      const fifth = cells.find(c => c.string === r.string - 1 && c.midi === r.midi + 7);
+      if (!fifth) continue;
+      const oct = cells.find(c => c.string === r.string - 2 && c.midi === r.midi + 12);
+      return oct ? [r, fifth, oct] : [r, fifth];
+    }
+    return parts.strumCells(chord, opts, 'low');
   }
 
   // ---- the band, described from its pattern ----
@@ -513,10 +602,11 @@
     if (part.pickups) flags.push('pickups');
     if (part.stops) flags.push('stop-time');
     if (part.figureMode === 'roll') flags.push('rolled figures');
+    if (part.leads) flags.push('lead rolls');
     const counts = ['fills', 'fillsOnChange', 'fillsOnStay'].map(k => (part[k] || []).length);
     // bars that go above the box's middle octave: the upper-register lines
     const high = w => !w.strum && Math.max(w.iv, w.iv2 == null ? -99 : w.iv2) >= 17;
-    const highBars = ['variants', 'fills', 'fillsOnChange', 'fillsOnStay', 'tails', 'turnarounds', 'stops'].reduce((a, k) => a + (part[k] || []).filter(bar => bar.some(high)).length, 0) + ((part.turnaround || []).some(high) ? 1 : 0);
+    const highBars = ['variants', 'fills', 'fillsOnChange', 'fillsOnStay', 'tails', 'turnarounds', 'stops', 'leads'].reduce((a, k) => a + (part[k] || []).filter(bar => bar.some(high)).length, 0) + ((part.turnaround || []).some(high) ? 1 : 0);
     ['ghost', 'rake', 'trem', 'vib', 'stacc', 'pm', 'chordSlide', 'add'].forEach(k => { if (has(k)) flags.push({ ghost: 'ghost notes', rake: 'rakes', trem: 'tremolo picking', vib: 'vibrato', stacc: 'staccato', pm: 'palm-muted notes', chordSlide: 'chord slides', add: 'colour tones' }[k]); });
     if (allWritten.some(bar => bar.some(n => n.strum && n.voicing === 'shell'))) flags.push('shell voicings');
     if (allWritten.some(bar => bar.some(n => n.tech === 'double' && n.up))) flags.push('double-stop bends');
@@ -524,7 +614,7 @@
       <div class="part-head"><h4>${esc(part.name)}${tag ? ` <span class="tag">${esc(tag)}</span>` : ''}</h4>
         <span class="btns"><span class="easytag" hidden></span><button type="button" class="reroll" title="Roll the fills again, as New fills does in the app">New fills</button><span class="roll"></span><button type="button" class="play">Play</button></span></div>
       ${part.why ? `<p class="why">${part.why}</p>` : ''}
-      ${advanced ? `<p class="counts">${(part.variants || []).length + 1} figures · fills ${counts[0]} plain, ${counts[1]} into a change, ${counts[2]} staying put${part.tails ? ` · ${part.tails.length} tails` : ''}${part.pickups ? ` · ${part.pickups.length} pickups` : ''}${part.stops ? ` · ${part.stops.length} stop-time` : ''}${highBars ? ` · ${highBars} up high` : ''}</p>` : `<p class="counts">${(part.variants || []).length + 1} figures · ${(part.fills || []).length} fills</p>`}
+      ${advanced ? `<p class="counts">${(part.variants || []).length + 1} figures · fills ${counts[0]} plain, ${counts[1]} into a change, ${counts[2]} staying put${part.tails ? ` · ${part.tails.length} tails` : ''}${part.pickups ? ` · ${part.pickups.length} pickups` : ''}${part.stops ? ` · ${part.stops.length} stop-time` : ''}${highBars ? ` · ${highBars} up high` : ''}${part.leads ? ` · ${part.leads.length} leads` : ''}</p>` : `<p class="counts">${(part.variants || []).length + 1} figures · ${(part.fills || []).length} fills</p>`}
       ${flags.length ? `<p class="flags">Needs: ${flags.map(f => `<span>${esc(f)}</span>`).join(' ')}</p>` : ''}
       <div class="tab"></div>`;
     host.appendChild(card);
@@ -535,6 +625,7 @@
         const { chords, notes } = realiseCard(part, entry, style, advanced, seed, pattern.grid);
         const metrics = drawTab(tabHost, pattern.grid, chords, notes);
         state = { chords, notes, metrics };
+        card.querySelector('.roll').textContent = [rolls ? `roll ${rolls}` : '', notes.leadRoll ? 'lead roll' : ''].filter(Boolean).join(' · ');
         const tag = card.querySelector('.easytag');
         tag.hidden = !opt.easy;
         tag.textContent = !opt.easy ? '' : part.easy ? 'easy · written for it' : 'easy · simplified by rule';
@@ -556,7 +647,6 @@
       // what was playing starts again on the new roll
       const wasPlaying = playing && playing.host === card;
       seed = Math.floor(Math.random() * 1e6) + 1; rolls++;
-      card.querySelector('.roll').textContent = `roll ${rolls}`;
       if (wasPlaying) stop();
       build();
       if (wasPlaying && state) play(card, card.querySelector('.play'), { pattern, style, chords: state.chords, tempo: entry.tempo, notes: state.notes, metrics: state.metrics, tabHost });

@@ -870,6 +870,372 @@
     fills: [[s(0, 4, 0.85), d(4, 16, 19, 2, 0.8), d(6, 16, 19, 2, 0.6), d(8, 14, 19, 2, 0.75), d(10, 12, 16, 4, 0.8), s(14, 2, 0.65, 'high')]],
   });
 
+  // =========================================================================
+  // FIFTH PASS — every other genre up the neck, and lead rolls for the chord
+  // parts. The same register rule as the blues and rock pass: a box rooted on
+  // the low E (the A, B♭ and G♯ entries) holds to 28 on its top string, one
+  // rooted on the A string holds to 23, so lines for the latter peak on the
+  // 5th, 6th and ♭7 above the octave. "leads" are bars a lead guitarist
+  // would play in the fill bars; about a third of rolls use them.
+  // ---- rockabilly (twelve) ----
+  extend('rockabilly|Rockabilly|Boom-chick, corrected', {
+    why2: 'Fifth pass, up the neck: the boom-chick with licks on the first string, and lead rolls — the Moore/Burton lines on the top strings, 6ths walking down.',
+    fills: [[s(0, 1.4, 0.9, 'bass', 'mute'), n(2, 19, 0.8, 0.75), s(3, 1.4, 0.8, 'fifth', 'mute'), n(5, 22, 0.8, 0.75), s(6, 1.4, 0.9, 'bass', 'mute'), n(8, 19, 0.8, 0.75), s(9, 1.4, 0.8, 'fifth', 'mute'), n(11, 16, 0.8, 0.7)]],
+    leads: [[n(0, 19, 0.8, 0.85), n(1, 22, 0.8, 0.8), n(2, 19, 0.8, 0.8), n(3, 16, 1.6, 0.85), n(5, 19, 0.8, 0.7), d(6, 12, 21, 2.4, 0.85), n(9, 22, 0.8, 0.8), n(10, 21, 0.8, 0.75), n(11, 19, 0.8, 0.8)],
+            [d(0, 12, 21, 1.6, 0.85), d(2, 12, 21, 0.8, 0.6), d(3, 10, 19, 1.6, 0.8), d(5, 10, 19, 0.8, 0.6), n(6, 22, 1.6, 0.85, { vib: true }), n(8, 19, 0.8, 0.75), n(9, 17, 0.8, 0.75), n(10, 16, 0.8, 0.75), n(11, 12, 0.8, 0.8)]],
+  });
+  extend('rockabilly|Rockabilly|Dead thumb and licks (Moore-inspired)', {
+    why2: 'Fifth pass, up the neck: the 3rds over the thumb on the top strings with the 4th bent under the 6th, and the box run down from the ♭7.',
+    fills: [[s(0, 1.4, 0.85, 'bass', 'mute'), d(2, 16, 19, 0.8, 0.7), s(3, 1.4, 0.8, 'bass', 'mute'), d(5, 16, 19, 0.8, 0.65), s(6, 1.4, 0.85, 'bass', 'mute'), d(8, 17, 21, 0.8, 0.7, { up: 2 }), s(9, 1.4, 0.8, 'bass', 'mute'), d(11, 16, 19, 0.8, 0.7)]],
+    fillsOnStay: [[s(0, 1.4, 0.85, 'bass', 'mute'), n(1, 22, 0.8, 0.75), n(2, 19, 0.8, 0.7), s(3, 1.4, 0.8, 'bass', 'mute'), n(4, 17, 0.8, 0.7), n(5, 16, 0.8, 0.7), s(6, 1.4, 0.85, 'bass', 'mute'), n(7, 12, 1.6, 0.75), s(9, 1.4, 0.8, 'bass', 'mute'), n(11, 10, 0.8, 0.6)]],
+  });
+  extend('rockabilly|Rockabilly|Boogie and 6ths (Perkins-inspired)', {
+    why2: 'Fifth pass, up the neck: the 6ths walking down the top strings over half a bar of boogie.',
+    fills: [[n(0, 0, 1.6, 0.9, { pm: true }), n(2, 4, 0.8, 0.7, { pm: true }), d(3, 12, 21, 1.6, 0.8), d(5, 12, 21, 0.8, 0.6), d(6, 10, 19, 1.6, 0.8), d(8, 10, 19, 0.8, 0.6), d(9, 7, 16, 1.6, 0.8), nx(11, 4, 0.8, 0.8)]],
+  });
+  extend('rockabilly|Western swing|Four to the bar, 6ths and 9ths', {
+    why2: 'Fifth pass, up the neck: a swing line on the top strings after two chords, and lead rolls — the single-note line and the 6ths walking down, the way the second guitar takes a chorus.',
+    fills: [[s(0, 1.2, 0.6, 'shell', null, { add: 9 }), s(3, 1.2, 0.8, 'shell', null, { add: 9 }), n(6, 19, 0.8, 0.8), n(7, 21, 0.8, 0.75), n(8, 19, 0.8, 0.8), n(9, 16, 1.6, 0.85), n(11, 12, 0.8, 0.7)]],
+    leads: [[n(0, 16, 1.2, 0.8), n(2, 19, 0.8, 0.7), n(3, 21, 1.6, 0.85), n(5, 19, 0.8, 0.7), n(6, 16, 1.2, 0.8), n(8, 14, 0.8, 0.7), n(9, 12, 1.6, 0.85), n(11, 9, 0.8, 0.7)],
+            [d(0, 12, 21, 1.6, 0.8), d(3, 10, 19, 1.6, 0.75), d(6, 9, 17, 1.6, 0.8), d(9, 7, 16, 1.6, 0.75)]],
+  });
+  // ---- psychobilly (sixteen) ----
+  extend('psychobilly|Psychobilly|Travis at speed (Heath-inspired)', {
+    why2: 'Fifth pass, up the neck: the melody notes on the first string over the thumb.',
+    fills: [[s(0, 2, 0.9, 'bass', 'mute'), n(2, 19, 2, 0.7), s(4, 2, 0.8, 'fifth', 'mute'), n(6, 22, 2, 0.7), s(8, 2, 0.9, 'bass', 'mute'), n(10, 19, 1, 0.7), n(11, 17, 1, 0.65), s(12, 2, 0.8, 'fifth', 'mute'), n(14, 16, 2, 0.7)]],
+  });
+  extend('psychobilly|Psychobilly|Two-note riff with space (Ivy-inspired)', {
+    why2: 'Fifth pass, up the neck: the riff an octave up, the ♭7 on the first string.',
+    fills: [[n(0, 12, 2, 0.95), n(2, 12, 1, 0.5), n(3, 15, 3, 0.9), n(8, 22, 2, 0.9), n(10, 12, 4, 0.85)]],
+  });
+  // ---- surf (sixteen; A minor holds to 28) ----
+  extend('surf|Surf rock|Tremolo melody (Dale-inspired)', {
+    why2: 'Fifth pass, up the neck: the melody an octave up on the first string, and a tremolo-picked run from the ♭3 above the double octave down to the octave.',
+    fills: [[n(0, 24, 4, 0.9, { trem: 8 }), n(4, 22, 4, 0.85, { trem: 8 }), n(8, 19, 2, 0.85, { trem: 4 }), n(10, 17, 2, 0.85, { trem: 4 }), nx(12, 12, 4, 0.9, { trem: 8 })],
+            [n(0, 27, 2, 0.9, { trem: 4 }), n(2, 24, 2, 0.85, { trem: 4 }), n(4, 22, 2, 0.85, { trem: 4 }), n(6, 19, 2, 0.8, { trem: 4 }), n(8, 17, 2, 0.8, { trem: 4 }), n(10, 15, 2, 0.8, { trem: 4 }), n(12, 12, 4, 0.9, { trem: 8 })]],
+  });
+  extend('surf|Surf rock|Glissando riff (Chantays-inspired)', {
+    why2: 'Fifth pass, up the neck: the glissando, then the answer on the top strings.',
+    fillsOnStay: [[sl(0, 14, 0, 4, 0.95), s(4, 2, 0.85, 'high'), n(8, 24, 2, 0.85), n(10, 22, 2, 0.8), n(12, 19, 4, 0.85, { vib: true })]],
+  });
+  extend('surf|Instrumental rock|Twang melody', {
+    why2: 'Fifth pass, up the neck: the melody an octave up — slid into the high root, the ♭3 above it, the 5th held with vibrato.',
+    fills: [[sl(0, 22, 24, 4, 0.9, { vib: true }), n(4, 27, 2, 0.8), n(6, 24, 2, 0.8), n(8, 19, 6, 0.9, { vib: true }), n(14, 17, 2, 0.75)]],
+  });
+  // ---- country (sixteen; G holds to 23, Bakersfield in A to 28) ----
+  extend('country|Country|Boom-chicka (Perkins-inspired)', {
+    why2: 'Lead rolls: the Perkins lines on the top strings — the 6th to the root, the 3rds — while the train keeps going.',
+    leads: [[s(0, 2, 0.9, 'bass', 'mute'), n(2, 21, 2, 0.75), n(4, 19, 2, 0.75), n(6, 16, 2, 0.7), s(8, 2, 0.9, 'bass', 'mute'), n(10, 14, 2, 0.75), n(12, 16, 2, 0.75), n(14, 12, 2, 0.75)],
+            [d(0, 16, 19, 2, 0.8), d(2, 16, 19, 2, 0.6), d(4, 14, 19, 2, 0.75), d(6, 12, 16, 2, 0.75), n(8, 21, 2, 0.8), n(10, 19, 2, 0.75), n(12, 16, 4, 0.85, { vib: true })]],
+  });
+  extend("country|Country|Chicken pickin' (Rich-inspired)", {
+    why2: 'Fifth pass, up the neck: the figure an octave up — the snapped notes and the 9th bent to the 3rd under the 5th, on the top strings.',
+    fills: [[n(0, 16, 1, 0.9, { stacc: true }), n(1, 16, 1, 0.3, { ghost: true }), n(2, 19, 1, 0.85, { stacc: true }), n(3, 19, 1, 0.3, { ghost: true }), d(4, 14, 19, 4, 0.85, { up: 2 }), n(8, 21, 1, 0.85, { stacc: true }), n(9, 21, 1, 0.3, { ghost: true }), n(10, 19, 1, 0.8, { stacc: true }), n(11, 16, 1, 0.75), d(12, 12, 16, 4, 0.85)]],
+  });
+  extend('country|Country|Travis picking (Travis/Atkins-inspired)', {
+    why2: 'Fifth pass, up the neck: the melody on the top two strings over the thumb.',
+    fills: [[s(0, 2, 0.85, 'bass', 'mute'), n(2, 16, 2, 0.6), s(4, 2, 0.75, 'fifth', 'mute'), n(5, 19, 1, 0.55), n(6, 21, 2, 0.6), s(8, 2, 0.85, 'bass', 'mute'), n(10, 19, 2, 0.6), s(12, 2, 0.75, 'fifth', 'mute'), n(13, 16, 1, 0.55), n(14, 14, 2, 0.6)]],
+  });
+  extend('country|Bakersfield|Steel bends and double stops', {
+    why2: 'Fifth pass, up the neck: the steel bends where a steel plays them — the 5th bent to the 6th under the high root, the 4th bent to the 5th under the 6th — and 3rds on the first two strings.',
+    fills: [[n(0, 19, 2, 0.85, { stacc: true }), n(2, 21, 2, 0.75, { stacc: true }), d(4, 19, 24, 4, 0.9, { up: 2 }), n(8, 26, 2, 0.8, { stacc: true }), n(10, 28, 2, 0.75, { stacc: true }), d(12, 21, 24, 4, 0.85)]],
+    fillsOnStay: [[d(0, 17, 21, 4, 0.9, { up: 2 }), d(4, 16, 19, 2, 0.8), d(6, 16, 19, 2, 0.6), n(8, 24, 4, 0.85, { vib: true }), n(12, 21, 2, 0.75), n(14, 19, 2, 0.75)]],
+  });
+  extend('country|Outlaw|Chicka', {
+    why2: 'Fifth pass, up the neck: the chicka answered on the first string, and lead rolls — the muted single-note lines and 6ths that the phased Telecaster plays over the beat.',
+    fills: [[s(0, 1, 0.9, 'bass', 'mute'), s(2, 1, 0.55, 'low', 'mute'), s(3, 1, 0.45, 'low', 'mute'), s(4, 1, 0.8, 'fifth', 'mute'), s(6, 1, 0.55, 'low', 'mute'), s(7, 1, 0.45, 'low', 'mute'), n(8, 19, 2, 0.8), n(10, 22, 2, 0.8), n(12, 19, 2, 0.8), n(14, 16, 2, 0.75)]],
+    leads: [[n(0, 19, 2, 0.85, { pm: true }), n(2, 22, 2, 0.8, { pm: true }), n(4, 19, 2, 0.8, { pm: true }), n(6, 17, 2, 0.75, { pm: true }), n(8, 15, 2, 0.8, { pm: true }), n(10, 16, 2, 0.8, { pm: true }), n(12, 12, 4, 0.85)],
+            [d(0, 12, 21, 2, 0.8), d(2, 12, 21, 2, 0.6), d(4, 10, 19, 2, 0.8), d(6, 10, 19, 2, 0.6), n(8, 22, 2, 0.85), n(10, 19, 2, 0.8), n(12, 16, 4, 0.85, { vib: true })]],
+  });
+  extend('country|Country rock|Bass-note strum', {
+    why2: 'Fifth pass, up the neck: half a bar of strum, then the line on the top strings; lead rolls — double stops in 3rds and the major-pentatonic line, the second guitar\'s part.',
+    fills: [[s(0, 2, 0.9, 'bass'), s(2, 2, 0.7, 'high'), s(4, 2, 0.6, 'high'), s(6, 2, 0.55, 'high'), n(8, 21, 2, 0.8), n(10, 19, 2, 0.75), n(12, 16, 2, 0.8), n(14, 14, 2, 0.75)]],
+    leads: [[d(0, 16, 19, 2, 0.8), d(2, 16, 19, 2, 0.6), d(4, 14, 19, 2, 0.75), d(6, 12, 16, 2, 0.75), n(8, 19, 2, 0.8), n(10, 21, 2, 0.8), n(12, 19, 4, 0.85, { vib: true })],
+            [n(0, 21, 2, 0.85), n(2, 19, 2, 0.75), n(4, 16, 2, 0.8), n(6, 14, 2, 0.75), n(8, 12, 2, 0.8), n(10, 14, 2, 0.75), n(12, 16, 4, 0.85, { vib: true })]],
+  });
+  extend('country|Hot country|Banjo rolls', {
+    why2: 'Fifth pass, up the neck: the rolls in the chord\'s top octave.',
+    fills: [[n(0, 12, 1, 0.85), n(1, 16, 1, 0.6), n(2, 19, 1, 0.7), n(3, 12, 1, 0.8), n(4, 16, 1, 0.6), n(5, 19, 1, 0.7), n(6, 21, 1, 0.8), n(7, 19, 1, 0.65), n(8, 16, 1, 0.85), n(9, 19, 1, 0.6), n(10, 21, 1, 0.7), n(11, 19, 1, 0.8), n(12, 16, 1, 0.85), n(13, 19, 1, 0.6), n(14, 21, 1, 0.7), n(15, 19, 1, 0.65)]],
+  });
+  extend('country|Country waltz|Bass, chord, chord', {
+    why2: 'Fifth pass, up the neck: the bass note, then the melody on the top strings instead of the chords.',
+    fills: [[s(0, 4, 0.9, 'bass'), n(4, 16, 2, 0.7), n(6, 19, 2, 0.7), n(8, 21, 2, 0.75), n(10, 19, 2, 0.7)]],
+    fillsOnStay: [[s(0, 4, 0.9, 'bass'), s(4, 3, 0.65, 'high'), n(8, 21, 2, 0.75), n(10, 19, 2, 0.7)]],
+  });
+  // ---- bluegrass (sixteen; G holds to 23) ----
+  extend('bluegrass|Bluegrass|Crosspicking (Watson/White-inspired)', {
+    why2: 'Fifth pass, up the neck: the crosspicking in the top octave, down to the 6th and 9th.',
+    fills: [[n(0, 12, 1, 0.85), n(1, 16, 1, 0.6), n(2, 19, 1, 0.7), n(3, 12, 1, 0.8), n(4, 16, 1, 0.6), n(5, 19, 1, 0.7), n(6, 21, 1, 0.8), n(7, 19, 1, 0.65), n(8, 16, 1, 0.85), n(9, 19, 1, 0.6), n(10, 21, 1, 0.7), n(11, 19, 1, 0.8), n(12, 16, 1, 0.85), n(13, 14, 1, 0.6), n(14, 12, 1, 0.7), n(15, 9, 1, 0.65)]],
+  });
+  extend('bluegrass|Bluegrass|Chop rhythm (Rice-inspired)', {
+    why2: 'Fifth pass, up the neck: the chop, then a fiddle-tune line on the top strings.',
+    fills: [[s(0, 2, 0.95, 'bass'), s(4, 0.8, 0.85, 'high', 'mute'), n(8, 19, 1, 0.8), n(9, 21, 1, 0.75), n(10, 19, 1, 0.8), n(11, 16, 1, 0.75), n(12, 14, 1, 0.8), n(13, 16, 1, 0.75), n(14, 12, 2, 0.85)]],
+  });
+  // ---- jazz ----
+  extend('jazz|Swing|Charleston, anticipated', {
+    why2: 'Fifth pass, up the neck: the Charleston, then a line on the top strings in the space after it.',
+    fills: [[s(0, 2, 0.8, 'high'), s(5, 1, 0.7, 'high'), n(6, 16, 0.8, 0.8), n(7, 19, 0.8, 0.75), n(8, 21, 0.8, 0.8), n(9, 19, 0.8, 0.75), n(10, 16, 0.8, 0.8), n(11, 14, 0.8, 0.75)]],
+  });
+  extend('jazz|Bossa nova|The batida, two bars', {
+    why2: 'Lead rolls: the thumb keeps the bass and a single line takes the top strings — 3rd, 5th, 6th, the major 7th — the melody a bossa guitarist hums over the batida.',
+    leads: [[s(0, 4, 0.85, 'bass'), n(2, 16, 2, 0.65), n(4, 19, 2, 0.6), n(6, 21, 2, 0.65), s(8, 4, 0.8, 'bass'), n(10, 19, 2, 0.6), n(12, 16, 2, 0.65), n(14, 14, 2, 0.6)],
+            [s(0, 4, 0.85, 'bass'), n(3, 23, 3, 0.65), n(6, 21, 2, 0.6), s(8, 4, 0.8, 'bass'), n(11, 19, 3, 0.65), n(14, 16, 2, 0.6)]],
+  });
+  extend('jazz|Gypsy jazz|Pompe and diminished runs', {
+    why2: 'Fifth pass, up the neck: the diminished arpeggio an octave up to the ♭9 above the double octave, and a run from the double octave down over the pompe.',
+    fills: [[s(0, 1.2, 0.55), s(2, 0.5, 0.3, 'high'), s(3, 1, 0.8), n(6, 16, 0.8, 0.85), n(7, 19, 0.8, 0.8), n(8, 22, 0.8, 0.85), n(9, 25, 0.8, 0.8), n(10, 22, 0.8, 0.8), n(11, 19, 0.8, 0.75)],
+            [n(0, 24, 0.8, 0.9), n(1, 22, 0.8, 0.8), n(2, 19, 0.8, 0.8), n(3, 17, 0.8, 0.8), n(4, 15, 0.8, 0.8), n(5, 12, 0.8, 0.8), s(6, 1.2, 0.55), s(8, 0.5, 0.3, 'high'), s(9, 1, 0.8)]],
+  });
+  extend('jazz|Jazz waltz|Comp in three', {
+    why2: 'Fifth pass, up the neck: the shell on one, then a line on the top strings through the bar.',
+    fills: [[s(0, 1.5, 0.7, 'shell'), n(3, 16, 1, 0.7), n(4, 19, 1, 0.7), n(5, 21, 1.5, 0.75), n(6, 19, 1, 0.7), n(7, 16, 1, 0.7), n(8, 14, 1, 0.7)]],
+  });
+  extend('jazz|Bebop|Bebop line', {
+    why2: 'Fifth pass, up the neck: the line an octave up, and a change fill that starts on the major 7th at the top of the box and comes down onto the next chord\'s 3rd.',
+    fills: [[n(0, 12, 0.8, 0.85), n(2, 14, 0.8, 0.7), n(3, 16, 0.8, 0.8), n(5, 19, 0.8, 0.7), n(6, 22, 0.8, 0.8), n(8, 21, 0.8, 0.7), n(9, 19, 0.8, 0.8), n(11, 16, 0.8, 0.7)]],
+    fillsOnChange: [[n(0, 23, 0.8, 0.85), n(2, 21, 0.8, 0.7), n(3, 19, 0.8, 0.8), n(5, 17, 0.8, 0.7), n(6, 16, 0.8, 0.8), n(8, 14, 0.8, 0.7), nx(9, 16, 0.8, 0.8), nx(11, 12, 0.8, 0.8)]],
+  });
+  extend('jazz|Jazz ballad|Chord-melody', {
+    why2: 'Fifth pass, up the neck: the melody where a chord-melody keeps it — on the top two strings above the chord.',
+    variants: [[s(0, 6, 0.75, 'shell', null, { add: 14 }), sl(6, 15, 16, 3, 0.7, { vib: true }), n(9, 19, 3, 0.65)]],
+    fills: [[s(0, 3, 0.75, 'shell', null, { add: 14 }), n(3, 21, 3, 0.7, { vib: true }), n(6, 19, 1, 0.65), n(7, 16, 2, 0.65), n(9, 14, 3, 0.7, { vib: true })]],
+  });
+  extend('jazz|Samba|Partido alto', {
+    why2: 'Fifth pass, up the neck: the bass notes kept, the chords replaced by a line on the top strings.',
+    fills: [[s(0, 3, 0.8, 'bass'), n(3, 16, 2, 0.65), n(6, 19, 2, 0.65), s(8, 3, 0.75, 'bass'), n(11, 21, 2, 0.65), n(14, 19, 2, 0.6)]],
+  });
+  extend('jazz|Son montuno|Montuno', {
+    why2: 'Fifth pass, up the neck: the montuno in the top octave, as a tres plays it.',
+    fills: [[d(2, 12, 16, 2, 0.8), d(5, 16, 19, 1, 0.7), d(6, 12, 19, 2, 0.8), d(10, 16, 19, 2, 0.75), d(13, 14, 19, 1, 0.7), nx(14, 12, 2, 0.8, { tech: 'double', iv2: 16 })]],
+  });
+  extend('jazz|Soul jazz|Boogaloo comp and line', {
+    why2: 'Fifth pass, up the neck: the line on the top strings — the ♭3 hammered up there, the 5th, 6th and ♭7 — and a run from the ♭7 down to the octave.',
+    fills: [[s(2, 2, 0.7, 'high', null, { add: 14 }), h(6, 15, 16, 2, 0.8), n(8, 19, 2, 0.75), n(10, 21, 2, 0.7), s(12, 2, 0.7, 'high', null, { add: 14 }), n(14, 22, 2, 0.7)],
+            [n(0, 22, 2, 0.8), n(2, 19, 2, 0.75), n(4, 22, 2, 0.8), n(6, 19, 2, 0.7), n(8, 17, 2, 0.75), n(10, 15, 2, 0.7), n(12, 12, 4, 0.8, { vib: true })]],
+  });
+  // ---- 6/8 ballad (twelve; C holds to 23) ----
+  extend('ballad|6/8 ballad|6ths and triplets (soul ballad)', {
+    why2: 'Fifth pass, up the neck: the 6ths on the top strings, and the melody up there answered by the root.',
+    fills: [[d(0, 12, 21, 3, 0.8), d(3, 12, 21, 3, 0.55), d(6, 11, 19, 3, 0.75), d(9, 9, 17, 3, 0.7)],
+            [n(0, 19, 3, 0.8, { vib: true }), n(3, 21, 1, 0.7), n(4, 19, 1, 0.7), n(5, 16, 1, 0.7), n(6, 14, 3, 0.75), n(9, 12, 3, 0.75, { vib: true })]],
+  });
+  // ---- reggae (sixteen; A holds to 28, Rocksteady in C to 23) ----
+  extend('reggae|Reggae|Skank, tight', {
+    why2: 'Lead rolls: the "pick" guitar\'s part — a muted counter-line on the top strings between the skanks, the way a second guitarist in a reggae band plays.',
+    leads: [[n(0, 24, 2, 0.7, { pm: true }), n(2, 22, 2, 0.6, { pm: true }), n(4, 19, 2, 0.65, { pm: true }), n(6, 17, 2, 0.6, { pm: true }), n(8, 15, 2, 0.65, { pm: true }), n(10, 12, 2, 0.6, { pm: true }), n(12, 15, 2, 0.65, { pm: true }), n(14, 17, 2, 0.6, { pm: true })],
+            [s(2, 1, 0.8, 'high', 'mute'), n(4, 24, 2, 0.7, { pm: true }), s(6, 1, 0.8, 'high', 'mute'), n(8, 22, 1, 0.65, { pm: true }), n(9, 24, 1, 0.65, { pm: true }), s(10, 1, 0.8, 'high', 'mute'), n(12, 19, 2, 0.7, { pm: true }), s(14, 1, 0.8, 'high', 'mute')]],
+  });
+  extend('reggae|Steppers|Skank over steppers', {
+    why2: 'Lead rolls: the lead guitar over the steppers — the high root and ♭7, the 5th, held into the skank.',
+    leads: [[n(0, 24, 2, 0.75), n(2, 22, 2, 0.65), n(4, 24, 2, 0.7), n(6, 19, 2, 0.65), n(8, 22, 4, 0.75), n(12, 19, 2, 0.7), n(14, 17, 2, 0.65)],
+            [s(2, 1, 0.8, 'high', 'mute'), n(4, 19, 2, 0.7), s(6, 1, 0.8, 'high', 'mute'), n(8, 22, 2, 0.7), s(10, 1, 0.8, 'high', 'mute'), n(12, 24, 2, 0.75), s(14, 1, 0.8, 'high', 'mute')]],
+  });
+  extend('reggae|Rocksteady|3rds on the offbeat', {
+    why2: 'Fifth pass, up the neck: the 3rds on the first two strings.',
+    fills: [[d(2, 16, 19, 1.5, 0.75), d(6, 16, 19, 1.5, 0.75), d(10, 17, 21, 1.5, 0.7), d(14, 16, 19, 1.5, 0.75)],
+            [d(2, 12, 16, 1.5, 0.75), d(6, 14, 17, 1.5, 0.7), d(10, 16, 19, 1.5, 0.75), d(14, 17, 21, 1.5, 0.7)]],
+  });
+  // ---- ska (C holds to 23) ----
+  extend('ska|Ska|Chunk and upstroke', {
+    why2: 'Lead rolls: the horn line on the guitar — the 5th, 6th, 3rd and 9th on the top strings — between the upstrokes.',
+    leads: [[n(0, 19, 2, 0.85), n(2, 21, 2, 0.8), n(4, 19, 2, 0.8), n(6, 16, 2, 0.8), n(8, 14, 2, 0.8), n(10, 16, 2, 0.8), n(12, 12, 4, 0.85)],
+            [g(0, 1, 0.3, 'low'), s(2, 1, 0.8, 'high', 'mute'), n(4, 21, 2, 0.8), n(6, 19, 2, 0.8), s(10, 1, 0.8, 'high', 'mute'), n(12, 16, 2, 0.8), n(14, 19, 2, 0.8)]],
+  });
+  extend('ska|Ska (Jamaican)|Swung upstrokes', {
+    why2: 'Lead rolls: the Ranglin line on the top strings, swung, between the upstrokes.',
+    leads: [[n(0, 19, 0.8, 0.85), n(2, 21, 0.8, 0.8), n(3, 19, 0.8, 0.8), n(5, 16, 0.8, 0.8), n(6, 14, 0.8, 0.8), n(8, 16, 0.8, 0.8), n(9, 12, 2.4, 0.85)],
+            [s(2, 0.8, 0.8, 'high', 'mute'), n(3, 16, 0.8, 0.8), n(5, 19, 0.8, 0.8), s(8, 0.8, 0.8, 'high', 'mute'), n(9, 21, 0.8, 0.8), n(11, 19, 0.8, 0.8)]],
+  });
+  // ---- soul (A holds to 28; Neo-soul in E minor to 23) ----
+  extend('soul|Soul|6ths and muted backbeat', {
+    why2: 'Fifth pass, up the neck: the 6ths on the first and third strings, where Cropper slides them, up to the high root.',
+    fills: [[d(0, 16, 24, 3, 0.8), s(4, 1, 0.55, 'high', 'mute'), d(8, 14, 23, 3, 0.75), s(12, 1, 0.55, 'high', 'mute'), n(14, 12, 2, 0.6)],
+            [d(0, 12, 21, 3, 0.8), d(4, 14, 23, 3, 0.7), d(8, 16, 24, 4, 0.8), n(12, 22, 2, 0.7), n(14, 24, 2, 0.75)]],
+  });
+  extend('soul|Sweet soul|Rolling hammer-ons', {
+    why2: 'Fifth pass, up the neck: the rolling hammer-ons on the top strings, up to the double octave.',
+    fills: [[h(0, 14, 15, 2, 0.75), n(2, 19, 2, 0.6), h(4, 17, 19, 2, 0.75), n(6, 24, 2, 0.6), h(8, 14, 15, 2, 0.75), n(10, 19, 2, 0.6), d(12, 15, 24, 4, 0.75)]],
+  });
+  extend('soul|Neo-soul|Swung arpeggios', {
+    why2: 'Fifth pass, up the neck: the arpeggio through the top of the box — 5th, ♭7, 4th, ♭3, 9th.',
+    fills: [[n(0, 12, 2, 0.7), n(2, 19, 2, 0.55), n(3, 22, 1, 0.55), n(4, 19, 4, 0.65), n(8, 17, 2, 0.6), n(10, 15, 2, 0.55), n(11, 14, 1, 0.5), n(12, 12, 4, 0.65)]],
+  });
+  // ---- pop (C holds to 23; 80s in C♯ minor to 23) ----
+  extend('pop|Pop|Strum with chucks', {
+    why2: 'Lead rolls: the hook on the top strings over the strum, the second guitar\'s job in a pop band.',
+    leads: [[n(0, 19, 2, 0.8), n(2, 21, 2, 0.7), n(4, 19, 4, 0.8), n(8, 16, 2, 0.7), n(10, 14, 2, 0.75), n(12, 12, 4, 0.75)],
+            [s(0, 4, 0.85), n(4, 16, 2, 0.7), n(6, 19, 2, 0.7), n(8, 21, 4, 0.8), n(12, 19, 2, 0.7), n(14, 16, 2, 0.7)]],
+  });
+  extend('pop|Pop|The hook', {
+    why2: 'Fifth pass, up the neck: the hook in the top octave.',
+    fills: [[n(0, 16, 2, 0.8), n(2, 19, 2, 0.7), n(4, 21, 4, 0.8), n(8, 19, 2, 0.7), n(10, 16, 2, 0.75), n(12, 14, 4, 0.75)]],
+  });
+  extend('pop|80s pop|Add9 arpeggio', {
+    why2: 'Fifth pass, up the neck: the arpeggio in the top octave with the 9th on top.',
+    fills: [[n(0, 12, 2, 0.8), n(2, 19, 2, 0.65), n(4, 22, 2, 0.7), n(6, 19, 2, 0.65), n(8, 14, 2, 0.8), n(10, 19, 2, 0.65), n(12, 22, 2, 0.7), n(14, 19, 2, 0.65)]],
+  });
+  extend('pop|Acoustic pop|Percussive strum', {
+    why2: 'Lead rolls: the hammered lines on the top strings an acoustic player puts between the strums.',
+    leads: [[s(0, 4, 0.85), n(4, 16, 2, 0.7), n(6, 19, 2, 0.7), n(8, 21, 2, 0.75), n(10, 19, 2, 0.7), h(12, 14, 16, 2, 0.7), n(14, 12, 2, 0.7)],
+            [n(0, 19, 2, 0.8), h(2, 14, 16, 2, 0.7), n(4, 19, 2, 0.75), n(6, 21, 2, 0.75), s(8, 4, 0.8), n(12, 16, 2, 0.7), n(14, 14, 2, 0.7)]],
+  });
+  // ---- funk (E holds to 23; Disco and Minneapolis in A to 28) ----
+  extend('funk|Classic funk|Chicken scratch', {
+    why2: 'Lead rolls: the single-note funk line on the top strings, muted, in the bar the scratch would fill.',
+    leads: [[n(0, 19, 1, 0.8, { pm: true }), n(2, 22, 1, 0.75, { pm: true }), n(3, 19, 1, 0.75, { pm: true }), n(6, 17, 1, 0.75, { pm: true }), n(8, 15, 1, 0.8, { pm: true }), n(10, 12, 1, 0.7, { pm: true }), n(11, 15, 1, 0.7, { pm: true }), n(14, 17, 1, 0.75, { pm: true })],
+            [s(0, 2, 0.85, 'high'), n(4, 22, 1, 0.8, { pm: true }), n(6, 19, 1, 0.75, { pm: true }), n(7, 22, 1, 0.7, { pm: true }), s(8, 1, 0.5, 'high', 'mute'), n(10, 19, 1, 0.75, { pm: true }), n(12, 17, 1, 0.75, { pm: true }), n(14, 15, 2, 0.8)]],
+  });
+  extend('funk|Classic funk|Unison riff (Nocentelli-inspired)', {
+    why2: 'Fifth pass, up the neck: the riff an octave up.',
+    fills: [[n(0, 12, 1, 0.9, { pm: true }), n(2, 12, 1, 0.55, { pm: true }), n(3, 22, 1, 0.75, { pm: true }), n(6, 19, 1, 0.75, { pm: true }), n(8, 12, 1, 0.85, { pm: true }), n(10, 15, 1, 0.7, { pm: true }), n(11, 17, 1, 0.75, { pm: true }), n(14, 22, 2, 0.8)]],
+  });
+  extend('funk|Disco|The chuck', {
+    why2: 'Lead rolls: the single-note fills Rodgers plays between chucks — muted, on the top strings, the high root said twice.',
+    leads: [[n(0, 24, 1, 0.8, { pm: true }), n(2, 24, 1, 0.6, { pm: true }), n(3, 22, 1, 0.75, { pm: true }), n(4, 24, 1, 0.8, { pm: true }), n(6, 19, 1, 0.7, { pm: true }), n(8, 22, 1, 0.8, { pm: true }), n(10, 19, 1, 0.7, { pm: true }), n(11, 17, 1, 0.7, { pm: true }), n(12, 19, 2, 0.8, { pm: true }), n(14, 15, 2, 0.75, { pm: true })],
+            [s(2, 2, 0.8, 'high'), n(4, 24, 1, 0.8, { pm: true }), n(5, 22, 1, 0.7, { pm: true }), s(6, 2, 0.8, 'high'), n(8, 19, 1, 0.75, { pm: true }), n(9, 22, 1, 0.7, { pm: true }), s(10, 2, 0.8, 'high'), n(12, 24, 2, 0.8), s(14, 2, 0.8, 'high')]],
+  });
+  extend('funk|New Orleans funk|Riff in unison with the bass', {
+    why2: 'Fifth pass, up the neck: the riff an octave up, the way the Meters answer it.',
+    fills: [[n(0, 12, 2, 0.9, { pm: true }), n(3, 22, 1, 0.7, { pm: true }), n(6, 19, 2, 0.75, { pm: true }), n(8, 12, 2, 0.85, { pm: true }), n(11, 15, 1, 0.7, { pm: true }), n(12, 17, 2, 0.75, { pm: true }), n(14, 12, 2, 0.8, { pm: true })]],
+  });
+  extend('funk|Minneapolis|Triad stabs', {
+    why2: 'Lead rolls: the lead line on the first string over the stabs — high root, the ♭3 and 9th above it.',
+    leads: [[n(0, 24, 1, 0.85), n(2, 27, 1, 0.8), n(4, 24, 1, 0.8), n(6, 22, 1, 0.75), n(8, 19, 2, 0.8), n(10, 22, 2, 0.75), n(12, 24, 4, 0.85, { vib: true })],
+            [s(0, 2, 0.85, 'high'), n(6, 26, 1, 0.8), n(7, 24, 1, 0.75), s(8, 2, 0.8, 'high'), n(12, 22, 2, 0.8), n(14, 19, 2, 0.75)]],
+  });
+  extend('funk|Afrobeat|Ostinato', {
+    why2: 'Fifth pass, up the neck: the ostinato an octave up, on the top strings.',
+    fills: [[n(0, 12, 1, 0.8, { pm: true }), n(3, 15, 1, 0.7, { pm: true }), n(6, 17, 1, 0.7, { pm: true }), n(9, 19, 1, 0.7, { pm: true }), n(11, 17, 1, 0.65, { pm: true }), n(14, 15, 1, 0.7, { pm: true })]],
+  });
+  extend('funk|Steady motor|Rhythm within the rhythm', {
+    why2: 'Lead rolls: the sixteenth-note lines Wong plays between the chords, on the top strings.',
+    leads: [[n(0, 16, 1, 0.8), n(1, 19, 1, 0.7), n(2, 21, 1, 0.75), n(3, 19, 1, 0.7), n(4, 16, 1, 0.8), n(6, 14, 1, 0.7), n(7, 12, 1, 0.75), n(8, 16, 1, 0.8), n(10, 19, 1, 0.75), n(11, 21, 1, 0.75), n(12, 22, 2, 0.8), n(14, 19, 2, 0.75)],
+            [s(0, 2, 0.85, 'high'), n(2, 21, 1, 0.75), n(3, 19, 1, 0.7), s(4, 2, 0.7, 'high'), n(6, 16, 1, 0.75), n(7, 19, 1, 0.7), s(8, 2, 0.8, 'high'), n(10, 21, 1, 0.75), n(11, 22, 1, 0.7), s(12, 2, 0.7, 'high'), n(14, 19, 2, 0.75)]],
+  });
+  // ---- metal (E holds to 23) ----
+  extend('metal|Metal|Pedal riff (♭2 and ♭5)', {
+    why2: 'Fifth pass, up the neck: the harmony-lead melody on the top strings over the pedal — 5th, ♭7, ♭3 held, the ♭2 back down onto the root.',
+    fills: [[n(0, 19, 4, 0.9, { vib: true }), n(4, 22, 2, 0.85), n(6, 19, 2, 0.8), n(8, 15, 4, 0.85, { vib: true }), n(12, 13, 2, 0.8, { pm: true }), n(14, 12, 2, 0.85, { pm: true })]],
+  });
+  extend('metal|Doom|Tritone riff (Iommi-inspired)', {
+    why2: 'Fifth pass, up the neck: the ♭3 bent a tone and the ♭7 bent to the root, at the top of the box, shaken — the fill between riffs.',
+    fills: [[b(0, 15, 2, 6, 0.95, { vib: true }), n(6, 12, 2, 0.85), b(8, 22, 2, 8, 0.95, { vib: true })]],
+  });
+  extend('metal|Thrash|Downpicked eighths', {
+    why2: 'Lead rolls: a pentatonic run from the ♭7 at the top of the box, in sixteenths, and half a bar of chug into the high bend.',
+    leads: [[n(0, 22, 1, 0.9), n(1, 19, 1, 0.8), n(2, 17, 1, 0.8), n(3, 15, 1, 0.8), n(4, 12, 1, 0.85), n(5, 15, 1, 0.8), n(6, 17, 1, 0.8), n(7, 19, 1, 0.8), n(8, 22, 1, 0.9), n(9, 19, 1, 0.8), n(10, 17, 1, 0.8), n(11, 15, 1, 0.8), n(12, 12, 4, 0.9, { vib: true })],
+            [s(0, 2, 0.95, 'low'), s(2, 1.6, 0.7, 'bass', 'mute'), s(4, 1.6, 0.75, 'bass', 'mute'), s(6, 1.6, 0.7, 'bass', 'mute'), n(8, 19, 2, 0.9), n(10, 22, 2, 0.85), b(12, 22, 2, 4, 0.95, { vib: true })]],
+  });
+  extend('metal|Breakdown|Chords on the kick', {
+    why2: 'Lead rolls: the high notes over the chugs — the ♭7 and ♭2 above the octave, the ♭5 held — the dissonance a breakdown wants on top.',
+    leads: [[s(0, 2, 0.95, 'low'), s(3, 2, 0.9, 'low'), n(6, 22, 2, 0.9, { vib: true }), n(8, 25, 2, 0.85), s(10, 2, 0.9, 'low'), b(12, 22, 2, 4, 0.95, { vib: true })],
+            [n(0, 19, 4, 0.9, { vib: true }), s(4, 1, 0.5, 'bass', 'mute'), s(5, 1, 0.5, 'bass', 'mute'), n(6, 22, 2, 0.9), n(8, 18, 4, 0.9, { vib: true }), s(12, 2, 0.95, 'low'), s(14, 2, 0.9, 'low')]],
+  });
+  // ---- simple (C holds to 23) ----
+  extend('simple|Simple|Arpeggio study', {
+    why2: 'Fifth pass: the scale itself, the whole box — up from the root to the octave in one bar, and down from the top of the box to the 7th below the octave in the other.',
+    fills: [[n(0, 0, 2, 0.8), n(2, 2, 2, 0.75), n(4, 4, 2, 0.75), n(6, 5, 2, 0.75), n(8, 7, 2, 0.75), n(10, 9, 2, 0.75), n(12, 11, 2, 0.75), n(14, 12, 2, 0.8)],
+            [n(0, 23, 2, 0.8), n(2, 21, 2, 0.75), n(4, 19, 2, 0.75), n(6, 17, 2, 0.75), n(8, 16, 2, 0.75), n(10, 14, 2, 0.75), n(12, 12, 2, 0.8), n(14, 11, 2, 0.7)]],
+  });
+  // ---- lead rolls for the chord parts of the earlier passes ----
+  extend('blues|Blues shuffle|Upbeat chops (the second guitar)', {
+    why2: 'Lead rolls: the second guitar takes a chorus in the B.B. box.',
+    leads: [[n(0, 24, 2.4, 0.9, { vib: true }), n(3, 22, 0.8, 0.75), n(4, 19, 0.8, 0.7), n(5, 22, 0.8, 0.75), n(6, 24, 3, 0.85, { vib: true }), n(9, 21, 0.8, 0.7), n(10, 19, 0.8, 0.7), n(11, 17, 0.8, 0.7)],
+            [b(0, 26, 2, 2.4, 0.9, { vib: true }), n(3, 24, 0.8, 0.75), n(4, 21, 0.8, 0.7), n(5, 24, 1.6, 0.8), n(7, 22, 0.8, 0.7), n(8, 19, 2.4, 0.85, { vib: true })]],
+  });
+  extend('rock|Rock|Chords with space (Young-inspired)', {
+    why2: 'Lead rolls: the other Young — the pentatonic lead on the top strings, the unison bend, the high root shaken.',
+    leads: [[n(0, 24, 2, 0.9, { rake: true }), n(2, 22, 2, 0.8), n(4, 19, 2, 0.8), n(6, 22, 2, 0.8), n(8, 24, 4, 0.9, { vib: true }), d(12, 17, 19, 4, 0.9, { up: 2, vib: true })],
+            [d(0, 17, 19, 4, 0.9, { up: 2 }), n(4, 19, 2, 0.8), n(6, 17, 2, 0.8), n(8, 15, 2, 0.8), n(10, 12, 2, 0.8), b(12, 15, 2, 4, 0.9, { vib: true })]],
+  });
+  extend('rock|Straight rock|Eighth-note chug, muted', {
+    why2: 'Lead rolls: the riff on the top strings and the high bend, where the lead guitar would double the chug.',
+    leads: [[n(0, 22, 2, 0.9), n(2, 22, 2, 0.6), n(4, 19, 2, 0.85), n(6, 17, 2, 0.8), n(8, 15, 2, 0.85), n(10, 17, 2, 0.8), n(12, 19, 4, 0.9, { vib: true })],
+            [d(0, 17, 19, 4, 0.9, { up: 2, vib: true }), n(4, 19, 2, 0.8), n(6, 22, 2, 0.85), b(8, 22, 2, 8, 0.9, { vib: true })]],
+  });
+  extend("rock|Bo Diddley beat|The clave strum", {
+    why2: 'Lead rolls: the clave kept in muted scratches with the lead on the first string over it.',
+    leads: [[n(0, 19, 2, 0.85), g(2, 1, 0.3), g(4, 1, 0.3), n(6, 22, 2, 0.85), g(8, 1, 0.3), g(10, 1, 0.3), n(12, 19, 2, 0.85), n(14, 17, 2, 0.8)],
+            [n(0, 22, 2, 0.9, { vib: true }), g(2, 1, 0.3), n(4, 19, 2, 0.85), g(6, 1, 0.3), n(8, 17, 2, 0.85), g(10, 1, 0.3), g(12, 1, 0.3), n(14, 15, 2, 0.8)]],
+  });
+  extend('rock|Punk|Downstrokes', {
+    why2: 'Lead rolls: the octave riff and the pentatonic lead on the top strings that the second guitar plays over the power chords.',
+    leads: [[d(0, 0, 12, 2, 0.9), d(2, 0, 12, 2, 0.8), d(4, 0, 12, 2, 0.85), d(6, 0, 12, 2, 0.8), d(8, 5, 17, 2, 0.9), d(10, 5, 17, 2, 0.8), d(12, 7, 19, 2, 0.9), d(14, 7, 19, 2, 0.8)],
+            [n(0, 24, 2, 0.9), n(2, 22, 2, 0.85), n(4, 19, 2, 0.85), n(6, 22, 2, 0.8), n(8, 24, 2, 0.9), n(10, 22, 2, 0.85), n(12, 19, 4, 0.9, { vib: true })]],
+  });
+  extend('rock|Crazy Horse stomp|Four quarters', {
+    why2: 'Lead rolls: the one-note solo takes the bar — the ♭7 bent and shaken, the 5th, the 4th.',
+    leads: [[b(0, 22, 2, 8, 0.95, { vib: true }), n(8, 19, 4, 0.9, { vib: true }), n(12, 17, 4, 0.85)],
+            [n(0, 19, 4, 0.95, { vib: true }), b(4, 22, 2, 8, 0.95, { vib: true }), n(12, 19, 4, 0.9, { vib: true })]],
+  });
+  extend('rock|Heartland|Sus strum', {
+    why2: 'Lead rolls: the electric\'s double stops and lines on the top strings while the acoustic keeps the strum.',
+    leads: [[d(0, 16, 19, 2, 0.8), d(2, 16, 19, 2, 0.6), d(4, 14, 19, 2, 0.75), d(6, 12, 16, 4, 0.8), n(10, 19, 2, 0.8), n(12, 21, 4, 0.85, { vib: true })],
+            [n(0, 21, 2, 0.85), n(2, 19, 2, 0.75), n(4, 16, 4, 0.8), n(8, 19, 2, 0.8), n(10, 21, 2, 0.75), n(12, 19, 4, 0.85, { vib: true })]],
+  });
+
+  // =========================================================================
+  // SIXTH PASS — the fingerpicked parts, as a hand fingerpicks them. Measured
+  // on the page, two thirds of the finger notes in these parts were landing
+  // on the A and D strings, under or beside the thumb, because their
+  // intervals were written in the root's octave; the fingers play the treble
+  // strings, an octave up. And a dead thumb is the root on every beat, by
+  // definition: no alternating 5th, no walk-up on the low string — the walk
+  // moves to the fingers over the thumb.
+  function liftFingers(key, grid, thumb){
+    const pt = parts[key];
+    if (!pt){ missing.push(key); return; }
+    const beats = grid === 12 ? [0, 3, 6, 9] : [0, 4, 8, 12];
+    const lift = bar => {
+      const fingers = bar.filter(w => !w.strum);
+      if (!fingers.length) return;
+      const top = Math.max(...fingers.map(w => Math.max(w.iv, w.iv2 == null ? -99 : w.iv2)));
+      if (top > 14) return;                              // written for the top strings already
+      bar.forEach(w => {
+        if (w.strum) return;
+        if (w.iv < 0 && !thumb) return;                  // an alternating thumb's walk stays in the bass
+        w.iv += 12;
+        if (w.iv2 != null) w.iv2 += 12;
+        if (w.from != null) w.from += 12;
+      });
+    };
+    const steady = bar => {
+      bar.forEach(w => { if (w.strum && w.voicing === 'fifth') w.voicing = 'bass'; });
+      beats.forEach(b => {
+        if (!bar.some(w => w.strum && Math.abs(w.at - b) < 1e-9)) bar.push({ at: b, dur: grid === 12 ? 1.4 : 2, vel: 0.8, strum: true, voicing: 'bass', mute: true });
+      });
+      bar.sort((a, b) => a.at - b.at);
+    };
+    const walk = (obj) => {
+      ['figure', 'turnaround'].forEach(k => { if (obj[k]){ lift(obj[k]); if (thumb) steady(obj[k]); } });
+      ['variants', 'fills', 'fillsOnChange', 'fillsOnStay', 'tails', 'pickups', 'stops', 'turnarounds', 'leads'].forEach(k => (obj[k] || []).forEach(bar => { lift(bar); if (thumb) steady(bar); }));
+    };
+    walk(pt);
+    if (pt.easy) walk(pt.easy);
+    pt.why = (pt.why || '') + (thumb
+      ? ' Sixth pass: the thumb on the root on every beat, nothing else on the bass strings; the fingers an octave up, on the treble strings, where they are.'
+      : ' Sixth pass: the fingers an octave up, on the treble strings, where a fingerpicking hand has them; the thumb alone on the bass strings.');
+  }
+  liftFingers('blues|Delta fingerstyle|Dead thumb and fills', 12, true);
+  liftFingers('rockabilly|Rockabilly|Dead thumb and licks (Moore-inspired)', 12, true);
+  liftFingers('rockabilly|Rockabilly|Boom-chick, corrected', 12, false);
+  liftFingers('country|Country|Travis picking (Travis/Atkins-inspired)', 16, false);
+  liftFingers('psychobilly|Psychobilly|Travis at speed (Heath-inspired)', 16, false);
+  liftFingers('jazz|Bossa nova|The batida, two bars', 16, false);
+  liftFingers('jazz|Samba|Partido alto', 16, false);
+  liftFingers('jazz|Jazz ballad|Chord-melody', 12, false);
+  liftFingers('simple|Simple|Arpeggio study', 16, false);
+
+  // engine proposals that came out of these passes
+  GT.review.engine.push(
+    { id: 'pairs', title: 'Double stops placed by shape', demo: true,
+      why: '<p>The app places each note of a double stop by pitch alone, so a 3rd can land two strings apart and a 6th on adjacent strings. Measured over every card, a third of the octave pairs and a scatter of 3rds and 5ths were off their shape. A hand plays 2nds to 5ths on adjacent strings, 6ths, 7ths and octaves with a string skipped, 10ths with two — and the boogie\'s root-and-6th adjacent, as a stretch. This page now keeps the written interval and picks the strings that way; the app would do the same in parts.js.</p>' },
+    { id: 'power', title: 'A power-chord voicing', demo: true,
+      why: '<p>"Low" takes the bottom three strings of whatever grip the box has, which for the E and A shapes is a power chord and for the C and G shapes is not. Punk, thrash, doom and half-time rock want the root, 5th and octave and no 3rd wherever the box sits. The page gives strums a "power" voicing built from the window — the root on the lowest string that has it, the 5th on the next string up, the octave above that — and the punk part uses it.</p>' },
+    { id: 'leads', title: 'Lead rolls', demo: true,
+      why: '<p>The chord parts — punk, the chuck, the scratch, the skank, the clave, the chops — were all rhythm on every roll. A part may now carry lead lines, and about a third of rolls put them in the fill bars, so the same part is the rhythm guitar on one roll and the lead guitar on the next; the roll counter says which. In the app, "New fills" would do the same, and a checkbox could hold it on or off.</p>' },
+  );
+
   if (missing.length) console.warn('proposals-more: no part for', missing);
   GT.reviewMore = { missing };
 })();

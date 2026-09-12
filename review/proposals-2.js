@@ -3,6 +3,7 @@
   'use strict';
   const GT = (window.GT = window.GT || {});
   const { n, nx, s, g, d, b, h, p, sl, chug } = GT.reviewHelpers;
+  const sn = (at, dur, vel, voicing, mute, x) => ({ ...s(at, dur, vel, voicing, mute, x), next: true });
   const genres = GT.review.genres;
 
   // =========================================================================
@@ -186,12 +187,12 @@
         parts: [
           {
             name: 'Downstrokes',
-            why: 'Every eighth, every string, downstroked. The variant is the palm-muted verse; the "fill" opens the chord on the last two eighths before a change.',
-            figure: chug('full', null, 0.95, 0.85),
-            variants: [chug('low', 'mute', 0.9, 0.7), [s(0, 4, 0.95), s(4, 1.8, 0.85), s(6, 1.8, 0.85), s(8, 4, 0.95), s(12, 1.8, 0.85), s(14, 1.8, 0.85)]],
-            fills: [chug('full', null, 0.95, 0.85)],
-            fillsOnChange: [[s(0, 1.8, 0.95), s(2, 1.8, 0.85), s(4, 1.8, 0.85), s(6, 1.8, 0.85), s(8, 1.8, 0.95), s(10, 1.8, 0.85), nx(12, 0, 2, 0.95, { chordSlide: -1 }), nx(14, 0, 2, 0.9)]],
-            fillsOnStay: [chug('low', 'mute', 0.9, 0.7)],
+            why: 'Every eighth downstroked on a power chord — root, 5th, octave on the low strings, no 3rd — which is what punk barre chords are. The variant is the palm-muted verse; the "fill" opens the chord on the last two eighths before a change. Needs a power-chord voicing.',
+            figure: chug('power', null, 0.95, 0.85),
+            variants: [chug('power', 'mute', 0.9, 0.7), [s(0, 4, 0.95, 'power'), s(4, 1.8, 0.85, 'power'), s(6, 1.8, 0.85, 'power'), s(8, 4, 0.95, 'power'), s(12, 1.8, 0.85, 'power'), s(14, 1.8, 0.85, 'power')]],
+            fills: [chug('power', null, 0.95, 0.85)],
+            fillsOnChange: [[s(0, 1.8, 0.95, 'power'), s(2, 1.8, 0.85, 'power'), s(4, 1.8, 0.85, 'power'), s(6, 1.8, 0.85, 'power'), s(8, 1.8, 0.95, 'power'), s(10, 1.8, 0.85, 'power'), sn(12, 2, 0.95, 'power', null, { chordSlide: -1 }), sn(14, 2, 0.9, 'power')]],
+            fillsOnStay: [chug('power', 'mute', 0.9, 0.7)],
           },
         ],
       },
