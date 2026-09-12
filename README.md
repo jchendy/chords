@@ -171,7 +171,7 @@ names the tab you're on.
   grows as far as you've strayed from them, and a bookmark holds what you
   were actually looking at: the third box of the A-shape pentatonic coloured
   by interval, not merely the key you were in. A typed progression is written
-  as chord names instead, since its chords aren't degrees of anything. "Copy link to this progression" stays, because putting
+  as chord names instead, since its chords aren't degrees of anything. "Copy a link to all of this" stays, because putting
   that address on the clipboard is the part the address bar can't do for you
 - An info tooltip (ⓘ) beside the position method, the one choice that
   needs explaining — hover on desktop, tap on touch, tap elsewhere to dismiss
@@ -180,7 +180,7 @@ names the tab you're on.
   shapes — a chosen control is ink with a rule under it, not a coloured
   fill. The chart comes first, its key as the title and the progression's
   name beside it, both directly editable (the real pickers lie over the text)
-  with a dice for each, a button that copies the link to what's on screen, a
+  with a dice for each, a
   gear that opens the Settings menu, a Type it button (a popover with the
   progression as chord names, one per bar), and the style as *genre › feel* —
   and a Play at the head of the row, so playback starts without looking away
@@ -203,7 +203,9 @@ names the tab you're on.
   window you can drag; a joined ‹ › pair at the end of the toolbar and an
   arrow on each edge of the window step it. One transport is pinned to the
   bottom of the tab: Play, the tempo slider with its BPM readout and five one-tap tempos under it, the
-  click and a Hide / Show controls button. In the Part view the
+  click, a button that copies a link to all of it — key, chords, style,
+  tempo, the neck's view, the part's roll — and a Hide / Show controls
+  button. In the Part view the
   controls are one row — the part's arrows and name, New fills, the
   lead-roll tag, Easy, Follow chords / Stay on the I — with the techniques
   (and Humanize) behind a Techniques menu and the part and band volumes
