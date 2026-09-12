@@ -116,8 +116,9 @@
     card._seek = null;
     bar = Math.floor(from / feel.grid) % chords.length;
     playing.fromSlot = from - Math.floor(from / feel.grid) * feel.grid;
-    const slotDur0 = (60 / tempo) * GT.band.beatsOf(feel) / feel.grid;
-    nextBarTime = ctx.currentTime + 0.1 - playing.fromSlot * slotDur0;
+    // the moment the first slot played lands at; a bar begun part-way
+    // counts its start back from it
+    nextBarTime = ctx.currentTime + 0.1;
     log = [];
     tick();
     requestAnimationFrame(follow);
@@ -132,10 +133,11 @@
     // a bar whose moment has passed is stepped over, not played late
     for (let skip = audio.stepsToSkip(nextBarTime, ctx.currentTime, barLen); skip > 0; skip--){ nextBarTime += barLen; bar = (bar + 1) % chords.length; }
     while (nextBarTime < ctx.currentTime + ahead()){
-      const t0 = nextBarTime;
-      // a bar begun part-way (after a seek): only from that slot on
+      // a bar begun part-way (after a seek): only from that slot on, the
+      // bar's own start counted back from the moment that slot lands at
       const from = playing.fromSlot || 0;
       playing.fromSlot = 0;
+      const t0 = nextBarTime - from * slotDur;
       const chord = chords[bar], next = chords[(bar + 1) % chords.length];
       const slotsPerBeat = grid / beats;
       if (style === 'simple'){
@@ -164,7 +166,7 @@
       audio.playPartNotes(notes.filter(n => n.bar === bar && n.at >= from), n => t0 + n.at * slotDur + GT.band.swingOffset(feel, Math.floor(n.at), slotDur), slotDur, audio.PART_LEVEL, { slapback: !!feel.slapback })
         .forEach(({ note: n, time, until }) => log.push({ time, until, slot: bar * grid + Math.floor(n.at), where: `${n.string}:${n.fret}` }));
       for (let slot = from; slot < grid; slot++) log.push({ time: t0 + slot * slotDur, slot: bar * grid + slot, head: true });
-      nextBarTime += barLen;
+      nextBarTime = t0 + barLen;
       bar = (bar + 1) % chords.length;
     }
     if (log.length > 400) log = log.filter(e => (e.until || e.time) > ctx.currentTime - 1);
@@ -233,8 +235,7 @@
       playing.shownBar = null;
       bar = inBar % playing.chords.length;
       playing.fromSlot = within;
-      const slotDur = (60 / playing.tempo) * GT.band.beatsOf(playing.feel) / grid;
-      nextBarTime = ctx.currentTime + 0.05 - within * slotDur;
+      nextBarTime = ctx.currentTime + 0.05;
       clearTimeout(timer);
       tick();
       return;
