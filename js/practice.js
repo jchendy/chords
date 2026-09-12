@@ -617,11 +617,21 @@
   document.addEventListener('click', closeBarEditor);
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeBarEditor(); });
 
-  // one more chord on the end, the key's own for the degree the roll gives it
+  // one more bar on the end: the last chord again, as its own slot lasting
+  // one bar, so it can be changed on its own
   function addChord(){
     if (chordCount >= MAX_CHORDS) return;
     closeBarEditor();
-    setChordCount(chordCount + 1);
+    const last = chordCount - 1;
+    slotChoices.push(slotChoices[last]);
+    slotMeasures.push(1);
+    slotShapes.push(slotShapes[last]);
+    currentProgression.push({ ...currentProgression[last] });
+    chordCount++;
+    chordCountValue.textContent = chordCount;
+    loadedLabel = null;
+    clearPreset();
+    renderAll();
   }
   // one chord out of the middle; the ones after it move up
   function removeChord(i){
@@ -681,14 +691,17 @@
       `;
       chordsEl.appendChild(item);
     });
-    if (chordCount < MAX_CHORDS){
-      const add = document.createElement('div');
+    // "+" at the right edge of the last bar, inside its cell, so it takes no
+    // room of its own; it adds one bar of the same chord after it
+    const lastBar = chordsEl.lastElementChild;
+    if (lastBar && chordCount < MAX_CHORDS){
+      const add = document.createElement('button');
+      add.type = 'button';
       add.className = 'add-bar';
-      add.tabIndex = 0;
-      add.setAttribute('role', 'button');
-      add.title = 'Add a chord';
-      add.textContent = '+ bar';
-      chordsEl.appendChild(add);
+      add.title = 'Add a bar of this chord';
+      add.setAttribute('aria-label', 'Add a bar of this chord');
+      add.textContent = '+';
+      lastBar.appendChild(add);
     }
   }
 

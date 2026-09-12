@@ -318,8 +318,8 @@
   .bar-editor .chord-row, .bar-editor .chord-head{ grid-template-columns:22px 1fr 72px 110px 28px; }
   .bar-editor .chord-row[hidden]{ display:none; }
   .chord-row .ib.remove{ width:26px; height:26px; }
-  .chart-grid .add-bar{ border:1px dashed var(--line2); border-radius:6px; color:var(--muted2); display:flex; align-items:center; justify-content:center; font-size:.9rem; min-height:56px; cursor:pointer; }
-  .chart-grid .add-bar:hover, .chart-grid .add-bar:focus-visible{ color:var(--ink); border-color:var(--muted); outline:none; }
+  .chart-grid .add-bar{ position:absolute; right:-6px; top:50%; transform:translateY(-50%); width:26px; height:26px; border-radius:50%; border:1px dashed var(--line2); background:var(--bg); color:var(--muted2); font:600 15px/1 Inter,system-ui,sans-serif; cursor:pointer; padding:0; }
+  .chart-grid .add-bar:hover, .chart-grid .add-bar:focus-visible{ color:var(--ink); border-color:var(--muted); border-style:solid; outline:none; }
   .chart-grid .bar.editing{ background:var(--panel); outline:1px solid var(--line2); }
   /* the style picker: genres as headed groups, the current one lit */
   .style-list{ display:flex; flex-direction:column; gap:10px; padding:4px 0 8px; }

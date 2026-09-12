@@ -720,8 +720,13 @@
     const rows = () => [...document.querySelectorAll('#chordSlots .chord-row')];
     const bars = () => [...document.querySelectorAll('#chords .bar')];
     if (rows().length !== 1) bad.push(`one chord has ${rows().length} editor rows`);
+    const wasBars = bars().length, lastName = bars()[bars().length - 1].querySelector('.chord-name').textContent;
     q('#chords .add-bar').click();
     if (rows().length !== 2 || Number(q('#chordCountValue').textContent) !== 2) bad.push(`+ bar left ${rows().length} rows and a count of ${q('#chordCountValue').textContent}`);
+    // one bar, of the chord before it, and the control has moved to the new last bar
+    if (bars().length !== wasBars + 1) bad.push(`+ bar added ${bars().length - wasBars} bars`);
+    if (bars()[bars().length - 1].querySelector('.chord-name').textContent !== lastName) bad.push('the added bar is not the last chord again');
+    if (!bars()[bars().length - 1].querySelector('.add-bar')) bad.push('the + did not move to the new last bar');
     bars()[bars().length - 1].click();
     const shown = rows().filter(r => !r.hidden).map(r => r.dataset.chord);
     if (shown.join() !== '1') bad.push(`tapping the last bar showed rows ${shown.join(',') || 'none'}`);
