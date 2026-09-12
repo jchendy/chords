@@ -1065,7 +1065,9 @@ struck together, the part does not duck the band, measured against the
 old shared compressor kept in the engine as the reference, the techniques
 are heard (the mute over, the takeover clean, the slapback a repeat), and
 the kit is never the same hit twice (two hats sample for sample, the choke,
-the rim's low band, the beater's click). On `http://` the
+the rim's low band, the beater's click), the room has walls (read from the
+impulse itself), and two levels — the root alone, the guitar comp — sit
+where they were pinned. On `http://` the
 recordings are what is measured; on `file://` the synthesized voices are,
 and each label says which. The runner awaits a suite that returns a
 promise, so these run inside `tests.html` with the rest.
@@ -1145,9 +1147,26 @@ styles live on is a delay on the part's bus — 110 ms, darkened above
 2.5 kHz, one quieter repeat after it — that a pluck sends to, rather than
 a second pick with an attack of its own.
 
-There's a reverb too — a convolver fed by a synthesized room, decaying noise
-whose top end rolls off over the tail — with a send from each voice at its
-own level.
+There's a reverb too — a convolver fed by a synthesized room — with a send
+from each voice at its own level. The room arrives the way a real one does:
+nothing for the first ten milliseconds (the direct sound gets there first),
+then five early reflections between 12 and 41 ms, each a millisecond of
+noise and each louder on one side than the other so the walls have places,
+and from 28 ms the diffuse tail — decaying noise whose top end rolls off as
+it goes — building under the reflections over 40 ms. A test reads the
+impulse itself: silence before the first reflection, a reflection peaking
+7 dB over the tail beside it, the tail falling every fifth of a second and
+gone by the end, each reflection on the wall it was given. The send levels
+were kept: the tail measured within 0.6 dB of where it was.
+
+Two levels are pinned by measurement rather than by ear. A root alone (the
+roots-only mode) is lifted 1.8× so it sits where the triad sat — one piano
+note measured 5 dB under three, and the test holds it within a decibel over
+four roots. The guitar comp is lifted 1.7× against the piano comp: a
+strum's strings share its level and the recordings fall away faster than
+the piano's, so the same velocity came out 4.8 dB quieter as a guitar and
+switching the voice moved the whole band; the test holds the two voices
+within 2 dB over a half-second strike.
 
 The kit is synthesized, from the classic recipes — a pitched-down sine for
 the kick, filtered white noise for the snare and the cymbals — with what a
@@ -1355,7 +1374,7 @@ by what each part does:
 | `tabs.js` | Tab switching, plus the URL fragment and page title that go with each tab — including `setState`, which lets a tab write its own state after the slug so an exercise can be bookmarked. |
 | `main.js` | Boots each tab and wires the header together. |
 | `tests.js` | The regression tests, run by `tests.html`. |
-| `js/tests-sound.js` | The measured tests: the mix rendered offline and read as numbers — no clipping, a strum's sum, the part not ducking the band, the techniques heard, the kit's hits, choke, rim and beater. |
+| `js/tests-sound.js` | The measured tests: the mix rendered offline and read as numbers — no clipping, a strum's sum, the part not ducking the band, the techniques heard, the kit's hits, choke, rim and beater, the room's reflections, the two pinned levels. |
 | `tests-ear.js` | The ear trainer's drill, pressed rather than reasoned about: builds the controls it binds to, then answers questions. Loads before `ear-training.js`. |
 | `tests-fretboard.js` | What the fretboard draws: builds the controls the view binds to, then checks the shapes it renders. Loads before `fretboard-view.js`. |
 

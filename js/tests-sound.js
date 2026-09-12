@@ -228,6 +228,49 @@
     t.ok(high > 0.015, `the kick's beater: ${fmt(high)} above 3 kHz in the first three milliseconds, before the drum speaks`);
   }
 
+  // ---- the room ----
+  // The impulse itself, read as a room: nothing before the first
+  // reflection, reflections denser than the tail around them, the tail
+  // dying monotonically, each wall on a side.
+  function testTheRoomHasWalls(t){
+    const ctx = new OfflineAudioContext(2, 48000, 48000);
+    const buf = audio.roomImpulse(ctx, 1.8);
+    const L = buf.getChannelData(0), R = buf.getChannelData(1), sr = buf.sampleRate;
+    const energy = (from, to) => { let s = 0; for (let i = Math.floor(from * sr); i < Math.floor(to * sr); i++) s += L[i] * L[i] + R[i] * R[i]; return s / Math.max(1, (to - from) * sr); };
+    t.equal(energy(0, 0.010), 0, 'silence for the first ten milliseconds: the direct sound arrives first');
+    let tap = 0; for (let i = Math.floor(0.010 * sr); i < Math.floor(0.045 * sr); i++) tap = Math.max(tap, Math.abs(L[i]), Math.abs(R[i]));
+    const tail = Math.sqrt(energy(0.06, 0.1) / 2);
+    t.ok(tap > tail * 2, `the early reflections stand out of the tail beside them (a reflection peaks at ${dB(tap).toFixed(1)} dB, the tail runs at ${dB(tail).toFixed(1)} dB)`);
+    const windows = []; for (let a = 0.1; a + 0.2 <= 1.8; a += 0.2) windows.push(energy(a, a + 0.2));
+    t.ok(windows.every((w, i) => i === 0 || w < windows[i - 1]), `the tail dies away: ${windows.map(w => dB(w).toFixed(0)).join(', ')} dB by fifths of a second`);
+    t.ok(windows[windows.length - 1] < windows[0] * 0.001, 'and is gone by the end');
+    // each reflection is louder on one side; the sides alternate
+    const sides = audio.ROOM.early.map(([at, , side]) => { const k = Math.floor(at * sr), n = Math.floor(0.001 * sr); let l = 0, r = 0; for (let j = 0; j < n; j++){ l += L[k + j] ** 2; r += R[k + j] ** 2; } return (l > r ? 0 : 1) === side; });
+    t.ok(sides.every(Boolean), 'each reflection lands on the wall it was given');
+    t.ok(audio.ROOM.early.some(e => e[2] === 0) && audio.ROOM.early.some(e => e[2] === 1), 'and the walls are on both sides');
+  }
+
+  // ---- two levels pinned ----
+  // A root alone (the practice tab's roots-only mode) sits where the triad
+  // sat; the guitar comp sits where the piano comp does, so switching the
+  // voice doesn't move the band.
+  async function testTheLevelsAreMatched(t){
+    const v = await withVoices();
+    const o = { random: seeded(31), dry: true };
+    let gapRoot = 0, gapVoice = 0, n = 0;
+    for (const name of ['A', 'C', 'E', 'G']){
+      const ch = chordFromName(name);
+      const triad = await audio.renderOffline(1.2, a => a.playChord(ch, 0.05, 0.5, 0.8, 'piano'), o);
+      const root = await audio.renderOffline(1.2, a => a.playNote(a.noteFreq(ch.note, a.ROOT_OCTAVE), 0.05, 0.5, 0.8 * a.ROOT_ALONE), o);
+      const gtr = await audio.renderOffline(1.2, a => a.playChord(ch, 0.05, 0.5, 0.8, 'guitar'), o);
+      gapRoot += dB(rms(root, 0.05, 0.65)) - dB(rms(triad, 0.05, 0.65));
+      gapVoice += dB(rms(gtr, 0.05, 0.65)) - dB(rms(triad, 0.05, 0.65));
+      n++;
+    }
+    t.ok(Math.abs(gapRoot / n) < 1, `a root alone at ${audio.ROOT_ALONE}× sits ${(gapRoot / n).toFixed(1)} dB from the triad over four roots (${v.label})`);
+    t.ok(Math.abs(gapVoice / n) < 2, `the guitar comp at ${audio.GUITAR_COMP}× sits ${(gapVoice / n).toFixed(1)} dB from the piano comp over four chords`);
+  }
+
   GT.sound = { peak, rms, dB, seeded, withVoices, loudestBar, rockBars, measureDucking };
   GT.soundSuites = [
     ['Sound: the mix stays under full scale', testTheMixStaysUnderFullScale],
@@ -235,5 +278,7 @@
     ['Sound: the part does not duck the band', testThePartDoesNotDuckTheBand],
     ['Sound: the techniques are heard', testTheTechniquesAreHeard],
     ['Sound: the kit is never the same hit twice', testTheKitIsNeverTheSameHitTwice],
+    ['Sound: the room has walls', testTheRoomHasWalls],
+    ['Sound: two levels pinned by measurement', testTheLevelsAreMatched],
   ];
 })();

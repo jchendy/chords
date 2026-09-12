@@ -66,21 +66,39 @@
   let kitRnd = Math.random;
   const lcg = seed => { let x = (Math.floor(seed) * 9301 + 49297) % 233280; return () => { x = (x * 9301 + 49297) % 233280; return x / 233280; }; };
 
-  // A room for the convolver: stereo noise dying away over `seconds`, its
-  // top end rolling off as it goes, so the tail darkens the way a real one
-  // does. Generated once; no sample to download.
+  // A room for the convolver, in three parts the way a real one arrives:
+  // nothing for the first ten milliseconds (the direct sound gets there
+  // first), then a handful of early reflections — five taps between 12 and
+  // 41 ms, each a millisecond of noise, each louder on one side than the
+  // other, so the walls have places — and from 28 ms the diffuse tail:
+  // stereo noise dying away over `seconds`, its top end rolling off as it
+  // goes, so the tail darkens the way a real one does. Generated once; no
+  // sample to download.
+  const ROOM = {
+    predelay: 0.010,
+    early: [[0.012, 0.9, 0], [0.019, 0.7, 1], [0.026, 0.6, 0], [0.033, 0.5, 1], [0.041, 0.42, 0]],   // [seconds, level, the louder side]
+    tailFrom: 0.028,
+    tailRise: 0.040,      // the diffuse tail builds over this, under the reflections
+    tapLength: 0.001,
+    farSide: 0.6,
+  };
   function roomImpulse(ctx, seconds){
     const rate = ctx.sampleRate, n = Math.floor(rate * seconds);
     const buf = ctx.createBuffer(2, n, rate);
+    const tailStart = Math.floor(ROOM.tailFrom * rate), tailLen = n - tailStart, tapLen = Math.floor(ROOM.tapLength * rate), rise = Math.floor(ROOM.tailRise * rate);
     for (let ch = 0; ch < 2; ch++){
       const d = buf.getChannelData(ch);
       let lp = 0;
-      for (let i = 0; i < n; i++){
-        const t = i / n;
+      for (let i = tailStart; i < n; i++){
+        const t = (i - tailStart) / tailLen;
         const white = rnd() * 2 - 1;
         lp += (white - lp) * (0.6 - 0.45 * t);   // a one-pole lowpass that closes over the tail
-        d[i] = lp * Math.pow(1 - t, 2.2) * (i < 200 ? i / 200 : 1);
+        d[i] = lp * Math.pow(1 - t, 2.2) * Math.min(1, (i - tailStart) / rise);
       }
+      ROOM.early.forEach(([at, level, side]) => {
+        const k = Math.floor(at * rate), l = level * (side === ch ? 1 : ROOM.farSide);
+        for (let j = 0; j < tapLen; j++) d[k + j] += l * (rnd() * 2 - 1) * (1 - j / tapLen);
+      });
     }
     return buf;
   }
@@ -1208,10 +1226,19 @@
   };
   const resetVoiceUse = () => Object.keys(voiceUse).forEach(k => { voiceUse[k] = 0; });
 
+  // The guitar comp against the piano comp: the strum's strings share its
+  // level (strumStringLevel) and the recordings fall away faster than the
+  // piano's, so the same velocity came out 4.8 dB quieter as a guitar;
+  // this trim puts the two voices within a decibel of each other over a
+  // half-second strike, so switching the voice doesn't move the band.
+  const GUITAR_COMP = 1.7;
+  // A root alone against the triad it stands in for (the practice tab's
+  // roots-only mode): one piano note is 5 dB under three, measured.
+  const ROOT_ALONE = 1.8;
   function playVoicedNotes(freqs, time, duration, velocity, voice, opts = {}){
     lastVoiceAsked = voice || 'piano';
     if (voice === 'guitar' && freqs.every(pluckReady)){
-      strum(freqs, time, duration, velocity, { stroke: opts.stroke || 'down', bus: 'band' });
+      strum(freqs, time, duration, velocity * GUITAR_COMP, { stroke: opts.stroke || 'down', bus: 'band' });
       return;
     }
     freqs.forEach((freq, i) => playNote(freq, time + i * PIANO_ROLL, duration, velocity));
@@ -1526,7 +1553,7 @@
     const ng = audioCtx.createGain();
     ng.gain.setValueAtTime(0.0001, time);
     ng.gain.exponentialRampToValueAtTime(velocity, time + 0.002);
-    ng.gain.exponentialRampToValueAtTime(0.0001, time + (ghost ? 0.08 : vary(0.16, 0.08)));
+    ng.gain.exponentialRampToValueAtTime(0.0001, time + (ghost ? 0.06 : vary(0.16, 0.08)));
     src.connect(bp).connect(ng).connect(drumGain);
     ng.connect(reverbSends.drums);
     startVoice(src, time, ng, offset);
@@ -1538,7 +1565,7 @@
     osc.frequency.exponentialRampToValueAtTime(130, time + 0.09);
     const og = audioCtx.createGain();
     og.gain.setValueAtTime(0.0001, time);
-    og.gain.exponentialRampToValueAtTime(velocity * (ghost ? 0.3 : 0.45), time + 0.004);
+    og.gain.exponentialRampToValueAtTime(velocity * (ghost ? 0.2 : 0.45), time + 0.004);
     og.gain.exponentialRampToValueAtTime(0.0001, time + 0.11);
     osc.connect(og).connect(drumGain);
     startVoice(osc, time, og);
@@ -1591,7 +1618,7 @@
 
   GT.audio = {
     ctx: () => audioCtx,               // live handle; null until ensureAudio() runs
-    renderOffline, buildGraph,          // a render through a graph of its own, for measuring
+    renderOffline, buildGraph, roomImpulse, ROOM, GUITAR_COMP, ROOT_ALONE,          // a render through a graph of its own, for measuring
     scheduleAhead, SCHEDULE_AHEAD,
     strum, strumPlan, STRUM_SHARE, SWEEP, SWEEP_TAPER, playPartNotes, PART_LEVEL, partFx,
     claim, pitchPlan, BEND_HOLD, MUTE_RING, MUTE_LEVEL, SLAP,

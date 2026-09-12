@@ -13,7 +13,7 @@
   const audio = GT.audio;
   const {
     ensureAudio, noteFreq, chordFrequencies, bassFreqAt, walkBassFreq, STYLES, ROOT_OCTAVE,
-    playNote, playChord, playBass, playHiHat, playRide, playKick, playSnare, playStyleVoice,
+    playNote, playChord, playBass, playHiHat, playRide, playKick, playSnare, playStyleVoice, ROOT_ALONE,
   } = GT.audio;
   const view = GT.fretboardView;
 
@@ -1220,8 +1220,8 @@
       const duration = simpleHitSeconds(secondsPerBeat, noteBeats);
       const velocity = isDownbeat ? SIMPLE_ACCENT.downbeat : SIMPLE_ACCENT.other;
       if (rootOnlyToggle.checked){
-        // boost the lone root so it sits at a similar loudness to a full triad
-        playNote(noteFreq(chord.note, ROOT_OCTAVE), nextNoteTime, duration, velocity * 1.9);
+        // the lone root lifted to where the triad sat (ROOT_ALONE, by measurement)
+        playNote(noteFreq(chord.note, ROOT_OCTAVE), nextNoteTime, duration, velocity * ROOT_ALONE);
       } else {
         playChord(chord, nextNoteTime, duration, velocity, chordVoice);
       }
