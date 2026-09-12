@@ -1629,6 +1629,36 @@
     return cells[0];
   }
 
+  // ---- the fingers off the thumb's strings ---------------------------------
+  // In a fingerpicked part (part.fingers) the thumb has the bass strings and
+  // the fingers the treble strings, and they never touch the same one. A
+  // finger note that lands on a string the thumb uses in this bar moves to
+  // the nearest place for its pitch on a string the thumb doesn't use —
+  // above it first, an octave up before an octave down. A hammer-on or
+  // pull-off whose two notes end up on different strings plays plain.
+  function fingersOffThumb(notes, cells){
+    const thumb = new Set(notes.filter(n => n.strum && (n.voicing === 'bass' || n.voicing === 'fifth')).map(n => n.string));
+    if (!thumb.size) return notes;
+    notes.forEach(n => {
+      if (n.strum || !thumb.has(n.string)) return;
+      const pc = ((n.midi % 12) + 12) % 12;
+      const rank = c => Math.abs(c.midi - n.midi) * 2 + (c.midi < n.midi ? 1 : 0) + (c.string > n.string ? 30 : 0);
+      const c = cells.filter(x => !thumb.has(x.string) && x.midi % 12 === pc).sort((a, b) => rank(a) - rank(b))[0];
+      if (!c) return;
+      n.string = c.string; n.fret = c.fret; n.midi = c.midi;
+      if (n.bend && !(n.fret > 0)) delete n.bend;
+    });
+    // a hammer-on or pull-off is one string: its second note has to have come along
+    notes.forEach(n => {
+      if (n.tech !== 'h' && n.tech !== 'p') return;
+      const partner = notes.find(m => m !== n && !m.strum && m.soft && Math.abs(m.at - (n.at + n.dur)) < 1e-9);
+      if (!partner) return;
+      if (partner.string !== n.string){ delete n.tech; delete n.to; delete partner.soft; }
+      else n.to = partner.fret;
+    });
+    return notes;
+  }
+
   // ---- the realiser ---------------------------------------------------------
   // The whole part over the progression's bars. A bar is a figure bar or a
   // fill bar (every `phrase` bars, the last of each pair by default); the
@@ -1728,6 +1758,7 @@
                                              strum: true, voicing: w.voicing, mute: !!w.mute, next: !!w.next, spread: k * STRUM_SPREAD,
                                              ...(c === colour ? { colour: true } : {}) }));
       });
+      if (part.fingers) notes = fingersOffThumb(notes, cells);
       // the flags, matched back to the written note by its moment
       const techOn = k => !(opts.tech && opts.tech[k] === false);
       written.forEach(w => {
@@ -1763,6 +1794,6 @@
 
   GT.parts = { get LIBRARY(){ return LIBRARY_NOW; }, set LIBRARY(v){ LIBRARY_NOW = v; }, LIBRARY_BASE: LIBRARY,
                SIMPLE_FEEL, TECHNIQUES, EASY_TECH, partsFor, palette, snap, realiseBar, realise, rollFills, newSeed, rng, figureFor,
-               simplify, easyVersion, placePair, thumbCell, powerVoicing, shellVoicing, placeIv,
+               simplify, easyVersion, placePair, thumbCell, powerVoicing, shellVoicing, placeIv, fingersOffThumb,
                cellsIn, homeMidi, gripIn, triadIn, strumCells, strumStringLevel };
 })();

@@ -114,8 +114,13 @@ keys reach 24–28. The `tools/reach.js` script prints this per key.
 - A fingerpicked part keeps its thumb on the bass strings: `bass` is the
   lowest root on E, A or D, `fifth` the 5th on the string beside it. A dead
   thumb is the root on every beat, by definition; the fingers play the
-  treble strings, so their intervals are written an octave up. (`thumbCell`;
-  `liftFingers` in proposals-more.js.)
+  treble strings, so their intervals are written an octave up, and a part
+  marked `fingers: true` (every fingerpicked part; `liftFingers` in
+  proposals-more.js sets it) never puts a finger note on a string the thumb
+  uses in that bar — the realiser moves it to the nearest place for its
+  pitch on another string, an octave up before down, and a hammer-on whose
+  two notes come apart plays plain. `tools/thumb-clash.js` counts the bars
+  where that would otherwise happen. (`thumbCell`, `fingersOffThumb`.)
 - `power` is the root on the lowest string that has it, the 5th on the next
   string up, the octave above. `shell` is root, 3rd and 7th (or 5th for a
   triad), the way a big-band rhythm guitar plays.

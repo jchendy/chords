@@ -1198,6 +1198,43 @@
       t.equal(ivs(written, 0), '12', 'a part with an easy version written for it plays that');
       t.ok(EASY_TECH.double && !EASY_TECH.bend, 'easy mode keeps double stops and drops bends');
     }
+    {
+      // a fingerpicked part: the fingers never take a string the thumb uses
+      // in the bar. The probe's finger notes sit in the thumb's octave, so
+      // without the rule they land on its strings.
+      const probe = { name: 'fp', fingers: true,
+        figure: [s(0, 2, 0.8, 'bass', 'mute'), n(2, 4, 2), s(4, 2, 0.8, 'fifth', 'mute'), n(6, 7, 2), s(8, 2, 0.8, 'bass', 'mute'), { at: 10, iv: 3, iv2: 4, dur: 4, vel: 0.8, tech: 'hammer' }, s(12, 2, 0.8, 'fifth', 'mute'), n(14, 0, 2)],
+        variants: [], fills: [[s(0, 2, 0.8, 'bass', 'mute'), n(2, 4, 2)]] };
+      // per bar, and the thumb is the bass and fifth strums only — a chord strummed on the trebles shares them with the fingers by right
+      const clash = out => { let n = 0; new Set(out.map(x => x.bar)).forEach(b => { const bar = out.filter(x => x.bar === b); const thumb = new Set(bar.filter(x => x.strum && (x.voicing === 'bass' || x.voicing === 'fifth')).map(x => x.string)); n += bar.filter(x => !x.strum && thumb.has(x.string)).length; }); return n; };
+      let withRule = 0, withoutRule = 0, hammers = 0, apart = 0;
+      ['A', 'C', 'E', 'G'].forEach(root => [{ min: 0, max: 3 }, { min: 2, max: 6 }, { min: 5, max: 9 }, { min: 7, max: 11 }].forEach(window => {
+        const o = { ...opts, window, key: { tonic: root, mode: 'major' } };
+        const bars2 = barsOf([chordFromName(root), chordFromName(root)]);
+        withRule += clash(realise(probe, bars2, 1, o, { grid: 16 }));
+        withoutRule += clash(realise({ ...probe, fingers: false }, bars2, 1, o, { grid: 16 }));
+        realise(probe, bars2, 1, o, { grid: 16 }).forEach(x => { if (x.tech === 'h'){ hammers++; const partner = realise(probe, bars2, 1, o, { grid: 16 }).find(m => m.soft && Math.abs(m.at - (x.at + x.dur)) < 1e-9); if (partner && partner.string !== x.string) apart++; } });
+      }));
+      t.equal(withRule, 0, 'in a fingerpicked part no finger note shares a string with the thumb');
+      t.ok(withoutRule > 0, `the rule is the part's, not everyone's (${withoutRule} clashes with it off)`);
+      t.equal(apart, 0, `a hammer-on that stays a hammer-on stays on one string (${hammers} hammer-ons)`);
+      // ...and every fingerpicked part in the library keeps to it
+      const { LIBRARY } = GT.parts;
+      const grids = { blues: 12, rockabilly: 12 };
+      let libClash = 0, libParts = 0;
+      Object.keys(LIBRARY).forEach(style => Object.keys(LIBRARY[style]).forEach(feel => LIBRARY[style][feel].forEach(part => {
+        if (!part.fingers) return;
+        libParts++;
+        const grid = (GT.audio.STYLES[style] && (GT.audio.STYLES[style].variants.find(v => v.label === feel) || {}).grid) || grids[style] || 16;
+        ['A', 'E'].forEach(root => [{ min: 2, max: 6 }, { min: 7, max: 11 }].forEach(window => {
+          const o = { ...opts, window, key: { tonic: root, mode: 'major' } };
+          const out = realise(part, barsOf([chordFromName(root), chordFromName(root), chordFromName(root + '7'), chordFromName(root + '7')]), 2, o, { grid });
+          libClash += clash(out);
+        }));
+      })));
+      t.ok(libParts >= 6, `the fingerpicked parts are marked (${libParts})`);
+      t.equal(libClash, 0, 'no fingerpicked part in the library puts a finger on the thumb\'s string');
+    }
   }
 
   function testTheSuggestedParts(t){
