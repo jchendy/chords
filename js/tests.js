@@ -1108,6 +1108,50 @@
     t.ok(scheduleAhead(true) >= 1.125, `a hidden page queues more than a throttled second ahead (${scheduleAhead(true)} s)`);
   }
 
+
+  // A string can only sound one note: the next note on it damps the one
+  // before, in a few milliseconds, at the new note's own time; a note on
+  // another string, or one that has already ended, is left alone. And a
+  // note's pitch goes where its technique says: a slide arrives from below
+  // over 80 ms, a bend sets off after a moment and arrives over 140 ms, a
+  // long bend comes back down, a short one stays up.
+  function testOneStringOneNote(t){
+    const { claim, pitchPlan, BEND_HOLD } = GT.audio;
+    // a fake graph with fake nodes that record their ramps
+    const node = () => { const g = { calls: [] }; g.gain = { setValueAtTime: (v, at) => g.calls.push(['set', v, at]), exponentialRampToValueAtTime: (v, at) => g.calls.push(['ramp', v, at]) }; return g; };
+    const srcOf = () => ({ stopped: null, stop(at){ this.stopped = at; } });
+    // claim lives on the graph; a test graph of its own so the live one is untouched
+    const live = GT.audio.ctx();
+    const a = { src: srcOf(), damp: node() }, b = { src: srcOf(), damp: node() }, c = { src: srcOf(), damp: node() };
+    GT.audio._withGraph({ claims: new Map() }, () => {
+      claim('part:3', a.src, a.damp, 1.0, 2.0);
+      claim('part:2', b.src, b.damp, 1.2, 2.2);            // another string: nothing happens to a
+      t.equal(a.damp.calls.length, 0, 'a note on another string leaves the first alone');
+      claim('part:3', c.src, c.damp, 1.5, 2.5);            // the same string while a still sounds
+      t.equal(a.damp.calls.map(x => x[0]).join(','), 'set,ramp', 'the next note on the string damps the one before');
+      t.ok(a.damp.calls[1][2] > 1.5 && a.damp.calls[1][2] < 1.53, `over a few milliseconds at the new note's time (${a.damp.calls[1] && a.damp.calls[1][2]})`);
+      t.ok(a.src.stopped > 1.5, 'and stops it');
+      claim('part:3', c.src, c.damp, 1.6, 2.5);            // the same voice again: not damped
+      t.equal(c.damp.calls.length, 0, 'a voice claiming its own string again is not damped');
+      claim('part:2', srcOf(), node(), 3.0, 4.0);          // b has ended by then
+      t.equal(b.damp.calls.length, 0, 'a note that has ended is left alone');
+    });
+    t.equal(GT.audio.ctx(), live, 'the live graph is back');
+
+    const plan = (fx, dur) => pitchPlan(1, fx, 10, dur);
+    const slide = plan({ slideFrom: 0.9 }, 1);
+    t.ok(slide[0].rate === 0.9 && slide[1].rate === 1 && slide[1].t - 10 <= 0.0801, 'a slide arrives from below within 80 ms');
+    const bend = plan({ bend: 2 }, 0.3);
+    const top = bend.find(p => p.rate > 1);
+    t.ok(top && Math.abs(top.rate - Math.pow(2, 2 / 12)) < 1e-9 && top.t - 10 <= 0.2001 && top.t - 10 >= 0.06, `a bend arrives at its note within 200 ms of setting off (${top && (top.t - 10).toFixed(3)})`);
+    t.ok(bend[bend.length - 1].rate > 1, 'a short bend stays up');
+    const long = plan({ bend: 2 }, 1.2);
+    t.ok(long[long.length - 1].rate === 1 && long[long.length - 1].t === 11.2, `a bend held past ${BEND_HOLD} s is back down by its end`);
+    const asked = plan({ bend: 1, release: true }, 0.4);
+    t.ok(asked[asked.length - 1].rate === 1, 'a release asked for comes back down whatever the length');
+    t.ok(plan(null, 1).length === 1 && plan(null, 1)[0].rate === 1, 'no technique, no movement');
+  }
+
   // The band, one slot at a time, on a stand-in that records what it was
   // asked to play: the approach and the push land on the last eighth of the
   // bar on every grid, a stop-time bar is the One and nothing after, the last
@@ -2446,6 +2490,7 @@
       ['Every chord the practice tab plays has recordings for it', testEveryChordFitsTheRecordings],
       ['The piano map covers both layers end to end', testThePianoMapIsWhole],
       ['A strum is a sweep', testAStrumIsASweep],
+      ['One string, one note; a bend goes where it says', testOneStringOneNote],
       ['The stroke follows the grid', testTheStrokeFollowsTheGrid],
       ['The band plays each slot by the pattern', testTheBandBySlot],
       ['No slot strikes the comp twice; the click and the cushion', testNoSlotStrikesTheCompTwice],

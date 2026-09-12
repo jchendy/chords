@@ -1123,6 +1123,25 @@ realised part into sound for the practice tab, the parts page and the
 review page alike, taking every technique a note asks for rather than the
 first that matches.
 
+One string can only sound one note. The next note on a string — fretted,
+hammered, restruck — takes it over, and the one before is damped in twelve
+milliseconds rather than ringing under it; the part's realised notes know
+their strings, the comp's k-th note from the bottom is its k-th string, so
+a new grip damps the old one the way a hand's does. A palm mute is the heel
+of the hand: the pick's click comes through a lowpass sweeping 1600 to
+700 Hz, a shade quieter, and the ring is over in a fifth of a second
+whatever was written (measured: over a hundred decibels down a quarter of
+a second on, where an open note is seven). A bend sets off after a moment
+and arrives over 140 ms; held past 0.6 s it comes back down over its last
+quarter, since a bend that long is a bend and release on any record, and a
+part can ask for the release at any length. Vibrato — the flag the parts
+carried and the engine had dropped — is the fretting hand's shake on the
+playback rate, five and a bit a second, about a quarter of a semitone,
+arriving once the note has spoken. The slapback the rockabilly and surf
+styles live on is a delay on the part's bus — 110 ms, darkened above
+2.5 kHz, one quieter repeat after it — that a pluck sends to, rather than
+a second pick with an attack of its own.
+
 There's a reverb too — a convolver fed by a synthesized room, decaying noise
 whose top end rolls off over the tail — with a send from each voice at its
 own level. Drums are the classic recipes: a pitched-down

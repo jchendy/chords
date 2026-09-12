@@ -243,13 +243,16 @@
     return curve;
   }
   const BAND_TRIM = 0.89, PART_TRIM = 0.93;
+  const SLAP = { time: 0.11, tone: 2500, send: 0.32, feedback: 0.2 };
 
   // Every bus, built on a context. `limiter: false` connects the buses to the
   // destination bare, so what goes INTO the limiter can be measured; `mute`
   // names buses ('band', 'part') to leave silent, so one can be measured alone.
   // `dynamics: 'shared'` builds the one shared compressor the app had until
   // the split (kept as the reference the ducking test measures against).
-  function buildGraph(ctx, { limiter: withLimiter = true, mute = [], dynamics = 'split' } = {}){
+  // `dry: true` leaves every room send at nothing, so a technique can be
+  // measured without its reverb.
+  function buildGraph(ctx, { limiter: withLimiter = true, mute = [], dynamics = 'split', dry = false } = {}){
     const g = { ctx };
     // Dynamics in three stages. Each bus holds its own peaks with a gentle
     // compressor of its own, so a strum on the part is the part's business
@@ -319,7 +322,7 @@
     g.reverbSends = {};
     [['piano', 0.14], ['clean', 0.32], ['drums', 0.08]].forEach(([name, level]) => {
       const s = ctx.createGain();
-      s.gain.value = level;
+      s.gain.value = dry ? 0 : level;
       s.connect(reverb);
       g.reverbSends[name] = s;
     });
@@ -339,8 +342,21 @@
     const partRoomOut = ctx.createGain();
     partRoomOut.gain.value = 0.5;
     const partSend = g.partSend = ctx.createGain();
-    partSend.gain.value = mute.includes('part') ? 0 : 0.32;           // the clean guitar's send, the same
+    partSend.gain.value = mute.includes('part') || dry ? 0 : 0.32;    // the clean guitar's send, the same
     partSend.connect(partRoom).connect(partRoomOut).connect(partOut);
+    // the slapback: one darkened repeat 110 ms on, and a quieter one after
+    // it — the tape echo the rockabilly and surf styles live on; a pluck
+    // that asks for it (who.slap) sends here, instead of a second pick
+    const slap = g.partSlap = ctx.createGain();
+    slap.gain.value = SLAP.send;
+    const slapDelay = ctx.createDelay(0.5);
+    slapDelay.delayTime.value = SLAP.time;
+    const slapTone = ctx.createBiquadFilter();
+    slapTone.type = 'lowpass'; slapTone.frequency.value = SLAP.tone; slapTone.Q.value = 0.5;
+    const slapBack = ctx.createGain();
+    slapBack.gain.value = SLAP.feedback;
+    slap.connect(slapDelay).connect(slapTone).connect(partGain);
+    slapTone.connect(slapBack).connect(slapDelay);
 
     const bufferSize = Math.floor(ctx.sampleRate * 0.5);
     const noise = g.noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
@@ -358,15 +374,16 @@
   // untouched. `random` seeds the engine's randomness for a render that
   // can be reproduced; sample buffers decoded on the live context play on
   // the offline one.
-  async function renderOffline(seconds, schedule, { sampleRate = 48000, random, limiter = true, mute = [], dynamics } = {}){
+  async function renderOffline(seconds, schedule, { sampleRate = 48000, random, limiter = true, mute = [], dynamics, dry = false } = {}){
     const ctx = new OfflineAudioContext(2, Math.ceil(seconds * sampleRate), sampleRate);
     const live = G, wasOffline = offline, wasRnd = rnd;
     if (random) rnd = random;                 // before the graph: its room and its noise draw from it too
-    const g = buildGraph(ctx, { limiter, mute, dynamics });
-    applyGraph(g); offline = true;
+    const g = buildGraph(ctx, { limiter, mute, dynamics, dry });
+    G = g; applyGraph(g); offline = true;     // the module plays through this graph, claims and all
     try { schedule(GT.audio, ctx); }
     finally {
       offline = wasOffline; rnd = wasRnd;
+      G = live;
       if (live) applyGraph(live); else audioCtx = null;
     }
     return ctx.startRendering();
@@ -835,6 +852,56 @@
   // `who` says what the pluck is beyond its sound: { string } names the
   // string it is on (the part's realised notes know theirs; a strum's k-th
   // note from the bottom is 'strum:k'), for the players and the tests.
+  // ---- one string can only sound one note ------------------------------
+  // The next note on a string — fretted, hammered, restruck — takes it over,
+  // and the old one is damped in a few milliseconds rather than ringing
+  // under the new one. Keyed by what the caller says the string is: the
+  // part's realised notes know theirs ('part:3'), the comp's voicing has
+  // none, so its k-th note from the bottom is 'strum:k' — a new grip on the
+  // same strings, which is what a comp guitarist does. The kit's hat uses
+  // it too ('kit:hat'). Each graph has its own claims, so an offline render
+  // can't damp a live voice. The old note's own envelope is never touched:
+  // a damp node of its own is ramped, so nothing about its shape has to be
+  // known here.
+  const DAMP = 0.012;
+  function claim(key, src, damp, time, until, ramp = DAMP){
+    if (!key || !G) return;
+    G.claims = G.claims || new Map();
+    const held = G.claims.get(key);
+    if (held && held.until > time && held.src !== src){
+      held.damp.gain.setValueAtTime(1, time);
+      held.damp.gain.exponentialRampToValueAtTime(0.0001, time + ramp);
+      try { held.src.stop(time + ramp + 0.02); } catch (e) { /* already finished */ }
+    }
+    G.claims.set(key, { src, damp, until });
+  }
+
+  // ---- where a note's pitch goes over its length ---------------------------
+  // As [{ t, rate }] the source's playbackRate follows, from the rate the
+  // note sits at: a slide arrives from below over 80 ms; a bend sets off
+  // after a moment and arrives over 140 ms; a bend held past BEND_HOLD comes
+  // back down over its last quarter, since a bend that long is a bend and
+  // release on any record, and `release` asks for that whatever the length.
+  // Pure, so the shape can be tested without a sound.
+  const BEND_HOLD = 0.6;
+  function pitchPlan(rate, fx, time, duration){
+    const plan = [];
+    if (fx && fx.slideFrom){
+      plan.push({ t: time, rate: rate * fx.slideFrom }, { t: time + Math.min(0.08, duration * 0.5), rate });
+    } else if (fx && fx.bend){
+      const start = time + Math.min(0.06, duration * 0.2), up = rate * Math.pow(2, fx.bend / 12);
+      const arrive = start + Math.min(0.14, duration * 0.5);
+      plan.push({ t: time, rate }, { t: start, rate }, { t: arrive, rate: up });
+      if (fx.release || duration > BEND_HOLD){
+        const back = time + duration * 0.75;
+        if (back > arrive) plan.push({ t: back, rate: up }, { t: time + duration, rate });
+      }
+    } else {
+      plan.push({ t: time, rate });
+    }
+    return plan;
+  }
+
   function playPluck(freq, time, duration, velocity = 1, bus = 'band', fx = null, who = {}){
     const spec = sampleFor(midiOf(freq));
     const buffer = guitarBank.buffers.get(spec.file);
@@ -850,53 +917,67 @@
     // a string are the same waveform and two voices on one pitch never
     // start in phase (the comp and the part share these recordings)
     const cents = (rnd() - 0.5) * PLUCK_DETUNE_CENTS;
-    const rateFor = f => f / (440 * Math.pow(2, (spec.key - 69) / 12)) * Math.pow(2, cents / 1200);
-    const rate = rateFor(freq);
+    const rate = freq / (440 * Math.pow(2, (spec.key - 69) / 12)) * Math.pow(2, cents / 1200);
     const skip = rnd() * PLUCK_SKIP;
-    if (fx && fx.slideFrom){
-      src.playbackRate.setValueAtTime(rateFor(fx.slideFrom), time);
-      src.playbackRate.linearRampToValueAtTime(rate, time + Math.min(0.08, duration * 0.5));
-    } else if (fx && fx.bend){
-      const start = time + Math.min(0.06, duration * 0.2);
-      src.playbackRate.setValueAtTime(rate, start);
-      src.playbackRate.linearRampToValueAtTime(rate * Math.pow(2, fx.bend / 12), start + Math.min(0.14, duration * 0.5));
-    } else {
-      src.playbackRate.value = rate;
+    // the pitch's path: a slide in, a bend up (and back)
+    const path = pitchPlan(rate, fx && { ...fx, slideFrom: fx.slideFrom ? fx.slideFrom / freq : 0 }, time, duration);
+    path.forEach((p, i) => { if (i === 0) src.playbackRate.setValueAtTime(p.rate, p.t); else src.playbackRate.linearRampToValueAtTime(p.rate, p.t); });
+    // vibrato: the fretting hand's shake, five and a bit a second, a quarter
+    // of a semitone each way, arriving once the note has spoken
+    if (fx && fx.vib && duration > 0.15){
+      const lfo = audioCtx.createOscillator(), depth = audioCtx.createGain();
+      lfo.frequency.value = 5.2 + 0.8 * rnd();
+      depth.gain.setValueAtTime(0, time);
+      depth.gain.setValueAtTime(0, time + Math.min(0.12, duration * 0.3));
+      depth.gain.linearRampToValueAtTime(rate * (Math.pow(2, (22 + 8 * rnd()) / 1200) - 1), time + Math.min(0.4, duration * 0.6));
+      lfo.connect(depth).connect(src.playbackRate);
+      lfo.start(time); lfo.stop(time + duration + 0.06);
     }
 
+    // the envelope: open, hammered (no pick on the front), or palm-muted
+    // (the heel of the hand: the pick's click comes through, the ring
+    // doesn't — over in MUTE_RING whatever was written, darker and a shade
+    // quieter)
     const env = audioCtx.createGain();
-    const level = 0.9 * velocity * (fx && fx.soft ? 0.8 : 1);
+    const muted = !!(fx && fx.mute);
+    const level = 0.9 * velocity * (fx && fx.soft ? 0.8 : 1) * (muted ? MUTE_LEVEL : 1);
+    const ring = muted ? Math.min(duration, MUTE_RING) : duration;
     if (fx && fx.soft){
-      // a hammered note has no pick on the front of it
       env.gain.setValueAtTime(0.0001, time);
       env.gain.exponentialRampToValueAtTime(level, time + 0.025);
     } else {
       env.gain.setValueAtTime(level, time);
     }
-    const fade = Math.min(0.35, duration * 0.3);
-    env.gain.setValueAtTime(level, time + Math.max(0.02, duration - fade));
-    env.gain.exponentialRampToValueAtTime(0.0001, time + duration + 0.02);
+    const fade = Math.min(0.35, ring * 0.3);
+    env.gain.setValueAtTime(level, time + Math.max(0.02, ring - fade));
+    env.gain.exponentialRampToValueAtTime(0.0001, time + ring + 0.02);
 
-    if (fx && fx.mute){
-      // the heel of the hand on the strings: the top gone, the ring short
-      const damp = audioCtx.createBiquadFilter();
-      damp.type = 'lowpass';
-      damp.frequency.value = 900;
-      damp.Q.value = 0.5;
-      src.connect(damp).connect(env);
+    // the string's damp node, for the note that takes the string over
+    const damp = audioCtx.createGain();
+    if (muted){
+      const heel = audioCtx.createBiquadFilter();
+      heel.type = 'lowpass';
+      heel.Q.value = 0.5;
+      heel.frequency.setValueAtTime(1600, time);
+      heel.frequency.exponentialRampToValueAtTime(700, time + 0.04);
+      src.connect(heel).connect(env);
     } else {
       src.connect(env);
     }
+    env.connect(damp);
     if (bus === 'part'){
-      env.connect(partGain);
-      env.connect(partSend);
+      damp.connect(partGain);
+      damp.connect(partSend);
+      if (who.slap && G && G.partSlap) damp.connect(G.partSlap);
     } else {
-      env.connect(masterGain);
-      env.connect(reverbSends.clean);
+      damp.connect(masterGain);
+      damp.connect(reverbSends.clean);
     }
+    claim(who.string, src, damp, time, time + ring);
     startVoice(src, time, env, skip);
-    src.stop(time + duration + 0.06);
+    src.stop(time + ring + 0.06);
   }
+  const MUTE_RING = 0.18, MUTE_LEVEL = 0.75;
   const PLUCK_DETUNE_CENTS = 10;      // ±5 cents, under what an ear hears as out of tune
   const PLUCK_SKIP = 0.004;           // up to 4 ms of the recording's front
 
@@ -959,9 +1040,6 @@
   };
   function playPartNotes(notes, at, slotDur, level, { slapback = false, jit = () => 0 } = {}){
     const played = [], strums = new Map();
-    const slap = (freq, t, dur, vel, fx) => {
-      if (slapback) playPluck(freq, t + 0.11, Math.min(dur, 0.25), vel * 0.35, 'part', fx && fx.mute ? { mute: true } : null);
-    };
     notes.forEach(n => {
       if (n.strum){
         const key = `${n.at}|${n.voicing || 'full'}|${n.next ? 'n' : ''}`;
@@ -972,8 +1050,7 @@
       const t = at(n) + jit(0.008), dur = n.dur * slotDur, vel = n.vel * level * (1 + jit(0.08));
       const fx = partFx(n);
       if (n.rake) [2, 1].forEach((k, i) => playPluck(hz(n.midi - 5 * k), t - 0.028 + i * 0.012, 0.06, 0.22 * level, 'part', { mute: true }, { string: `part:${n.string + k}` }));
-      playPluck(hz(n.midi), t, dur, vel, 'part', fx, { string: `part:${n.string}` });
-      slap(hz(n.midi), t, dur, vel, fx);
+      playPluck(hz(n.midi), t, dur, vel, 'part', fx, { string: `part:${n.string}`, slap: slapback });
       played.push({ note: n, time: t, until: t + dur });
     });
     strums.forEach(group => {
@@ -983,8 +1060,7 @@
       const plan = strumPlan(group.map(n => hz(n.midi)), t, group.map(n => n.vel * level * (1 + jit(0.08))),
                              { stroke: first.stroke || 'down', strings: group.map(n => `part:${n.string}`) });
       plan.forEach(s => {
-        playPluck(s.freq, s.at, dur, s.level, 'part', fx, { string: s.string });
-        slap(s.freq, s.at, dur, s.level, fx);
+        playPluck(s.freq, s.at, dur, s.level, 'part', fx, { string: s.string, slap: slapback });
         played.push({ note: group.find(n => `part:${n.string}` === s.string), time: s.at, until: s.at + dur });
       });
     });
@@ -1440,6 +1516,9 @@
     renderOffline, buildGraph,          // a render through a graph of its own, for measuring
     scheduleAhead, SCHEDULE_AHEAD,
     strum, strumPlan, STRUM_SHARE, SWEEP, SWEEP_TAPER, playPartNotes, PART_LEVEL, partFx,
+    claim, pitchPlan, BEND_HOLD, MUTE_RING, MUTE_LEVEL, SLAP,
+    // a graph stood in for the length of a call, for the tests
+    _withGraph(g, fn){ const live = G; G = g; try { return fn(); } finally { G = live; } },
     pianoWaveFor, PIANO_PARTIALS,      // exposed so the tests can render a note offline
     GUITAR_SAMPLES, sampleFor,         // ...and to check every note has a recording behind it
     ensureAudio, keepAwake, planSleep, sleepDelay, IDLE_SLEEP_SEC, HIDDEN_SLEEP_SEC, cancelScheduled, stepsToSkip, noteFreq, chordFrequencies, pcFreq, bassFreqAt, walkBassFreq, ROOT_OCTAVE,

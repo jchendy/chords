@@ -144,10 +144,38 @@
     t.ok(Math.abs(dB(m.partRms) - dB(was.partRms)) < 1, `the part alone too (${fmt(m.partRms)} against ${fmt(was.partRms)})`);
   }
 
+  // The techniques, heard: a palm-muted pluck is over in a fifth of a
+  // second where an open one rings; a note that takes a string over silences
+  // the one before it; the slapback is one darkened repeat, not a second pick.
+  const E3 = 440 * Math.pow(2, (52 - 69) / 12);
+  async function testTheTechniquesAreHeard(t){
+    const v = await withVoices();
+    const one = (fx, who) => a => a.playPluck(E3, 0.05, 1.2, 0.9, 'part', fx, who || {});
+    const open = await audio.renderOffline(1.5, one(null), { random: seeded(7), dry: true });
+    const muted = await audio.renderOffline(1.5, one({ mute: true }), { random: seeded(7), dry: true });
+    const tailOpen = rms(open, 0.3, 0.45), tailMuted = rms(muted, 0.3, 0.45), frontMuted = rms(muted, 0.05, 0.08);
+    t.ok(dB(tailMuted) - dB(frontMuted) < -30, `a palm-muted pluck is ${(dB(frontMuted) - dB(tailMuted)).toFixed(0)} dB down a quarter of a second on — over, where an open one is ${(dB(rms(open, 0.05, 0.08)) - dB(tailOpen)).toFixed(0)} dB down (${v.label})`);
+    // a long note, then a short muted one 0.3 s on — on the same string, and
+    // on another — read after the short one has gone, where only the long
+    // note's ring can remain: on the same string it was taken over
+    const two = strings => a => { a.playPluck(E3, 0.05, 1.2, 0.9, 'part', null, { string: strings[0] }); a.playPluck(E3 * Math.pow(2, 3 / 12), 0.35, 0.1, 0.9, 'part', { mute: true }, { string: strings[1] }); };
+    const same = await audio.renderOffline(1.5, two(['part:3', 'part:3']), { random: seeded(8), dry: true });
+    const apart = await audio.renderOffline(1.5, two(['part:3', 'part:2']), { random: seeded(8), dry: true });
+    const pSame = power(same, 0.65, 0.9), pApart = power(apart, 0.65, 0.9);
+    t.ok(pSame < pApart * 0.1, `the next note on a string takes it over: ${dB(pSame / pApart).toFixed(1)} dB of the first note's ring left, against a note on another string`);
+    // the slapback: energy arrives 110 ms after a short pluck that had none there
+    const dry = await audio.renderOffline(1, a => a.playPluck(E3, 0.05, 0.08, 0.9, 'part', null, {}), { random: seeded(9) });
+    const slap = await audio.renderOffline(1, a => a.playPluck(E3, 0.05, 0.08, 0.9, 'part', null, { slap: true }), { random: seeded(9) });
+    const at = audio.SLAP.time;
+    t.ok(rms(slap, 0.05 + at, 0.1 + at) > rms(dry, 0.05 + at, 0.1 + at) * 2, `the slapback repeats the pluck ${(at * 1000).toFixed(0)} ms on (${fmt(rms(slap, 0.05 + at, 0.1 + at))} against ${fmt(rms(dry, 0.05 + at, 0.1 + at))} dry)`);
+    t.ok(rms(slap, 0.05 + at, 0.1 + at) < rms(slap, 0.05, 0.1), 'quieter than the pluck');
+  }
+
   GT.sound = { peak, rms, dB, seeded, withVoices, loudestBar, rockBars, measureDucking };
   GT.soundSuites = [
     ['Sound: the mix stays under full scale', testTheMixStaysUnderFullScale],
     ['Sound: what a six-string strum sums to', testWhatASixStringStrumSumsTo],
     ['Sound: the part does not duck the band', testThePartDoesNotDuckTheBand],
+    ['Sound: the techniques are heard', testTheTechniquesAreHeard],
   ];
 })();
