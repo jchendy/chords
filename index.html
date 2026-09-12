@@ -58,6 +58,11 @@
   .ib:hover{ color:var(--ink); border-color:var(--muted); }
   /* an icon button that reports back: the tick replaces the icon for a moment */
   .ib .i-tick{ display:none; }
+  .tbtn-icon{ display:inline-flex; align-items:center; gap:6px; }
+  .tbtn-icon svg{ width:16px; height:16px; flex:none; }
+  #controlsToggle .i-eye-off{ display:none; }
+  #controlsToggle[aria-pressed="false"] .i-eye{ display:none; }
+  #controlsToggle[aria-pressed="false"] .i-eye-off{ display:block; }
   .ib.copied{ color:var(--ink); border-color:var(--ink); }
   .ib.copied .i-tick{ display:block; }
   .ib.copied .i-link{ display:none; }
@@ -630,7 +635,7 @@
     .transport::after{ content:''; flex:1 0 100%; order:4; height:0; }
     .transport .play-btn{ order:1; }
     .transport .tempo-row{ order:2; flex:1 1 0; min-width:0; gap:10px; }
-    .transport #controlsToggle{ order:3; }
+    .transport #controlsToggle{ order:3; font-size:.74rem; padding:7px 9px; white-space:nowrap; }
     .transport .loop{ order:5; }
     .transport #quickShare{ order:7; margin-left:auto; }
     .transport #setupOpenQuick{ order:8; }
@@ -640,7 +645,6 @@
     .tempo .val{ font-size:.8rem; }
     .loop{ gap:3px; }
     select.loop-sel{ font-size:.74rem; padding:4px 2px 4px 4px; }
-    #controlsToggle{ font-size:.74rem; padding:7px 9px; white-space:nowrap; }
     /* the settings popover clears the taller bar */
     .settings-menu{ bottom:calc(126px + env(safe-area-inset-bottom, 0px)); max-height:calc(100vh - 150px); }
   }
@@ -1004,7 +1008,14 @@
          may use, colour, frets, the link — belong to the page, so their gear
          sits here with the page's own controls -->
     <button type="button" class="ib" id="setupOpenQuick" aria-label="Settings" title="Settings" data-pop="settingsMenu" aria-expanded="false"><svg viewBox="0 0 20 20" aria-hidden="true"><path fill-rule="evenodd" d="M16.46,8.63 L19.23,8.87 L19.23,11.13 L16.46,11.37 L15.54,13.59 L17.33,15.73 L15.73,17.33 L13.59,15.54 L11.37,16.46 L11.13,19.23 L8.87,19.23 L8.63,16.46 L6.41,15.54 L4.27,17.33 L2.67,15.73 L4.46,13.59 L3.54,11.37 L0.77,11.13 L0.77,8.87 L3.54,8.63 L4.46,6.41 L2.67,4.27 L4.27,2.67 L6.41,4.46 L8.63,3.54 L8.87,0.77 L11.13,0.77 L11.37,3.54 L13.59,4.46 L15.73,2.67 L17.33,4.27 L15.54,6.41 Z M10,7 a3,3 0 1,0 0.01,0 Z"/></svg></button>
-    <button type="button" class="tbtn" id="controlsToggle" aria-pressed="true" title="Show or hide the controls: the neck's, the progression's and the part's">Hide controls</button>
+    <!-- "Controls" with an eye while they show (press to hide them) and an
+         eye struck through while they're hidden; stage.js keeps the state
+         and the label -->
+    <button type="button" class="tbtn tbtn-icon" id="controlsToggle" aria-pressed="true" aria-label="Hide the controls" title="Hide the controls: the neck's, the progression's and the part's">
+      <svg class="i-eye" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2 10s3-5.5 8-5.5S18 10 18 10s-3 5.5-8 5.5S2 10 2 10z"/><circle cx="10" cy="10" r="2.4"/></svg>
+      <svg class="i-eye-off" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2 10s3-5.5 8-5.5S18 10 18 10s-3 5.5-8 5.5S2 10 2 10z"/><circle cx="10" cy="10" r="2.4"/><path d="M3.5 3.5l13 13"/></svg>
+      <span>Controls</span>
+    </button>
     <button type="button" class="ib" id="transportCollapse" aria-label="Collapse the playback bar" title="Collapse the playback bar">
       <svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 8.5L10 13l4.5-4.5"/></svg>
     </button>

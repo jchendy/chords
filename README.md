@@ -235,7 +235,7 @@ names the tab you're on.
   setting. On a phone the site name drops out and the tools row scrolls
   sideways, and the transport goes to two rows rather than squeezing seven
   controls into one (the slider used to run under its own presets): Play,
-  the slider with its number and the controls button on the first; the
+  the slider with its number and the Controls button on the first; the
   loop, the link, the gear and the button that folds the bar away on the
   second. That last one is there at every width — a bar that can't get out
   of the neck's way is worst on the screen with the least room — and what a
@@ -244,8 +244,8 @@ names the tab you're on.
   rows are flex lines, not grid rows, so neither's columns bind the other's;
   a full-width nothing (`::after`) is the line break and `order` says which
   side of it each control takes, with the tempo's own wrappers lifted out by
-  `display: contents`. A Hide controls button in the transport (Show controls once
-  pressed), at every width, hides every control — the neck's, the
+  `display: contents`. A Controls button in the transport, with an eye that
+  is struck through once they're hidden, at every width, hides every control — the neck's, the
   progression's buttons, the part's row — so the picture has the screen — a phone needs it
   most, but a desktop can want the neck on its own too. Turned sideways a phone goes further, because that is the shape with the
 least height and the most need of it: the chart sets its chord names small

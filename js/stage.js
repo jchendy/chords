@@ -95,7 +95,8 @@
     const setControls = on => {
       document.body.classList.toggle('controls-off', !on);
       tog.setAttribute('aria-pressed', String(on));
-      tog.textContent = on ? 'Hide controls' : 'Show controls';
+      tog.setAttribute('aria-label', on ? 'Hide the controls' : 'Show the controls');
+      tog.title = `${on ? 'Hide' : 'Show'} the controls: the neck's, the progression's and the part's`;
     };
     const phoneSideways = window.matchMedia(
       '(orientation: landscape) and (max-height: 500px) and (pointer: coarse)');
