@@ -928,23 +928,32 @@
   function playPluck(freq, time, duration, velocity = 1, bus = 'band', fx = null, who = {}){
     const spec = sampleFor(midiOf(freq));
     const buffer = guitarBank.buffers.get(spec.file);
-    if (!buffer){
-      voiceUse.guitarSynth++;      // asked for a guitar, got whatever playNote has
-      return playNote(freq, time, duration, velocity);
-    }
-    voiceUse.guitarSampled++;
-    const src = audioCtx.createBufferSource();
-    src.buffer = buffer;
-    // the sample's own pitch, moved to the note asked for — and a hair off
-    // it, with a hair of the recording's front skipped, so no two plucks of
-    // a string are the same waveform and two voices on one pitch never
-    // start in phase (the comp and the part share these recordings)
+    // a hair off the pitch, with a hair of the recording's front skipped, so
+    // no two plucks of a string are the same waveform and two voices on one
+    // pitch never start in phase (the comp and the part share these
+    // recordings); drawn whichever voice plays, so a render reads the same
     const cents = (rnd() - 0.5) * PLUCK_DETUNE_CENTS;
-    const rate = freq / (440 * Math.pow(2, (spec.key - 69) / 12)) * Math.pow(2, cents / 1200);
     const skip = rnd() * PLUCK_SKIP;
+    const muted = !!(fx && fx.mute);
+    const ring = muted ? Math.min(duration, MUTE_RING) : duration;
+
+    // the voice: the recording moved to the note asked for, or — when its
+    // sample isn't here — the engine's own string on the same bus, with the
+    // same techniques, never the piano in its place
+    let voice;
+    if (buffer){
+      voiceUse.guitarSampled++;
+      const src = audioCtx.createBufferSource();
+      src.buffer = buffer;
+      const base = freq / (440 * Math.pow(2, (spec.key - 69) / 12)) * Math.pow(2, cents / 1200);
+      voice = { out: src, base, pitch: [src.playbackRate], sources: [src], stopper: src, offset: skip };
+    } else {
+      voiceUse.guitarSynth++;
+      voice = synthPluck(freq * Math.pow(2, cents / 1200), time, ring);
+    }
     // the pitch's path: a slide in, a bend up (and back)
-    const path = pitchPlan(rate, fx && { ...fx, slideFrom: fx.slideFrom ? fx.slideFrom / freq : 0 }, time, duration);
-    path.forEach((p, i) => { if (i === 0) src.playbackRate.setValueAtTime(p.rate, p.t); else src.playbackRate.linearRampToValueAtTime(p.rate, p.t); });
+    const path = pitchPlan(voice.base, fx && { ...fx, slideFrom: fx.slideFrom ? fx.slideFrom / freq : 0 }, time, duration);
+    voice.pitch.forEach(param => path.forEach((p, i) => { if (i === 0) param.setValueAtTime(p.rate, p.t); else param.linearRampToValueAtTime(p.rate, p.t); }));
     // vibrato: the fretting hand's shake, five and a bit a second, a quarter
     // of a semitone each way, arriving once the note has spoken
     if (fx && fx.vib && duration > 0.15){
@@ -952,8 +961,9 @@
       lfo.frequency.value = 5.2 + 0.8 * rnd();
       depth.gain.setValueAtTime(0, time);
       depth.gain.setValueAtTime(0, time + Math.min(0.12, duration * 0.3));
-      depth.gain.linearRampToValueAtTime(rate * (Math.pow(2, (22 + 8 * rnd()) / 1200) - 1), time + Math.min(0.4, duration * 0.6));
-      lfo.connect(depth).connect(src.playbackRate);
+      depth.gain.linearRampToValueAtTime(voice.base * (Math.pow(2, (22 + 8 * rnd()) / 1200) - 1), time + Math.min(0.4, duration * 0.6));
+      lfo.connect(depth);
+      voice.pitch.forEach(param => depth.connect(param));
       lfo.start(time); lfo.stop(time + duration + 0.06);
     }
 
@@ -962,9 +972,7 @@
     // doesn't — over in MUTE_RING whatever was written, darker and a shade
     // quieter)
     const env = audioCtx.createGain();
-    const muted = !!(fx && fx.mute);
     const level = 0.9 * velocity * (fx && fx.soft ? 0.8 : 1) * (muted ? MUTE_LEVEL : 1);
-    const ring = muted ? Math.min(duration, MUTE_RING) : duration;
     if (fx && fx.soft){
       env.gain.setValueAtTime(0.0001, time);
       env.gain.exponentialRampToValueAtTime(level, time + 0.025);
@@ -983,9 +991,9 @@
       heel.Q.value = 0.5;
       heel.frequency.setValueAtTime(1600, time);
       heel.frequency.exponentialRampToValueAtTime(700, time + 0.04);
-      src.connect(heel).connect(env);
+      voice.out.connect(heel).connect(env);
     } else {
-      src.connect(env);
+      voice.out.connect(env);
     }
     env.connect(damp);
     if (bus === 'part'){
@@ -996,9 +1004,33 @@
       damp.connect(masterGain);
       damp.connect(reverbSends.clean);
     }
-    claim(who.string, src, damp, time, time + ring);
-    startVoice(src, time, env, skip);
-    src.stop(time + ring + 0.06);
+    claim(who.string, voice.stopper, damp, time, time + ring);
+    voice.sources.forEach(s => startVoice(s, time, env, voice.offset));
+    voice.sources.forEach(s => s.stop(time + ring + 0.06));
+  }
+
+  // The engine's own string, for a note whose recording isn't here: two
+  // sawtooths a few cents apart through a lowpass that closes as the note
+  // rings — bright on the pick, darker after, the way a plucked string is —
+  // at a level matched to the recording by measurement (SYNTH_PLUCK_LEVEL).
+  // Returns what playPluck needs to treat it as it treats the recording:
+  // its output, its pitch params (the path and the vibrato go to both), what
+  // to start and what the registry stops.
+  const SYNTH_PLUCK_LEVEL = 0.27;
+  const SYNTH_PLUCK_DETUNE = 7;       // cents between the pair
+  function synthPluck(freq, time, ring){
+    const a = audioCtx.createOscillator(), b = audioCtx.createOscillator();
+    a.type = 'sawtooth'; b.type = 'sawtooth';
+    b.detune.value = SYNTH_PLUCK_DETUNE;
+    const lp = audioCtx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.Q.value = 1;
+    lp.frequency.setValueAtTime(Math.min(6000, freq * 7), time);
+    lp.frequency.exponentialRampToValueAtTime(Math.max(freq * 1.6, 300), time + Math.max(0.1, Math.min(0.5, ring)));
+    const out = audioCtx.createGain();
+    out.gain.value = SYNTH_PLUCK_LEVEL;
+    a.connect(lp); b.connect(lp); lp.connect(out);
+    return { out, base: freq, pitch: [a.frequency, b.frequency], sources: [a, b], stopper: { stop(t){ a.stop(t); b.stop(t); } }, offset: 0 };
   }
   const MUTE_RING = 0.18, MUTE_LEVEL = 0.75;
   const PLUCK_DETUNE_CENTS = 10;      // ±5 cents, under what an ear hears as out of tune
@@ -1624,6 +1656,9 @@
     claim, pitchPlan, BEND_HOLD, MUTE_RING, MUTE_LEVEL, SLAP,
     // a graph stood in for the length of a call, for the tests
     _withGraph(g, fn){ const live = G; G = g; try { return fn(); } finally { G = live; } },
+    // ...and the guitar bank empty for the length of a call, to hear the fallback
+    _withoutGuitar(fn){ const had = guitarBank.buffers; guitarBank.buffers = new Map(); try { return fn(); } finally { guitarBank.buffers = had; } },
+    SYNTH_PLUCK_LEVEL,
     pianoWaveFor, PIANO_PARTIALS,      // exposed so the tests can render a note offline
     GUITAR_SAMPLES, sampleFor,         // ...and to check every note has a recording behind it
     ensureAudio, keepAwake, planSleep, sleepDelay, IDLE_SLEEP_SEC, HIDDEN_SLEEP_SEC, cancelScheduled, stepsToSkip, noteFreq, chordFrequencies, pcFreq, bassFreqAt, walkBassFreq, ROOT_OCTAVE,

@@ -1066,8 +1066,10 @@ old shared compressor kept in the engine as the reference, the techniques
 are heard (the mute over, the takeover clean, the slapback a repeat), and
 the kit is never the same hit twice (two hats sample for sample, the choke,
 the rim's low band, the beater's click), the room has walls (read from the
-impulse itself), and two levels — the root alone, the guitar comp — sit
-where they were pinned. On `http://` the
+impulse itself), two levels — the root alone, the guitar comp — sit
+where they were pinned, and a part note without its recording is a guitar
+on the part bus (the bank emptied for the length of the call), at the
+recording's level, with the techniques. On `http://` the
 recordings are what is measured; on `file://` the synthesized voices are,
 and each label says which. The runner awaits a suite that returns a
 promise, so these run inside `tests.html` with the rest.
@@ -1310,6 +1312,18 @@ too, under Voice, and falls back the same way: the piano is what you get
 until the samples are resident, and all that happens on a page that can't
 reach them is that the fallback is permanent. Its drums stay synthesized.
 
+A part note is different: a tabbed part asked for a guitar and got, when
+its sample wasn't here, the piano — on the band bus, at the band's level,
+with the technique dropped. Now a note without its recording plays the
+engine's own string in its place: two sawtooths seven cents apart through
+a lowpass that closes as the note rings, on the bus that was asked for,
+under the same envelope, mute, slide, bend, vibrato and string registry as
+the recording (`synthPluck` hands `playPluck` an output, its pitch params
+and what to start and stop, and the rest of the code treats it as it
+treats the sample). Its level is pinned by measurement: within 0.1 dB of
+the recording over the first 0.3 s of an E3. The comp keeps its per-chord
+piano fallback — a wrong voice beats a hole in the band.
+
 That loop queues the notes 0.4 s ahead of the sound while the page is
 visible, and 1.25 s once it is hidden — a hidden page's timers are clamped
 to a second, and a 0.4 s queue emptied once a second was a stutter once a
@@ -1374,7 +1388,7 @@ by what each part does:
 | `tabs.js` | Tab switching, plus the URL fragment and page title that go with each tab — including `setState`, which lets a tab write its own state after the slug so an exercise can be bookmarked. |
 | `main.js` | Boots each tab and wires the header together. |
 | `tests.js` | The regression tests, run by `tests.html`. |
-| `js/tests-sound.js` | The measured tests: the mix rendered offline and read as numbers — no clipping, a strum's sum, the part not ducking the band, the techniques heard, the kit's hits, choke, rim and beater, the room's reflections, the two pinned levels. |
+| `js/tests-sound.js` | The measured tests: the mix rendered offline and read as numbers — no clipping, a strum's sum, the part not ducking the band, the techniques heard, the kit's hits, choke, rim and beater, the room's reflections, the two pinned levels, the guitar's own fallback. |
 | `tests-ear.js` | The ear trainer's drill, pressed rather than reasoned about: builds the controls it binds to, then answers questions. Loads before `ear-training.js`. |
 | `tests-fretboard.js` | What the fretboard draws: builds the controls the view binds to, then checks the shapes it renders. Loads before `fretboard-view.js`. |
 

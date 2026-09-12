@@ -271,6 +271,37 @@
     t.ok(Math.abs(gapVoice / n) < 2, `the guitar comp at ${audio.GUITAR_COMP}× sits ${(gapVoice / n).toFixed(1)} dB from the piano comp over four chords`);
   }
 
+  // ---- the guitar's own fallback ----
+  // A part note whose recording isn't here plays the engine's string on the
+  // part bus — never the piano on the band bus — at the recording's level,
+  // with the techniques.
+  async function testTheFallbackIsAGuitarOnItsOwnBus(t){
+    const v = await withVoices();
+    const one = (fx, who) => a => a._withoutGuitar(() => a.playPluck(E3, 0.05, 1.0, 0.9, 'part', fx, who || {}));
+    const partOnly = await audio.renderOffline(1.3, one(null), { random: seeded(51), dry: true, mute: ['band'] });
+    const bandOnly = await audio.renderOffline(1.3, one(null), { random: seeded(51), dry: true, mute: ['part'] });
+    t.ok(rms(partOnly, 0.05, 0.5) > 0.01, `with no recording a part note is heard on the part bus (${fmt(rms(partOnly, 0.05, 0.5))})`);
+    t.equal(peak(bandOnly), 0, 'and nothing of it reaches the band bus');
+    // at the recording's level, when the recording is here to compare
+    if (v.guitar){
+      const real = await audio.renderOffline(1.3, a => a.playPluck(E3, 0.05, 1.0, 0.9, 'part', null, {}), { random: seeded(51), dry: true });
+      const gap = dB(rms(partOnly, 0.05, 0.35)) - dB(rms(real, 0.05, 0.35));
+      t.ok(Math.abs(gap) < 1.5, `and within a decibel and a half of the recording over its first 0.3 s (${gap.toFixed(1)} dB)`);
+    }
+    // the techniques hold on it: a mute is over, a bend moves
+    const muted = await audio.renderOffline(1.3, one({ mute: true }), { random: seeded(52), dry: true });
+    t.ok(dB(rms(muted, 0.3, 0.45)) - dB(rms(muted, 0.05, 0.08)) < -30, 'a palm mute is over a quarter of a second on');
+    const bent = await audio.renderOffline(1.3, one({ bend: 2 }), { random: seeded(52), dry: true });
+    const plain = await audio.renderOffline(1.3, one(null), { random: seeded(52), dry: true });
+    t.ok(zeroCrossings(bent, 0.3, 0.5) > zeroCrossings(plain, 0.3, 0.5) * 1.05, `a bend of a tone raises the pitch (${zeroCrossings(bent, 0.3, 0.5)} crossings against ${zeroCrossings(plain, 0.3, 0.5)} unbent over 0.2 s)`);
+    // and the registry: the next note on the string takes it over
+    const two = strings => a => a._withoutGuitar(() => { a.playPluck(E3, 0.05, 1.2, 0.9, 'part', null, { string: strings[0] }); a.playPluck(E3 * Math.pow(2, 3 / 12), 0.35, 0.1, 0.9, 'part', { mute: true }, { string: strings[1] }); });
+    const same = await audio.renderOffline(1.5, two(['part:3', 'part:3']), { random: seeded(53), dry: true });
+    const apart = await audio.renderOffline(1.5, two(['part:3', 'part:2']), { random: seeded(53), dry: true });
+    t.ok(power(same, 0.65, 0.9) < power(apart, 0.65, 0.9) * 0.1, 'and the next note on the string takes it over');
+  }
+  const zeroCrossings = (buf, from, to) => { const d = buf.getChannelData(0), sr = buf.sampleRate; let n = 0; for (let i = Math.floor(from * sr) + 1; i < Math.floor(to * sr); i++) if ((d[i] >= 0) !== (d[i - 1] >= 0)) n++; return n; };
+
   GT.sound = { peak, rms, dB, seeded, withVoices, loudestBar, rockBars, measureDucking };
   GT.soundSuites = [
     ['Sound: the mix stays under full scale', testTheMixStaysUnderFullScale],
@@ -280,5 +311,6 @@
     ['Sound: the kit is never the same hit twice', testTheKitIsNeverTheSameHitTwice],
     ['Sound: the room has walls', testTheRoomHasWalls],
     ['Sound: two levels pinned by measurement', testTheLevelsAreMatched],
+    ['Sound: the fallback is a guitar on its own bus', testTheFallbackIsAGuitarOnItsOwnBus],
   ];
 })();
