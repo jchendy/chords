@@ -2504,6 +2504,13 @@
     const ring = build({ grid: 16, bars: [{ startSlot: 0 }], notes: [0, 1, 2, 3].map(k => ({ at: k, dur: 6, string: 5 - k, fret: 3 })) }, 800).markup;
     const ringBeams = (ring.match(/class="tab-beam"/g) || []).length, ringFlags = (ring.match(/class="tab-flag"/g) || []).length;
     if (ringBeams < 2 || ringFlags) bad.push(`a ringing arpeggio draws ${ringBeams} beams and ${ringFlags} flags, not four beamed sixteenths`);
+    // a thumb note clipped short (1.5 of the 2 slots to the next) is still
+    // an eighth; one over by the halfway point (1 of 4) is written short,
+    // with the rest as a gap
+    const clipped = build({ grid: 16, bars: [{ startSlot: 0 }], notes: [0, 2, 4, 6].map(k => ({ at: k, dur: 1.5, string: 5, fret: 3 })) }, 800).markup;
+    if (/tab-dot/.test(clipped) || (clipped.match(/class="tab-beam"/g) || []).length !== 2) bad.push('eighths played short are written as dotted sixteenths');
+    const rested = build({ grid: 16, bars: [{ startSlot: 0 }], notes: [{ at: 0, dur: 1, string: 5, fret: 3 }, { at: 4, dur: 4, string: 5, fret: 3 }] }, 800).markup;
+    if ((rested.match(/class="tab-flag"/g) || []).length !== 2) bad.push('a sixteenth followed by a rest is not written as a sixteenth');
     // a sixteenth beside an eighth: the second beam is a stub
     const mixed = build({ grid: 16, bars: [{ startSlot: 0 }], notes: [{ at: 0, dur: 3, string: 2, fret: 3 }, { at: 3, dur: 1, string: 2, fret: 3 }] }, 800).markup;
     const mixedBeams = (mixed.match(/class="tab-beam"/g) || []).length;

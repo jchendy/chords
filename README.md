@@ -118,8 +118,10 @@ names the tab you're on.
   sixteenth beside an eighth taking a stub of second beam; a twelve- or
   nine-slot bar written the 12/8 way, three eighths a beat; what is written
   being the time to the next strike, so a ringing arpeggio reads as the
-  sixteenths it is rather than a run of quarters, and a note that stops
-  short leaves a rest as a gap; the bar numbers small at each bar line —
+  sixteenths it is rather than a run of quarters and a thumb note clipped
+  short is still an eighth, while a note over by the halfway point to the
+  next is written its own length with the rest as a gap; the bar numbers
+  small at each bar line —
   and sounded on the recorded guitar so you can hear what you're
   aiming at, on top of the band the way a lead sits, with a volume slider
   and a mute for when you'd rather play it yourself, and a second pair for

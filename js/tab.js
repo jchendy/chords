@@ -152,20 +152,31 @@
   // sixteenth beside an eighth taking a stub of second beam. A sixteen-slot
   // bar is four beats of four sixteenths; a twelve-slot (or nine-slot) bar
   // is three eighths a beat, written the 12/8 way. What is written is the
-  // time to the next strike, capped by the strike's own length: a ringing
-  // arpeggio is sixteenths that happen to ring on, not a run of quarters,
-  // and a note that stops short of the next leaves a rest, which is a gap.
+  // time to the next strike: a ringing arpeggio is sixteenths that happen
+  // to ring on, not a run of quarters, and a thumb note clipped short is an
+  // eighth played short, not a dotted sixteenth. Only a note that is over
+  // by the halfway point to the next strike is written its own length —
+  // that is a rest, and the rest is the gap.
   const SIMPLE = [[16, 'whole', 0], [12, 'half', 1], [8, 'half', 0], [6, 'quarter', 1], [4, 'quarter', 0],
                   [3, 'eighth', 1], [2, 'eighth', 0], [1.5, 'sixteenth', 1], [1, 'sixteenth', 0], [0.5, 'thirty', 0]];
   const COMPOUND = [[12, 'whole', 1], [6, 'half', 1], [4, 'half', 0], [3, 'quarter', 1], [2, 'quarter', 0],
                     [1, 'eighth', 0], [0.5, 'sixteenth', 0]];
   const FLAGS = { whole: 0, half: 0, quarter: 0, eighth: 1, sixteenth: 2, thirty: 3 };
-  function valueOf(dur, grid){
+  // `room`, when given, is the time to the next strike: a note over before
+  // then is written the plain value that just covers it (a thumb note
+  // clipped to 1.5 slots is an eighth, not a dotted sixteenth), so long as
+  // that fits the room; otherwise the largest value the length holds.
+  function valueOf(dur, grid, room){
     const simple = grid % 3 !== 0;                          // sixteen slots; twelve and nine are three a beat
-    const units = simple ? dur * 16 / grid : dur;          // sixteenths, or eighths
+    const scale = simple ? 16 / grid : 1;                   // to sixteenths, or eighths
+    const units = dur * scale;
     const table = simple ? SIMPLE : COMPOUND;
-    const hit = table.find(([u]) => u <= units + 1e-6) || table[table.length - 1];
-    return { kind: hit[1], dotted: !!hit[2], flags: FLAGS[hit[1]] };
+    const pick = hit => ({ kind: hit[1], dotted: !!hit[2], flags: FLAGS[hit[1]] });
+    if (room != null){
+      const plain = table.filter(([u, , dot]) => !dot && u >= units - 1e-6 && u <= room * scale + 1e-6);
+      if (plain.length) return pick(plain[plain.length - 1]);
+    }
+    return pick(table.find(([u]) => u <= units + 1e-6) || table[table.length - 1]);
   }
   // the moments a bar is struck: one stem per onset, however many strings
   function onsets(example){
@@ -188,8 +199,9 @@
       const struck = [...list.entries()].sort((a, b) => a[0] - b[0]);
       const hits = struck.map(([at, dur], i) => {
         const p = positionOf(at, m);
-        const next = struck[i + 1] ? struck[i + 1][0] : barEnd;
-        const v = valueOf(Math.min(dur, next - at, barEnd - at), grid);
+        const next = Math.min(struck[i + 1] ? struck[i + 1][0] : barEnd, barEnd);
+        const gap = next - at;
+        const v = dur <= gap / 2 ? valueOf(dur, grid, gap) : valueOf(gap, grid);
         return { at, x: p.x + m.slotW / 2, y0: stringY(p.top, 5) + RHYTHM_TOP, ...v };
       });
       // beam groups: runs of flagged hits inside one beat
