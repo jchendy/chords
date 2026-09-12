@@ -37,3 +37,26 @@
 
 /* the CAGED shape a bar is played in, after the chord's name and numeral */
 .tab-shape{ font:500 9px Inter,system-ui,sans-serif; fill:var(--muted2, #6f675b); letter-spacing:.02em; }
+
+/* the pick's direction under the strings (⊓ down, ∨ up), and what a bar
+   was written from, after its chord */
+.tab-stroke{ fill:none; stroke:var(--muted, #a49a8a); stroke-width:1.2; stroke-linejoin:round; }
+.tab-role{ font:italic 500 9px Inter,system-ui,sans-serif; fill:var(--muted2, #6f675b); }
+/* the count-in, by the first bar of the tab: the beat number, and nothing before or after */
+.count-in{ position:absolute; left:0; top:0; z-index:2; width:22px; height:22px; border-radius:50%; background:var(--a, #e0a84a); color:#0c0b0a; font:700 13px/22px Inter,system-ui,sans-serif; text-align:center; pointer-events:none; }
+
+/* the fingering, when a page asks for it: a small chord diagram at each
+   change of grip — strings and frets, a dot with its finger where the hand
+   holds a string (filled where the bar strikes it, hollow where it only
+   holds it), x over a string left out, o over an open one, a bar for a
+   barre, the fret number by the first row up the neck */
+.tab-grip line{ stroke:var(--muted2, #6f675b); stroke-width:.8; }
+.tab-grip line.nut{ stroke:var(--ink, #ece7dc); stroke-width:2.2; }
+.tab-grip circle.on{ fill:var(--ink, #ece7dc); }
+.tab-grip circle.held{ fill:var(--bg, #141311); stroke:var(--muted, #a49a8a); stroke-width:1; }
+.tab-grip .barre{ fill:var(--ink, #ece7dc); opacity:.55; }
+.tab-grip text.fing{ font:700 7.2px Inter,system-ui,sans-serif; fill:var(--bg, #141311); }
+.tab-grip text.fing.held{ fill:var(--muted, #a49a8a); }
+.tab-grip text.mark{ font:600 7px Inter,system-ui,sans-serif; fill:var(--muted2, #6f675b); }
+.tab-grip text.mark.on{ fill:var(--ink, #ece7dc); }
+.tab-grip text.base{ font:500 7.5px Inter,system-ui,sans-serif; fill:var(--muted2, #6f675b); }

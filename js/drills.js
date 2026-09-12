@@ -274,8 +274,14 @@
     const strums = custom ? custom.strums : (STRUMS[o.strum] || STRUMS.quarters).strums;
     const part = { name: 'changes', figure: strums, variants: [], fills: [strums] };
     const bars = [];
-    chords.forEach(chord => { for (let b = 0; b < barsEach; b++) bars.push({ chord }); });
-    const win = { min: o.position, max: Math.min(FRET_COUNT, o.position + 3) };
+    // the hand at one position, or moving chord to chord where the page
+    // sent a position for each (`positions`, one per chord)
+    const winAt = f => ({ min: Math.max(0, f), max: Math.min(FRET_COUNT, f + 3) });
+    chords.forEach((chord, ci) => {
+      const own = o.positions && o.positions[ci] != null ? winAt(o.positions[ci]) : null;
+      for (let b = 0; b < barsEach; b++) bars.push(own ? { chord, window: own } : { chord });
+    });
+    const win = winAt(o.position);
     const opts = { reading: 'caged', window: win, scaleTheory: 'parallel', stayOnKey: false, key: { tonic: o.tonic, mode: o.mode }, tech: null, shapes: o.shapes };
     const notes = realise(part, bars, 1, opts, { grid }).filter(n => n.strum);
     if (!notes.length) return null;
@@ -289,9 +295,10 @@
     const all = windowOf(notes.map(n => ({ string: n.string, fret: n.fret })));
     const names = bars.map(b => displayName(b.chord)).filter((n, i, a) => i === 0 || n !== a[i - 1]).join(' – ');
     const how = custom ? `in the pattern the page sent${grid === 12 ? ', in 12/8' : ''}` : (STRUMS[o.strum] ? STRUMS[o.strum].name.toLowerCase() : 'every beat');
-    return { notes, chords: bars.map(b => b.chord), grips, window: { min: Math.min(win.min, all.min), max: Math.max(win.max, all.max) }, grid,
+    const where = o.positions ? `the hand moving with the chords (${chords.map((c, i) => `${displayName(c)} at ${o.positions[i] == null ? o.position : o.positions[i]}`).filter((x, i, a) => a.indexOf(x) === i).join(', ')})` : `the hand at fret ${o.position}`;
+    return { notes, chords: bars.map(b => b.chord), grips, windows: bars.map(b => b.window || win), window: { min: Math.min(win.min, all.min), max: Math.max(win.max, all.max) }, grid,
              neck: { mode: 'chords' },
-             brief: `${names}, ${barsEach === 1 ? 'a bar' : barsEach + ' bars'} each, ${how}, the hand at fret ${o.position}. Land each change on the beat; the strum can be soft, the change can't be late.` };
+             brief: `${names}, ${barsEach === 1 ? 'a bar' : barsEach + ' bars'} each, ${how}, ${where}. Land each change on the beat; the strum can be soft, the change can't be late.` };
   }
 
   function arpeggioDrill(o){
@@ -328,7 +335,7 @@
 
   // ---- the page ----
   const state = { kind: 'scale', mode: 'major', tonic: 'A', tempo: 80, div: 2, scale: 'minorpenta', pattern: 'updown', shapes: new Set(CAGED_ORDER), box: '',
-                  chords: '', beats: 4, strum: 'quarters', custom: null, cross: 'skip', strings: 'all', perString: 4, direction: 'updown', position: 5, comp: false, neck: true };
+                  chords: '', beats: 4, strum: 'quarters', custom: null, positions: null, cross: 'skip', strings: 'all', perString: 4, direction: 'updown', position: 5, comp: false, count: false, neck: true, fingers: false };
   const KEYS = { d: 'kind', k: null, t: 'tempo', v: 'div', sc: 'scale', p: 'pattern', sh: null, b: 'box', ch: 'chords', bt: 'beats', st: 'strum', cr: 'cross', ss: 'strings', ps: 'perString', dir: 'direction', pos: 'position', comp: null, nk: null };
   function shareState(){
     const p = new URLSearchParams();
@@ -349,11 +356,14 @@
         if (state.custom) p.set('pt', encodeStrums(state.custom.strums, state.custom.grid));
         else if (state.strum !== 'quarters') p.set('st', state.strum);
       }
-      if (state.position !== 5) p.set('pos', String(state.position));
+      if (state.positions) p.set('pos', state.positions.join(','));
+      else if (state.position !== 5) p.set('pos', String(state.position));
     }
     if (state.shapes.size < 5) p.set('sh', CAGED_ORDER.filter(n => state.shapes.has(n)).join(''));
     if (state.comp) p.set('comp', '1');
+    if (state.count) p.set('ci', '1');
     if (!state.neck) p.set('nk', '0');
+    if (state.fingers) p.set('fg', '1');
     return p;
   }
   function applyState(p){
@@ -379,11 +389,16 @@
     state.strings = one('ss', Object.keys(STRING_SETS), 'all');
     state.perString = num('ps', [2, 3, 4, 6], 4);
     state.direction = one('dir', ['up', 'down', 'updown'], 'updown');
-    state.position = num('pos', POSITIONS, 5);
+    // a position, or one for each chord (the page's hand moving with them)
+    const pos = p.get('pos') || '';
+    if (pos.includes(',')){ state.positions = pos.split(',').map(x => Math.max(0, Math.min(FRET_COUNT, Number(x) || 0))); state.position = state.positions[0]; }
+    else { state.positions = null; state.position = num('pos', POSITIONS, 5); }
     state.shapes = new Set(p.get('sh') ? CAGED_ORDER.filter(n => p.get('sh').includes(n)) : CAGED_ORDER);
     if (!state.shapes.size) state.shapes = new Set(CAGED_ORDER);
     state.comp = p.get('comp') === '1';
+    state.count = p.get('ci') === '1';
     state.neck = p.get('nk') !== '0';
+    state.fingers = p.get('fg') === '1';
     return true;
   }
   const writeState = () => GT.tabs.setState('drills', shareState().toString());
@@ -419,7 +434,9 @@
     seg('drillPatternGroup', state.pattern);
     $('drillShapesGroup').querySelectorAll('.seg-btn').forEach(b => b.classList.toggle('active', state.shapes.has(b.dataset.value)));
     buildBoxes();
-    $('drillPos').value = String(state.position);
+    const posSel = $('drillPos');
+    posSel.innerHTML = (state.positions ? '<option value="page">From the page</option>' : '') + POSITIONS.map(f => `<option value="${f}">${f === 0 ? 'Open position' : `Around fret ${f}`}</option>`).join('');
+    posSel.value = state.positions ? 'page' : String(state.position);
     $('drillChords').value = state.chords;
     $('drillBeats').value = String(state.beats);
     const strumSel = $('drillStrum');
@@ -430,7 +447,9 @@
     seg('drillPerStringGroup', state.perString);
     seg('drillDirGroup', state.direction);
     $('drillComp').checked = state.comp;
+    $('drillCount').checked = state.count;
     $('drillNeckToggle').checked = state.neck;
+    $('drillFingers').checked = state.fingers;
     // the rows a kind uses
     const k = state.kind, scaleKind = k === 'scale' || k === 'picking' || k === 'crossing';
     $('drillChordsRow').hidden = scaleKind;
@@ -445,18 +464,28 @@
     $('drillKindWhat').textContent = KINDS[k].what;
   }
 
+  // the fingering over the tab, when asked for: a plain barre (the thumb
+  // over the neck is the Hendrix page's own rule), the hand where the drill
+  // put it bar by bar
+  const tabOpts = () => ({ fingering: state.fingers && drill ? { thumb: false, windowOf: b => drill.windows && drill.windows[b] ? drill.windows[b] : drill.window } : null });
   function drawNeck(bar){
     const host = $('drillNeck');
     if (!drill || !state.neck){ host.hidden = true; neckState.drawn = null; return; }
     const chord = drill.chords[((bar || 0) % drill.chords.length + drill.chords.length) % drill.chords.length];
-    const key = `${displayName(chord)}|${bar in (drill.grips || {}) ? boxId(drill.grips[bar].placement) : ''}`;
+    const key = `${displayName(chord)}|${bar in (drill.grips || {}) ? boxId(drill.grips[bar].placement) : ''}|${(drill.notes.filter(n => n.bar === bar && n.strum).map(n => n.voicing || 'full').join(','))}`;
     if (neckState.drawn === key) return;
     neckState.drawn = key;
     if (!neckState.geo) neckState.geo = NF.neckGeometry(drill.window, drill.notes);
-    const played = [...new Map(drill.notes.filter(n => n.bar === bar).map(n => [NF.cellKey(n), { string: n.string, fret: n.fret }])).values()];
+    const barNotes = drill.notes.filter(n => n.bar === bar);
+    const played = [...new Map(barNotes.map(n => [NF.cellKey(n), { string: n.string, fret: n.fret }])).values()];
+    const winHere = drill.windows && drill.windows[bar] ? drill.windows[bar] : drill.window;
+    // a bar that strums a grip no CAGED shape names (the 7♯9 grip, a power
+    // chord) shows that grip; otherwise the shape the drill chose
+    const given = player().gripOfBar(chord, barNotes) || (drill.grips && drill.grips[bar] ? drill.grips[bar].placement : null);
+    const struck = [...new Map(barNotes.filter(n => n.strum).map(n => [n.string, { string: n.string, fret: n.fret }])).values()];
     const { markers, lines, what } = drill.neck.mode === 'chords'
-      ? NF.chordNeck(chord, drill.window, played, drill.grips && drill.grips[bar] ? drill.grips[bar].placement : null)
-      : NF.scaleNeck(chord, { scale: drill.neck.scale }, drill.window, played);
+      ? NF.chordNeck(chord, winHere, played, given, struck)
+      : NF.scaleNeck(chord, { scale: drill.neck.scale }, winHere, played);
     host.hidden = false;
     host.innerHTML = `<p class="neck-title">${esc(what)}</p>${NF.neckSVG(neckState.geo, markers, lines, expanded ? 1.8 : 1)}`;
   }
@@ -464,7 +493,7 @@
   // full-window view or back — without stopping what's playing
   function redraw(){
     if (!drill) return;
-    metrics = player().drawTab($('drillTab'), drill.feel, drill.chords, drill.notes);
+    metrics = player().drawTab($('drillTab'), drill.feel, drill.chords, drill.notes, tabOpts());
     if (playingHere()) player().playing().metrics = metrics;
     neckState = { geo: null, drawn: null };
     drawNeck(playingHere() ? (player().playing().shownBar || 0) : 0);
@@ -502,14 +531,14 @@
     neckState = { geo: null, drawn: null };
     const tabHost = $('drillTab');
     if (!drill){ tabHost.innerHTML = '<p class="drill-empty">Nothing to play here: no shape of that kind fits. Allow more shapes, or pick another key.</p>'; $('drillBrief').textContent = ''; $('drillNeck').hidden = true; return; }
-    metrics = player().drawTab(tabHost, drill.feel, drill.chords, drill.notes);
+    metrics = player().drawTab(tabHost, drill.feel, drill.chords, drill.notes, tabOpts());
     $('drillBrief').textContent = drill.brief;
     drawNeck(0);
   }
   function togglePlay(){
     if (playingHere()){ player().stop(); return; }
     if (!drill) return;
-    player().play(card, 'click', drill.feel, drill.chords, drill.notes, state.tempo, metrics, { onBar: drawNeck, onStop: () => drawNeck(0), comp: state.comp });
+    player().play(card, 'click', drill.feel, drill.chords, drill.notes, state.tempo, metrics, { onBar: drawNeck, onStop: () => drawNeck(0), comp: state.comp, countIn: state.count ? 4 : 0 });
   }
 
   function bind(){
@@ -532,7 +561,9 @@
     });
     const onSel = (id, key, parse = v => v) => $(id).addEventListener('change', () => { state[key] = parse($(id).value); syncUI(); writeState(); render(); });
     $('drillKey').addEventListener('change', () => { const [mode, tonic] = $('drillKey').value.split(':'); state.mode = mode; state.tonic = tonic; syncUI(); writeState(); render(); });
-    onSel('drillScale', 'scale'); onSel('drillBox', 'box'); onSel('drillPos', 'position', Number); onSel('drillBeats', 'beats', Number); onSel('drillStrings', 'strings');
+    onSel('drillScale', 'scale'); onSel('drillBox', 'box'); onSel('drillBeats', 'beats', Number); onSel('drillStrings', 'strings');
+    // choosing a position of the tab's own lets go of the ones the page sent
+    $('drillPos').addEventListener('change', () => { const v = $('drillPos').value; if (v !== 'page'){ state.position = Number(v); state.positions = null; } syncUI(); writeState(); render(); });
     // choosing a pattern of the tab's own lets go of the one the page sent
     $('drillStrum').addEventListener('change', () => { const v = $('drillStrum').value; if (v !== 'custom'){ state.strum = v; state.custom = null; } syncUI(); writeState(); render(); });
     $('drillChords').addEventListener('change', () => { state.chords = $('drillChords').value; writeState(); render(); });
@@ -548,7 +579,9 @@
       $(id).addEventListener('change', writeState);
     });
     $('drillComp').addEventListener('change', () => { state.comp = $('drillComp').checked; if (playingHere()) player().playing().hooks.comp = state.comp; writeState(); });
+    $('drillCount').addEventListener('change', () => { state.count = $('drillCount').checked; writeState(); });
     $('drillNeckToggle').addEventListener('change', () => { state.neck = $('drillNeckToggle').checked; writeState(); drawNeck(playingHere() ? player().playing().shownBar || 0 : 0); });
+    $('drillFingers').addEventListener('change', () => { state.fingers = $('drillFingers').checked; writeState(); redraw(); });
     card.querySelector('.play').addEventListener('click', togglePlay);
     // a click on the tab sets where the drill plays from, the neck following
     player().seekable(card, () => drill ? { feel: drill.feel, chords: drill.chords, notes: drill.notes, metrics } : null, { onSeek: bar => drawNeck(bar) });
@@ -579,7 +612,6 @@
     buildKeys();
     $('drillScale').innerHTML = SCALES.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
     $('drillBox').innerHTML = '';
-    $('drillPos').innerHTML = POSITIONS.map(f => `<option value="${f}">${f === 0 ? 'Open position' : `Around fret ${f}`}</option>`).join('');
     applyState(GT.tabs.stateParams());
     bind();
     syncUI();

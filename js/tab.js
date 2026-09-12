@@ -12,10 +12,15 @@
   const { STRING_LABELS } = GT.fretboard;
 
   const SLOT_W = 24;        // preferred horizontal space per grid slot
-  const MIN_SLOT_W = 12;    // ...and how tight it may get before we give up and scroll
+  const SQUEEZE_W = 16;     // ...how tight the slots go to get two bars on a row
+  const MIN_SLOT_W = 12;    // ...and how tight they may get before we give up and scroll
   const ROW_H = 17;         // between string lines
   const PAD_L = 26, PAD_R = 14;
   const ROW_TOP = 28;       // room above each row for the chord names
+  // ...more when the fingering is shown: room for a chord diagram at each
+  // change of grip
+  const GRIP_SX = 9, GRIP_FY = 9, GRIP_TOP = 6, GRIP_W = 68;   // the diagram's string gap, fret gap, room over it for the x/o marks, its width with the fret number
+  const gripBand = rows => 24 + GRIP_FY * rows;              // the band a diagram of that many rows needs
   const ROW_GAP = 18;       // between one row's rhythm and the next row's names
   // the rhythm under each row: stems hanging from a line below the sixth
   // string, flagged, beamed and dotted the way notation writes them
@@ -33,13 +38,23 @@
     let slotW = SLOT_W;
     if (grid * slotW > usable) slotW = Math.max(MIN_SLOT_W, Math.floor(usable / grid));
 
-    const barW = grid * slotW;
-    const barsPerRow = Math.max(1, Math.min(barCount, Math.floor(usable / barW)));
+    let barW = grid * slotW;
+    let barsPerRow = Math.max(1, Math.min(barCount, Math.floor(usable / barW)));
+    // one bar a row reads as a list, and beside a neck it is the usual
+    // case: when a second bar would fit with the slots squeezed a little,
+    // squeeze them, so a row is a pair of bars
+    if (barsPerRow === 1 && barCount > 1 && usable >= 2 * grid * SQUEEZE_W){
+      slotW = Math.min(SLOT_W, Math.floor(usable / (2 * grid)));
+      barW = grid * slotW;
+      barsPerRow = 2;
+    }
     const rows = Math.ceil(barCount / barsPerRow);
-    const rowSpan = ROW_TOP + 5 * ROW_H + RHYTHM_H + ROW_GAP;
+    const grips = example.fingering ? example.bars.filter(b => b.grip) : [];
+    const rowTop = grips.length ? gripBand(Math.max(4, ...grips.map(b => b.grip.rows || 4))) : ROW_TOP;
+    const rowSpan = rowTop + 5 * ROW_H + RHYTHM_H + ROW_GAP;
 
     return {
-      grid, slotW, barW, barsPerRow, rows, rowSpan, barCount,
+      grid, slotW, barW, barsPerRow, rows, rowSpan, rowTop, barCount,
       width: PAD_L + Math.min(barCount, barsPerRow) * barW + PAD_R,
       height: rows * rowSpan,
     };
@@ -54,7 +69,7 @@
     return {
       row,
       x: PAD_L + (barInRow * m.grid + withinBar) * m.slotW,
-      top: row * m.rowSpan + ROW_TOP,
+      top: row * m.rowSpan + m.rowTop,
     };
   }
 
@@ -66,7 +81,7 @@
 
     // one set of six strings per row, only as wide as that row's bars
     for (let row = 0; row < m.rows; row++){
-      const top = row * m.rowSpan + ROW_TOP;
+      const top = row * m.rowSpan + m.rowTop;
       const barsHere = Math.min(m.barsPerRow, m.barCount - row * m.barsPerRow);
       const right = PAD_L + barsHere * m.barW;
       for (let s = 0; s < 6; s++){
@@ -83,21 +98,31 @@
       els.push(`<line class="tab-bar" x1="${p.x}" y1="${stringY(p.top, 0)}" x2="${p.x}" y2="${stringY(p.top, 5)}"/>`);
       // the bar's number, small and italic, on the line's left — the way
       // printed tab counts its bars
-      els.push(`<text class="tab-barnum" x="${p.x - 3}" y="${p.top - 13}" text-anchor="end">${i + 1}</text>`);
+      const nameY = p.top - m.rowTop + 16;
+      els.push(`<text class="tab-barnum" x="${p.x - 3}" y="${nameY - 1}" text-anchor="end">${i + 1}</text>`);
+      // the grip as a small chord diagram, where the caller marks a change
+      // of it; the names move right to make room
+      let after = 4;
+      if (example.fingering && bar.grip){ els.push(gripMark(bar.grip, p.x + 14, p.top - m.rowTop + 4)); after += GRIP_W; }
       // a name only where the caller gave one, tagged with its bar: a bar
       // that carries a chord through has no name of its own, so whoever
       // lights the name for a bar looks for the nearest one at or before it
       if (bar.chord){
-        els.push(`<text class="tab-chord" data-bar="${i}" x="${p.x + 4}" y="${p.top - 12}">${bar.chord}</text>`);
+        els.push(`<text class="tab-chord" data-bar="${i}" x="${p.x + after}" y="${nameY}">${bar.chord}</text>`);
         // the Nashville numeral after the name, quieter, when the caller has
         // one — a tab drawn without a key passes none
-        let after = 4 + bar.chord.length * 7.2 + 5;
+        after += bar.chord.length * 7.2 + 5;
         if (bar.numeral){
-          els.push(`<text class="tab-numeral" x="${p.x + after}" y="${p.top - 12}">${bar.numeral}</text>`);
+          els.push(`<text class="tab-numeral" x="${p.x + after}" y="${nameY}">${bar.numeral}</text>`);
           after += bar.numeral.length * 6.5 + 6;
         }
         // the CAGED shape the bar is played in, where the caller knows one
-        if (bar.shape) els.push(`<text class="tab-shape" x="${p.x + after}" y="${p.top - 12}">${bar.shape}</text>`);
+        if (bar.shape){
+          els.push(`<text class="tab-shape" x="${p.x + after}" y="${nameY}">${bar.shape}</text>`);
+          after += bar.shape.length * 5 + 8;
+        }
+        // what the bar was written from — figure, fill, lead — where the caller says
+        if (bar.role) els.push(`<text class="tab-role" x="${p.x + after}" y="${nameY}">${bar.role}</text>`);
       }
     });
 
@@ -142,7 +167,7 @@
     });
 
     els.push(...rhythm(example, m));
-    els.push(`<rect class="tab-playhead" x="${PAD_L}" y="${ROW_TOP - 8}" width="${m.slotW}" height="${5 * ROW_H + RHYTHM_TOP + STEM_H + 12}" rx="3" hidden/>`);
+    els.push(`<rect class="tab-playhead" x="${PAD_L}" y="${m.rowTop - 8}" width="${m.slotW}" height="${5 * ROW_H + RHYTHM_TOP + STEM_H + 12}" rx="3" hidden/>`);
 
     return {
       markup: els.join(''),
@@ -151,6 +176,37 @@
       viewBox: `0 0 ${m.width} ${m.height}`,
       metrics: m,
     };
+  }
+
+  // ---- the grip -----------------------------------------------------------
+  // A small chord diagram over a bar: six strings, the frets from the nut or
+  // from the grip's lowest, a dot with its finger on each string the hand
+  // holds — filled where the bar strikes the string, hollow where the hand
+  // only holds it — 'x' over a string left out, 'o' over an open one, a bar
+  // across a barre, and the fret number by the first row when the grip is
+  // up the neck. `g` is what example-player's gripFor gives.
+  function gripMark(g, x0, y0){
+    const els = [];
+    const sx = s => x0 + (5 - s) * GRIP_SX;                  // string 5 (low E) at the left
+    const fy = f => y0 + GRIP_TOP + f * GRIP_FY;             // the line above fret row f
+    const rows = g.rows || 4;
+    for (let s = 0; s < 6; s++) els.push(`<line x1="${sx(s)}" y1="${fy(0)}" x2="${sx(s)}" y2="${fy(rows)}"/>`);
+    for (let f = 0; f <= rows; f++) els.push(`<line${f === 0 && g.base === 1 ? ' class="nut"' : ''} x1="${sx(5)}" y1="${fy(f)}" x2="${sx(0)}" y2="${fy(f)}"/>`);
+    if (g.base > 1) els.push(`<text class="base" x="${sx(5) - 3}" y="${fy(0) + GRIP_FY / 2 + 2.5}" text-anchor="end">${g.base}</text>`);
+    (g.barres || []).forEach(b => {
+      const y = fy(b.fret - g.base) + GRIP_FY / 2;
+      els.push(`<rect class="barre" x="${sx(b.toString) - 3.8}" y="${y - 3.8}" width="${sx(b.fromString) - sx(b.toString) + 7.6}" height="7.6" rx="3.8"/>`);
+    });
+    const held = new Map(g.cells.map(c => [c.string, c]));
+    for (let s = 0; s < 6; s++){
+      const c = held.get(s), x = sx(s);
+      if (!c){ els.push(`<text class="mark" x="${x}" y="${fy(0) - 1.5}" text-anchor="middle">x</text>`); continue; }
+      if (c.fret === 0){ els.push(`<text class="mark${c.struck ? ' on' : ''}" x="${x}" y="${fy(0) - 1.5}" text-anchor="middle">o</text>`); continue; }
+      const y = fy(c.fret - g.base) + GRIP_FY / 2;
+      els.push(`<circle class="${c.struck ? 'on' : 'held'}" cx="${x}" cy="${y}" r="4.1"/>`);
+      if (c.finger) els.push(`<text class="fing${c.struck ? '' : ' held'}" x="${x}" y="${y + 2.6}" text-anchor="middle">${c.finger}</text>`);
+    }
+    return `<g class="tab-grip">${els.join('')}</g>`;
   }
 
   // ---- the rhythm ----------------------------------------------------------
@@ -197,6 +253,8 @@
       const list = byBar.get(bar) || byBar.set(bar, new Map()).get(bar);
       const dur = Math.max(list.get(key) || 0, n.tabDur || n.dur || 0);
       list.set(key, dur);
+      // the pick's direction on a strum, for the marks under the tab
+      if (n.strum && n.stroke){ if (!list.strokes) list.strokes = new Map(); list.strokes.set(key, n.stroke); }
     });
     return byBar;
   }
@@ -207,16 +265,28 @@
     onsets(example).forEach((list, bar) => {
       const barEnd = (bar + 1) * grid;
       const struck = [...list.entries()].sort((a, b) => a[0] - b[0]);
+      // strokes are marked in a bar that has an upstroke in it — down and
+      // up alike, so the pattern reads — and left off a bar of downstrokes
+      const marks = list.strokes && [...list.strokes.values()].includes('up') ? list.strokes : null;
       const hits = struck.map(([at, dur], i) => {
         const p = positionOf(at, m);
         const next = Math.min(struck[i + 1] ? struck[i + 1][0] : barEnd, barEnd);
         const gap = next - at;
+        const stroke = marks ? marks.get(at) : null;
         // a note that rings for less than half its gap is written as its own
         // value with the rest as a gap — but only when it is a whole slot or
         // more: a staccato note, clipped under a slot, is still the
         // sixteenth (or eighth) its strikes are spaced at, not a thirty-second
         const v = dur >= 1 && dur <= gap / 2 ? valueOf(dur, grid, gap) : valueOf(gap, grid);
-        return { at, x: p.x + m.slotW / 2, y0: stringY(p.top, 5) + RHYTHM_TOP, ...v };
+        return { at, x: p.x + m.slotW / 2, y0: stringY(p.top, 5) + RHYTHM_TOP, stroke, ...v };
+      });
+      // the pick's direction, between the strings and the stems: ⊓ down, ∨ up
+      hits.forEach(h => {
+        if (!h.stroke) return;
+        const y = h.y0 - 3;
+        els.push(h.stroke === 'up'
+          ? `<path class="tab-stroke" d="M${h.x - 3} ${y - 5} L${h.x} ${y} L${h.x + 3} ${y - 5}"/>`
+          : `<path class="tab-stroke" d="M${h.x - 3.5} ${y} v-4.5 h7 v4.5"/>`);
       });
       // beam groups: runs of flagged hits inside one beat
       const groups = [];

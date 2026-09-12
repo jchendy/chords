@@ -904,12 +904,28 @@
     if (!key || !G) return;
     G.claims = G.claims || new Map();
     const held = G.claims.get(key);
-    if (held && held.until > time && held.src !== src){
-      held.damp.gain.setValueAtTime(1, time);
-      held.damp.gain.exponentialRampToValueAtTime(0.0001, time + ramp);
-      try { held.src.stop(time + ramp + 0.02); } catch (e) { /* already finished */ }
+    const giveWay = (loser, at) => {
+      loser.damp.gain.setValueAtTime(1, at);
+      loser.damp.gain.exponentialRampToValueAtTime(0.0001, at + ramp);
+      try { loser.src.stop(at + ramp + 0.02); } catch (e) { /* already finished */ }
+    };
+    const mine = { src, damp, time, until };
+    if (held && held.src !== src){
+      // Notes aren't always queued in the order they sound — a part's double
+      // stops and strums are queued after its single notes — so the earlier
+      // note gives way when the later one starts, whichever was queued
+      // first. Queued the old way, a strum on beat one silenced the single
+      // note after it on the same string before that note had begun.
+      if (held.time <= time){
+        if (held.until > time) giveWay(held, time);
+        G.claims.set(key, mine);
+      } else {
+        if (until > held.time) giveWay(mine, held.time);
+        // the later note keeps the string
+      }
+      return;
     }
-    G.claims.set(key, { src, damp, until });
+    G.claims.set(key, mine);
   }
 
   // ---- where a note's pitch goes over its length ---------------------------

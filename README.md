@@ -169,7 +169,9 @@ names the tab you're on.
   numeral after it, and not over the bars it holds through — the way the
   chart reads — with the name of the bar being played lit and a playhead
   on the slot. On a wide screen (700 px or more for the tab) it wraps to as
-  many bars as fit across and shows two rows at a time, the row being
+  many bars as fit across — and where only one would, the slots squeeze a
+  little (to 16 px at the tightest) so two share a row — and shows two rows
+  at a time, the row being
   played on top and the row after it below — what's coming is what you need
   to see — scrolling a row at a time as the bar moves down, with room under
   the last row so it too gets the top; narrower than that it's one long strip
@@ -506,13 +508,19 @@ strings, the 3rd and 7th among them and the 9th standing in for the root.
 x-x-5-6-7-7 is G C♯ F♯ B — the ♭7, 3, 13 and 9 of A — and is offered for
 A13 with a "no root" note under it.
 
-Every shape is then handed to a fingering pass, which either works out a
-playable left hand for it or throws it out. Fingers are numbered 1 (index)
-to 4 (pinky); up to three fingers may share a fret, and when that isn't
-enough the shape is barred — the index across the lowest fret, or a higher
-finger laid flat over neighbouring strings (the ring-finger barre that
-shapes like C9 and Em9 need). A barre that would silence an open string, or
-sound a note outside the chord, means the shape isn't offered at all.
+Every shape is then handed to a fingering pass (`js/fingering.js`, shared
+with the ear-training diagrams and the chord diagrams the tab shows over an
+example), which either works out a playable left hand for it or throws it
+out. Fingers are numbered 1 (index) to 4 (pinky); up to three fingers may
+share a fret, and when that isn't enough the shape is barred — the index
+across the lowest fret, or a higher finger laid flat over neighbouring
+strings (the ring-finger barre that shapes like C9 and Em9 need). Each
+finger is the one its fret says, one a fret from the index — the minor
+barre's two notes two frets up are the ring and the pinky, as in the major
+shape with the middle lifted, and a power chord's the same — or the next
+finger on when that one is taken. A barre that would silence an open
+string, or sound a note outside the chord, means the shape isn't offered
+at all.
 
 A few open shapes are fingered by convention instead, from a small table the
 pass consults first. The convention there comes from the chord a shape is
@@ -827,7 +835,15 @@ with each note lit as it sounds, beside the tab on a wide screen — and
 **Expand** (or ⌘E / Ctrl-E) opens the drill full-window, the tab drawn to
 the window's width and the neck beside it, with a tempo control of its
 own, the way the Hendrix examples do. A pattern a page sends carries its
-grid, so a 12/8 part's changes drill in 12/8. The
+grid, so a 12/8 part's changes drill in 12/8, and can send a position for
+each chord (`pos=0,3,5`: the hand moving with the changes, each bar
+realised in its own window), which the Hendrix chord-change cards do.
+**Count in** plays four beats of hat before the loop (`ci=1`); **Neck**
+hides the neck (`nk=0`); **Fingering** (`fg=1`) puts a chord diagram over
+each bar whose grip changes — the whole hand, fingered by the chord
+finder's model in `js/fingering.js` (a plain barre here; the thumb over
+the neck is the Hendrix page's rule), the strings the bar strikes filled
+and the ones it only holds hollow. The
 state rides in the fragment (`#drills?d=scale&k=major:E&sc=blues&b=E@12…`)
 and a link restores every field, the ones it leaves out to their defaults.
 The Hendrix deep dive's scale drills and chord changes open here; its
@@ -947,20 +963,48 @@ the 9th chord — and linked to the finder, the common changes
 played with them, the scales drawn on the neck (the box under the thumb
 chord, the box above it, the blue note, the minor pentatonic against the
 7♯9, Dorian, the major pentatonic, the two pentatonics mixed, Mixolydian)
-and played as drills written note by note, then fifty-odd examples,
+and played as drills written note by note, then sixty-odd examples,
 exercises and studies realised from the genre's parts and played by the
-shared player. Every card has a **Neck** switch that draws, under the tab,
-the chord as it's fretted (the CAGED grip nearest the hand, with its 7th
-and its colour tones hollow) or the notes the part may play (its palette
-in the position window), redrawn as the playhead enters a bar with a new
-chord and lit note by note as they sound — what the Jam tab's neck
-does for a part — an **Expand** that opens the example in a full-window
-view, the tab drawn to the window's width and the neck beside it — and a
-"Drill it in Jam" link in the share format (key, chords or preset,
-tempo, feel, part, roll, blend, the neck's reading and box). The chord-change
-drills are the chords alone, whole and partial, no runs. The contents sit
-in the left margin and stay there, the section on screen marked and opened
-to list its sub-headings and examples. Then
+shared player — a mixed card for every feel, a study for every preset.
+The page opens on a **Start here** path of eight lessons through the cards
+in the order a student would take them (the exercises follow the scales);
+every card carries a difficulty chip (beginner, intermediate, advanced,
+from what the part asks of the hands), its tempo with a practice tempo at
+70% that its links open at, and whether its sixteenths swing. A
+chord-change card gives the hand a position for each chord (Em at the nut,
+G at the 3rd, Am at the 5th), so the engine realises each bar in its own
+window, and the tab names over every bar the grip it is played in — the
+CAGED shape, "E shape, split" for the thumb's bass note and the triad, the
+7♯9 grip, the 9th grip, a power chord — and what the bar was written from
+(figure, variant, fill, lead, turnaround, stop-time), with the pick's
+direction under the strums (⊓ down, ∨ up) in any bar that has an
+upstroke. Every card has a **Neck** switch, on to start with (chords for
+the changes, the scale for the scale drills) and remembered, that draws
+beside the tab the chord as it's fretted — the CAGED shape the bar's
+strums sit in, whole, with its 7th and its colour tones hollow, or the grip
+itself where it is no CAGED shape (the 7♯9 grip as x-7-6-7-8-x, not a C7
+voicing near it) — or the notes the part may play (its palette in the
+position window), redrawn as the playhead enters a bar with a new chord
+and lit note by note as they sound; a **Fingering** switch, remembered,
+that puts a chord diagram over each bar whose grip changes — the whole
+hand, fingered by the chord finder's model with the thumb over the low E
+on an E-shape barre, the strings the bar strikes filled and the ones it
+only holds hollow — while single notes are left to the neck's box, since
+a rule for every fill would be wrong as often as right; an **Expand** that
+opens the example in a full-window view, the tab drawn to the window's
+width and the neck beside it; and an "Open in jam" or "Open in drills"
+link — parts to the jam tab in the share format (key, chords or preset,
+tempo, feel, part, roll, blend, the neck's reading and box), scales and
+chord changes to the drills with the pattern, the positions and the
+practice tempo. The chord-change drills are the chords alone, whole and
+partial, no runs. A count-in toggle in the margin plays four beats of hat
+before any example. The contents sit in the left margin and stay there,
+the section on screen marked and opened to list its sub-headings and
+examples, with a button to fold them away for a wider tab. A **For
+teachers** section closes the lessons: the faults to listen for, in a
+table, with the fix for each, and a checklist a student can be signed off
+against; every grip says whether its fingering is in the sources or is the
+usual way, and every song lists what to listen for. Then
 the songs analysed as reference points with their tabs linked at Ultimate
 Guitar and Songsterr, a section saying how the page was made — by reading,
 with no recording listened to — and a numbered list of every source.
@@ -1321,7 +1365,10 @@ One string can only sound one note. The next note on a string — fretted,
 hammered, restruck — takes it over, and the one before is damped in twelve
 milliseconds rather than ringing under it; the part's realised notes know
 their strings, the comp's k-th note from the bottom is its k-th string, so
-a new grip damps the old one the way a hand's does. A palm mute is the heel
+a new grip damps the old one the way a hand's does — judged by when the
+notes sound, not by the order they were queued in: the player queues a
+bar's single notes before its strums and double stops, so whichever was
+queued first, the earlier note gives way at the later note's start (B75). A palm mute is the heel
 of the hand: the pick's click comes through a lowpass sweeping 1600 to
 700 Hz, a shade quieter, and the ring is over in a fifth of a second
 whatever was written (measured: over a hundred decibels down a quarter of
@@ -1551,13 +1598,13 @@ by what each part does:
 | `fretboard.js` | Tuning, CAGED and pentatonic shape templates, the maths that places them on the neck, CAGED shape matching, and the two pieces of box drawing every view shares — `boxColouredNotes`, which colours a note by the box that owns it, and `gripOutlines`, which traces the chord shape underneath. Also pure. |
 | `neck.js` | Draws a full 15-fret neck as SVG from markers and shape outlines — shared by the jam fretboard, the chord finder's CAGED overview and the reverse finder, so all three necks are one drawing. A fret is close to twice as wide as the gap between two strings, near enough the shape of the real thing to read a grip off, and a note sits close up behind its fret wire where the finger goes rather than in the middle of the gap; the inlays and the fret numbers stay centred, since that's where they are on a guitar. The label and the dot are sized against each other: a single character is set as large as the dot will hold without running into a root's ring, and a longer one ("♭3") a size down so it fits — which is what lets the dots be small enough for the strings to sit that close together. A full neck is wide, so it wants most of a laptop's width — hence the wider cap on how large the drawing may render. |
 | `progressions.js` | The preset progressions, written as scale degrees. Pure data. |
-| `tab.js` | Draws guitar tablature from a note list: the strings, the numbers, the techniques, the bar numbers, the chord's name, numeral and CAGED shape over each bar, and the rhythm under each row (stems, flags, beams within the beat, dots, hollow heads) from each strike's slot length on either grid — a note clipped short is written as its own value with the rest as a gap, unless it is under a slot, when it is the sixteenth its strikes are spaced at. `slotAt` reads the slot under a click, the inverse of the playhead's place. |
+| `tab.js` | Draws guitar tablature from a note list: the strings, the numbers, the techniques, the bar numbers, the chord's name, numeral, grip and role over each bar (and, when the fingering is on, a small chord diagram over a bar whose grip changes), the rhythm under each row (stems, flags, beams within the beat, dots, hollow heads) from each strike's slot length on either grid — a note clipped short is written as its own value with the rest as a gap, unless it is under a slot, when it is the sixteenth its strikes are spaced at. `slotAt` reads the slot under a click, the inverse of the playhead's place. Two bars share a row where a second nearly fits. |
 | `css/tab.css` | The tab's look, one sheet for the pages that draw it (jam, drills, parts, review, the deep dives): a 17px string gap, 11px bold numbers, thin strings, the rhythm's stems and beams, and the pane a long tab scrolls in. Each page keeps only its own playing colour and playhead. |
 | `tab-pane.js` | A long tab in a pane: more than two rows scrolls, showing as many rows as were last asked for (kept in localStorage, one setting for every page), with a control beside its bottom corner for more or fewer — in a gutter, so nothing sits between the tab and the neck — and the row being played kept in view. Used by the jam tab, the drills and the example player. |
 | `parts-guide-data.js` | What the parts page says about each style and part: progression, tempo, what the rhythm and notes are made of, where the idiom comes from. Pure data. |
 | `parts-guide.js` | The parts page (`parts.html`): every part written out and playable, in any reading. |
-| `example-player.js` | The player the parts page and the deep dives share: draws a realised part as tab and loops it over the style's band, the tab following and, where the card has a neck, its dots lit as the notes sound; tells the page when the playhead enters a bar (`onBar`) and when the loop stops. |
-| `hendrix-guide.js` | The Hendrix deep dive (`hendrix.html`): the grips drawn, the examples, exercises and studies realised from the Hendrix genre and played, each with its link into Practice, the songs and the sources. |
+| `example-player.js` | The player the parts page and the deep dives share: draws a realised part as tab and loops it over the style's band, the tab following and, where the card has a neck, its dots lit as the notes sound; tells the page when the playhead enters a bar (`onBar`) and when the loop stops. `shapeOfBar` names the grip a bar is played in, `gripFor` fingers the whole hand for the diagrams. |
+| `hendrix-guide.js` | The Hendrix deep dive (`hendrix.html`): the grips drawn, the Start-here path, the examples, exercises and studies realised from the Hendrix genre and played — each with its neck, its fingering switch, its expand and its link into the jam or the drills — the teachers' section, the songs and the sources. |
 | `js/styles-base.js` | The band patterns the app started with: the base `STYLES`, one entry per style with its feels. |
 | `js/styles.js` | Resolves what the app plays: the proposals merged over the base patterns, parts and guide at load (`GT.styles`), with the base kept for the review page. |
 | `js/band.js` | The band one slot at a time — kit, comp, bass, the approach and the push on the last eighth, the fill on the last bar, stop-time — used by the jam tab, the parts page and the review page alike. |
@@ -1573,10 +1620,11 @@ by what each part does:
 | `fretboard-view.js` | The jam tab's fretboard panel: the six views, the legend, the hover spotlight, the follow-playback highlighting. |
 | `jam.js` | The jam tab (once "Practice", and "CAGED practice" before that — both names still open it): progression generation, the chord display and settings, and the playback transport. |
 | `stage.js` | The jam tab's chrome: the style picker, the popover menus, the phone's controls toggle, the progression name in the chart head, the beat line, the draggable position window, and the site menu. Reads what the other modules draw; keeps no state. |
-| `chord-finder.js` | Chord finder tab: voicing search, fingering, chord diagrams. |
+| `chord-finder.js` | Chord finder tab: voicing search, chord diagrams; the fingering model it uses is `fingering.js`. |
+| `fingering.js` | The left hand on a grip: the chord finder's model (a unit a finger, barres where the hand would need more than four, each finger the one its fret says) and `handFor`, which puts it under a page's rule — the thumb over the low E on an E-shape barre — for the chord diagrams the tab shows. Shared by the chord finder, ear training and the example player. |
 | `reverse-finder.js` | Reverse chord finder tab: click targets over the shared neck, and the name lookup. |
-| `drills.js` | The drills tab: the five generators (changes, scale, picking, crossing, arpeggio), the page's state and its link, the controls, the neck and the player wired to them. |
-| `neck-follow.js` | A neck that follows a part, for any page that plays one: the chord as it's fretted or the notes the part may play, drawn with neck.js so the player can light them. Shared by the Hendrix deep dive and the drills tab. |
+| `drills.js` | The drills tab: the five generators (changes, scale, picking, crossing, arpeggio), the page's state and its link, the controls (count-in, a position a chord, the fingering over the tab), the neck and the player wired to them. |
+| `neck-follow.js` | A neck that follows a part, for any page that plays one: the chord as it's fretted (the shape the bar's strums sit in, or the grip itself when it is no CAGED shape) or the notes the part may play, drawn with neck.js so the player can light them. Shared by the Hendrix deep dive and the drills tab. |
 | `tests-drills.js` | The drills' tests: what each kind realises, the link, the controls. Loads before `drills.js`. |
 | `ear-training.js` | Ear training tab: what's on the neck — a chord shape, a pentatonic box or a scale box — and the drill over its notes. Draws and sounds chords from the chord finder's own code and boxes from the jam tab's, so no tab can drift from another. |
 | `tooltips.js` | The (i) info bubbles. |

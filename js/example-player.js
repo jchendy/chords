@@ -32,28 +32,87 @@
   function shapeOfBar(chord, barNotes){
     const strums = barNotes.filter(n => n.strum && !n.next);
     if (!strums.length || !chord) return '';
+    // the voicing the strums were written as says what the hand holds:
+    // the 7♯9 and 9th grips, a power chord, a shell — whatever the chord's
+    // name; a plain strum is named by the CAGED shape its strings match
+    const voicings = new Set(strums.map(n => n.voicing || 'full'));
+    if (voicings.has('sharp9')) return '7♯9 grip';
+    if (voicings.has('ninth')) return '9th grip';
+    if (voicings.has('power') && [...voicings].every(v => v === 'power' || v === 'bass' || v === 'fifth')) return 'power chord';
+    if (voicings.has('shell') && voicings.size === 1) return 'shell';
     // every string the bar's strums touch — the grip the hand holds, whether
     // a strike is the whole of it or the thumb's bass note alone
     const cells = [...new Map(strums.map(n => [`${n.string}:${n.fret}`, { string: n.string, fret: n.fret }])).values()];
     if (cells.length < 3) return '';
-    // a 7♯9 or a 9th on the A, D, G and B strings is its own grip, not a
-    // CAGED shape that happens to share three of its notes
     if (chord.ext && (chord.ext.includes(3) || chord.ext.includes(2) || chord.ext.includes(14))){
       const strings = new Set(cells.map(c => c.string));
       if ([4, 3, 2, 1].every(x => strings.has(x)) && !strings.has(5)) return chord.ext.includes(3) ? '7♯9 grip' : '9th grip';
     }
     const name = GT.fretboard.identifyCagedShape(cells, SEMITONE[chord.note] % 12, chord.quality === 'min');
-    return name ? `${name} shape` : '';
+    if (!name) return '';
+    // the thumb's bass note and the split chord, and nothing else: say so
+    const split = [...voicings].every(v => v === 'bass' || v === 'mid' || v === 'fifth') && voicings.has('mid');
+    return split ? `${name} shape, split` : `${name} shape`;
   }
-  function drawTab(host, feel, chords, notes){
+  // the grip a bar's strums hold when it isn't a CAGED shape — the 7♯9 and
+  // 9th grips, a power chord, a shell — as a placement the neck draws as it
+  // is, named as the tab names it; a CAGED shape is left to the neck, which
+  // draws the whole grip the hand holds, struck strings or not
+  function gripOfBar(chord, barNotes){
+    const name = shapeOfBar(chord, barNotes);
+    if (!name || / shape/.test(name)) return null;
+    const strums = barNotes.filter(n => n.strum && !n.next);
+    const cells = [...new Map(strums.map(n => [`${n.string}:${n.fret}`, { string: n.string, fret: n.fret }])).values()];
+    const frets = cells.map(c => c.fret).filter(f => f > 0);
+    const meanFret = frets.length ? frets.reduce((a, b) => a + b, 0) / frets.length : 0;
+    return { name, cells, given: true, grip: true, fretMin: frets.length ? Math.min(...frets) : 0, fretMax: frets.length ? Math.max(...frets) : 0, meanFret };
+  }
+  // the hand a bar's strums hold, fingered: the grip the neck draws for
+  // the bar — the CAGED shape the strums sit in, whole, or the grip they
+  // are when it is no CAGED shape — one cell a string (where the shape and
+  // a strum disagree on a string, the strum wins: that is what the hand
+  // frets), the finger of each cell from js/fingering.js, and which
+  // strings the bar strikes. `win` is the bar's hand position; `thumb`
+  // the thumb over the neck on an E-shape barre.
+  function gripFor(chord, barNotes, win, { thumb = false } = {}){
+    const strums = barNotes.filter(n => n.strum && !n.next);
+    if (!strums.length || !chord) return null;
+    const struck = new Set(strums.map(n => `${n.string}:${n.fret}`));
+    const given = gripOfBar(chord, barNotes);
+    const struckCells = [...new Map(strums.map(n => [n.string, { string: n.string, fret: n.fret }])).values()];
+    const { markers, placement } = GT.neckFollow.chordNeck(chord, win, [], given, struckCells);
+    const byString = new Map(markers.filter(m => m.shapes).map(m => [m.string, { string: m.string, fret: m.fret }]));
+    struckCells.forEach(c => byString.set(c.string, c));
+    const cells = [...byString.values()].sort((a, b) => b.string - a.string);
+    const hand = GT.fingering.handFor(cells, { thumb, allowed: new Set(GT.theory.chordPcs(chord)) });
+    const fingered = cells.map(c => ({ ...c, finger: hand.fingers.get(`${c.string}:${c.fret}`), struck: struck.has(`${c.string}:${c.fret}`) }));
+    return { name: given ? given.name : `${placement.name} shape`, cells: fingered, barres: hand.barres, base: hand.base, rows: hand.rows,
+             key: fingered.map(c => `${c.string}:${c.fret}:${c.finger}`).join(',') };
+  }
+  // `opts.fingering`, when given, puts the grips over the tab: `{ thumb,
+  // windowOf }`, windowOf the hand position of a bar; a diagram is marked
+  // on a bar whose grip differs from the last one shown. Single notes get
+  // no finger: a run's fingering is the box it comes from, which the neck
+  // shows, and a rule for every fill would be wrong as often as right.
+  function drawTab(host, feel, chords, notes, opts = {}){
     const grid = feel.grid;
+    const fing = opts.fingering || null;
+    const barNotes = i => notes.filter(n => n.bar === i);
+    const grips = fing ? chords.map((c, i) => gripFor(c, barNotes(i), fing.windowOf(i), fing)) : [];
+    let lastKey = null;
     const example = {
       grid,
-      bars: chords.map((c, i) => ({ startSlot: i * grid, chord: displayName(c), numeral: c.numeral, shape: shapeOfBar(c, notes.filter(n => n.bar === i)) })),
+      fingering: !!fing,
+      bars: chords.map((c, i) => {
+        let grip = null;
+        if (fing && grips[i] && grips[i].key !== lastKey){ grip = grips[i]; lastKey = grips[i].key; }
+        return { startSlot: i * grid, chord: displayName(c), numeral: c.numeral, shape: shapeOfBar(c, barNotes(i)), role: notes.roles ? (notes.roles[i] || '') : '', grip };
+      }),
       notes: notes.map(n => ({
         string: n.string, fret: n.fret, at: n.bar * grid + n.at, dur: n.dur,
         bend: n.bend, slide: n.slide, tech: n.tech, to: n.to, soft: n.soft, mute: n.mute,
         vib: n.vib, trem: n.trem, rake: n.rake, ghost: n.ghost, trill: n.trill, trillTo: n.trillTo, tabHide: n.tabHide, tabDur: n.tabDur, wah: n.wah, unison: n.unison,
+        strum: n.strum, stroke: n.stroke, voicing: n.voicing,
         tone: !n.strum && (n.mute || n.ghost) ? 'muted' : undefined,
         lead: !n.strum || !notes.some(m => m.bar === n.bar && m.at === n.at && m.strum && m.spread > n.spread),
       })),
@@ -90,6 +149,7 @@
     playing.card.querySelector('.tab-playhead').setAttribute('hidden', '');
     playing.card.querySelectorAll('.tab-note.now').forEach(g => g.classList.remove('now'));
     playing.card.querySelector('.play').textContent = 'Play';
+    showCount(playing.card, null);
     playing.card.querySelectorAll('.note-dot.sounding').forEach(g => g.classList.remove('sounding'));
     const { hooks } = playing;
     playing = null;
@@ -119,6 +179,14 @@
     // the moment the first slot played lands at; a bar begun part-way
     // counts its start back from it
     nextBarTime = ctx.currentTime + 0.1;
+    // a count-in when the page asks (`hooks.countIn`, beats): the hat for a
+    // bar, the first heavier, the beat shown on the card as it goes
+    if (hooks.countIn){
+      const beats = hooks.countIn, spb = 60 / tempo;
+      for (let k = 0; k < beats; k++) audio.playHiHat(nextBarTime + k * spb, k === 0 ? 0.55 : 0.32);
+      playing.countFrom = nextBarTime; playing.countSpb = spb; playing.countBeats = beats;
+      nextBarTime += beats * spb;
+    }
     log = [];
     tick();
     requestAnimationFrame(follow);
@@ -175,10 +243,34 @@
   // going hidden, the queue is filled to the wider cushion before the timers slow
   document.addEventListener('visibilitychange', () => { if (playing && document.hidden){ clearTimeout(timer); tick(); } });
 
+  // the count-in's beat, by the first bar of the tab; nothing there otherwise
+  function showCount(card, beat){
+    let el = card.querySelector('.count-in');
+    if (beat == null){ if (el) el.hidden = true; return; }
+    if (!el){
+      const host = card.querySelector('.tab');
+      const wrap = host && host.parentNode && host.parentNode.classList.contains('tab-pane-wrap') ? host.parentNode : null;
+      if (!wrap) return;
+      el = document.createElement('div');
+      el.className = 'count-in';
+      wrap.insertBefore(el, host);
+    }
+    el.textContent = String(beat);
+    el.hidden = false;
+  }
   function follow(){
     if (!playing) return;
     const now = audio.ctx().currentTime;
     const { card, metrics } = playing;
+    if (playing.countFrom != null){
+      if (now < playing.countFrom + playing.countBeats * playing.countSpb - 0.0005){
+        showCount(card, Math.min(playing.countBeats, Math.max(1, Math.floor((now - playing.countFrom) / playing.countSpb) + 1)));
+        requestAnimationFrame(follow);
+        return;
+      }
+      showCount(card, null);
+      playing.countFrom = null;
+    }
     const heads = log.filter(e => e.head && e.time <= now);
     const at = heads.length ? heads[heads.length - 1].slot : null;
     const head = card.querySelector('.tab-playhead');
@@ -254,5 +346,5 @@
     card.querySelectorAll('.neck .note-dot').forEach(g => g.classList.toggle('sounding', cells.has(`${g.dataset.string}:${g.dataset.fret}`)));
   }
 
-  GT.examplePlayer = { windowFor, drawTab, shapeOfBar, play, stop, seekable, seekTo, playing: () => playing };
+  GT.examplePlayer = { windowFor, drawTab, shapeOfBar, gripOfBar, gripFor, play, stop, seekable, seekTo, playing: () => playing };
 })();

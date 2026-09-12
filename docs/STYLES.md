@@ -133,6 +133,13 @@ A genre with `engine: true` in its proposal (Hendrix) is realised on the
 review page by the app's own `realise`, not the review page's superset
 realiser, since it was written for features that are in the engine.
 
+A bar handed to `realise` may carry a `window` of its own (`{ chord,
+window }`): the Hendrix page gives each chord a position, so the hand moves
+with the changes and each bar is realised in its window, the base window
+standing for the rest. The engine says what each bar was written from in
+`roles` — figure, variant, fill, lead, turnaround, stop-time — which the tab
+writes over the bar.
+
 ## Register
 
 Lines go where the players put them. Every genre's parts use the whole box,

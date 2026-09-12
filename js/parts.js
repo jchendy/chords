@@ -1862,39 +1862,51 @@
     opts = { ...opts, blues: !!part.blues, plucked: !!part.fingers };
     const out = [];
     const stopBars = new Set();
+    const roles = [];                      // what each bar was written from
     const pick = list => list[Math.floor(roll() * list.length)];
-    const cells = cellsIn(opts.window);
+    // The hand's position: the window in `opts`, or a bar's own (`bar.window`)
+    // where the caller has the hand moving chord to chord — the thumb barre
+    // walking up the neck with a ballad's changes.
+    const baseOpts = opts, baseCells = cellsIn(opts.window);
     const blend = hasLeads(part) ? (feat.blend || 'mixed') : 'rhythm';
     const leadShare = part.leadChance == null ? 0.5 : part.leadChance;
     const leadBars = [];
     let figureTurn = 0;
     bars.forEach((bar, b) => {
       if (!bar.chord) return;
+      const opts = bar.window ? { ...baseOpts, window: bar.window } : baseOpts;
+      const cells = bar.window ? cellsIn(bar.window) : baseCells;
       const next = bars[(b + 1) % bars.length].chord;
       const changing = displayName(next) !== displayName(bar.chord);
       const last = b === bars.length - 1;
       const fillBar = (b % phrase) === phrase - 1;
       let written;
       const turnarounds = part.turnarounds || (part.turnaround ? [part.turnaround] : null);
-      if (last && turnarounds) written = pick(turnarounds);
+      if (last && turnarounds){ written = pick(turnarounds); roles[b] = 'turnaround'; }
       else if (fillBar){
         if (part.stops && part.stops.length && roll() < (part.stopChance == null ? 0.2 : part.stopChance)){
           written = pick(part.stops);
           stopBars.add(b);
+          roles[b] = 'stop-time';
         } else if (blend === 'lead' || (blend === 'mixed' && roll() < leadShare)){
           written = pick(part.leads);
           leadBars.push(b);
+          roles[b] = 'lead';
         } else {
           const situation = (changing ? part.fillsOnChange : part.fillsOnStay) || [];
           const list = situation.concat(part.fills || []);
           written = pick(list.length ? list : (part.fills || [part.figure]));
+          roles[b] = 'fill';
         }
       } else if (blend === 'lead'){
         written = pick(part.leads);
         leadBars.push(b);
+        roles[b] = 'lead';
       } else {
         const figures = [part.figure, ...(part.variants || [])];
-        written = part.figureMode === 'roll' ? pick(figures) : figures[figureTurn++ % figures.length];
+        const which = part.figureMode === 'roll' ? Math.floor(roll() * figures.length) : figureTurn++ % figures.length;
+        written = figures[which];
+        roles[b] = which === 0 ? 'figure' : 'variant';
         if (part.tails && part.tails.length && roll() < (part.tailChance == null ? 0.5 : part.tailChance)){
           written = written.filter(w => w.at < grid / 2).concat(pick(part.tails));
         }
@@ -2018,6 +2030,7 @@
       notes.forEach(n => out.push({ ...n, bar: b }));
     });
     out.stopBars = stopBars;
+    out.roles = roles;                     // figure, variant, fill, lead, turnaround or stop-time, per bar
     out.leadBars = leadBars;               // the bars written from the lead lines
     out.leadRoll = leadBars.length > 0;
     return out;

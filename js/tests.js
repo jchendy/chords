@@ -1447,6 +1447,19 @@
       t.ok(bass && bass.string >= 3 && bass.midi % 12 === SEMITONE['F#'] % 12 && bass.reach, `the thumb's bass note is the root on a bass string, reached past the window (${bass ? bass.string + ':' + bass.fret : 'none'})`);
     }
     {
+      // the hand moving: a bar may carry its own window, and its notes land
+      // there — the thumb barre walking from open Em to G at the 3rd fret
+      const G = chordFromName('G'), Em = chordFromName('Em');
+      const walk = realise({ name: 'walk', figure: [s(0, 4, 0.9), s(8, 4, 0.9)], variants: [], fills: [[s(0, 4, 0.9), s(8, 4, 0.9)]] },
+        [{ chord: Em, window: { min: 0, max: 3 } }, { chord: G, window: { min: 3, max: 6 } }, { chord: A, window: { min: 5, max: 8 } }, { chord: Em, window: { min: 0, max: 3 } }], 1, { ...opts, window: { min: 0, max: 3 } }, { grid: 16 });
+      const inWin = (b, lo, hi) => walk.filter(x => x.bar === b).every(x => x.reach || (x.fret >= lo && x.fret <= hi));
+      t.ok(inWin(0, 0, 3) && inWin(1, 3, 6) && inWin(2, 5, 8) && inWin(3, 0, 3) && walk.filter(x => x.bar === 1).some(x => x.fret >= 3), 'a bar with a window of its own is played in it (Em open, G at the 3rd, A at the 5th)');
+      // ...and every bar says what it was written from
+      const rolesOf = realise({ name: 'r', figure: [s(0)], variants: [[s(4)]], fills: [[n(0, 7)]], leads: [[n(0, 12)]] }, barsOf([A, A, A, A]), 3, opts, { grid: 16, blend: 'lead' });
+      const rf = realise({ name: 'r', figure: [s(0)], variants: [[s(4)]], fills: [[n(0, 7)]] }, barsOf([A, A, A, A]), 3, opts, { grid: 16 });
+      t.ok(rf.roles.join(',') === 'figure,fill,variant,fill' && rolesOf.roles.every(r => r === 'lead'), `the bars' roles are named (${rf.roles.join(',')}; lead pass ${rolesOf.roles.join(',')})`);
+    }
+    {
       // easy mode: no bends, hammer-ons, pull-offs or slides; sixteenths back on the eighths; a written easy version used as is
       // (the hammer-on lasts four slots: played plain it is two picked notes, the second halfway)
       const busy = { name: 'e', figure: [s(0), n(1, 4, 1), { at: 3, iv: 5, up: 2, dur: 2, vel: 0.8, tech: 'bend' }, { at: 6, iv: 3, iv2: 4, dur: 4, vel: 0.8, tech: 'hammer' }, n(12, 7, 2, 0.8, { ghost: true })], variants: [], fills: [[n(0, 2)]] };
@@ -2424,7 +2437,7 @@
     'Bm': 'x-2-4-4-3-2  x-1-3-4-2-1  barre 2@0-4',
     'B': 'x-2-4-4-4-2  x-1-2-3-4-1  barre 2@0-4',
     'Bb': 'x-1-3-3-3-1  x-1-2-3-4-1  barre 1@0-4',
-    'F#m': '2-4-4-2-2-2  1-2-3-1-1-1  barre 2@0-5',
+    'F#m': '2-4-4-2-2-2  1-3-4-1-1-1  barre 2@0-5',
     'C7': 'x-3-2-3-1-0  x-3-2-4-1-0',
     'G7': '3-2-0-0-0-1  3-2-0-0-0-1',
     'D7': 'x-x-0-2-1-2  x-x-0-2-1-3',
@@ -2666,6 +2679,123 @@
     t.equal(bad.join('; '), '', `The tab knows the slot under a click (${bars * grid} slots over ${m.rows} rows)`);
   }
 
+  // Two bars share a row when a second nearly fits: the slots squeeze (to
+  // 16px at the tightest) rather than leave a bar alone on each row; a
+  // width that fits two at full size, or cannot fit two at all, is left as
+  // it was
+  function testTwoBarsShareARow(t){
+    const example = { grid: 16, totalSlots: 64, bars: [0, 16, 32, 48].map(startSlot => ({ startSlot, chord: 'C' })), notes: [] };
+    const at = w => GT.tab.build(example, w).metrics;
+    const bad = [];
+    const tight = at(600);                       // 560 usable: two bars at 17px a slot
+    if (tight.barsPerRow !== 2 || tight.slotW !== 17 || tight.rows !== 2) bad.push(`at 600px: ${tight.barsPerRow} bars a row at ${tight.slotW}px, ${tight.rows} rows`);
+    const edge = at(552);                        // 512 usable: two bars at the tightest, 16px
+    if (edge.barsPerRow !== 2 || edge.slotW !== 16) bad.push(`at 552px: ${edge.barsPerRow} bars a row at ${edge.slotW}px`);
+    const narrow = at(480);                      // 440 usable: a second bar cannot fit — one a row, full size
+    if (narrow.barsPerRow !== 1 || narrow.slotW !== 24 || narrow.rows !== 4) bad.push(`at 480px: ${narrow.barsPerRow} bars a row at ${narrow.slotW}px, ${narrow.rows} rows`);
+    const wide = at(1000);                       // 960 usable: two bars at full size, nothing squeezed
+    if (wide.barsPerRow !== 2 || wide.slotW !== 24) bad.push(`at 1000px: ${wide.barsPerRow} bars a row at ${wide.slotW}px`);
+    t.equal(bad.join('; '), '', 'Two bars share a row when a second nearly fits (17px a slot at 600px; one a row at 480px)');
+  }
+
+  // The left hand is fingered the way the shapes are held: the finder's
+  // model, each finger the one its fret says, under the page's rule (the
+  // thumb over the low E on an E-shape barre)
+  function testTheHandIsFingered(t){
+    const { handFor, handString } = GT.fingering;
+    const cells = pat => pat.split('-').map((f, i) => f === 'x' ? null : { string: 5 - i, fret: Number(f) }).filter(Boolean);
+    const bad = [];
+    const G = cells('3-5-5-4-3-3'), Gm = cells('3-5-5-3-3-3'), hx = cells('x-7-6-7-8-x'), B9 = cells('x-2-1-2-2-2'), C = cells('x-3-2-0-1-0');
+    const hand = (cs, o) => handString(handFor(cs, o), cs);
+    if (hand(G, { thumb: true }) !== 'T-3-4-2-1-1') bad.push(`the thumb-over E shape is ${hand(G, { thumb: true })}`);
+    if (hand(G) !== '1-3-4-2-1-1') bad.push(`the E-shape barre is ${hand(G)}`);
+    if (hand(Gm, { thumb: true }) !== 'T-3-4-1-1-1') bad.push(`the thumb-over E shape, minor, is ${hand(Gm, { thumb: true })}`);
+    if (hand(hx) !== 'x-2-1-3-4-x') bad.push(`the 7♯9 grip is ${hand(hx)}`);
+    if (hand(B9) !== 'x-2-1-3-3-3') bad.push(`the 9th grip is ${hand(B9)}`);
+    if (hand(C) !== 'x-3-2-0-1-0') bad.push(`open C is ${hand(C)}`);
+    const th = handFor(G, { thumb: true });
+    const barre = th.barres.find(b => b.finger === 1);
+    if (!barre || barre.toString !== 1 || barre.fromString !== 0) bad.push(`the index lies over ${barre ? `strings ${barre.fromString}–${barre.toString}` : 'nothing'} beside the thumb, not B and e`);
+    const nine = handFor(B9);
+    if (!nine.barres.some(b => b.finger === 3 && b.toString === 2 && b.fromString === 0)) bad.push('the 9th grip has no ring-finger bar across G, B and e');
+    const hxh = handFor(hx);
+    if (hxh.base !== 6 || hxh.rows !== 4) bad.push(`the 7♯9 diagram starts at fret ${hxh.base} with ${hxh.rows} rows`);
+    if (handFor(C).base !== 1) bad.push('open C is not drawn from the nut');
+    t.equal(bad.join('; '), '', 'The hand is fingered: thumb over the E shape, the grips as they are held');
+  }
+
+  // The tab shows the fingering when asked: a chord diagram where a grip is
+  // marked, a taller band to hold it, no diagram where none is marked, and
+  // the click and the playhead still agreeing on every slot
+  function testTheTabShowsTheFingering(t){
+    const grid = 16;
+    const grip = { name: 'E shape', base: 1, rows: 4, barres: [{ finger: 1, fret: 3, fromString: 0, toString: 1 }],
+                   cells: [{ string: 5, fret: 3, finger: 'T', struck: true }, { string: 4, fret: 5, finger: 3, struck: false }, { string: 3, fret: 5, finger: 4, struck: true }, { string: 2, fret: 4, finger: 2, struck: true }, { string: 1, fret: 3, finger: 1, struck: true }, { string: 0, fret: 3, finger: 1, struck: false }] };
+    const bars = [{ startSlot: 0, chord: 'G', grip }, { startSlot: 16, chord: 'G' }, { startSlot: 32, chord: 'C', grip: { ...grip, base: 8 } }, { startSlot: 48, chord: 'C' }];
+    const notes = [{ string: 5, fret: 3, at: 0, dur: 4, strum: true }, { string: 2, fret: 5, at: 4, dur: 2 }, { string: 0, fret: 0, at: 24, dur: 2 }];
+    const example = { grid, totalSlots: 64, bars, notes, fingering: true };
+    const built = GT.tab.build(example, 700);
+    const m = built.metrics;
+    const bad = [];
+    const grips = (built.markup.match(/class="tab-grip"/g) || []).length;
+    if (grips !== 2) bad.push(`${grips} chord diagrams drawn for two marked grips`);
+    if (m.rowTop !== 60) bad.push(`the band over the strings is ${m.rowTop}, not 60, with diagrams`);
+    const plain = GT.tab.build({ ...example, fingering: false }, 700).metrics;
+    if (plain.rowTop !== 28) bad.push(`without fingering the band is ${plain.rowTop}`);
+    if (/tab-grip/.test(GT.tab.build({ ...example, fingering: false }, 700).markup)) bad.push('fingering drawn when not asked for');
+    const none = GT.tab.build({ ...example, bars: bars.map(b => ({ ...b, grip: null })) }, 700).metrics;
+    if (none.rowTop !== 28) bad.push(`with no grip marked the band is ${none.rowTop}, not 28`);
+    if (!built.markup.includes('class="nut"')) bad.push('the open-position diagram has no nut');
+    if (!/class="base"[^>]*>8</.test(built.markup)) bad.push('the diagram up the neck is not marked with its fret');
+    if (m.rows < 2) bad.push(`the tab did not wrap (${m.rows} rows)`);
+    for (let slot = 0; slot < 64; slot++){
+      const p = GT.tab.playheadPos(slot, m);
+      if (GT.tab.slotAt(p.x + 1, p.y + 20, m) !== slot){ bad.push(`slot ${slot} reads back as ${GT.tab.slotAt(p.x + 1, p.y + 20, m)} with the taller band`); break; }
+    }
+    t.equal(bad.join('; '), '', 'The tab shows the fingering: a diagram a change of grip, and the click still lands');
+  }
+
+  // The example player fingers what it draws: a bar's grip is the whole
+  // hand (the strings it holds as well as the ones it strikes), the same
+  // grip over two bars is one diagram, single notes get no finger; and the
+  // neck follows the strums to the shape they sit in
+  function testTheExampleIsFingered(t){
+    const { chordFromName } = GT.theory;
+    const G = chordFromName('G'), C = chordFromName('C');
+    const strum = (bar, cells, dur) => cells.map(([string, fret], i) => ({ bar, at: 0, dur, string, fret, strum: true, spread: i }));
+    const eShape = [[5, 3], [4, 5], [3, 5], [2, 4], [1, 3], [0, 3]];
+    const notes = [
+      ...strum(0, eShape, 6), { bar: 0, at: 4, dur: 2, string: 2, fret: 5 }, { bar: 0, at: 8, dur: 2, string: 2, fret: 5 },
+      ...strum(1, eShape, 4),
+      ...strum(2, [[4, 3], [3, 2], [2, 0], [1, 1], [0, 0]], 4),
+    ];
+    const chords = [G, G, C];
+    const win = { min: 3, max: 6 };
+    const host = document.createElement('div');
+    document.body.appendChild(host);
+    const bad = [];
+    try {
+      GT.examplePlayer.drawTab(host, { grid: 16, beats: 4 }, chords, notes, { fingering: { thumb: true, windowOf: () => win } });
+      const grips = host.querySelectorAll('.tab-grip').length;
+      if (grips !== 2) bad.push(`${grips} diagrams for G, G, C`);
+      const g = GT.examplePlayer.gripFor(G, notes.filter(n => n.bar === 0), win, { thumb: true });
+      const hand = g ? [5, 4, 3, 2, 1, 0].map(s => { const c = g.cells.find(x => x.string === s); return c ? c.finger : 'x'; }).join('-') : 'none';
+      if (hand !== 'T-3-4-2-1-1') bad.push(`the E shape at 3 is fingered ${hand}`);
+      if (g && g.cells.some(c => !c.struck)) bad.push('a string the bar strikes is drawn as only held');
+      if (host.querySelector('.tab-finger')) bad.push('a single note was given a finger');
+      const bare = GT.examplePlayer.drawTab(host, { grid: 16, beats: 4 }, chords, notes);
+      if (host.querySelector('.tab-grip')) bad.push('fingering drawn when not asked for');
+      if (bare.rowTop !== 28) bad.push('the plain tab has the taller band');
+      // the neck: the shape the strums sit in, not the one nearest the window
+      const struck = eShape.map(([string, fret]) => ({ string, fret }));
+      const neck = GT.neckFollow.chordNeck(G, { min: 0, max: 3 }, [], null, struck);
+      if (neck.placement.name !== 'E' || neck.placement.fretMin !== 3) bad.push(`the neck draws the ${neck.placement.name} shape at ${neck.placement.fretMin} for strums in the E shape at 3`);
+      const near = GT.neckFollow.chordNeck(G, { min: 0, max: 3 }, []);
+      if (near.placement.name === 'E' && near.placement.fretMin === 3) bad.push('without the strums the neck no longer draws the shape nearest the window');
+    } finally { host.remove(); }
+    t.equal(bad.join('; '), '', 'The example player fingers the tab: the whole hand a change, no finger a note, the neck on the shape struck');
+  }
+
   async function run(){
     const results = [];
     const t = {
@@ -2679,6 +2809,10 @@
       ['Chord finder keeps its known shapes', testBaselineShapesSurvive],
       ['The tab writes its rhythm', testTheTabWritesItsRhythm],
       ['The tab knows what is under a click', testTheTabKnowsWhatIsUnderAClick],
+      ['Two bars share a row', testTwoBarsShareARow],
+      ['The hand is fingered', testTheHandIsFingered],
+      ['The tab shows the fingering', testTheTabShowsTheFingering],
+      ['The example player fingers the tab', testTheExampleIsFingered],
       ['Chord finder output is identifiable in reverse', testFinderOutputIsIdentifiable],
       ['Chord finder shows the everyday grips', testCanonicalGrips],
       ['Chord finder has the grips Hendrix played, tagged', testHendrixShapesInTheFinder],

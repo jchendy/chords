@@ -33,6 +33,37 @@
   .side a{ display:block; padding:4px 10px; border-left:2px solid var(--line); color:var(--muted); text-decoration:none; font-size:13px; line-height:1.35; }
   .side a:hover{ color:var(--ink); }
   .side .entry.active > a{ color:var(--a); border-left-color:var(--a); }
+  .side-head{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .side-head .side-title{ margin:0; }
+  .toc-fold{ width:24px; height:24px; padding:0; border:1px solid var(--line2); border-radius:999px; background:transparent; color:var(--muted); font:600 15px/1 Inter,system-ui,sans-serif; cursor:pointer; }
+  .toc-fold:hover{ border-color:var(--a); color:var(--ink); }
+  .side-opt{ display:flex; align-items:center; gap:6px; margin:14px 0 0 10px; font-size:12px; color:var(--muted); }
+  .side-opt input{ accent-color:var(--a); }
+  /* folded: the column is the button alone, and the page takes the width */
+  .page.toc-folded{ grid-template-columns:28px minmax(0, 1fr); gap:18px; }
+  .page.toc-folded .side .links, .page.toc-folded .side .side-title, .page.toc-folded .side .side-opt{ display:none; }
+  /* start here, and the lessons */
+  .start{ margin:18px 0 8px; padding:14px 18px 12px; border:1px solid var(--a); border-radius:12px; background:var(--panel); max-width:80ch; }
+  .start p{ margin:0 0 8px; }
+  .lessons{ margin:0; padding-left:22px; }
+  .lessons li{ margin:0 0 7px; line-height:1.45; }
+  .lessons i{ color:var(--muted); }
+  /* the cards: how hard, and which fingers */
+  .chip{ padding:1px 8px; border-radius:999px; border:1px solid var(--line2); font-size:11px; letter-spacing:.04em; text-transform:uppercase; }
+  .chip.beginner{ color:#8ec93f; border-color:#3f5a26; }
+  .chip.intermediate{ color:var(--a); border-color:#5a4520; }
+  .chip.advanced{ color:#e069a6; border-color:#5a2a46; }
+  .grip .basis{ margin:4px 0 4px; font-size:.76rem; color:var(--muted2); font-style:italic; }
+  /* the songs: what to listen for */
+  .song .listen-lbl{ margin:6px 0 2px; font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted2); }
+  .song ul.listen{ margin:0 0 8px; padding-left:18px; color:var(--muted); font-size:.88rem; }
+  .song ul.listen li{ margin:0 0 2px; }
+  /* for teachers */
+  table.faults{ font-size:.86rem; max-width:90ch; }
+  table.faults td{ color:var(--muted); }
+  table.faults td:first-child{ color:var(--ink); font-weight:600; white-space:nowrap; }
+  ul.checklist{ padding-left:20px; max-width:80ch; color:var(--muted); }
+  ul.checklist li{ margin:0 0 5px; }
   /* the open section lists what's in it */
   .side .subs{ display:none; }
   .side .entry.active .subs{ display:block; padding:2px 0 6px; }
@@ -169,12 +200,26 @@
 <body>
 <div class="top"><a class="site" href="index.html">Jeff's Guitar Tools</a><span class="crumb"><a href="index.html#style-deep-dives">Style Deep Dives</a> · Hendrix</span></div>
 <div class="page">
-<nav class="side" aria-label="Contents"><p class="side-title">Contents</p><div class="links" id="toc"></div></nav>
+<nav class="side" aria-label="Contents"><div class="side-head"><p class="side-title">Contents</p><button type="button" class="toc-fold" id="tocFold" aria-expanded="true" title="Fold the contents away for a wider tab">‹</button></div><div class="links" id="toc"></div><label class="side-opt"><input type="checkbox" id="countInToggle"> Count in on Play</label></nav>
 <main>
   <p class="kicker">Style deep dive 1</p>
   <h1>Learn Hendrix style: the hands, the shapes, the feels</h1>
-  <p class="lede">What Jimi Hendrix actually does on the guitar, taken apart the way a course would take it apart — the thumb over the neck and the chord it opens up, the pentatonic box under that chord and the box above it, the Hendrix chord, the minor pentatonic against a major chord, the wah rocking with the pick — and put back together as eight feels with rhythm, lead and mixed parts in each, every one of them playable here and a link away from the Jam tab. The songs are analysed as reference points; the lines are written from the idiom, not copied. Every claim is cited at the foot of the page.</p>
+  <p class="lede">What Jimi Hendrix actually does on the guitar, taken apart the way a course would take it apart — the thumb over the neck and the chord it opens up, the pentatonic box under that chord and the box above it, the Hendrix chord, the minor pentatonic against a major chord, the wah rocking with the pick — and put back together as eight feels with rhythm, lead and mixed parts in each, every one of them playable here and a link away from the Jam tab and the Drills tab. The songs are analysed as reference points; the lines are written from the idiom, not copied. Every claim is cited at the foot of the page.</p>
   <p class="note">He tuned a half-step down (E♭ standard) on most of the records, so what is <em>fingered</em> as E <em>sounds</em> as E♭.<sup class="c"><a href="#src-red-house">[6]</a></sup> Everything on this page is written in the fingered key, which is how players talk about it.</p>
+  <div class="start" id="start">
+    <p class="kicker">Start here</p>
+    <p>Eight lessons, in order. Each is a few things on this page: a grip, a figure, an exercise, a drill, an example to play along with, and a study to finish on. Every card says how hard it is and what tempo to start at; <b>Open in jam</b> or <b>Open in drills</b> puts it on the other tabs at that tempo.</p>
+    <ol class="lessons">
+      <li><b>The thumb and the split chord.</b> <a href="#grips">The E-shape grip</a> · <a href="#x1">exercise 1</a> · <a href="#x2">exercise 2</a> · <a href="#c-wing">the Little Wing changes</a> · <a href="#r-split">the part</a>. <i>Move on when</i> the bass note and the triad are two clean strokes at 50 BPM on Em, G, Am, Bm.</li>
+      <li><b>The colours, and the 6ths.</b> <a href="#grips">The sus4, 6 and add9 variations</a> · <a href="#x3">exercise 3</a> · <a href="#r-sixths">sliding 6ths</a> · <a href="#st1">the ballad study</a>. <i>Move on when</i> each hammered note is as loud as the chord under it.</li>
+      <li><b>The Hendrix chord.</b> <a href="#grips">The 7♯9 grip</a> · <a href="#x4">exercise 4</a> · <a href="#c-haze">the Purple Haze changes</a> · <a href="#r-stabs">the stabs and the riff</a> · <a href="#st2">the fuzz study</a>. <i>Move on when</i> only four notes sound.</li>
+      <li><b>The box under the chord.</b> <a href="#scaleNecks">The E-shape box and the box under the grip</a> · <a href="#sc1">the box up and down</a> · <a href="#sc3">into the box above</a> · <a href="#sc4">minor over major</a> · <a href="#x5">exercise 5</a>. <i>Move on when</i> the box at the 12th is even at four notes a beat.</li>
+      <li><b>The slow blues.</b> <a href="#grips">The 9th grip</a> · <a href="#x6">exercise 6</a> · <a href="#x7">exercise 7</a> · <a href="#c-house">the Red House changes</a> · <a href="#l-vocal">the vocal lead</a> · <a href="#st3">the twelve bars</a>. <i>Move on when</i> the bends arrive in pitch and the trill sits inside the triplet.</li>
+      <li><b>The funk and the wah.</b> <a href="#x9">exercise 9</a> · <a href="#r-scratch">the scratch</a> · <a href="#r-riff">the riff</a> · <a href="#l-funk">the wah lead</a> · <a href="#st5">the funk study</a>. <i>Move on when</i> the scratch is dead and the chord lands on the "and of 2".</li>
+      <li><b>The cycle and the walk-up.</b> <a href="#x10">exercise 10</a> · <a href="#c-joe">the changes</a> · <a href="#r-walk">the part</a> · <a href="#l-twelfth">the blues-scale lead</a> · <a href="#st4">the cycle study</a>. <i>Move on when</i> every 5th lands as the next root, on the beat.</li>
+      <li><b>The rest of the feels.</b> <a href="#r-hammered">The R&amp;B fills</a> · <a href="#r-waltz">the waltz</a> · <a href="#x8">the unison bend</a> · <a href="#l-fuzz">the fuzz lead</a> · <a href="#st6">the R&amp;B study</a> · <a href="#st7">the waltz study</a>. <i>Move on when</i> you can play a study through twice with the band.</li>
+    </ol>
+  </div>
 
   <!-- ================================================================== -->
   <section class="part" id="s1">
@@ -214,36 +259,37 @@
 
   <!-- ================================================================== -->
   <section class="part" id="s4">
-    <h2>4. Rhythm, in eight feels</h2>
+    <h2>4. Exercises</h2>
+    <p>In order, and before the parts: each is a part or a piece of one, at a tempo to start from. Play it here, then open it in Jam at the practice tempo, turn it up as it settles, and change the key. The line under each blurb says which fingers; the neck (on the card, or in Jam) lights the notes as they go.</p>
+    <div class="examples" id="exercises"></div>
+  </section>
+
+  <section class="part" id="s5">
+    <h2>5. Rhythm, in eight feels</h2>
     <p>Each example below is the app's engine playing a part from the Hendrix library over its band, drawn as tab with the rhythm under it. <b>Play</b> loops it here; <b>Open in jam</b> opens the Jam tab with the same key, progression, feel, part and roll, where you can change the position, the reading, the tempo and the blend. The tab is a rolled realisation: press Play in Jam and roll new fills to hear the part's other bars.</p>
     <div class="examples" id="rhythm"></div>
   </section>
 
-  <section class="part" id="s5">
-    <h2>5. Lead</h2>
+  <section class="part" id="s6">
+    <h2>6. Lead</h2>
     <p>Lead parts in each feel: pure lines, written against the chord they sit on so they follow the changes. The blues parts play the minor pentatonic over the major chords; the chord-melody and R&amp;B parts stay major.</p>
     <div class="examples" id="lead"></div>
   </section>
 
-  <section class="part" id="s6">
-    <h2>6. Both at once</h2>
+  <section class="part" id="s7">
+    <h2>7. Both at once</h2>
     <p>The parts that carry lead lines as well as a figure, heard with the blend on <b>Mixed</b>: rhythm in the figure bars, a lead line in about half the fill bars, the way a player who is the only guitarist does both. In Jam the same switch gives you Rhythm alone or Lead in every bar.</p>
     <div class="examples" id="mixed"></div>
   </section>
 
   <!-- ================================================================== -->
-  <section class="part" id="s7">
-    <h2>7. The songs, as reference points</h2>
+  <section class="part" id="s8">
+    <h2>8. The songs, as reference points</h2>
     <p>What happens in each record, with its key as fingered, its form and the devices to listen for — and where to find a tab of it (Ultimate Guitar and Songsterr are linked; the tab is theirs, the analysis is here). The parts on this page draw on the <em>way of playing</em> in each; none copies its lines. Chord progressions are common stock — the US Copyright Office's practice and the Second Circuit in the Ed Sheeran case both leave them outside copyright<sup class="c"><a href="#src-gwu">[30]</a> <a href="#src-sheeran">[30b]</a></sup> — so the changes are given as they are, and are in the Jam tab's preset list under <b>Hendrix</b>.</p>
     <div id="songs"></div>
   </section>
 
   <!-- ================================================================== -->
-  <section class="part" id="s8">
-    <h2>8. Exercises</h2>
-    <p>In order. Each is a part or a piece of one, at a tempo to start from; play it here, then open it in Jam, turn the tempo down and up, and change the key. The neck in Jam lights the notes as they go.</p>
-    <div class="examples" id="exercises"></div>
-  </section>
 
   <!-- ================================================================== -->
   <section class="part" id="s9">
@@ -254,14 +300,45 @@
 
   <!-- ================================================================== -->
   <section class="part" id="s10">
-    <h2>10. How this was made</h2>
+    <h2>10. For teachers</h2>
+    <p>What each lesson is for, what goes wrong first, and how to tell when it is learned. The lessons are the ones in <a href="#start">Start here</a>; each names its cards. Every fingering on this page says whether the sources describe it or it is the usual way (the tag under each grip), and every claim about the records is cited; the playing itself was never heard by the author (see <a href="#s11">How this was made</a>), so treat the tab as an account of the idiom, not a transcription.</p>
+    <h3>Common faults, and how to hear them</h3>
+    <div class="wide"><table class="faults"><thead><tr><th>Device</th><th>What goes wrong</th><th>What to listen for</th></tr></thead><tbody>
+      <tr><td>The thumb over</td><td>The thumb presses so hard the wrist locks, or so lightly the low E buzzes; the A string is muted by the thumb's pad.</td><td>Play the bass note alone: a clean low E, and the A string still rings when struck.</td></tr>
+      <tr><td>The split chord</td><td>The bass note and the triad land together instead of one, "and"; the high e rings when it should be left.</td><td>Two distinct strokes a beat apart; only D, G and B in the second.</td></tr>
+      <tr><td>The hammered colours</td><td>The hammered note is weak because the finger comes down late or from too low; the chord dies under it.</td><td>The 4th, 6th or 9th as loud as the note it lands on, the other strings still ringing.</td></tr>
+      <tr><td>The 7♯9</td><td>The low E and the top e sound, because nothing mutes them; the G and G♯ blur into one.</td><td>Four notes only — mute the low E with the thumb, the top e with the flesh of the ring finger. The clash should be audible, not muddy.</td></tr>
+      <tr><td>The 9th grip and the trill</td><td>The ring-finger bar leaves the top e dead; the trill is even rather than lazy and swallows the beat.</td><td>Three strings under the bar, all sounding; the trill inside the triplet, the beat still felt.</td></tr>
+      <tr><td>Bends</td><td>Under pitch by a quarter tone, or the vibrato starts before the bend arrives.</td><td>Play the target note fretted, then bend to it; the pitch matches before the wrist moves.</td></tr>
+      <tr><td>The unison bend</td><td>The two strings don't meet; the top note is fretted too lightly and dies.</td><td>The beat frequency slows to nothing as the bend arrives; both notes ring after.</td></tr>
+      <tr><td>The wah scratch</td><td>The foot moves against the pick, or the strings ring instead of scratching.</td><td>Toe down on the downstrokes, heel on the up; a dead percussive sound with the chord's pitch only where the pattern says.</td></tr>
+      <tr><td>The walk-up</td><td>The line arrives late on the new chord's root, or the chord comes early.</td><td>The 5th of one chord lands exactly on the beat as the root of the next.</td></tr>
+      <tr><td>The waltz riff</td><td>The triplet feel flattens to straight eighths; the middle of the beat gets filled.</td><td>Three to the beat felt, the middle empty where the part leaves it.</td></tr>
+    </tbody></table></div>
+    <h3>When it is learned</h3>
+    <ul class="checklist">
+      <li>The thumb bass and the split chord steady at the practice tempo for eight bars, then at the record's tempo, on Em, G, Am and Bm without looking.</li>
+      <li>The hammered 4th, 6th and 9th clean on any thumb-over chord, and the 4th on the A shape.</li>
+      <li>Sliding 6ths through a I–IV–V in two keys, the slide landing on the beat.</li>
+      <li>The 7♯9 struck with only its four notes sounding, and the riff under it in time with a bass line.</li>
+      <li>The E minor pentatonic box at the 12th up and down at four notes a beat, then the same box at the nut connected to the box above it.</li>
+      <li>The 4th bent to the 5th in pitch, and a step-and-a-half from the 4th to the 6th, each with vibrato only after arrival.</li>
+      <li>The 9th grip slid in on beat three of a 12/8 bar, the trill inside the triplet.</li>
+      <li>The wah scratch for four bars without the strings ringing, the chord landing on the "and of 2".</li>
+      <li>The walk-up round the cycle of fourths, each 5th becoming the next root, at 82.</li>
+      <li>Any study on this page played through twice at its tempo with the band.</li>
+    </ul>
+  </section>
+
+  <section class="part" id="s11">
+    <h2>11. How this was made</h2>
     <p class="note"><b>What was done, and what was not.</b> This page and the Hendrix genre in the app were written by Claude (an AI model, working in Claude Code) at the owner's request, in September 2026. The research was reading: the sources in the list below were fetched and read as text — a Gresham College lecture transcript, the abstract and description of a University of Washington dissertation, a London College of Music analysis, a university lesson on Steve Cropper, course pages from Berklee and Ohio State, the Wikipedia articles on the songs and on the 7♯9 chord, magazine and web lessons (Guitar Player, Premier Guitar, MusicRadar, Happy Bluesman, Blackstar, Pickup Music, Jon MacLennan, guitarclub.io, Riff Ninja, Guitar Control, Texas Blues Alley), interviews with Billy Cox, Mitch Mitchell (as quoted) and Eddie Kramer, a 1967 interview with Hendrix, and the legal sources on chord progressions. <b>No recordings were listened to and no videos were watched</b>: the tools used cannot play audio or video, and YouTube transcripts could not be retrieved. Several pages could not be read — Guitar World's lessons and Hooktheory's analyses are behind a subscription wall, the Ultimate Guitar tab pages render only in a browser, the dissertation's full text (51 MB, downloaded) had no extractable text layer — and where a fact came only from a search engine's summary of such a page, the source list says so. The rest is the model's own knowledge of the music, checked against the sources where they overlap.</p>
     <p>The parts were then written the way every part in this app is written (<code>docs/STYLES.md</code>): from the idiom — where the weight falls, which strings, which notes, how a phrase ends — never from a transcription, and with no signature riff of his reproduced. Each part is a figure with variants, fills that know whether the next bar changes, lead lines, and a beginner's version, in the interval notation the engine realises into notes on the neck; the engine gained what these parts needed — free (chromatic) notes, a reach past the position, the blues palette over major chords, the 7♯9 and 9th grips, the split chord, unison bends, trills, the wah — and each feature is held by a test. The Chord finder tags the grips named on this page. The tabs on this page are realisations of those parts, rolled from a fixed seed so the page reads the same each time; the sound is the app's own recorded guitar and synthesized band. Tempos are approximate; keys are the fingered keys. Where the page says "as heard in", it means the way of playing on that record, not its notes.</p>
   </section>
 
   <!-- ================================================================== -->
-  <section class="part" id="s11">
-    <h2>11. Sources</h2>
+  <section class="part" id="s12">
+    <h2>12. Sources</h2>
     <p>Numbered as cited above. "Read" means the page was fetched and read as text; "summary" means only a search engine's summary of the page could be read; "linked" means the page is given for the reader and was not readable by the tools.</p>
     <ol class="sources" id="sources"></ol>
   </section>
@@ -270,6 +347,7 @@
 
 <script src="js/theory.js"></script>
 <script src="js/fretboard.js"></script>
+<script src="js/fingering.js"></script>
 <script src="js/neck.js"></script>
 <script src="js/parts.js"></script>
 <script src="js/parts-guide-data.js"></script>

@@ -45,6 +45,8 @@
   const card = add('div', 'drillCard');
   const play = add('button', null, { type: 'button', textContent: 'Play' }, card); play.className = 'tbtn play';
   add('input', 'drillComp', { type: 'checkbox' }, card);
+  add('input', 'drillCount', { type: 'checkbox' }, card);
+  add('input', 'drillFingers', { type: 'checkbox' }, card);
   add('input', 'drillNeckToggle', { type: 'checkbox', checked: true }, card);
   add('button', 'drillShare', { type: 'button' }, card);
   add('button', 'drillExpand', { type: 'button' }, card);
@@ -174,6 +176,11 @@
     if (bassNote.length !== 1 || bassNote[0].string < 3 || bassNote[0].midi % 12 !== 4) bad.push(`the thumb's bass note came out as ${bassNote.map(n => n.string + ':' + n.fret).join(' ')}`);
     if (split.length !== 3 || !split.every(n => n.string >= 1 && n.string <= 3)) bad.push(`the split chord came out as ${split.map(n => n.string + ':' + n.fret).join(' ')}`);
     if (!thumb.notes.some(n => n.at === 10 && n.mute)) bad.push('the muted strike is not muted');
+    // the hand moving with the chords: a position for each, and each bar in its own
+    const moving = realiseDrill({ ...o, kind: 'changes', chords: 'Em G Am', positions: [0, 3, 5], custom: null, strum: 'quarters' });
+    const inWin = (b, lo, hi) => moving.notes.filter(n => n.bar === b).every(n => n.reach || (n.fret >= lo && n.fret <= hi));
+    if (!inWin(0, 0, 3) || !inWin(1, 3, 6) || !inWin(2, 5, 8)) bad.push(`the chords did not follow their positions (${[0, 1, 2].map(b => moving.notes.filter(n => n.bar === b).map(n => n.fret).join('/')).join(' | ')})`);
+    if (!moving.windows || moving.windows[1].min !== 3) bad.push('the drill does not say where the hand is, bar by bar');
     // a 7♯9 is the Hendrix grip, root on the A string, not a CAGED 7th
     const haze = realiseDrill({ ...o, kind: 'changes', chords: 'E7#9', position: 5 });
     const hz = haze.grips[0].cells.map(c => `${c.string}:${c.fret}`).sort().join(' ');

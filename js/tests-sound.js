@@ -163,6 +163,17 @@
     const apart = await audio.renderOffline(1.5, two(['part:3', 'part:2']), { random: seeded(8), dry: true });
     const pSame = power(same, 0.65, 0.9), pApart = power(apart, 0.65, 0.9);
     t.ok(pSame < pApart * 0.1, `the next note on a string takes it over: ${dB(pSame / pApart).toFixed(1)} dB of the first note's ring left, against a note on another string`);
+    // a note queued after a later note on the same string is still heard:
+    // the part player queues single notes before its double stops and
+    // strums, so the earlier note has to give way when the later one starts
+    // whichever was queued first — queued the old way, the strum on beat one
+    // silenced the note after it before that note had begun
+    const outOfOrder = a => { a.playPluck(E3 * Math.pow(2, 5 / 12), 0.5, 0.3, 0.9, 'part', null, { string: 'part:3' }); a.playPluck(E3, 0.05, 0.25, 0.9, 'part', null, { string: 'part:3' }); };
+    const inOrder = a => { a.playPluck(E3, 0.05, 0.25, 0.9, 'part', null, { string: 'part:3' }); a.playPluck(E3 * Math.pow(2, 5 / 12), 0.5, 0.3, 0.9, 'part', null, { string: 'part:3' }); };
+    const late = await audio.renderOffline(1.2, outOfOrder, { random: seeded(10), dry: true });
+    const early = await audio.renderOffline(1.2, inOrder, { random: seeded(10), dry: true });
+    const pLate = power(late, 0.52, 0.75), pEarly = power(early, 0.52, 0.75);
+    t.ok(pLate > pEarly * 0.5, `a later note queued first is still heard: ${dB(pLate / pEarly).toFixed(1)} dB against the same two notes queued in order`);
     // the slapback: energy arrives 110 ms after a short pluck that had none there
     const dry = await audio.renderOffline(1, a => a.playPluck(E3, 0.05, 0.08, 0.9, 'part', null, {}), { random: seeded(9) });
     const slap = await audio.renderOffline(1, a => a.playPluck(E3, 0.05, 0.08, 0.9, 'part', null, { slap: true }), { random: seeded(9) });

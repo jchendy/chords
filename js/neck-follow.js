@@ -26,7 +26,7 @@
   const pcOf = c => (STRING_TUNING[c.string] + c.fret) % 12;
   const cellKey = c => `${c.string}:${c.fret}`;
   const pcs = (root, ivs) => new Set(ivs.map(i => (root + i) % 12));
-  const SCALE_COLOR = '#5f8ce8', DIM = '#6b655b';
+  const SCALE_COLOR = '#5f8ce8', DIM = '#6b655b', GRIP_COLOR = '#d8d1c4';
   // the neck's stretch: the window, widened to any note the part reaches
   // past it, a fret either side
   function neckGeometry(win, notes){
@@ -48,22 +48,33 @@
   // if one is), with its 7th and its sus note, the chord's other colours in
   // the window hollow, and whatever the part plays besides
   // (`given` is a placement already chosen — a drill that picked its own
-  // shape draws that one)
-  function chordNeck(chord, win, played = [], given = null){
+  // shape draws that one; a grip the bar strums that is no CAGED shape at
+  // all, the 7♯9 grip, a power chord — `given.grip` — is drawn as it is,
+  // named as the tab names it, with nothing added but what the part plays)
+  // `struck`, when given, is the cells the bar strums: the shape drawn is
+  // one that holds every one of them, nearest the hand, before the shape
+  // nearest the window
+  function chordNeck(chord, win, played = [], given = null, struck = null){
     const rootPc = SEMITONE[chord.note] % 12;
     const isMinor = chord.quality === 'min';
     const mid = (win.min + win.max) / 2;
     const all = cagedPlacements(rootPc, isMinor ? CAGED_MINOR : CAGED_MAJOR).filter(p => p.cells.length > 2);
+    // a CAGED placement gets its 7th and its sus note the way the neck fingers them
+    const coloured = p => {
+      let cs = chord.seventh ? seventhCells(p, rootPc, SEMITONE[chord.seventh] % 12) : p.cells.slice();
+      return chord.sus ? susCells(cs, rootPc, chord.sus) : cs;
+    };
+    const nearest = pool => pool.reduce((b, p) => Math.abs(p.meanFret - mid) < Math.abs(b.meanFret - mid) ? p : b);
     const inWin = all.filter(p => p.fretMin >= win.min - 1 && p.fretMax <= win.max + 1);
-    const placement = given || (inWin.length ? inWin : all).reduce((b, p) => Math.abs(p.meanFret - mid) < Math.abs(b.meanFret - mid) ? p : b);
-    // a grip handed over whole (`given.given`) is drawn as it is; a CAGED
-    // placement gets its 7th and its sus note the way the neck fingers them
-    let cells = placement.given ? placement.cells.slice() : chord.seventh ? seventhCells(placement, rootPc, SEMITONE[chord.seventh] % 12) : placement.cells.slice();
-    if (chord.sus && !placement.given) cells = susCells(cells, rootPc, chord.sus);
-    const color = CAGED_COLORS[placement.name];
+    const fitting = struck && struck.length ? all.filter(p => { const cs = coloured(p); return struck.every(s => cs.some(c => c.string === s.string && c.fret === s.fret)); }) : [];
+    const placement = given || (fitting.length ? nearest(fitting) : nearest(inWin.length ? inWin : all));
+    // a grip handed over whole (`given.given`) is drawn as it is
+    const cells = placement.given ? placement.cells.slice() : coloured(placement);
+    const grip = !!placement.grip;
+    const color = CAGED_COLORS[placement.name] || GRIP_COLOR;
     const markers = cells.map(c => ({ string: c.string, fret: c.fret, color, label: labelFor(pcOf(c) - rootPc, chord), isRoot: pcOf(c) === rootPc, shapes: [placement.name] }));
     const have = new Set(markers.map(cellKey));
-    arpeggioCells(win.min, win.max, new Set(chordPcs(chord))).forEach(c => {
+    if (!grip) arpeggioCells(win.min, win.max, new Set(chordPcs(chord))).forEach(c => {
       if (have.has(cellKey(c))) return;
       have.add(cellKey(c));
       markers.push({ string: c.string, fret: c.fret, color, hollow: true, label: labelFor(pcOf(c) - rootPc, chord), isRoot: pcOf(c) === rootPc });
@@ -72,8 +83,9 @@
     // the shape traced low string to high, whatever order the cells came in
     const traced = cells.slice().sort((a, b) => b.string - a.string || a.fret - b.fret);
     const lines = [{ color, shape: placement.name, cells: traced.map(c => ({ string: c.string, fret: c.fret })) }];
-    const coloured = chord.seventh || chord.sus || (chord.ext && chord.ext.length);
-    return { markers, lines, placement, what: `${displayName(chord)} — the ${placement.name} shape${coloured ? ', with its colour hollow' : ''}` };
+    const hasColour = chord.seventh || chord.sus || (chord.ext && chord.ext.length);
+    const what = grip ? `${displayName(chord)} — the ${placement.name}` : `${displayName(chord)} — the ${placement.name} shape${hasColour ? ', with its colour hollow' : ''}`;
+    return { markers, lines, placement, what };
   }
   // what the notes on the neck are, in words: the scale given, or the
   // palette the reading gives the chord (`opts` as realise takes them)
