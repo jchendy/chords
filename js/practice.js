@@ -565,8 +565,11 @@
       typed.appendChild(field); typed.appendChild(setBtn);
       slot.appendChild(typed);
 
+      // a bin, in red: an × on the end of an editor row reads as "close",
+      // and this one throws the bar away
       const rm = document.createElement('button');
-      rm.type = 'button'; rm.className = 'ib remove'; rm.textContent = '×';
+      rm.type = 'button'; rm.className = 'ib remove';
+      rm.innerHTML = '<svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 5.5h13M8 5.5V4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1.5M5 5.5l.8 10.2a1.3 1.3 0 0 0 1.3 1.2h5.8a1.3 1.3 0 0 0 1.3-1.2L15 5.5M8.3 8.5v5.5M11.7 8.5v5.5"/></svg>';
       rm.setAttribute('aria-label', `Remove bar ${i + 1}`); rm.title = 'Remove this bar';
       rm.disabled = chordCount <= 1 && measuresFor(i) <= 1;
       rm.addEventListener('click', () => removeBar(i));

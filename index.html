@@ -337,7 +337,9 @@
   .bar-type-field.bad{ border-color:var(--bad); }
   .bar-type-set{ padding:5px 9px; }
   .bar-editor .chord-row[hidden]{ display:none; }
-  .chord-row .ib.remove{ width:26px; height:26px; }
+  .chord-row .ib.remove{ width:26px; height:26px; color:var(--bad); border-color:color-mix(in srgb, var(--bad) 45%, transparent); }
+  .chord-row .ib.remove svg{ width:15px; height:15px; }
+  .chord-row .ib.remove:disabled{ opacity:.35; }
   .chart-grid .add-bar{ position:absolute; right:-6px; top:50%; transform:translateY(-50%); width:26px; height:26px; border-radius:50%; border:1px dashed var(--line2); background:var(--bg); color:var(--muted2); font:600 15px/1 Inter,system-ui,sans-serif; cursor:pointer; padding:0; }
   .chart-grid .add-bar:hover, .chart-grid .add-bar:focus-visible{ color:var(--ink); border-color:var(--muted); border-style:solid; outline:none; }
   .chart-grid .bar.editing{ background:var(--panel); outline:1px solid var(--line2); }

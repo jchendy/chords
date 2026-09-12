@@ -194,7 +194,8 @@ names the tab you're on.
   from the chart. When the chosen preset has variants (the blues: 12-bar,
   quick change, jazz blues…) they show as a row under the title. The chart's
   bars are the editor: tap a bar to hear it and to change its chord or its
-  quality, type a name for it, or remove it; "+" on the last bar adds a bar
+  quality, type a name for it, or throw it away (a red bin, since an × on
+  the end of an editor row reads as "close"); "+" on the last bar adds a bar
   of the same chord. A progression loaded any other way — typed, from a
   link, from the style's button — is no preset, and the name says so. Editing one bar of a chord held for several splits that
   bar off, so nothing else moves. The things set once and left — the voice,
