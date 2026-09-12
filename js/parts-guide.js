@@ -116,7 +116,8 @@
     if (!playing) return;
     const ctx = audio.ctx();
     const { feel, chords, notes, tempo, style } = playing;
-    const spb = 60 / tempo, barLen = spb * 4, grid = feel.grid, slotDur = barLen / grid;
+    const beats = GT.band.beatsOf(feel);
+    const spb = 60 / tempo, barLen = spb * beats, grid = feel.grid, slotDur = barLen / grid;
     // a bar whose moment has passed is stepped over, not played late
     for (let skip = audio.stepsToSkip(nextBarTime, ctx.currentTime, barLen); skip > 0; skip--){ nextBarTime += barLen; bar = (bar + 1) % chords.length; }
     while (nextBarTime < ctx.currentTime + AHEAD){
@@ -128,27 +129,25 @@
           audio.playHiHat(t0 + beat * spb, 0.4);
         }
       } else {
+        // the band as the practice tab plays it: fills, approaches, pushes,
+        // stop-time bars and all, through band.js
+        const bctx = { chord, next, audio, voice: 'piano',
+                       changing: displayName(next) !== displayName(chord),
+                       fillNow: bar === chords.length - 1,
+                       stopped: !!(notes.stopBars && notes.stopBars.has(bar)) };
         for (let slot = 0; slot < grid; slot++){
-          const t = t0 + slot * slotDur;
-          if (feel.kick && feel.kick.includes(slot)) audio.playKick(t, feel.kickVel || 0.9);
-          if (feel.snare && feel.snare.includes(slot)) audio.playSnare(t, feel.snareVel || 0.85);
-          if (feel.hat && feel.hat.includes(slot)) audio.playHiHat(t, slot % (grid / 4) === 0 ? 0.55 : 0.32);
-          if (feel.ride && feel.ride.includes(slot)) audio.playRide(t, 0.55);
-          const ce = feel.chord && feel.chord.find(e => e.slot === slot);
-          if (ce) audio.playStyleVoice(feel.voice, chord, t, ce.dur * slotDur, ce.vel, 'piano');
-          const be = feel.bass && feel.bass.find(e => e.slot === slot);
-          if (be){
-            const freq = 'walk' in be ? audio.walkBassFreq(chord, next, be.walk, true) : audio.bassNote(SEMITONE[chord.note] % 12, be.off);
-            audio.playBass(freq, t, be.dur * slotDur, be.vel);
-          }
+          GT.band.scheduleSlot(feel, slot, t0 + slot * slotDur + GT.band.swingOffset(feel, slot, slotDur), slotDur, bctx);
         }
       }
       notes.filter(n => n.bar === bar).forEach(n => {
-        const t = t0 + n.at * slotDur + (n.spread || 0), dur = n.dur * slotDur;
+        const t = t0 + n.at * slotDur + GT.band.swingOffset(feel, Math.floor(n.at), slotDur) + (n.spread || 0), dur = n.dur * slotDur;
         const fx = n.bend ? { bend: n.bend } : n.slide != null ? { slideFrom: hz(n.midi + (n.slide - n.fret)) }
                  : n.soft ? { soft: true } : n.mute ? { mute: true } : null;
+        // a rake: two muted strings swept into the note
+        if (n.rake) [2, 1].forEach((k, i) => audio.playPluck(hz(n.midi - 5 * k), t - 0.028 + i * 0.012, 0.06, 0.22, 'part', { mute: true }));
         audio.playPluck(hz(n.midi), t, dur, n.vel * 2.4, 'part', fx);
-        log.push({ time: t, until: t + dur, slot: bar * grid + n.at });
+        if (feel.slapback) audio.playPluck(hz(n.midi), t + 0.11, Math.min(dur, 0.25), n.vel * 2.4 * 0.35, 'part', fx && fx.mute ? fx : null);
+        log.push({ time: t, until: t + dur, slot: bar * grid + Math.floor(n.at) });
       });
       for (let slot = 0; slot < grid; slot++) log.push({ time: t0 + slot * slotDur, slot: bar * grid + slot, head: true });
       nextBarTime += barLen;

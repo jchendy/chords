@@ -103,7 +103,7 @@
       if (n.bend) label = `${n.fret}b${n.bend === 1 ? '½' : n.bend === 2 ? '1' : n.bend}`;
       const w = 8 + label.length * 6;
       const cls = ['tab-note', n.tone === 'muted' || n.mute ? 'muted' : '', n.soft ? 'soft' : ''].filter(Boolean).join(' ');
-      els.push(`<g class="${cls}" data-slot="${n.at}">
+      els.push(`<g class="${cls}" data-slot="${Math.floor(n.at)}">
         <rect x="${x - w / 2}" y="${y - 6}" width="${w}" height="12" rx="2"/>
         <text x="${x}" y="${y + 3.5}" text-anchor="middle">${label}</text>
       </g>`);

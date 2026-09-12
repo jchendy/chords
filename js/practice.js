@@ -1027,79 +1027,31 @@
   // timing and velocity moved a little, when humanizing is on
   const jit = amt => partHumanize ? (Math.random() * 2 - 1) * amt : 0;
 
+  // One beat of the band, slot by slot, through band.js — the same rules
+  // the parts and review pages play by.
   function scheduleStyleBeat(style, chord, secondsPerBeat, beatInMeasure){
-    const beats = style.beats || 4;
+    const beats = GT.band.beatsOf(style);
     const subPerBeat = style.grid / beats;
     const slotDur = secondsPerBeat / subPerBeat;
-    const grid = style.grid;
     const nextChord = currentProgression[(chordIdx + 1) % currentProgression.length];
     const measure = Math.floor(beatInChord / beats);
     const approachNext = measure === measuresFor(chordIdx) - 1;
-    // the change is coming: the next bar is another chord
-    const changing = approachNext && displayName(nextChord) !== displayName(chord);
     const barIdx = barOffset(chordIdx) + measure;
-    // the last bar of the form: the kit's fill, where the style has one
-    const fillNow = style.fill && chordIdx === currentProgression.length - 1 && approachNext;
-    // stop-time: the band hits the One and stops; the guitar has the bar
-    const stopped = partOn && partNotes.stopBars && partNotes.stopBars.has(barIdx);
-    // swung sixteenths: the second of each pair late by this much of a sixteenth
-    const swingOf = slot => (style.swing && grid % 4 === 0 && slot % 2 === 1) ? style.swing * slotDur * 0.5 : 0;
-    const lastEighth = grid - subPerBeat / 2;
-
+    const ctx = {
+      chord, next: nextChord, audio, voice: chordVoice, jit,
+      // the change is coming: the next bar is another chord
+      changing: approachNext && displayName(nextChord) !== displayName(chord),
+      // the last bar of the form gets the kit's fill, where the style has one
+      fillNow: chordIdx === currentProgression.length - 1 && approachNext,
+      // stop-time: the band hits the One and stops; the guitar has the bar
+      stopped: partOn && !!(partNotes.stopBars && partNotes.stopBars.has(barIdx)),
+    };
     for (let k = 0; k < subPerBeat; k++){
       const slot = beatInMeasure * subPerBeat + k;
-      const t = nextNoteTime + k * slotDur + swingOf(slot) + jit(0.006);
-      const vk = (style.kickVels && style.kickVels[slot]) || style.kickVel || 0.9;
-      const vs = (style.snareVels && style.snareVels[slot]) || style.snareVel || 0.85;
-
-      if (stopped){
-        if (slot === 0 && chord){
-          if (style.kick && style.kick.length) playKick(t, vk);
-          if (style.chord && style.chord.length) playStyleVoice(style.voice, chord, t, slotDur * 2, 0.7, chordVoice);
-          if (style.bass && style.bass.length) playBass(audio.bassNote(SEMITONE[chord.note] % 12, 0), t, slotDur * 2, 0.9);
-        }
-      } else {
-        if (fillNow){
-          if (style.fill.kick && style.fill.kick.includes(slot)) playKick(t, vk);
-          if (style.fill.snare && style.fill.snare.includes(slot)) playSnare(t, 0.5 + 0.4 * (slot / grid));
-          if (style.fill.hat && style.fill.hat.includes(slot)) playHiHat(t, 0.5);
-        } else {
-          if (style.kick && style.kick.includes(slot)) playKick(t, vk);
-          if (style.snare && style.snare.includes(slot)) playSnare(t, vs);
-          if (style.ghost && style.ghost.includes(slot)) playSnare(t, 0.22);
-          if (style.rim && style.rim.includes(slot)) playSnare(t, 0.3);
-          if (style.hat && style.hat.includes(slot)){
-            const open = style.hatOpen && style.hatOpen.includes(slot);
-            playHiHat(t, slot % subPerBeat === 0 ? 0.55 : 0.32, open ? 0.28 : 0.06);
-          }
-          if (style.ride && style.ride.includes(slot)) playRide(t, slot % subPerBeat === 0 ? 0.6 : 0.45);
-        }
-
-        if (chord){
-          const ce = style.chord && style.chord.find(e => e.slot === slot);
-          if (ce) playStyleVoice(style.voice, chord, t, ce.dur * slotDur, ce.vel + jit(0.06), chordVoice);
-          // the comp anticipating the change: the next chord on the last eighth
-          if (style.compAnticipate && changing && slot === lastEighth){
-            playStyleVoice(style.voice, nextChord, t, slotDur * (subPerBeat / 2), 0.6, chordVoice);
-          }
-          const be = style.bass && style.bass.find(e => e.slot === slot);
-          if (be){
-            let freq;
-            if ('walk' in be) freq = walkBassFreq(chord, nextChord, be.walk, changing);
-            else if (be.next) freq = audio.bassNote(SEMITONE[(changing ? nextChord : chord).note] % 12, be.off || 0);
-            else freq = audio.bassNote(SEMITONE[chord.note] % 12, be.off);
-            // a chromatic approach into the change, on the last eighth
-            if (style.bassApproach && changing && slot >= lastEighth) freq = audio.bassNote(SEMITONE[nextChord.note] % 12, -1);
-            playBass(freq, t, be.dur * slotDur, be.vel + jit(0.05));
-          } else if (style.bassApproach && changing && slot === lastEighth && !(style.bass || []).some(e => e.slot >= lastEighth)){
-            playBass(audio.bassNote(SEMITONE[nextChord.note] % 12, -1), t, slotDur * (subPerBeat / 2), 0.75);
-          }
-        }
-      }
-
+      const t = nextNoteTime + k * slotDur + GT.band.swingOffset(style, slot, slotDur) + jit(0.006);
+      GT.band.scheduleSlot(style, slot, t, slotDur, ctx);
       if (chord) schedulePartSlot(barIdx, slot, t, slotDur, style);
     }
-
     if (chord){
       scheduledLog.push({
         idx: chordIdx, time: nextNoteTime,
@@ -1494,6 +1446,7 @@
     if (!partOn || !partAvailable()){
       partNotes = [];
       partTab = null;
+      partLeadEl.hidden = true;
       partTabEl.hidden = true;
       partTabEl.innerHTML = '';
       view.lightSounding([]);

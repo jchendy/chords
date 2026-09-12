@@ -29,6 +29,8 @@
 // the scale — and a note the reading can't offer within a tone is dropped
 // rather than forced, so a sparse reading gives a sparser part, not a wrong
 // one.
+// The method behind the parts and styles, and the order to add one in, is
+// docs/STYLES.md; what the research found is docs/STYLES-CATALOGUE.md.
 (function(){
   'use strict';
   const GT = (window.GT = window.GT || {});

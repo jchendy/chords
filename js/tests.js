@@ -1017,6 +1017,66 @@
   // fills pooled with them), the turnaround on the last bar, stop-time, lead
   // rolls, tails, the seed, double stops placed by shape, the thumb on the
   // bass strings, the power chord, and easy mode.
+  // The band, one slot at a time, on a stand-in that records what it was
+  // asked to play: the approach and the push land on the last eighth of the
+  // bar on every grid, a stop-time bar is the One and nothing after, the last
+  // bar of the form gets the fill, the hat opens where the pattern says.
+  function testTheBandBySlot(t){
+    const { scheduleSlot, lastEighth, swingOffset } = GT.band;
+    const calls = [];
+    const fake = {
+      playKick: (at, v) => calls.push(['kick', at, v]), playSnare: (at, v) => calls.push(['snare', at, v]),
+      playHiHat: (at, v, decay) => calls.push(['hat', at, v, decay]), playRide: (at, v) => calls.push(['ride', at, v]),
+      playStyleVoice: (sv, chord, at, dur, vel) => calls.push(['comp', at, chord.note, dur, vel]),
+      playBass: (freq, at, dur, vel) => calls.push(['bass', at, freq, dur, vel]),
+      bassNote: (pc, off = 0) => 100 + pc + off / 100, walkBassFreq: (chord, next, pos, approach) => 200 + pos + (approach ? 0.5 : 0),
+    };
+    const A = chordFromName('A'), D = chordFromName('D');
+    const bar = (style, ctx) => { calls.length = 0; for (let s = 0; s < style.grid; s++) scheduleSlot(style, s, s, 1, { audio: fake, chord: A, next: D, ...ctx }); return calls.slice(); };
+    const of = (list, kind) => list.filter(c => c[0] === kind);
+
+    t.equal([lastEighth({ grid: 16 }), lastEighth({ grid: 12 }), lastEighth({ grid: 9, beats: 3 }), lastEighth({ grid: 12, beats: 3 })].join(','), '14,11,8,10', 'the last eighth is a slot on every grid');
+
+    // a shuffle: bass on the beats, the change approached from a semitone below on the last triplet third
+    const shuffle = { grid: 12, kick: [0, 6], snare: [3, 9], hat: [3, 9], voice: 'dom7',
+                      bass: [{ slot: 0, off: 0, dur: 3, vel: 0.9 }, { slot: 6, off: 7, dur: 3, vel: 0.8 }], bassApproach: true,
+                      chord: [{ slot: 3, dur: 1, vel: 0.7 }], compAnticipate: true };
+    const staying = bar(shuffle, { changing: false }), changing = bar(shuffle, { changing: true });
+    t.equal(of(staying, 'bass').map(c => c[1]).join(','), '0,6', 'staying put, the bass plays its own slots');
+    t.equal(of(changing, 'bass').map(c => c[1]).join(','), '0,6,11', 'before a change on a twelve grid, the approach is added on the last triplet');
+    const approach = of(changing, 'bass').find(c => c[1] === 11);
+    t.equal(approach && approach[2], 100 + (SEMITONE.D % 12) - 0.01, 'the approach is a semitone below the chord to come');
+    t.equal(of(changing, 'comp').map(c => `${c[1]}:${c[2]}`).join(','), '3:A,11:D', 'the comp anticipates the change on the last triplet');
+    t.equal(of(staying, 'comp').map(c => `${c[1]}:${c[2]}`).join(','), '3:A', 'and only before a change');
+
+    // a straight style with a bass note already on the last eighth: that note becomes the approach
+    const rock = { grid: 16, kick: [0, 8], snare: [4, 12], hat: [0, 2, 4, 6, 8, 10, 12, 14], hatOpen: [14], ghost: [13],
+                   bass: [{ slot: 0, off: 0, dur: 4, vel: 0.9 }, { slot: 14, off: 7, dur: 2, vel: 0.7 }], bassApproach: true, chord: [{ slot: 0, dur: 4, vel: 0.8 }],
+                   fill: { snare: [8, 10, 12, 14], kick: [0] } };
+    const rc = bar(rock, { changing: true });
+    t.equal(of(rc, 'bass').map(c => c[1]).join(','), '0,14', 'a bass note on the last eighth is not doubled');
+    t.equal(of(rc, 'bass')[1][2], 100 + (SEMITONE.D % 12) - 0.01, 'it plays the approach instead');
+    const hats = of(rc, 'hat');
+    t.ok(hats.find(c => c[1] === 14)[3] > hats.find(c => c[1] === 12)[3], 'the open hat rings longer');
+    t.ok(hats.find(c => c[1] === 0)[2] > hats.find(c => c[1] === 2)[2], 'the hat accents the beat');
+    t.equal(of(rc, 'snare').map(c => c[1]).join(','), '4,12,13', 'a ghost note is a quiet snare');
+    t.ok(of(rc, 'snare').find(c => c[1] === 13)[2] < 0.3, 'quiet');
+
+    // the last bar of the form: the fill, not the pattern
+    const fill = bar(rock, { changing: true, fillNow: true });
+    t.equal(of(fill, 'snare').map(c => c[1]).join(','), '8,10,12,14', 'the fill takes the kit on the last bar');
+    t.equal(of(fill, 'kick').map(c => c[1]).join(','), '0', 'the kick too');
+    t.equal(of(fill, 'comp').length + of(fill, 'bass').length, 3, 'the comp and the bass keep playing under the fill');
+
+    // stop-time: the One and nothing else
+    const stop = bar(rock, { changing: false, stopped: true });
+    t.equal(stop.map(c => `${c[0]}@${c[1]}`).join(','), 'kick@0,comp@0,bass@0', 'a stop-time bar is the One and silence');
+
+    // swing: the offbeat sixteenths sit late on a sixteen grid, never on twelve
+    t.ok(swingOffset({ grid: 16, swing: 0.6 }, 1, 1) > 0 && swingOffset({ grid: 16, swing: 0.6 }, 2, 1) === 0, 'the second of each pair of sixteenths swings');
+    t.equal(swingOffset({ grid: 12, swing: 0.6 }, 1, 1), 0, 'a twelve grid is already swung');
+  }
+
   function testTheEngineFeatures(t){
     const { realise, EASY_TECH } = GT.parts;
     const n  = (at, iv, dur = 2, vel = 0.8, x) => ({ at, iv, dur, vel, ...(x || {}) });
@@ -2247,6 +2307,7 @@
       ['Every note the neck can play has a recording near it', testEveryNoteHasARecording],
       ['Every chord the practice tab plays has recordings for it', testEveryChordFitsTheRecordings],
       ['The piano map covers both layers end to end', testThePianoMapIsWhole],
+      ['The band plays each slot by the pattern', testTheBandBySlot],
       ['The engine mixes a part the ways the styles ask', testTheEngineFeatures],
       ['The suggested parts realise inside the reading', testTheSuggestedParts],
       ['The engine sleeps when idle, never while playing', testTheEngineSleepsButNotWhilePlaying],

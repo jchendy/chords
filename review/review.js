@@ -390,68 +390,23 @@
     const beats = p.beats || 4;
     const spb = 60 / (tempo * (opt.fast ? 2 : 1)), barLen = spb * beats, grid = p.grid, slotDur = barLen / grid;
     // swung sixteenths: the second of each pair of 16ths late by this much of a 16th
-    const swingOf = slot => (p.swing && grid % 4 === 0 && slot % 2 === 1) ? p.swing * slotDur * 0.5 : 0;
+    const swingOf = slot => GT.band.swingOffset(p, slot, slotDur);
     for (let skip = audio.stepsToSkip(nextBarTime, ctx.currentTime, barLen); skip > 0; skip--){ nextBarTime += barLen; bar = (bar + 1) % chords.length; }
     while (nextBarTime < ctx.currentTime + AHEAD){
       const t0 = nextBarTime;
       const chord = chords[bar], next = chords[(bar + 1) % chords.length];
       const changing = displayName(next) !== displayName(chord);
       const lastBar = bar === chords.length - 1;
-      // stop-time: the band hits the One and stops; the guitar has the bar
-      const stopped = notes.stopBars && notes.stopBars.has(bar);
-      if (stopped){
-        if (style !== 'simple'){
-          if (p.kick && p.kick.length) audio.playKick(t0, p.kickVel || 0.9);
-          if (p.chord && p.chord.length) audio.playStyleVoice(p.voice, chord, t0, slotDur * 2, 0.7, 'piano');
-          if (p.bass && p.bass.length) audio.playBass(audio.bassNote(SEMITONE[chord.note] % 12, 0), t0, slotDur * 2, 0.9);
-        }
-      } else if (style === 'simple'){
+      // the band through band.js — the same rules the app plays by
+      const stopped = !!(notes.stopBars && notes.stopBars.has(bar));
+      if (style === 'simple' && !stopped){
         for (let beat = 0; beat < 4; beat++){
           audio.playChord(chord, t0 + beat * spb, spb, beat === 0 ? 0.86 : 0.68, 'piano');
           audio.playHiHat(t0 + beat * spb, 0.4);
         }
-      } else {
-        const fillNow = lastBar && p.fill;
-        for (let slot = 0; slot < grid; slot++){
-          const t = t0 + slot * slotDur + swingOf(slot) + jitter(0.006);
-          const vk = (p.kickVels && p.kickVels[slot]) || p.kickVel || 0.9;
-          const vs = (p.snareVels && p.snareVels[slot]) || p.snareVel || 0.85;
-          if (fillNow){
-            if (p.fill.kick && p.fill.kick.includes(slot)) audio.playKick(t, vk);
-            if (p.fill.snare && p.fill.snare.includes(slot)) audio.playSnare(t, 0.5 + 0.4 * (slot / grid));
-            if (p.fill.hat && p.fill.hat.includes(slot)) audio.playHiHat(t, 0.5);
-          } else {
-            if (p.kick && p.kick.includes(slot)) audio.playKick(t, vk);
-            if (p.snare && p.snare.includes(slot)) audio.playSnare(t, vs);
-            if (p.ghost && p.ghost.includes(slot)) audio.playSnare(t, 0.22);
-            if (p.rim && p.rim.includes(slot)) audio.playSnare(t, 0.3);
-            if (p.hat && p.hat.includes(slot)){
-              const open = p.hatOpen && p.hatOpen.includes(slot);
-              audio.playHiHat(t, slot % (grid / beats) === 0 ? 0.55 : 0.32, open ? 0.28 : 0.06);
-            }
-            if (p.ride && p.ride.includes(slot)) audio.playRide(t, slot % (grid / beats) === 0 ? 0.6 : 0.45);
-          }
-          const ce = p.chord && p.chord.find(e => e.slot === slot);
-          if (ce) audio.playStyleVoice(p.voice, chord, t, ce.dur * slotDur, ce.vel + jitter(0.06), 'piano');
-          // the comp anticipating the change: the next chord on the last eighth
-          if (p.compAnticipate && changing && slot === grid - grid / beats / 2){
-            audio.playStyleVoice(p.voice, next, t, slotDur * (grid / beats / 2), 0.6, 'piano');
-          }
-          const be = p.bass && p.bass.find(e => e.slot === slot);
-          if (be){
-            let freq;
-            if ('walk' in be) freq = audio.walkBassFreq(chord, next, be.walk, changing);
-            else if (be.next) freq = audio.bassNote(SEMITONE[next.note] % 12, be.off || 0);
-            else freq = audio.bassNote(SEMITONE[chord.note] % 12, be.off);
-            // a chromatic approach into the change, on the last eighth
-            if (p.bassApproach && changing && slot >= grid - grid / beats / 2) freq = audio.bassNote(SEMITONE[next.note] % 12, -1);
-            audio.playBass(freq, t, be.dur * slotDur, be.vel + jitter(0.05));
-          }
-        }
-        if (p.bassApproach && changing && !(p.bass || []).some(e => e.slot >= grid - grid / beats / 2)){
-          const t = t0 + (grid - grid / beats / 2) * slotDur;
-          audio.playBass(audio.bassNote(SEMITONE[next.note] % 12, -1), t, slotDur * (grid / beats / 2), 0.75);
-        }
+      } else if (style !== 'simple'){
+        const bctx = { chord, next, audio, voice: 'piano', changing, fillNow: lastBar && !!p.fill, stopped, jit: jitter };
+        for (let slot = 0; slot < grid; slot++) GT.band.scheduleSlot(p, slot, t0 + slot * slotDur + swingOf(slot) + jitter(0.006), slotDur, bctx);
       }
       notes.filter(n => n.bar === bar).forEach(n => {
         const t = t0 + n.at * slotDur + swingOf(Math.floor(n.at)) + (n.spread || 0) + jitter(0.008), dur = n.dur * slotDur;

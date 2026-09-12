@@ -13,6 +13,8 @@
 // part is a transcription or a paraphrase of a line anyone owns. Where a
 // sub-style is "inspired by" a player, that means their way of playing, in
 // the general terms a method book would use for it.
+// The method behind the parts and styles, and the order to add one in, is
+// docs/STYLES.md; what the research found is docs/STYLES-CATALOGUE.md.
 (function(){
   'use strict';
   const GT = (window.GT = window.GT || {});
