@@ -43,10 +43,6 @@
   // The chart carries a copy of the two pickers you reach for while playing.
   // They're views onto the same state, not a second copy of it: each mirrors
   // the real picker's options and forwards a change straight to it.
-  const quickKey = document.getElementById('quickKey');
-  const quickPreset = document.getElementById('quickPreset');
-  const mirror = (from, to) => { to.innerHTML = from.innerHTML; to.value = from.value; };
-  const forward = (from, to) => { to.value = from.value; to.dispatchEvent(new Event('change')); };
   const chordSlotsEl = document.getElementById('chordSlots');
   // grabbed here with the other elements rather than beside the code that
   // uses them: renderAll() reads the typing field, and renderAll is hoisted
@@ -284,7 +280,6 @@
     // the key you're actually in, and the dice beside it picks a new one
     keySelect.innerHTML = grp('Major keys', MAJOR_KEYS, 'major') + grp('Minor keys', MINOR_KEYS, 'minor');
     keySelect.value = `${currentMode}:${currentTonic}`;
-    mirror(keySelect, quickKey);
   }
 
   // ---- ready-made progressions -------------------------------------------
@@ -349,7 +344,6 @@
       if (!chosen || !fitsMode(chosen)){
         presetIdx = null;
         presetSelect.value = '';
-        mirror(presetSelect, quickPreset);
       }
     }
     const preset = presetIdx == null ? null : GT.progressionPresets[presetIdx];
@@ -392,7 +386,6 @@
     // a preset that doesn't exist in this mode is no longer the one showing
     if (presetIdx != null && !fitsMode(GT.progressionPresets[presetIdx])) presetIdx = null;
     presetSelect.value = presetIdx == null ? '' : String(presetIdx);
-    mirror(presetSelect, quickPreset);
   }
 
   function loadPreset(i){
@@ -419,8 +412,6 @@
   // Rolls every chord in the progression at once. Randomness is an action
   // here rather than a state a slot sits in, so this always has something to
   // do and the pickers always show what it came up with.
-  const genBtn = document.getElementById('genBtn');
-  const randomKeyBtn = document.getElementById('randomKeyBtn');
 
   // Which root of the current key a slot is sitting on — a degree, or one of
   // the chromatic ids. Chords generated here carry their root; a typed one
@@ -600,7 +591,6 @@
     currentProgression.splice(i, 1, ...parts.map(x => x.chord));
     slotMeasures.splice(i, 1, ...parts.map(x => x.bars));
     chordCount = slotChoices.length;
-    chordCountValue.textContent = chordCount;
     const j = i + (before > 0 ? 1 : 0);
     editing = { chord: j, measure: 0 };
     return j;
@@ -665,7 +655,6 @@
     slotShapes.push(slotShapes[last]);
     currentProgression.push({ ...currentProgression[last] });
     chordCount++;
-    chordCountValue.textContent = chordCount;
     loadedLabel = null;
     clearPreset();
     renderAll();
@@ -708,7 +697,6 @@
     slotShapes.splice(i, 1);
     currentProgression.splice(i, 1);
     chordCount--;
-    chordCountValue.textContent = chordCount;
     loadedLabel = null;
     clearPreset();
     renderAll();
@@ -801,9 +789,7 @@
     renderAll();
   }
 
-  genBtn.addEventListener('click', render);
   const randomKey = () => { clearPreset(); randomizeKey(); };
-  randomKeyBtn.addEventListener('click', randomKey);
   document.getElementById('quickKeyDice').addEventListener('click', randomKey);
   document.getElementById('quickRandomChords').addEventListener('click', () => {
     loadedLabel = null;
@@ -812,8 +798,6 @@
     view.resetPosition();
     renderAll();
   });
-  quickKey.addEventListener('change', () => forward(quickKey, keySelect));
-  quickPreset.addEventListener('change', () => forward(quickPreset, presetSelect));
 
   keySelect.addEventListener('change', () => {
     const [m, t] = keySelect.value.split(':');
@@ -919,7 +903,6 @@
   const rootOnlyToggle = document.getElementById('rootOnlyToggle');
   const measureReadout = document.getElementById('measureReadout');
 
-  const chordCountValue = document.getElementById('chordCountValue');
 
   const DEFAULT_MEASURES = 2;   // what a freshly rolled chord lasts
   let noteBeats = 1;
@@ -1082,7 +1065,6 @@
   // loaded progression can set its own length without re-rolling itself away
   function setSlotCount(n){
     chordCount = Math.max(1, Math.min(MAX_CHORDS, n));
-    chordCountValue.textContent = chordCount;
     // a slot added by the stepper comes up on a rolled degree, since every
     // slot always holds a real chord
     while (slotChoices.length < chordCount){
@@ -1094,24 +1076,6 @@
     while (slotShapes.length < chordCount) slotShapes.push(null);
     slotShapes.length = chordCount;
   }
-
-  // Changing the count adds or drops a chord and leaves the rest alone —
-  // there's no reason for it to throw away chords you chose.
-  function setChordCount(n){
-    setSlotCount(n);
-    clearPreset();
-    loadedLabel = null;
-    rebuildProgression();
-    renderAll();
-  }
-  document.getElementById('chordCountDown').addEventListener('click', () => {
-    if (chordCount <= 1) return;
-    setChordCount(chordCount - 1);
-  });
-  document.getElementById('chordCountUp').addEventListener('click', () => {
-    if (chordCount >= MAX_CHORDS) return;
-    setChordCount(chordCount + 1);
-  });
 
 
   function getTempo(){ return Number(tempoInput.value); }
@@ -1650,10 +1614,20 @@
   function partExcuse(){
     if (!partsNow().length) return `No parts written for ${feelName(currentStyle, currentVariant)} yet.`;
     const pv = view.positionView();
-    if (!PART_READINGS.includes(pv.reading)) return 'A part is realised into the notes a reading offers: switch the neck to Chords, Triads, Pentatonic or Scales.';
-    if (!pv.inPosition || !pv.window) return 'A part is written into one position: switch the neck to \u201cIn one position\u201d.';
+    const link = (act, value, text) => `<button type="button" class="link" data-act="${act}" data-value="${value}">${text}</button>`;
+    if (!PART_READINGS.includes(pv.reading)) return `A part is realised into the notes a reading offers: switch the neck to ${link('mode', 'caged', 'Chords')}, ${link('mode', 'triads3', 'Triads')}, ${link('mode', 'penta', 'Pentatonic')} or ${link('mode', 'scale', 'Scales')}.`;
+    if (!pv.inPosition || !pv.window) return `A part is written into one position: ${link('view', 'position', 'switch the neck to \u201cIn one position\u201d')}.`;
     return '';
   }
+  // ...and the words are the controls: a link in the excuse presses the
+  // neck's own button for it
+  partNoteEl.addEventListener('click', e => {
+    const b = e.target.closest('.link');
+    if (!b) return;
+    const group = b.dataset.act === 'view' ? '#viewGroup' : '#fretModeGroup';
+    const btn = document.querySelector(`${group} [data-value="${b.dataset.value}"]`);
+    if (btn) btn.click();
+  });
 
   function rebuildPart(force){
     // the chart or the part, never both: two readings of the same bars
@@ -1672,7 +1646,7 @@
       partTabEl.innerHTML = '';
       view.lightSounding([]);
       const why = partOn ? partExcuse() : '';
-      partNoteEl.textContent = why;
+      partNoteEl.innerHTML = why;
       partNoteEl.hidden = !why;
       partControls.hidden = !!why;
       partSig = partSignature();

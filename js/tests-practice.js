@@ -26,18 +26,17 @@
   };
 
   add('div', 'page-caged');
-  ['keySelect', 'presetSelect', 'quickKey', 'quickPreset', 'quickStyle'].forEach(id => add('select', id));
+  ['keySelect', 'presetSelect', 'quickStyle'].forEach(id => add('select', id));
   add('input', 'tempo', { type: 'range', min: '40', max: '208', value: '60' });
   add('input', 'shareOut', { type: 'text' });
   add('input', 'chordText', { type: 'text' });
   add('div', 'chordTextNote');
   add('button', 'chordTextApply', { type: 'button' });
-  ['tempoVal', 'keyReadout', 'measureReadout', 'chordCountValue', 'styleLabel']
+  ['tempoVal', 'keyReadout', 'measureReadout', 'styleLabel']
     .forEach(id => add('span', id));
   ['chords', 'chordSlots', 'presetVariantGroup', 'presetVariantRow',
    'clickRow', 'rootOnlyRow'].forEach(id => add('div', id));
-  ['genBtn', 'randomKeyBtn', 'quickKeyDice', 'quickRandomChords',
-   'chordCountUp', 'chordCountDown', 'shareBtn'].forEach(id => add('button', id, { type: 'button' }));
+  ['quickKeyDice', 'quickRandomChords', 'shareBtn'].forEach(id => add('button', id, { type: 'button' }));
   // the tab reaches for the label wrapping a checkbox to grey it out
   ['commonToggle', 'randomSeventhsToggle', 'clickToggle', 'countInToggle',
    'rootOnlyToggle'].forEach(id => {
@@ -719,13 +718,14 @@
     if (getTempo() > Number(q('#tempo').max)) bad.push(`the tempo went past the slider's top: ${getTempo()}`);
 
     // the chart's bars: one row a chord, shown for the bar tapped
-    while (Number(q('#chordCountValue').textContent) > 1) q('#chordCountDown').click();
     const rows = () => [...document.querySelectorAll('#chordSlots .chord-row')];
     const bars = () => [...document.querySelectorAll('#chords .bar')];
+    // down to one bar, deleting from the end
+    for (let guard = 0; bars().length > 1 && guard < 40; guard++){ bars()[bars().length - 1].click(); q('#chordSlots .chord-row:not([hidden]) .remove').click(); }
     if (rows().length !== 1) bad.push(`one chord has ${rows().length} editor rows`);
     const wasBars = bars().length, lastName = bars()[bars().length - 1].querySelector('.chord-name').textContent;
     q('#chords .add-bar').click();
-    if (rows().length !== 2 || Number(q('#chordCountValue').textContent) !== 2) bad.push(`+ bar left ${rows().length} rows and a count of ${q('#chordCountValue').textContent}`);
+    if (rows().length !== 2) bad.push(`+ bar left ${rows().length} rows`);
     // one bar, of the chord before it, and the control has moved to the new last bar
     if (bars().length !== wasBars + 1) bad.push(`+ bar added ${bars().length - wasBars} bars`);
     if (bars()[bars().length - 1].querySelector('.chord-name').textContent !== lastName) bad.push('the added bar is not the last chord again');
@@ -738,7 +738,9 @@
     if (rows().length !== 1) bad.push(`× left ${rows().length} rows`);
     if (!q('#barEditor').hidden) bad.push('the editor stayed open after the chord went');
     // a chord held for two: editing its second bar splits it, and × takes one bar only
-    q('#chordCountUp').click();                                  // a second chord, two bars long
+    // a second chord, two bars long: + twice, then the bar before the last named so the last two are one chord
+    q('#chords .add-bar').click(); q('#chords .add-bar').click();
+    GT.practice.loadProgression({ chords: ['A', 'D', 'D'], key: 'A' });
     const barsNow = bars().length;
     bars()[barsNow - 1].click();                                 // its second bar
     q('#chordSlots .chord-row:not([hidden]) .bar-type-field').value = 'Bbm7';
@@ -772,6 +774,19 @@
     search.value = ''; search.dispatchEvent(new Event('input'));
     if ([...document.querySelectorAll('#styleGroup .genre-btn')].some(b => b.hidden)) bad.push('clearing the search left a feel hidden');
     t.equal(bad.join('; '), '', 'The tempo taps in, the chart edits in place, the picker is grouped and searchable');
+
+    // the part's excuse does what it says: across the neck, the words
+    // "switch the neck to In one position" are a button that does
+    const view = GT.fretboardView;
+    view.applyViewState('m:penta');
+    q('#chartViewGroup .seg-btn[data-value="part"]').click();
+    const note = q('#partNote');
+    const link = note.querySelector('.link[data-act="view"]');
+    t.ok(!note.hidden && link && /In one position/.test(link.textContent), 'the excuse for a neck across the neck carries the link');
+    if (link) link.click();
+    t.ok(view.positionView().inPosition && note.hidden, 'pressing it puts the neck in one position and the excuse goes');
+    q('#chartViewGroup .seg-btn[data-value="chart"]').click();
+    view.applyViewState('');
   }
 
   // The band has a volume of its own — one gain on its bus in the engine —

@@ -131,7 +131,7 @@ names the tab you're on.
   that scrolls sideways a bar at a time, since a wrapped tab on a phone
   holds one bar a row. See **Suggested parts** below for how a part written
   once ends up in four readings
-- "Type it" — a text field in the Song panel that takes the progression as chord
+- "Type it" — a button by the progression name opening a field that takes the progression as chord
   names, one per bar: `E E E E A7 A7 E E Bm7 Bm7` is four chords held for
   four, two, two and two. Bar lines and commas are allowed (`A | D | E`,
   `C, Am, F, G`) because people write them. The key follows the chords —
@@ -181,16 +181,18 @@ names the tab you're on.
   fill. The chart comes first, its key as the title and the progression's
   name beside it, both directly editable (the real pickers lie over the text)
   with a dice for each, a button that copies the link to what's on screen, a
-  gear that opens the Settings menu, and the style as *genre › feel* — and a
-  Play at the head of the row, so playback starts without looking away from
-  the chart. The chart's bars are the editor: tap a bar to hear it and to
-  change its chord, how many bars it lasts, its quality, or to remove it;
-  "+ bar" at the end adds one. Beside the chart on a wide screen, and a
-  drawer the bar's Song button opens on a phone, the **Song** panel holds the
-  things a session changes — key, preset, the chord count and the dice,
-  "Type it", what the dice may use. The things set once and left — the voice,
-  the click, roots only, the count-in, the dot colour, the fret range, the
-  share link — are in the **Settings** menu under the gear. The style has a
+  gear that opens the Settings menu, a Type it button (a popover with the
+  progression as chord names, one per bar), and the style as *genre › feel* —
+  and a Play at the head of the row, so playback starts without looking away
+  from the chart. When the chosen preset has variants (the blues: 12-bar,
+  quick change, jazz blues…) they show as a row under the title. The chart's
+  bars are the editor: tap a bar to hear it and to change its chord or its
+  quality, type a name for it, or remove it; "+" on the last bar adds a bar
+  of the same chord. Editing one bar of a chord held for several splits that
+  bar off, so nothing else moves. The things set once and left — the voice,
+  the click, roots only, the count-in, what the dice may use, the dot colour,
+  the fret range, the share link — are in the **Settings** menu under the
+  gear. The style has a
   picker of its own, a sheet over the page: the sixty-one feels grouped by
   genre with a count each, a search box, and the last three used at the top;
   the bar's select over the name offers the same list for the keyboard. The
@@ -202,7 +204,7 @@ names the tab you're on.
   arrow on each edge of the window step it. One transport is pinned to the
   bottom of the tab: Play, the tempo slider with its BPM readout and −, tap
   and + under it (tap the beat and the tempo follows the average gap between
-  the taps), the click, Neck controls and Song. In the Part view the
+  the taps), the click and Neck controls. In the Part view the
   controls are one row — the part's arrows and name, New fills, the
   lead-roll tag, Easy, Follow chords / Stay on the I — with the techniques
   (and Humanize) behind a Techniques menu and the part and band volumes
@@ -1240,7 +1242,7 @@ by what each part does:
 | `audio.js` | The Web Audio synth voices (piano, bass, drums) and the per-style groove patterns. Owns the `AudioContext` and the queue both players schedule into — how far a stall has put a cursor behind the clock, and calling off notes that haven't sounded — but knows nothing about the UI. |
 | `fretboard-view.js` | The practice tab's fretboard panel: the six views, the legend, the hover spotlight, the follow-playback highlighting. |
 | `practice.js` | The practice tab: progression generation, the chord display and settings, and the playback transport. |
-| `stage.js` | The practice tab's chrome: the style picker, the Song drawer, the popover menus, the phone's controls toggle, the progression name in the chart head, the beat line, the draggable position window, and the site menu. Reads what the other modules draw; keeps no state. |
+| `stage.js` | The practice tab's chrome: the style picker, the popover menus, the phone's controls toggle, the progression name in the chart head, the beat line, the draggable position window, and the site menu. Reads what the other modules draw; keeps no state. |
 | `chord-finder.js` | Chord finder tab: voicing search, fingering, chord diagrams. |
 | `reverse-finder.js` | Reverse chord finder tab: click targets over the shared neck, and the name lookup. |
 | `ear-training.js` | Ear training tab: what's on the neck — a chord shape, a pentatonic box or a scale box — and the drill over its notes. Draws and sounds chords from the chord finder's own code and boxes from the practice tab's, so no tab can drift from another. |

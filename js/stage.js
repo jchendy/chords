@@ -46,6 +46,8 @@
       closePops(p);
       p.hidden = !on;
       document.querySelectorAll(`[data-pop="${id}"]`).forEach(b => b.setAttribute('aria-expanded', String(on)));
+      const focus = on && p.querySelector('[data-autofocus]');
+      if (focus) focus.focus();
       placeHomes();
     };
     document.querySelectorAll('[data-pop]').forEach(b => b.addEventListener('click', e => {
@@ -73,18 +75,6 @@
     $('styleGroup').addEventListener('click', e => { if (e.target.closest('.genre-btn')) openSheet(false); });
     const recent = $('styleRecent'); if (recent) recent.addEventListener('click', e => { if (e.target.closest('button')) openSheet(false); });
 
-    // ---- the song panel: beside the chart when wide, a drawer the Song button opens when not ----
-    const songBtn = $('setupOpen');
-    const setSong = on => { document.body.classList.toggle('song-open', on); songBtn.setAttribute('aria-pressed', String(on)); };
-    songBtn.addEventListener('click', () => setSong(!document.body.classList.contains('song-open')));
-    // open to start where there is room beside the chart, closed where there isn't;
-    // once pressed by hand, resizing doesn't overrule you
-    const wideForSong = window.matchMedia('(min-width: 900px)');
-    let songChosenByHand = false;
-    songBtn.addEventListener('click', () => { songChosenByHand = true; });
-    setSong(wideForSong.matches);
-    wideForSong.addEventListener('change', () => { if (!songChosenByHand) setSong(wideForSong.matches); });
-    placeHomes();
 
     // ---- all the controls on the neck, or none of them ----
     // A phone turned sideways is the case the width test gets wrong: it is
@@ -128,7 +118,7 @@
     $('transportExpand').addEventListener('click', () => setTransport(true));
 
     // ---- the progression as text: mirrors whatever the picker says ----
-    const prog = $('quickPreset'), progLabel = $('progLabel');
+    const prog = $('presetSelect'), progLabel = $('progLabel');
     function syncProg(){
       const o = prog.options[prog.selectedIndex];
       const set = !!(o && o.value !== '');
@@ -137,8 +127,7 @@
     }
     // practice.js rewrites the options and sets the value together; read after it has
     new MutationObserver(() => setTimeout(syncProg, 0)).observe(prog, { childList: true });
-    prog.addEventListener('change', syncProg);
-    $('presetSelect').addEventListener('change', () => setTimeout(syncProg, 0));
+    prog.addEventListener('change', () => setTimeout(syncProg, 0));
     setTimeout(syncProg, 0);
 
     // ---- playing or not: the beat line only exists while something plays ----

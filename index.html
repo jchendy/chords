@@ -293,20 +293,15 @@
   .chord-row .mini-select{ font:inherit; font-size:.85rem; color:var(--ink); background:var(--panel2); border:1px solid var(--line2); border-radius:6px; padding:5px 8px; width:100%; min-width:0; }
   .share-out{ flex:1 1 220px; min-width:0; font-size:.78rem; }
 
-  /* ---------- the song panel beside the chart, the menus, the bar editor ---------- */
+  /* ---------- the menus, the bar editor, the type-it popover ---------- */
   .chart-body{ display:grid; grid-template-columns:minmax(0, 1fr); gap:16px 28px; }
-  @media (min-width:900px){ .chart-body{ grid-template-columns:minmax(0, 1fr) 320px; align-items:start; } }
   .chart-main{ min-width:0; }
-  .song-panel{ border:1px solid var(--line); border-radius:12px; background:var(--panel); padding:6px 16px 12px; }
-  .song-panel h3{ font-size:.66rem; text-transform:uppercase; letter-spacing:.12em; color:var(--muted2); margin:12px 0 6px; }
-  .song-panel .frow{ padding:5px 0; }
-  .song-panel .sel{ max-width:220px; }
-  .song-hint{ margin:6px 0 2px; font-size:.75rem; color:var(--muted2); }
-  /* the Song button opens and closes the panel at every width: open to start
-     on a wide screen (beside the chart), closed on a phone (a drawer under it) */
-  body:not(.song-open) .song-panel{ display:none; }
-  body:not(.song-open) .chart-body{ grid-template-columns:minmax(0, 1fr); }
-  .tbtn[aria-pressed="true"]{ border-color:var(--a); color:var(--a); }
+  .type-it-pop{ top:calc(100% + 6px); left:0; width:min(420px, calc(100vw - 24px)); }
+  .type-it-pop .chord-type-row{ padding:0; }
+  .preset-variants{ padding:2px 0 0; }
+  /* the part's excuse says what to do, and the words do it */
+  .part-note .link{ font:inherit; color:var(--a); background:none; border:0; padding:0; cursor:pointer; text-decoration:underline; text-underline-offset:3px; }
+  .part-note .link:hover{ color:var(--ink); }
   .popover{ position:absolute; z-index:25; background:var(--panel); border:1px solid var(--line2); border-radius:10px; padding:10px 12px; box-shadow:0 10px 30px rgba(0,0,0,.45); }
   .pop-wrap{ position:relative; display:inline-flex; }
   .menu-pop{ top:calc(100% + 6px); left:0; min-width:220px; display:flex; flex-direction:column; gap:8px; }
@@ -674,7 +669,7 @@
       <span class="key-edit" title="Change key">
         <h2 class="keyline" id="keyReadout">—</h2>
         <svg class="key-caret" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 6l4.5 4.5L12.5 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        <select id="quickKey" class="key-select" aria-label="Key"></select>
+        <select id="keySelect" class="key-select" aria-label="Key"></select>
       </span>
       <button type="button" class="ib ctl" id="quickKeyDice" aria-label="Random key" title="Random key"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="2" y="2" width="16" height="16" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="6.3" cy="6.3" r="1.6"/><circle cx="13.7" cy="6.3" r="1.6"/><circle cx="10" cy="10" r="1.6"/><circle cx="6.3" cy="13.7" r="1.6"/><circle cx="13.7" cy="13.7" r="1.6"/></svg></button>
       <!-- the progression, beside the key: the two things this chart is -->
@@ -682,7 +677,22 @@
         <span class="pick-edit" title="Change progression">
           <span class="progline" id="progLabel">—</span>
           <svg class="key-caret" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 6l4.5 4.5L12.5 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <select id="quickPreset" class="key-select" aria-label="Progression"></select>
+          <select id="presetSelect" class="key-select" aria-label="Progression"></select>
+        </span>
+        <!-- typing is the fast way in when you already know the progression:
+             one chord per bar, so a chord held for four bars is written four
+             times; it reads back out of whatever is set -->
+        <span class="pop-wrap">
+          <button type="button" class="tbtn" id="typeItBtn" data-pop="typeItPop" aria-expanded="false" title="Type the progression, one chord per bar">Type it</button>
+          <div class="popover type-it-pop" id="typeItPop" hidden>
+            <div class="frow chord-type-row">
+              <input type="text" id="chordText" class="chord-text" spellcheck="false" data-autofocus
+                     autocapitalize="off" autocorrect="off"
+                     aria-label="Type the progression as chord names, one per bar"
+                     placeholder="E E E E A7 A7 E E Bm7 Bm7">
+              <button type="button" class="tbtn" id="chordTextApply">Set</button></div>
+            <div class="chord-type-note" id="chordTextNote" hidden></div>
+          </div>
         </span>
         <button type="button" class="ib" id="quickRandomChords" aria-label="Random progression" title="Random progression"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="2" y="2" width="16" height="16" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="6.3" cy="6.3" r="1.6"/><circle cx="13.7" cy="6.3" r="1.6"/><circle cx="10" cy="10" r="1.6"/><circle cx="6.3" cy="13.7" r="1.6"/><circle cx="13.7" cy="13.7" r="1.6"/></svg></button>
         <!-- sharing is a thing you do to this chart, so it lives on it rather
@@ -713,6 +723,7 @@
          part you're not looking at isn't one you're playing. Not a .ctl: the
          phone layout folds those away, and a view switch has to be reachable
          on the screen it matters most on. -->
+    <div class="frow preset-variants" id="presetVariantRow" hidden><span class="tb-lbl">Variant</span><span class="segmented" id="presetVariantGroup"></span></div>
     <div class="chart-body">
     <div class="chart-main">
     <div class="chart-view-row">
@@ -778,37 +789,6 @@
       <div class="part-tab" id="partTab" hidden></div>
     </div>
     </div>
-    <!-- the song: the things a session changes — key, progression, chords —
-         beside the chart on a wide screen, a drawer under it on a phone
-         (the Song button in the bar). The things set once are in the
-         Settings menu under the gear. -->
-    <aside class="song-panel" id="songPanel" aria-label="Song">
-      <h3>Song</h3>
-      <div class="frow"><span class="tb-lbl">Key</span><select id="keySelect" class="sel" aria-label="Key"></select><button type="button" class="ib" id="randomKeyBtn" aria-label="Random key" title="Random key"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="2" y="2" width="16" height="16" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="6.3" cy="6.3" r="1.6"/><circle cx="13.7" cy="6.3" r="1.6"/><circle cx="10" cy="10" r="1.6"/><circle cx="6.3" cy="13.7" r="1.6"/><circle cx="13.7" cy="13.7" r="1.6"/></svg></button></div>
-      <div class="frow"><span class="tb-lbl">Preset</span><select id="presetSelect" class="sel" aria-label="Preset progression"></select></div>
-      <div class="frow" id="presetVariantRow" hidden><span class="tb-lbl">Variant</span><span class="segmented" id="presetVariantGroup"></span></div>
-      <div class="frow"><span class="tb-lbl">Chords</span>
-        <span class="stepper"><button type="button" class="ib" id="chordCountDown" aria-label="Fewer chords">−</button><span id="chordCountValue">3</span><button type="button" class="ib" id="chordCountUp" aria-label="More chords">+</button></span>
-        <button type="button" class="ib" id="genBtn" aria-label="Randomize all chords" title="Randomize all chords"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="2" y="2" width="16" height="16" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="6.3" cy="6.3" r="1.6"/><circle cx="13.7" cy="6.3" r="1.6"/><circle cx="10" cy="10" r="1.6"/><circle cx="6.3" cy="13.7" r="1.6"/><circle cx="13.7" cy="13.7" r="1.6"/></svg></button></div>
-      <!-- Typing is the fast way in when you already know the progression:
-           one chord per bar, so a chord held for four bars is written four
-           times. It reads back out of whatever is set, so it doubles as a
-           plain-text view of the chart. Tap a bar of the chart to change
-           one chord. -->
-      <div class="frow chord-type-row"><span class="tb-lbl">Type it</span>
-        <input type="text" id="chordText" class="chord-text" spellcheck="false"
-               autocapitalize="off" autocorrect="off"
-               aria-label="Type the progression as chord names, one per bar"
-               placeholder="E E E E A7 A7 E E Bm7 Bm7">
-        <button type="button" class="tbtn" id="chordTextApply">Set</button></div>
-      <div class="chord-type-note" id="chordTextNote" hidden></div>
-      <p class="song-hint">Tap a bar of the chart to change its chord, how long it lasts, or its quality.</p>
-      <h3>When randomizing</h3>
-      <div class="frow checks">
-        <label class="check"><input type="checkbox" id="randomSeventhsToggle"><span>Use 7ths</span></label>
-        <label class="check"><input type="checkbox" id="commonToggle" checked><span>Common chords only</span></label>
-      </div>
-    </aside>
     </div>
     <!-- one chord of the chart, edited where it is: the row for the bar you
          tapped (practice.js renders one row a chord into #chordSlots and
@@ -938,7 +918,6 @@
     <span class="sp"></span>
     <!-- at every width: a desktop can want the neck on its own too (T62) -->
     <button type="button" class="tbtn" id="controlsToggle" aria-pressed="true" title="Show or hide the controls on the neck">Neck controls</button>
-    <button type="button" class="tbtn" id="setupOpen" aria-pressed="false" title="Key, progression and chords">Song</button>
     <button type="button" class="ib" id="transportCollapse" aria-label="Collapse the playback bar" title="Collapse the playback bar">
       <svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 8.5L10 13l4.5-4.5"/></svg>
     </button>
@@ -976,6 +955,11 @@
       <label class="check" id="clickRow"><input type="checkbox" id="clickToggle" checked><span>Click</span></label>
       <label class="check" id="rootOnlyRow"><input type="checkbox" id="rootOnlyToggle"><span>Roots only</span></label>
       <label class="check"><input type="checkbox" id="countInToggle" checked><span>Count-in</span></label>
+    </div>
+    <h3>When randomizing</h3>
+    <div class="frow checks">
+      <label class="check"><input type="checkbox" id="randomSeventhsToggle"><span>Use 7ths</span></label>
+      <label class="check"><input type="checkbox" id="commonToggle" checked><span>Common chords only</span></label>
     </div>
     <h3>Display</h3>
     <div class="frow" id="colorByLabel"><span class="tb-lbl">Colour</span><span class="segmented" id="colorByGroup" aria-label="Colour dots by">
