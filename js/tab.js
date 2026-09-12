@@ -211,7 +211,11 @@
         const p = positionOf(at, m);
         const next = Math.min(struck[i + 1] ? struck[i + 1][0] : barEnd, barEnd);
         const gap = next - at;
-        const v = dur <= gap / 2 ? valueOf(dur, grid, gap) : valueOf(gap, grid);
+        // a note that rings for less than half its gap is written as its own
+        // value with the rest as a gap — but only when it is a whole slot or
+        // more: a staccato note, clipped under a slot, is still the
+        // sixteenth (or eighth) its strikes are spaced at, not a thirty-second
+        const v = dur >= 1 && dur <= gap / 2 ? valueOf(dur, grid, gap) : valueOf(gap, grid);
         return { at, x: p.x + m.slotW / 2, y0: stringY(p.top, 5) + RHYTHM_TOP, ...v };
       });
       // beam groups: runs of flagged hits inside one beat

@@ -2635,6 +2635,11 @@
     if (/tab-dot/.test(clipped) || (clipped.match(/class="tab-beam"/g) || []).length !== 2) bad.push('eighths played short are written as dotted sixteenths');
     const rested = build({ grid: 16, bars: [{ startSlot: 0 }], notes: [{ at: 0, dur: 1, string: 5, fret: 3 }, { at: 4, dur: 4, string: 5, fret: 3 }] }, 800).markup;
     if ((rested.match(/class="tab-flag"/g) || []).length !== 2) bad.push('a sixteenth followed by a rest is not written as a sixteenth');
+    // sixteenths played staccato (clipped to half a slot) are still four
+    // beamed sixteenths, not thirty-seconds each followed by a rest
+    const stacc = build({ grid: 16, bars: [{ startSlot: 0 }], notes: [0, 1, 2, 3].map(k => ({ at: k, dur: 0.5, string: 5, fret: 3 })) }, 800).markup;
+    const staccBeams = (stacc.match(/class="tab-beam"/g) || []).length;
+    if (staccBeams !== ringBeams || /tab-flag/.test(stacc)) bad.push(`staccato sixteenths draw ${staccBeams} beams where four beamed sixteenths draw ${ringBeams}`);
     // a sixteenth beside an eighth: the second beam is a stub
     const mixed = build({ grid: 16, bars: [{ startSlot: 0 }], notes: [{ at: 0, dur: 3, string: 2, fret: 3 }, { at: 3, dur: 1, string: 2, fret: 3 }] }, 800).markup;
     const mixedBeams = (mixed.match(/class="tab-beam"/g) || []).length;
