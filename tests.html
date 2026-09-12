@@ -83,15 +83,21 @@
 <script src="js/ear-training.js"></script>
 <script src="js/tests-fretboard.js"></script>
 <script src="js/fretboard-view.js"></script>
-<!-- and the same again for the practice tab: audio and tabs are what it
-     destructures at load, tests-practice.js builds its controls, and its own
+<!-- and the same again for the jam tab: audio and tabs are what it
+     destructures at load, tests-jam.js builds its controls, and its own
      suites run last because init() hands the fretboard view a new host. -->
 <script src="js/audio.js"></script>
 <script src="js/band.js"></script>
 <script src="js/tests-sound.js"></script>
 <script src="js/tabs.js"></script>
-<script src="js/tests-practice.js"></script>
-<script src="js/practice.js"></script>
+<!-- the drills: the example player and the neck follower they draw and play
+     with, tests-drills.js building the controls, then the module -->
+<script src="js/example-player.js"></script>
+<script src="js/neck-follow.js"></script>
+<script src="js/tests-drills.js"></script>
+<script src="js/drills.js"></script>
+<script src="js/tests-jam.js"></script>
+<script src="js/jam.js"></script>
 <script src="js/tests.js"></script>
 
 </body>

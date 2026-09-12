@@ -1,4 +1,4 @@
-// Suggested guitar parts for the practice tab: a rhythm figure and its fills,
+// Suggested guitar parts for the jam tab: a rhythm figure and its fills,
 // written for a feel and realised into whatever box the neck is showing.
 //
 // WHERE THE PARTS COME FROM, AND WHY THEY ARE NOBODY'S. Every part here is
@@ -1313,13 +1313,15 @@
   // it, kept to the notes that are. Three strings is the least a strum can
   // be and still be a chord. A 7th chord gets its 7th the way the chords
   // reading draws it.
-  function gripIn(chord, window){
+  // (`allowed` narrows the shapes to a set of CAGED letters — the drills
+  // tab lets you say which shapes a change may use)
+  function gripIn(chord, window, allowed = null){
     const F = GT.fretboard;
     const rootPc = pc(chord.note);
     const isMinor = chord.quality === 'min';
     const inWin = c => c.fret >= window.min && c.fret <= window.max;
     let best = null, bestIn = 0;
-    F.cagedPlacements(rootPc, isMinor ? F.CAGED_MINOR : F.CAGED_MAJOR).forEach(p => {
+    F.cagedPlacements(rootPc, isMinor ? F.CAGED_MINOR : F.CAGED_MAJOR).filter(p => !allowed || allowed.has(p.name)).forEach(p => {
       let cells = chord.seventh ? F.seventhCells(p, rootPc, pc(chord.seventh)) : p.cells;
       if (chord.sus) cells = F.susCells(cells, rootPc, chord.sus);
       const inside = cells.filter(inWin).length;
@@ -1381,10 +1383,19 @@
     // fret or two past the window, those notes marked `reach`, before the
     // window's own cells are settled for.
     const { min, max } = opts.window;
-    if (opts.plucked){ const grip = gripIn(chord, opts.window); return grip ? pick(grip) : null; }
+    // A 7♯9 or a 9th struck whole is its own grip — x-7-6-7-8-x, x-7-6-7-7-7,
+    // root on the A string — not a CAGED 7th with the colour left out: the
+    // ♯9 is the point of the chord. Only when the grip can be had whole.
+    if ((voicing === 'full' || voicing == null) && chord.quality === 'maj' && chord.seventh && chord.ext && (chord.ext.includes(3) || chord.ext.includes(2) || chord.ext.includes(14))){
+      const ninth = !chord.ext.includes(3);
+      const g = sharp9Voicing(chord, opts, ninth);
+      const want = ninth ? (rootPc + 2) % 12 : (rootPc + 3) % 12;
+      if (g && g.length >= 4 && g.some(c => c.midi % 12 === want)) return g.map(c => (c.fret < min || c.fret > max) ? { ...c, reach: true } : c);
+    }
+    if (opts.plucked){ const grip = gripIn(chord, opts.window, opts.shapes); return grip ? pick(grip) : null; }
     let first = null;
     for (let reach = 0; reach <= 2; reach++){
-      const grip = gripIn(chord, { min: Math.max(0, min - reach), max: max + reach });
+      const grip = gripIn(chord, { min: Math.max(0, min - reach), max: max + reach }, opts.shapes);
       if (!grip) continue;
       const sel = pick(grip);
       if (!sel || !sel.length) continue;
@@ -2015,6 +2026,6 @@
 
   GT.parts = { get LIBRARY(){ return LIBRARY_NOW; }, set LIBRARY(v){ LIBRARY_NOW = v; }, LIBRARY_BASE: LIBRARY,
                SIMPLE_FEEL, TECHNIQUES, EASY_TECH, partsFor, palette, snap, realiseBar, realise, rollFills, newSeed, rng, figureFor,
-               simplify, easyVersion, placePair, thumbCell, powerVoicing, shellVoicing, placeIv, fingersOffThumb, strokeFor, fineBar,
+               simplify, easyVersion, placePair, thumbCell, powerVoicing, shellVoicing, sharp9Voicing, placeIv, fingersOffThumb, strokeFor, fineBar,
                cellsIn, homeMidi, gripIn, triadIn, strumCells, strumStringLevel, hasLeads, BLENDS };
 })();

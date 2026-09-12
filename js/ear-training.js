@@ -376,7 +376,7 @@
     return `<div class="fret-scroll">${neckSVG(s)}</div>`;
   }
 
-  // The picture the practice tab draws, from the code the practice tab draws
+  // The picture the jam tab draws, from the code the jam tab draws
   // it with: every note coloured by the CAGED box it belongs to, and the chord
   // shape inside that box traced through it. Knowing which chord shape a box
   // sits on is most of what makes a box worth learning, so it's drawn rather

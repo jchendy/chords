@@ -1,4 +1,4 @@
-// The fretboard panel on the practice tab: the six views (roots, chord
+// The fretboard panel on the jam tab: the six views (roots, chord
 // positions, Chords/pentatonic/scales), their legend, the hover spotlight
 // and the follow-playback highlighting.
 (function(){
@@ -23,7 +23,7 @@
   ];
   const INVERSION_COLOR = Object.fromEntries(INVERSIONS.map(i => [i.tag, i.color]));
 
-  // Everything the view needs to know about the practice tab's state arrives
+  // Everything the view needs to know about the jam tab's state arrives
   // through this host object, so the view never reaches into it directly.
   // What the view needs from whoever is showing it. A host supplies what it
   // cares about; anything it leaves out keeps the harmless version here, so a

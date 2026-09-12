@@ -1,4 +1,4 @@
-// Ready-made progressions for the practice tab.
+// Ready-made progressions for the jam tab.
 //
 // They're written as scale degrees rather than chord names, so a preset works
 // in whatever key you're in, follows you when you change key, and still leaves

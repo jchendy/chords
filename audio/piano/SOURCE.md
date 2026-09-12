@@ -11,7 +11,7 @@ and `C4`. `UprightPianoKW-20220221.sfz` is the mapping as published — which
 sample covers which keys, where each one loops, and the velocity split — and
 it is the thing to follow rather than the file names.
 
-The whole set is here, not the dozen notes the practice tab needs today, so
+The whole set is here, not the dozen notes the jam tab needs today, so
 that widening the range later is a code change rather than another download.
 
 - **Recorded by:** Gonzalo <humanogonzalo@gmail.com> and Roberto

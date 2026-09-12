@@ -1,4 +1,4 @@
-// The practice tab: rolling a progression, the chord display and its
+// The jam tab: rolling a progression, the chord display and its
 // settings, and the playback transport that drives both the audio and the
 // on-screen highlighting.
 (function(){
@@ -1551,7 +1551,7 @@
 
   // ---- sharing a progression by link ---------------------------------------
   // The state rides in the URL fragment after the tab name:
-  //   #practice?k=major:C&c=0.2.maj7,3.1,4.1.7&t=90&s=blues.0
+  //   #jam?k=major:C&c=0.2.maj7,3.1,4.1.7&t=90&s=blues.0
   // k = mode:tonic; c = one entry per chord as root.bars.shape, where a root is
   // a scale degree or a 'c'-prefixed interval above the tonic (shape blank
   // for the key's own triad); t = tempo; s = style.variant. A progression that
@@ -2154,7 +2154,7 @@
   // way — and hands back the link for the ones that show it.
   let shareUrl = '';
   async function copyShareLink(){
-    const slug = location.hash.slice(1).split('?')[0] || 'practice';
+    const slug = location.hash.slice(1).split('?')[0] || 'jam';
     shareUrl = `${location.href.split('#')[0]}#${slug}?${shareState()}`;
     try { history.replaceState(null, '', `#${slug}?${shareState()}`); } catch (e) { /* file:// can refuse */ }
     try { await navigator.clipboard.writeText(shareUrl); return true; } catch (e) { return false; }
@@ -2172,7 +2172,7 @@
   });
 
   // Take a progression written as chord names — the typed field, a link —
-  // and set the practice tab up to play it. Runs of the same chord collapse
+  // and set the jam tab up to play it. Runs of the same chord collapse
   // into one chord held for that many measures, which is how a twelve-bar
   // blues fits into seven slots.
   function loadProgression({ chords, label, tempo, key }){
@@ -2304,7 +2304,7 @@
   // last one that failed
   chordText.addEventListener('input', () => say(''));
 
-  GT.practice = {
+  GT.jam = {
     // leaving the tab shouldn't leave a progression playing behind you
     stop(){ if (isPlaying) togglePlay(); },
     loadProgression,

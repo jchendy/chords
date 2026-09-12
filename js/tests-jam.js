@@ -1,4 +1,4 @@
-// Regression tests for the practice tab's own state — the progression, the
+// Regression tests for the jam tab's own state — the progression, the
 // key and preset pickers, and the share link.
 //
 // Like the fretboard tests, this builds the controls the tab binds to rather
@@ -6,15 +6,15 @@
 // element types, so that's all a fixture owes it, and a control added to the
 // real page and forgotten here fails loudly on the next run.
 //
-// It must load *before* js/practice.js, which binds these as it loads, and its
-// suites run last — GT.practice.init() hands the fretboard view a new host, so
+// It must load *before* js/jam.js, which binds these as it loads, and its
+// suites run last — GT.jam.init() hands the fretboard view a new host, so
 // anything asking that view questions has to have asked them already.
 (function(){
   'use strict';
   const GT = (window.GT = window.GT || {});
 
   const root = document.createElement('div');
-  root.id = 'practice-fixture';
+  root.id = 'jam-fixture';
   root.hidden = true;
 
   const add = (tag, id, attrs = {}) => {
@@ -95,7 +95,7 @@
   add('input', 'partEasy', { type: 'checkbox' });
   add('input', 'partHumanize', { type: 'checkbox' });
   add('span', 'partLead');
-  add('span', 'styleGroup');          // practice.js fills the list itself
+  add('span', 'styleGroup');          // jam.js fills the list itself
   add('input', 'styleSearch', { type: 'search' });
   add('div', 'styleRecentRow'); add('span', 'styleRecent');
   add('div', 'barEditor').appendChild(root.querySelector('#chordSlots'));   // the rows live inside the editor, as on the page
@@ -118,7 +118,7 @@
   function start(){
     if (started) return;
     started = true;
-    GT.practice.init();
+    GT.jam.init();
   }
 
   // ---- the suites ----------------------------------------------------------
@@ -139,7 +139,7 @@
       // disturb every field the link carries, then follow it back
       setKey(key === 'major:C' ? 'minor:G' : 'major:C');
       setTempo(111);
-      location.hash = '#practice-elsewhere';
+      location.hash = '#jam-elsewhere';
       location.hash = link;
       const got = state();
       Object.keys(want).forEach(f => {
@@ -201,7 +201,7 @@
   // every transport copy shows the same thing, whichever one you press
   function testTransportsStayInStep(t){
     start();
-    const btns = [...document.querySelectorAll('#practice-fixture .play-btn')];
+    const btns = [...document.querySelectorAll('#jam-fixture .play-btn')];
     const labels = () => btns.map(b => b.textContent.trim());
     const out = [];
     btns.forEach((b, i) => {
@@ -386,7 +386,7 @@
     q('#shareBtn').click();
     const link = location.hash;
     setKey('minor:G');
-    location.hash = '#practice-elsewhere';
+    location.hash = '#jam-elsewhere';
     location.hash = link;
     if (bar() !== 'C \u266dVII') bad.push(`a shared ♭VII came back as "${bar()}"`);
     if (pinned() !== 'C · \u266dVII (Outside the key)')
@@ -419,7 +419,7 @@
       const secondsPerBeat = 60 / bpm;
       [1, 2, 4].forEach(noteBeats => {
         const gap = secondsPerBeat * noteBeats;
-        const rings = GT.practice.simpleHitSeconds(secondsPerBeat, noteBeats);
+        const rings = GT.jam.simpleHitSeconds(secondsPerBeat, noteBeats);
         if (rings > gap + 1e-9) bad.push(`at ${bpm} BPM a ${noteBeats}-beat hit rings ${(rings / gap).toFixed(2)}x the gap`);
         if (rings <= 0) bad.push(`at ${bpm} BPM a ${noteBeats}-beat hit lasts ${rings}s`);
       });
@@ -436,7 +436,7 @@
   // layers' overlap, where the cross-fade means neither is a switch.
   function testTheDownbeatIsAnAccentNotAnInstrument(t){
     const bad = [];
-    const { SIMPLE_ACCENT } = GT.practice;
+    const { SIMPLE_ACCENT } = GT.jam;
     const { pianoLayerMix } = GT.audio;
     const dB = 20 * Math.log10(SIMPLE_ACCENT.downbeat / SIMPLE_ACCENT.other);
     if (!(dB > 0)) bad.push('the downbeat is not the louder of the two');
@@ -501,7 +501,7 @@
     });
 
     // the default is named rather than left inline, and it is a feel that exists
-    const { DEFAULT_FEEL } = GT.practice;
+    const { DEFAULT_FEEL } = GT.jam;
     if (!DEFAULT_FEEL || DEFAULT_FEEL.style !== 'rock'){
       bad.push(`a fresh page opens on ${DEFAULT_FEEL && DEFAULT_FEEL.style}, not rock`);
     } else if (!STYLES.rock.variants.some(v => v.label === DEFAULT_FEEL.variant)){
@@ -532,7 +532,7 @@
     if (/[#&]s=/.test(location.hash)) bad.push('Simple on quarters is written into the link');
     // a link for a feel that has gone falls back rather than breaking
     picker.value = 'rock.1'; picker.dispatchEvent(new Event('change'));
-    location.hash = '#practice?k=major%3AC&c=0.2.&s=jazz.7';
+    location.hash = '#jam?k=major%3AC&c=0.2.&s=jazz.7';
     if (!active() || active().split('.')[0] !== 'jazz') bad.push(`a link to a jazz feel that has gone put on ${active()}`);
     picker.value = 'rock.1'; picker.dispatchEvent(new Event('change'));
     history.replaceState(null, '', location.pathname);
@@ -599,7 +599,7 @@
     start();
     const bad = [];
     const view = GT.fretboardView;
-    const notesOf = () => JSON.stringify(GT.practice.partState().notes);
+    const notesOf = () => JSON.stringify(GT.jam.partState().notes);
 
     // a blues feel in one position, so there is a part to have
     q('#styleGroup .genre-btn[data-value="blues.0"]').click();
@@ -610,26 +610,26 @@
     else {
       // the neck re-picking its box, as it does on every chord while playing:
       // a different window, no hand on the arrows
-      const before = GT.practice.partState().window;
+      const before = GT.jam.partState().window;
       view.applyViewState('m:penta.p:position.b:2');
       const moved = JSON.stringify(view.positionView().window) !== JSON.stringify(before);
       if (!moved) bad.push('could not move the neck to test against (box 2 is where it already was)');
       if (notesOf() !== first) bad.push('the neck moving by itself re-realised the part');
-      if (JSON.stringify(GT.practice.partState().window) !== JSON.stringify(before)){
+      if (JSON.stringify(GT.jam.partState().window) !== JSON.stringify(before)){
         bad.push('the part followed the neck to a new window');
       }
 
       // ...whereas stepping the box yourself moves it into the new window
       q('#boxNext').click();
-      const after = GT.practice.partState().window;
+      const after = GT.jam.partState().window;
       if (JSON.stringify(after) === JSON.stringify(before)) bad.push('stepping the box left the part in the old window');
 
       // and new fills are a new seed in the same window: the figures may
       // roll too now (a part can roll its figures, tag tails on them, put a
       // lead in the fill bars), but the part and where it sits do not move
-      const was = GT.practice.partState();
+      const was = GT.jam.partState();
       q('#partReroll').click();
-      const now = GT.practice.partState();
+      const now = GT.jam.partState();
       if (now.seed === was.seed) bad.push('re-rolling the fills kept the seed');
       if (JSON.stringify(now.window) !== JSON.stringify(was.window)) bad.push('re-rolling the fills moved the part');
     }
@@ -669,15 +669,15 @@
     q('#styleGroup .genre-btn[data-value="blues.0"]').click();
     view.applyViewState('m:penta.p:position');
     // A held for three bars, D for two, then E, D, A: eight bars, five names
-    GT.practice.loadProgression({ chords: ['A', 'A', 'A', 'D', 'D', 'E', 'D', 'A'], key: 'A' });
+    GT.jam.loadProgression({ chords: ['A', 'A', 'A', 'D', 'D', 'E', 'D', 'A'], key: 'A' });
     q('#chartViewGroup .seg-btn[data-value="part"]').click();
     const names = [...document.querySelectorAll('#partTab .tab-chord')].map(el => `${el.dataset.bar}:${el.textContent}`);
     t.equal(names.join(' '), '0:A 3:D 5:E 6:D 7:A', 'The tab names a chord where it arrives, tagged with its bar');
     const expect = ['A', 'A', 'A', 'D', 'D', 'E', 'D', 'A'];
     for (let bar = 0; bar < 8; bar++){
       try {
-        GT.practice.showPartBar(bar);
-        const lit = GT.practice.partState().named;
+        GT.jam.showPartBar(bar);
+        const lit = GT.jam.partState().named;
         if (lit.join() !== expect[bar]) bad.push(`bar ${bar} lit ${JSON.stringify(lit)}, wanted ${expect[bar]}`);
       } catch (err){ bad.push(`bar ${bar} threw: ${err.message}`); }
     }
@@ -705,7 +705,7 @@
   function testTheTabsControls(t){
     start();
     const bad = [];
-    const { setTempo, getTempo } = GT.practice;
+    const { setTempo, getTempo } = GT.jam;
     setTempo(100);
     if (getTempo() !== 100) bad.push(`set to 100, read ${getTempo()}`);
     // a preset is one tap, and lights while the slider agrees with it
@@ -740,7 +740,7 @@
     // a chord held for two: editing its second bar splits it, and × takes one bar only
     // a second chord, two bars long: + twice, then the bar before the last named so the last two are one chord
     q('#chords .add-bar').click(); q('#chords .add-bar').click();
-    GT.practice.loadProgression({ chords: ['A', 'D', 'D'], key: 'A' });
+    GT.jam.loadProgression({ chords: ['A', 'D', 'D'], key: 'A' });
     const barsNow = bars().length;
     bars()[barsNow - 1].click();                                 // its second bar
     q('#chordSlots .chord-row:not([hidden]) .bar-type-field').value = 'Bbm7';
@@ -819,7 +819,7 @@
     start();
     const bad = [];
     const { SEMITONE, MAJOR_KEYS, MINOR_KEYS } = GT.theory;
-    GT.practice.loadProgression({ chords: ['C', 'F', 'G'], key: 'C' });
+    GT.jam.loadProgression({ chords: ['C', 'F', 'G'], key: 'C' });
     const btns = [...q('#keyMenuGrid').querySelectorAll('.key-btn')];
     if (btns.length !== 24) bad.push(`${btns.length} keys listed, not 24`);
     for (let i = 0; i + 1 < btns.length; i += 2){
@@ -863,20 +863,20 @@
       const ps = q('#partSelect'); ps.value = String(i); ps.dispatchEvent(new Event('change'));
       return true;
     };
-    GT.practice.loadProgression({ chords: ['A', 'D', 'E', 'A'], key: 'A' });
+    GT.jam.loadProgression({ chords: ['A', 'D', 'E', 'A'], key: 'A' });
     q('#chartViewGroup .seg-btn[data-value="part"]').click();
     if (!goTo(withLeads)) bad.push(`could not pick ${withLeads.style}/${withLeads.feel}`);
     const group = q('#partBlendGroup');
     if (group.hidden) bad.push('the blend is hidden for a part with lead lines');
     group.querySelector('[data-value="lead"]').click();
-    let st = GT.practice.partState();
+    let st = GT.jam.partState();
     const bars = new Set(st.notes.map(n => n.bar));
     if (st.blend !== 'lead') bad.push(`after pressing Lead the blend is ${st.blend}`);
     q('#shareBtn').click();                                      // writes the state into the fragment
     const link = decodeURIComponent(location.hash);
     if (!/(^|&|\?)p=[^&]*\.l(\.|&|$)/.test(link)) bad.push(`the link does not carry the lead blend (${link})`);
     group.querySelector('[data-value="rhythm"]').click();
-    st = GT.practice.partState();
+    st = GT.jam.partState();
     if (st.blend !== 'rhythm') bad.push(`after pressing Rhythm the blend is ${st.blend}`);
     if (!goTo(without)) bad.push(`could not pick ${without.style}/${without.feel}`);
     if (!q('#partBlendGroup').hidden) bad.push('the blend shows for a part with no lead lines');
@@ -887,7 +887,7 @@
   function testTheLoop(t){
     start();
     const bad = [];
-    const { stepCursor, setLoop, loopState } = GT.practice;
+    const { stepCursor, setLoop, loopState } = GT.jam;
     const measures = [2, 2, 2], beats = 4;
     const barOf = cur => { let at = 0; for (let i = 0; i < cur.chordIdx; i++) at += measures[i]; return at + Math.floor(cur.beatInChord / beats); };
     let cur = { chordIdx: 0, beatInChord: 0 };
@@ -903,7 +903,7 @@
     for (let k = 0; k < 24; k++){ cur = stepCursor(cur, measures, beats, { on: false, from: 1, to: 2 }); all.add(barOf(cur)); }
     if (all.size !== 6) bad.push(`with the loop off the cursor visited ${all.size} bars of 6`);
     // the controls and the link
-    GT.practice.loadProgression({ chords: ['A', 'A', 'D', 'D', 'E', 'A'], key: 'A' });
+    GT.jam.loadProgression({ chords: ['A', 'A', 'D', 'D', 'E', 'A'], key: 'A' });
     setLoop({ on: true, from: 2, to: 3 });
     if (q('#loopFrom').value !== '2' || q('#loopTo').value !== '3') bad.push(`the lists show ${q('#loopFrom').value}-${q('#loopTo').value}`);
     if (q('#loopFrom').options.length !== 6) bad.push(`the lists offer ${q('#loopFrom').options.length} bars of 6`);
@@ -914,7 +914,7 @@
     // ...and it comes back: the loop disturbed, then the link followed
     const link = location.hash;
     setLoop({ on: false, from: 0, to: 0 });
-    location.hash = '#practice-elsewhere';
+    location.hash = '#jam-elsewhere';
     location.hash = link;
     const back = loopState();
     if (!(back.on && back.from === 2 && back.to === 3)) bad.push(`the link brought back ${JSON.stringify(back)}`);
@@ -944,7 +944,7 @@
     mute.click(); set(100);                    // back to nothing to say
     q('#shareBtn').click();
     if (/[#&]b=/.test(location.hash)) bad.push('at its default the band is still in the link');
-    location.hash = '#practice-elsewhere';
+    location.hash = '#jam-elsewhere';
     location.hash = link;                      // and the link brings it back
     if (GT.audio.bandLevel() !== 0 || slider.value !== '40') bad.push(`the link brought back level ${GT.audio.bandLevel()}, slider ${slider.value}`);
     set(60);                                   // moving the slider unmutes, as the part's does
@@ -963,23 +963,26 @@
   function testTheOldTabNameStillOpensIt(t){
     const bad = [];
     const tabs = document.createElement('div');
-    tabs.innerHTML = '<button type="button" class="site-tab active" data-tab="caged">Practice</button>'
+    tabs.innerHTML = '<button type="button" class="site-tab active" data-tab="caged">Jam</button>'
       + '<button type="button" class="site-tab" data-tab="finder">Chord finder</button>';
     document.body.appendChild(tabs);
     const page = document.getElementById('page-caged');
     page.classList.add('tab-page');
     const other = document.createElement('div'); other.className = 'tab-page'; other.id = 'page-finder';
     document.body.appendChild(other);
-    history.replaceState(null, '', '#caged-practice?k=major%3AD&c=0.2.');
-    GT.tabs.init({});
-    if (page.hidden) bad.push('the old name did not open the practice tab');
-    if (location.hash !== '#practice?k=major%3AD&c=0.2.') bad.push(`the address became ${location.hash}`);
-    // wired up, the tabs would go on writing the practice tab's state into
+    // both old names: "CAGED practice" and "Practice"
+    ['#caged-practice?k=major%3AD&c=0.2.', '#practice?k=major%3AD&c=0.2.'].forEach(old => {
+      history.replaceState(null, '', old);
+      GT.tabs.init({});
+      if (page.hidden) bad.push(`${old.split('?')[0]} did not open the jam tab`);
+      if (location.hash !== '#jam?k=major%3AD&c=0.2.') bad.push(`${old.split('?')[0]}: the address became ${location.hash}`);
+    });
+    // wired up, the tabs would go on writing the jam tab's state into
     // this page's address — which the next run would then open on
     GT.tabs.setState = () => {};
     GT.tabs.goTo = () => {};
     history.replaceState(null, '', location.pathname);
-    t.equal(bad.join('; '), '', 'A link to "CAGED practice" opens Practice with its state intact');
+    t.equal(bad.join('; '), '', 'A link to "CAGED practice" or "Practice" opens Jam with its state intact');
   }
 
   // A part written for one progression — the Hey Joe walk-up, whose bass
@@ -1005,9 +1008,9 @@
       const ps = q('#partSelect'); ps.value = String(i); ps.dispatchEvent(new Event('change'));
       return true;
     };
-    const notes = () => GT.practice.partState().notes.length;
+    const notes = () => GT.jam.partState().notes.length;
     setKey('major:E');
-    GT.practice.loadProgression({ chords: ['A', 'D', 'E', 'A'], key: 'E' });     // typed: no preset
+    GT.jam.loadProgression({ chords: ['A', 'D', 'E', 'A'], key: 'E' });     // typed: no preset
     view.applyViewState('m:penta.p:position');
     q('#chartViewGroup .seg-btn[data-value="part"]').click();
     if (!goTo(found)) bad.push(`could not pick ${found.style}/${found.feel}`);
@@ -1028,9 +1031,9 @@
     const href = location.hash;
     const plain = decodeURIComponent(href.replace(/\+/g, ' '));         // the fragment's spaces are pluses
     if (!plain.includes(`pr=${found.needs.preset}|${found.needs.variant || ''}`)) bad.push(`the link does not carry the preset (${plain})`);
-    GT.practice.loadProgression({ chords: ['A', 'D', 'E', 'A'], key: 'E' });
+    GT.jam.loadProgression({ chords: ['A', 'D', 'E', 'A'], key: 'E' });
     if (note.hidden) bad.push('(typing a progression did not take the preset away, so the round trip proves nothing)');
-    location.hash = '#practice-elsewhere';
+    location.hash = '#jam-elsewhere';
     location.hash = href;
     if (!note.hidden || !notes()) bad.push('following the link did not bring the preset back with the part open');
     q('#chartViewGroup .seg-btn[data-value="chart"]').click();
@@ -1038,28 +1041,28 @@
     t.equal(bad.join('; '), '', `A part that needs a progression (${found.feel}: ${want}) opens only with it, the excuse loads it, the link carries it`);
   }
 
-  GT.practiceSuites = [
-    ['Practice: a shared link round-trips', testShareLinkRoundTrips],
-    ['Practice: the styles are one list', testTheStyleListIsOneList],
-    ['Practice: a hit ends when the next begins', testAHitEndsWhenTheNextBegins],
-    ['Practice: the downbeat is an accent, not another instrument', testTheDownbeatIsAnAccentNotAnInstrument],
-    ['Practice: every root is on the picker', testEveryRootIsOnThePicker],
-    ['Practice: a root outside the key travels with it', testAnOutsideRootTravels],
-    ['Practice: a variant the mode drops takes its preset with it', testModeLockedVariantDropsItsPreset],
-    ['Practice: a hidden variant row is empty', testHiddenVariantRowIsEmpty],
-    ['Practice: the transports stay in step', testTransportsStayInStep],
-    ['Practice: a stall slips the progression, it does not pile up notes', testTheSchedulerNeverQueuesThePast],
-    ['Practice: stopping calls off the queue and mutes what is ringing', testStoppingCallsOffWhatIsQueued],
+  GT.jamSuites = [
+    ['Jam: a shared link round-trips', testShareLinkRoundTrips],
+    ['Jam: the styles are one list', testTheStyleListIsOneList],
+    ['Jam: a hit ends when the next begins', testAHitEndsWhenTheNextBegins],
+    ['Jam: the downbeat is an accent, not another instrument', testTheDownbeatIsAnAccentNotAnInstrument],
+    ['Jam: every root is on the picker', testEveryRootIsOnThePicker],
+    ['Jam: a root outside the key travels with it', testAnOutsideRootTravels],
+    ['Jam: a variant the mode drops takes its preset with it', testModeLockedVariantDropsItsPreset],
+    ['Jam: a hidden variant row is empty', testHiddenVariantRowIsEmpty],
+    ['Jam: the transports stay in step', testTransportsStayInStep],
+    ['Jam: a stall slips the progression, it does not pile up notes', testTheSchedulerNeverQueuesThePast],
+    ['Jam: stopping calls off the queue and mutes what is ringing', testStoppingCallsOffWhatIsQueued],
     // last: it types a progression of its own in, and the fixture is shared
-    ['Practice: typing a progression', testTypingAProgression],
-    ['Practice: a part stays put until you move it', testThePartStaysPut],
-    ['Practice: the tab follows held bars', testTheTabFollowsHeldBars],
-    ['Practice: the tempo presets, the chart edits in place, the picker is grouped', testTheTabsControls],
-    ['Practice: the key menu', testTheKeyMenu],
-    ['Practice: rhythm, mixed or lead', testTheBlend],
-    ['Practice: the loop', testTheLoop],
-    ['Practice: the band has a volume', testTheBandHasAVolume],
-    ['Practice: a part that needs its progression', testAPartThatNeedsItsPreset],
-    ['Practice: the old tab name still opens it', testTheOldTabNameStillOpensIt],
+    ['Jam: typing a progression', testTypingAProgression],
+    ['Jam: a part stays put until you move it', testThePartStaysPut],
+    ['Jam: the tab follows held bars', testTheTabFollowsHeldBars],
+    ['Jam: the tempo presets, the chart edits in place, the picker is grouped', testTheTabsControls],
+    ['Jam: the key menu', testTheKeyMenu],
+    ['Jam: rhythm, mixed or lead', testTheBlend],
+    ['Jam: the loop', testTheLoop],
+    ['Jam: the band has a volume', testTheBandHasAVolume],
+    ['Jam: a part that needs its progression', testAPartThatNeedsItsPreset],
+    ['Jam: the old tab name still opens it', testTheOldTabNameStillOpensIt],
   ];
 })();

@@ -1,8 +1,8 @@
 # Jeff's Guitar Tools
 
-A single-page, dependency-free site with five tabs under one header:
+A single-page, dependency-free site with six tabs under one header:
 
-- **Practice** — generates random diatonic chord progressions and
+- **Jam** — generates random diatonic chord progressions and
   plays them back on a recorded piano or a recorded guitar, over a recorded
   double bass, with an optional hi-hat click.
 - **Chord finder** — type a chord name (e.g. `G#9`, `Cmaj7`, `Dm7b5`), or
@@ -14,19 +14,24 @@ A single-page, dependency-free site with five tabs under one header:
   chord shape, a pentatonic box or a scale box on the neck and sound a note
   from inside it for you to place; the fourth plays a whole chord, shows you
   only its root, and asks what kind of chord it is.
+- **Drills** — exercises for the hands: chord changes, scale shapes,
+  picking speed, string crossing and arpeggios, each written for the key,
+  tempo, scale, shapes and position you choose, drawn as tab with the neck
+  following note by note, and played over a click. Every setting is in the
+  link, so a drill can be bookmarked or handed to someone.
 - **Style Deep Dives** — one player's whole way of playing, taken apart and
   put back together as parts you can practise. The first is Hendrix
   (`hendrix.html`): the hands and the grips, the scales, eight feels with
   rhythm, lead and mixed parts, the songs as reference points, exercises,
   studies, how the page was made, and its sources — every example playable
-  and a link away from the Practice tab.
+  and a link away from the Jam tab.
 
 Switching tabs stops any playback that was running. Each tab has its own URL
 fragment (`#chord-finder`, `#reverse-chord-finder`), so a tab can be
 bookmarked or linked to, and back/forward move between them; the page title
 names the tab you're on.
 
-## Practice
+## Jam
 
 ## Features
 
@@ -325,7 +330,7 @@ already fits and the bar has no space to spare. The style picker chooses the
   readout under the chords (the key itself is shown plainly above them,
   e.g. "C major" / "C#m")
 - Fretboard panel (6 strings, 15 frets) with five views, each named in one
-  word — the tab is already Practice and the legend already says
+  word — the tab is already Jam and the legend already says
   "C shape", so the prefix was carrying nothing. One **View** toggle above
   them all decides whether you're looking at the whole neck or at one hand
   position, and it stays put when you switch view, so following a chord into
@@ -560,7 +565,7 @@ for it, and the 7th), dropping the plain 5th but keeping an altered one, with
 the root underneath on the 6th or 5th string, which is the grip jazz players
 comp with; and for a plain triad you can ask for **three-note voicings
 only**. A major or minor triad also gets the whole-neck CAGED
-picture at the top — the same five shapes the practice tab draws, from the
+picture at the top — the same five shapes the jam tab draws, from the
 same code, so the two always agree.
 
 Click any shape and you hear it three ways over, on a recorded guitar: the chord, then its notes
@@ -621,7 +626,7 @@ A chord is drawn as a chord diagram, because that's how a chord is written
 down; it's the chord finder's own — same search, same diagram, same sounds —
 so clicking it plays the chord three ways over. A box is drawn across the
 whole neck, because that's where it lives and half of learning one is knowing
-where it sits — and it's drawn by the practice tab's own code, coloured by
+where it sits — and it's drawn by the jam tab's own code, coloured by
 the CAGED box it belongs to with the chord shape inside it traced through,
 since knowing which chord a box sits on is most of what makes it worth
 learning. (A scale with no perfect 5th has no such grip, and Locrian
@@ -631,7 +636,7 @@ light under the pointer the same way.
 
 The **scale** drill offers the seven modes and the **pentatonic** drill the
 two pentatonics, on any of the twelve roots, in the five CAGED boxes — the
-same written-out boxes the practice tab draws. The scales are named here by
+same written-out boxes the jam tab draws. The scales are named here by
 the intervals that define them, which is also how those boxes are keyed, so
 asking for a scale and getting its shapes is one lookup and no translating.
 
@@ -769,6 +774,49 @@ great deal when the dot is the thing you tap. On a phone the box now fills
 the screen with 40px targets, and the tap area grows a little further where
 the pointer is coarse.
 
+## Drills
+
+The drills tab is the jam tab's pieces put to a different job: not a
+progression to play over, but a thing to get into the hands, over a click.
+Five kinds, each a pure generator in `js/drills.js` (so the tests can
+realise one and count):
+
+- **Chord changes** — the grips of a progression, typed in (`G D Em C`,
+  with a chord repeated for a chord held) or the key's own I–IV–V–I, each
+  the CAGED shape nearest the position you pick among the shapes you
+  allow, with its 7th and its sus note — and a 7♯9 or a 9th its own grip,
+  root on the A string, the one the parts engine plays — struck once a
+  bar, twice, every beat or every eighth (down and up), for four, eight or
+  sixteen beats a chord.
+- **Scale shapes** — one box of a scale (the two pentatonics, the blues
+  scale with its ♭5 inside the pentatonic box, the major and minor scales
+  and the modes) up and down, in threes, in fours, in thirds, or up into
+  the next box and down it with a slide on the top string. The boxes are
+  the same written-out shapes the jam tab draws, narrowed to the CAGED
+  letters you allow and picked by name and fret.
+- **Picking speed** — two, three, four or six notes a string, up the box
+  and down it, for the alternate-picked evenness that speed comes from.
+- **String crossing** — one note a string in a pattern that jumps: string
+  to string, skip one, outside in, or off the low string as a pedal, over
+  all six strings or a set of four; written so no string comes twice
+  running, the loop's seam included.
+- **Arpeggios** — the chord tones of each shape up and down, one chord
+  after another.
+
+Notes a beat is one, two, three (triplets, on a twelve grid) or four; the
+tempo is a slider; the key is any of the twenty-four. The tab is `tab.js`,
+drawn to the width and followed by the example player (`js/example-player.js`,
+with a click style: the hat on every beat, the first heavier, and the
+chord under it once a bar when asked); the neck is `neck.js` through
+`js/neck-follow.js`, the chord's grip or the scale's notes in the position
+with each note lit as it sounds, beside the tab on a wide screen — and
+**Expand** opens the drill full-window, the tab drawn to the window's width
+and the neck beside it, the way the Hendrix examples do. The
+state rides in the fragment (`#drills?d=scale&k=major:E&sc=blues&b=E@12…`)
+and a link restores every field, the ones it leaves out to their defaults.
+The Hendrix deep dive's scale drills and chord changes open here; its
+parts open in the jam tab.
+
 ## Suggested parts
 
 A part is written **once per feel**, as two bars on the feel's own grid —
@@ -871,7 +919,7 @@ finder knows the grips (`HENDRIX_SHAPES` in `chord-finder.js`: the
 thumb-over E shape and its split chord, the hammered sus4, 6 and add9, the
 7♯9 and the 9th, the A and C shapes, stacked fifths) and names and tags
 them Hendrix first, so the deep dive's diagrams and the finder agree; the
-Practice tab's preset list has the changes his songs run on; and one part
+Jam tab's preset list has the changes his songs run on; and one part
 (the Hey Joe walk-up, whose 5th is the next chord's root only because every
 chord is a fourth below the last) says `needs` and opens only with that
 preset. `hendrix.html` and `js/hendrix-guide.js` are the deep dive under
@@ -886,10 +934,10 @@ shared player. Every card has a **Neck** switch that draws, under the tab,
 the chord as it's fretted (the CAGED grip nearest the hand, with its 7th
 and its colour tones hollow) or the notes the part may play (its palette
 in the position window), redrawn as the playhead enters a bar with a new
-chord and lit note by note as they sound — what the Practice tab's neck
+chord and lit note by note as they sound — what the Jam tab's neck
 does for a part — an **Expand** that opens the example in a full-window
 view, the tab drawn to the window's width and the neck beside it — and a
-"Drill it in Practice" link in the share format (key, chords or preset,
+"Drill it in Jam" link in the share format (key, chords or preset,
 tempo, feel, part, roll, blend, the neck's reading and box). The chord-change
 drills are the chords alone, whole and partial, no runs. The contents sit
 in the left margin and stay there, the section on screen marked and opened
@@ -940,7 +988,7 @@ A part is realised from one seed ("New fills" is a new seed), so a link
 holds the exact roll. A part with lead lines plays them by a blend —
 rhythm (never), mixed (each fill bar rolled, about half; a part's
 `leadChance` says otherwise), lead (every bar but the turnaround and the
-stop-time bars) — chosen on the practice tab and on each card of the parts
+stop-time bars) — chosen on the jam tab and on each card of the parts
 page. The review page still works: its left column is the base data, what
 the app played before.
 
@@ -1000,14 +1048,14 @@ drill or example can be bookmarked or sent to someone:
 | `#reverse-chord-finder?n=x-x-5-6-7-7` | those notes picked, written the way this app writes a grip |
 | `#ear-training?m=scale&k=Eb&s=dorian&i=2&o=1` | that drill, that box, that octave |
 | `#ear-training?m=quality&q=maj.m.7.9.13` | the quality drill, asking about those five |
-| `#practice?k=major:C&c=0.2.,4.2.&t=120` | the practice tab's own share link (`#caged-practice`, its old name, still opens it) |
-| `#practice?k=major:E&pr=Hendrix\|Cycle of fourths (Hey Joe)&s=hendrix.4&p=0.f.1` | the same, with the preset the chords came from by name — which a part written for one progression needs to open — and a style, a part and its roll |
+| `#jam?k=major:C&c=0.2.,4.2.&t=120` | the jam tab's own share link (`#caged-practice`, its old name, still opens it) |
+| `#jam?k=major:E&pr=Hendrix\|Cycle of fourths (Hey Joe)&s=hendrix.4&p=0.f.1` | the same, with the preset the chords came from by name — which a part written for one progression needs to open — and a style, a part and its roll |
 
 It's the exercise that's saved, not the question it happens to be asking: a
 bookmark should reopen the drill rather than one moment of it, and Random is
 there for wanting another. The state is written as you go, with
 `replaceState` — a control you twiddled is not a place you navigated to, and
-forty of them would leave the back button useless — except in the practice
+forty of them would leave the back button useless — except in the jam
 tab, which keeps its explicit **Copy link**: its state is a whole
 progression, and rewriting twelve chords into the URL on every twiddle would
 be noise.
@@ -1042,7 +1090,7 @@ server, runner or build step. They also leave the results on
 `window.TEST_RESULTS` so a headless browser can read them.
 
 The second group draws the fretboard for real. The five views decide their
-shapes while rendering, against the practice tab's own markup, so there's no
+shapes while rendering, against the jam tab's own markup, so there's no
 pure seam to test through: `tests-fretboard.js` builds the controls the view
 binds to — ids and data-values, nothing else — points it at a made-up
 progression and reads the SVG. Every check there guards a bug that shipped,
@@ -1122,7 +1170,7 @@ Ab, Gb, C#, A9, E9, C7, D7, Cm7, CM7):
    themselves; stretch one much further and it stops sounding like the guitar
    it was. So every string and fret the app draws has to land inside some
    sample's own range, and the map has to be in order with no gaps and no two
-   samples claiming a note. The practice tab's chords are held to the same
+   samples claiming a note. The jam tab's chords are held to the same
    line from the other end: all twelve roots in all twelve qualities are
    written out, voiced, and checked note by note against the map, because a
    voicing that reaches past it would drop to the piano mid-progression and
@@ -1133,7 +1181,7 @@ Ab, Gb, C#, A9, E9, C7, D7, Cm7, CM7):
    voice plays as though nothing had happened. So both layers are held to the
    shape the `.sfz` has — all 88 keys covered, no gap, no note claimed twice,
    no sample stretched further than its layer allows — and every note the
-   practice tab can play is checked to have a sample on both sides of the
+   jam tab can play is checked to have a sample on both sides of the
    velocity split. It also walks every style in the library rather than the
    voices that exist today: a style added later either voices inside the
    warmed range or this fails, and a style asking for a voice nothing can
@@ -1159,15 +1207,15 @@ Ab, Gb, C#, A9, E9, C7, D7, Cm7, CM7):
    their colour, a unison bend is two strings meeting, a trill is 32nds
    with the tab's value on the first, the wah sweeps (measured on the
    rendered mix). And the finder names every grip the Hendrix deep dive
-   draws, with Hendrix first among its styles; the practice tab opens a
+   draws, with Hendrix first among its styles; the jam tab opens a
    part that needs its progression only with that preset, and its link
-   carries the preset (`js/tests-practice.js`).
+   carries the preset (`js/tests-jam.js`).
 
 The snapshot lives in `js/tests.js`. If a change is *meant* to alter the
 shapes, regenerate it deliberately rather than editing it to match.
 
 The second group needs a page. `js/tests-fretboard.js`, `js/tests-ear.js` and
-`js/tests-practice.js` each build the controls their tab binds to — the module
+`js/tests-jam.js` each build the controls their tab binds to — the module
 only ever asks for ids, so that's all a fixture owes it — and then press the
 buttons. That's the only way to catch a class of bug the pure tests can't
 see: the ear trainer once built its answer buttons from one list and chose the
@@ -1246,7 +1294,7 @@ not taken: no CC0 strum bank exists with a grant readable at the source
 aggregators, not dedications by the recordist), and a strum pitch-shifted
 more than two semitones sounds wrong anyway; the sweep over the fifteen
 Martin notes is the answer. One part player (`playPartNotes`) turns a
-realised part into sound for the practice tab, the parts page and the
+realised part into sound for the jam tab, the parts page and the
 review page alike, taking every technique a note asks for rather than the
 first that matches.
 
@@ -1380,7 +1428,7 @@ Wherever a guitar rings undistorted it is a **real guitar**: fifteen notes of
 a 2017 Martin HD-28 recorded by Jeff Learman and released CC0, one sample
 every two or three semitones with the notes between reached by pitching the
 nearest one. That is the chord finder, the reverse finder, the ear trainer,
-the practice tab's guitar voice and its suggested parts. The samples sit in `audio/guitar/`, and `audio/guitar/SOURCE.md` records where they came from
+the jam tab's guitar voice and its suggested parts. The samples sit in `audio/guitar/`, and `audio/guitar/SOURCE.md` records where they came from
 and why we believe we may use them, along with two libraries that were
 rejected and the reason — the Philharmonia's, whose terms forbid making the
 samples available as-is, which is what a public repository does; and VCSL,
@@ -1427,7 +1475,7 @@ as a `file://` URL, a browser gives the page an opaque origin and won't let
 it read its own neighbours — Firefox and Chrome both closed that door after
 [CVE-2019-11730](https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CORS/Errors/CORSRequestNotHttp)
 — so the recordings are for pages served over http, and double-clicking
-`index.html` still works, just synthesized. The practice tab can use them
+`index.html` still works, just synthesized. The jam tab can use them
 too, under Voice, and falls back the same way: the piano is what you get
 until the samples are resident, and all that happens on a page that can't
 reach them is that the fallback is permanent. Its drums stay synthesized.
@@ -1482,17 +1530,17 @@ by what each part does:
 | --- | --- |
 | `theory.js` | Keys, scale degrees, chord formulas, chord naming, chord identification. Pure — no DOM, no audio, no app state. |
 | `fretboard.js` | Tuning, CAGED and pentatonic shape templates, the maths that places them on the neck, CAGED shape matching, and the two pieces of box drawing every view shares — `boxColouredNotes`, which colours a note by the box that owns it, and `gripOutlines`, which traces the chord shape underneath. Also pure. |
-| `neck.js` | Draws a full 15-fret neck as SVG from markers and shape outlines — shared by the practice fretboard, the chord finder's CAGED overview and the reverse finder, so all three necks are one drawing. A fret is close to twice as wide as the gap between two strings, near enough the shape of the real thing to read a grip off, and a note sits close up behind its fret wire where the finger goes rather than in the middle of the gap; the inlays and the fret numbers stay centred, since that's where they are on a guitar. The label and the dot are sized against each other: a single character is set as large as the dot will hold without running into a root's ring, and a longer one ("♭3") a size down so it fits — which is what lets the dots be small enough for the strings to sit that close together. A full neck is wide, so it wants most of a laptop's width — hence the wider cap on how large the drawing may render. |
+| `neck.js` | Draws a full 15-fret neck as SVG from markers and shape outlines — shared by the jam fretboard, the chord finder's CAGED overview and the reverse finder, so all three necks are one drawing. A fret is close to twice as wide as the gap between two strings, near enough the shape of the real thing to read a grip off, and a note sits close up behind its fret wire where the finger goes rather than in the middle of the gap; the inlays and the fret numbers stay centred, since that's where they are on a guitar. The label and the dot are sized against each other: a single character is set as large as the dot will hold without running into a root's ring, and a longer one ("♭3") a size down so it fits — which is what lets the dots be small enough for the strings to sit that close together. A full neck is wide, so it wants most of a laptop's width — hence the wider cap on how large the drawing may render. |
 | `progressions.js` | The preset progressions, written as scale degrees. Pure data. |
 | `tab.js` | Draws guitar tablature from a note list: the strings, the numbers, the techniques, the bar numbers, and the rhythm under each row (stems, flags, beams within the beat, dots, hollow heads) from each strike's slot length on either grid. |
-| `css/tab.css` | The tab's look, one sheet for the three pages that draw it (practice, parts, review): a 17px string gap, 11px bold numbers, thin strings, the rhythm's stems and beams. Each page keeps only its own playing colour and playhead. |
+| `css/tab.css` | The tab's look, one sheet for the three pages that draw it (jam, parts, review): a 17px string gap, 11px bold numbers, thin strings, the rhythm's stems and beams. Each page keeps only its own playing colour and playhead. |
 | `parts-guide-data.js` | What the parts page says about each style and part: progression, tempo, what the rhythm and notes are made of, where the idiom comes from. Pure data. |
 | `parts-guide.js` | The parts page (`parts.html`): every part written out and playable, in any reading. |
 | `example-player.js` | The player the parts page and the deep dives share: draws a realised part as tab and loops it over the style's band, the tab following and, where the card has a neck, its dots lit as the notes sound; tells the page when the playhead enters a bar (`onBar`) and when the loop stops. |
 | `hendrix-guide.js` | The Hendrix deep dive (`hendrix.html`): the grips drawn, the examples, exercises and studies realised from the Hendrix genre and played, each with its link into Practice, the songs and the sources. |
 | `js/styles-base.js` | The band patterns the app started with: the base `STYLES`, one entry per style with its feels. |
 | `js/styles.js` | Resolves what the app plays: the proposals merged over the base patterns, parts and guide at load (`GT.styles`), with the base kept for the review page. |
-| `js/band.js` | The band one slot at a time — kit, comp, bass, the approach and the push on the last eighth, the fill on the last bar, stop-time — used by the practice tab, the parts page and the review page alike. |
+| `js/band.js` | The band one slot at a time — kit, comp, bass, the approach and the push on the last eighth, the fill on the last bar, stop-time — used by the jam tab, the parts page and the review page alike. |
 | `docs/STYLES.md` | The method behind the styles: where the data lives, the rule about sources, how a part is written and placed, the register, double stops, the thumb, the band, checking, adding a style. Read before changing a style. |
 | `docs/STYLES-CATALOGUE.md` | What the research found, per genre and part; generated by `tools/styles-doc.js`. |
 | `tools/` | `sweep.js` realises every part every way and reports rule breaks; `reach.js` prints what each key's box holds; `styles-doc.js` writes the catalogue. |
@@ -1502,17 +1550,21 @@ by what each part does:
 | `review/proposals-easy.js` | Easy mode's hand-written parts: the beginner's form of a part where the page's simplifying rule can't find it. |
 | `review/proposals-hendrix.js` | The Hendrix genre: eight feels, twenty-three parts with rhythm, lead and mixed forms, the research behind them. Realised by the app's own engine (`engine: true`). |
 | `audio.js` | The Web Audio synth voices (piano, bass, drums) and the per-style groove patterns. Owns the `AudioContext` and the queue both players schedule into — how far a stall has put a cursor behind the clock, and calling off notes that haven't sounded — but knows nothing about the UI. |
-| `fretboard-view.js` | The practice tab's fretboard panel: the six views, the legend, the hover spotlight, the follow-playback highlighting. |
-| `practice.js` | The practice tab: progression generation, the chord display and settings, and the playback transport. |
-| `stage.js` | The practice tab's chrome: the style picker, the popover menus, the phone's controls toggle, the progression name in the chart head, the beat line, the draggable position window, and the site menu. Reads what the other modules draw; keeps no state. |
+| `fretboard-view.js` | The jam tab's fretboard panel: the six views, the legend, the hover spotlight, the follow-playback highlighting. |
+| `jam.js` | The jam tab (once "Practice", and "CAGED practice" before that — both names still open it): progression generation, the chord display and settings, and the playback transport. |
+| `stage.js` | The jam tab's chrome: the style picker, the popover menus, the phone's controls toggle, the progression name in the chart head, the beat line, the draggable position window, and the site menu. Reads what the other modules draw; keeps no state. |
 | `chord-finder.js` | Chord finder tab: voicing search, fingering, chord diagrams. |
 | `reverse-finder.js` | Reverse chord finder tab: click targets over the shared neck, and the name lookup. |
-| `ear-training.js` | Ear training tab: what's on the neck — a chord shape, a pentatonic box or a scale box — and the drill over its notes. Draws and sounds chords from the chord finder's own code and boxes from the practice tab's, so no tab can drift from another. |
+| `drills.js` | The drills tab: the five generators (changes, scale, picking, crossing, arpeggio), the page's state and its link, the controls, the neck and the player wired to them. |
+| `neck-follow.js` | A neck that follows a part, for any page that plays one: the chord as it's fretted or the notes the part may play, drawn with neck.js so the player can light them. Shared by the Hendrix deep dive and the drills tab. |
+| `tests-drills.js` | The drills' tests: what each kind realises, the link, the controls. Loads before `drills.js`. |
+| `ear-training.js` | Ear training tab: what's on the neck — a chord shape, a pentatonic box or a scale box — and the drill over its notes. Draws and sounds chords from the chord finder's own code and boxes from the jam tab's, so no tab can drift from another. |
 | `tooltips.js` | The (i) info bubbles. |
 | `tabs.js` | Tab switching, plus the URL fragment and page title that go with each tab — including `setState`, which lets a tab write its own state after the slug so an exercise can be bookmarked. |
 | `main.js` | Boots each tab and wires the header together. |
 | `tests.js` | The regression tests, run by `tests.html`. |
 | `js/tests-sound.js` | The measured tests: the mix rendered offline and read as numbers — no clipping, a strum's sum, the part not ducking the band, the techniques heard, the kit's hits, choke, rim and beater, the room's reflections, the two pinned levels, the guitar's own fallback. |
+| `tests-jam.js` | The jam tab's own state, pressed: the progression, the pickers, the share link, the part, the loop. Loads before `jam.js`. |
 | `tests-ear.js` | The ear trainer's drill, pressed rather than reasoned about: builds the controls it binds to, then answers questions. Loads before `ear-training.js`. |
 | `tests-fretboard.js` | What the fretboard draws: builds the controls the view binds to, then checks the shapes it renders. Loads before `fretboard-view.js`. |
 
@@ -1521,10 +1573,10 @@ Each file wraps itself in an IIFE and hangs its public interface off a single
 way — `theory` and `fretboard` know about nothing, `audio` uses `theory`, the
 tab modules use those, and `main` starts them.
 
-`practice.js` and `fretboard-view.js` share state (the progression, which
+`jam.js` and `fretboard-view.js` share state (the progression, which
 chord is sounding), so rather than reaching into each other, the view gets a
 small **host object** of getters at `init()` and exposes a handful of methods
-(`render`, `followChord`, `onPlaybackStarted`, …) for the practice tab to call.
+(`render`, `followChord`, `onPlaybackStarted`, …) for the jam tab to call.
 
 They're plain `<script>` tags rather than ES modules on purpose: modules are
 blocked by CORS when a page is opened straight from disk, and this one is meant

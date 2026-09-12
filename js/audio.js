@@ -1104,7 +1104,7 @@
   }
 
   // ---- the part, played --------------------------------------------------
-  // The practice tab, the parts page and the review page all play a
+  // The jam tab, the parts page and the review page all play a
   // realised part; this is the one place it is turned into sound. `notes`
   // are realised notes (parts.js), `at(n)` the audio time of a note's own
   // `at` (the caller knows its grid, its swing and its humanising), `level`
@@ -1213,7 +1213,7 @@
     // peak, because the two layers are not level-matched to each other: the
     // soft A3 is recorded a touch louder than the hard one, so leaning on the
     // layer to carry the dynamic left soft beats louder than hard ones.
-    // Uncapped for the same reason the synth is — the practice tab's
+    // Uncapped for the same reason the synth is — the jam tab's
     // roots-only mode deliberately asks for more than 1 to make a lone root
     // sit where a triad did, and the limiter catches the rest.
     const level = PIANO_LEVEL * velocity * share;
@@ -1231,7 +1231,7 @@
 
   // The recordings a run of notes is about to need, fetched before the beat
   // that needs them. Both layers, because one progression played straight
-  // through uses both: the practice tab strikes a downbeat at full velocity
+  // through uses both: the jam tab strikes a downbeat at full velocity
   // and everything else at 0.62, which lands either side of the split.
   // Every pitch a chord can be played at, whichever voice the style picks:
   // the plain triad, the 7th, and the rootless 7th the jazz styles comp with.
@@ -1273,7 +1273,7 @@
   // The voice falls back per chord rather than per session: a sample that
   // hasn't arrived plays as piano, which is a chord in the wrong voice
   // instead of a hole in the beat. warmGuitar() before playback makes that
-  // rare — the practice tab calls it when you press Play.
+  // rare — the jam tab calls it when you press Play.
   const PIANO_ROLL = 0.003;           // two hands never land dead together
 
   // Whatever the notes are, played the way the chosen voice plays them. Every
@@ -1298,7 +1298,7 @@
   // this trim puts the two voices within a decibel of each other over a
   // half-second strike, so switching the voice doesn't move the band.
   const GUITAR_COMP = 1.7;
-  // A root alone against the triad it stands in for (the practice tab's
+  // A root alone against the triad it stands in for (the jam tab's
   // roots-only mode): one piano note is 5 dB under three, measured.
   const ROOT_ALONE = 1.8;
   function playVoicedNotes(freqs, time, duration, velocity, voice, opts = {}){
@@ -1344,7 +1344,7 @@
   }
 
   // Triad plus a 7th; `rootless` drops the low root and voices it higher.
-  // A chord that carries its own 7th — one the practice tab's shape picker
+  // A chord that carries its own 7th — one the jam tab's shape picker
   // set — is played as written. A plain triad still gets the style's 7th,
   // since that's the style's sound: a blues comps in dominants.
   // KEEPING THE COMP IN THE MIDDLE OF THE PIANO. A voicing is built upward

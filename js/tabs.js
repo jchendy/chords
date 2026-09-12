@@ -20,9 +20,9 @@
     const titleEl = document.querySelector('.site-title');
     const siteName = (titleEl ? titleEl.textContent : document.title).trim();
     const bySlug = new Map(buttons.map(b => [slugify(b.textContent), b]));
-    // the practice tab was "CAGED practice" for its first year; links carry
-    // the old name, and still open it
-    if (bySlug.has('practice')) bySlug.set('caged-practice', bySlug.get('practice'));
+    // the jam tab was "CAGED practice" for its first year and "Practice"
+    // after that; links carry the old names, and still open it
+    if (bySlug.has('jam')){ bySlug.set('practice', bySlug.get('jam')); bySlug.set('caged-practice', bySlug.get('jam')); }
     // the fragment is "slug" or "slug?state" — a shared progression rides
     // along after the question mark, and only the slug names the tab
     const currentSlug = () => location.hash.slice(1).split('?')[0];

@@ -332,7 +332,7 @@
   // the nearest box's — an arpeggio note just outside a box still reads as
   // belonging to it.
   //
-  // The practice tab's Chords, Pentatonic and Scales views all draw this same
+  // The jam tab's Chords, Pentatonic and Scales views all draw this same
   // picture, and so does the ear trainer's box. Each used to carry its own copy
   // of the loop; the copies had drifted. What actually differs between them is
   // only which notes they draw and what they call them, which is all `labelOf`
@@ -389,11 +389,11 @@
 
   // The five CAGED shapes for one triad, laid out across the whole neck and
   // coloured by shape (notes two shapes share get a split dot). This is the
-  // data behind the practice tab's Chords view; the chord finder draws
+  // data behind the jam tab's Chords view; the chord finder draws
   // the same thing, so both stay identical by construction.
   // Pass `seventhPc` and each shape turns into its 7th-chord voicing (the
   // same way the position reading does it), with the 7th drawn as a hollow dot.
-  // `allowed` narrows it to a set of shape letters — the practice tab lets you
+  // `allowed` narrows it to a set of shape letters — the jam tab lets you
   // work on a few of the five at a time. Filtering here rather than afterwards
   // is what keeps a note two shapes share honest: with one of them switched
   // off it's a plain dot in the other's colour, not a split still half-painted

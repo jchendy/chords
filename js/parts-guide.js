@@ -3,7 +3,7 @@
 // the idiom comes from, and a Play button. A page of its own, so the machinery
 // can be read end to end: parts.js realises, tab.js draws, audio.js plays —
 // this file only wires them to a page and keeps a small player of its own,
-// since the practice tab's scheduler is wound round that tab's controls.
+// since the jam tab's scheduler is wound round that tab's controls.
 (function(){
   'use strict';
   const GT = (window.GT = window.GT || {});
@@ -30,7 +30,7 @@
   const { windowFor, drawTab, play, stop } = GT.examplePlayer;
   const playing = () => GT.examplePlayer.playing();
 
-  // The progression as the practice tab would hold it: chord objects with
+  // The progression as the jam tab would hold it: chord objects with
   // numerals against the key.
   function chordsOf(entry){
     const tonicPc = SEMITONE[entry.key] % 12;
@@ -76,7 +76,7 @@
         const card = document.createElement('article');
         card.className = 'part';
         // a part written with lead lines can be heard as comping alone, as a
-        // lead pass, or both — the same three ways the practice tab offers
+        // lead pass, or both — the same three ways the jam tab offers
         const blends = GT.parts.hasLeads(part)
           ? `<span class="seg blend" role="group" aria-label="Rhythm or lead" title="Comping alone, a lead pass, or both: the lead lines in about half the fill bars">${GT.parts.BLENDS.map(b => `<button type="button" data-value="${b}"${b === 'mixed' ? ' class="active"' : ''}>${b[0].toUpperCase() + b.slice(1)}</button>`).join('')}</span>`
           : '';

@@ -1,7 +1,7 @@
 // Regression tests for what the fretboard actually draws.
 //
 // The five views are the one part of the app with no pure seam: the shapes are
-// decided while rendering, against DOM the practice tab owns. So this file
+// decided while rendering, against DOM the jam tab owns. So this file
 // builds the controls the view binds to — ids and data-values only, no styling
 // — and must load *before* js/fretboard-view.js, which binds them as it loads.
 // The suites themselves run later, from js/tests.js.
@@ -814,7 +814,7 @@
   }
 
   // ---- what the neck is showing, as a string and back again ----
-  // The practice tab's link carries the view in one field, so that a bookmark
+  // The jam tab's link carries the view in one field, so that a bookmark
   // holds what you were actually looking at — the third box of the A-shape
   // pentatonic, coloured by interval — and not merely the key you were in.
   // Two things have to hold. A setting left at its default writes nothing, or

@@ -23,7 +23,7 @@ records that show it, and why every part is written the way it is — are in
   and the rest stay; an added feel becomes a new variant of its style; the
   guide page is written from the verdicts and the parts' reasons.
 - `js/parts.js` — the realiser (the notes on the neck), `js/band.js` — the
-  band slot by slot, `js/tab.js` — the drawing. The practice tab, the parts
+  band slot by slot, `js/tab.js` — the drawing. The jam tab, the parts
   page (`parts.html`) and the review page (`review.html`) all play through
   these; there is one copy of each rule.
 - `tools/styles-doc.js` writes the catalogue; `tools/sweep.js` realises
@@ -173,6 +173,11 @@ keys reach 24–28. The `tools/reach.js` script prints this per key.
   plays.
 - In the Triads reading every strum is the triad the neck shows, whatever
   voicing was asked for.
+- A 7♯9 or a 9th struck whole (`full`) is its own grip — x-7-6-7-8-x,
+  x-7-6-7-7-7, root on the A string — when the grip can be had at the
+  position, not a CAGED 7th with the colour left out. `opts.shapes` (a set
+  of CAGED letters) narrows the grips a strum may use; the drills tab sets
+  it, the jam tab doesn't.
 - A strum is a pick sweep across neighbouring strings. When the window
   cuts into the grip so that its cells inside sit on strings that aren't
   neighbours, the grip is completed a fret or two past the window (the

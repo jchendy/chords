@@ -1,4 +1,4 @@
-// The practice tab's own chrome: the things the page does that no module
+// The jam tab's own chrome: the things the page does that no module
 // owns — the Set up sheet, the phone's controls toggle, the progression
 // name in the chart head, the beat line, the position window on the neck,
 // and the site menu. Everything here reads what the modules already draw;
@@ -14,7 +14,7 @@
     // the Set up sheet when it isn't. The row itself moves rather than being
     // copied, so there is only ever one of it and nothing to keep in step.
     // (The style is a named picker in the bar instead: six buttons don't fit,
-    // and practice.js already keeps that kind of pair in step.)
+    // and jam.js already keeps that kind of pair in step.)
     const homes = [
       { el: $('clickRow'), slot: $('barClickSlot'), mq: window.matchMedia('(min-width: 900px)') },
     ];
@@ -133,7 +133,7 @@
       progLabel.textContent = set ? o.text : 'Progression';
       progLabel.classList.toggle('unset', !set);
     }
-    // practice.js rewrites the options and sets the value together; read after it has
+    // jam.js rewrites the options and sets the value together; read after it has
     new MutationObserver(() => setTimeout(syncProg, 0)).observe(prog, { childList: true });
     prog.addEventListener('change', () => setTimeout(syncProg, 0));
     setTimeout(syncProg, 0);
@@ -144,7 +144,7 @@
       .observe(play, { childList: true, subtree: true });
 
     // ---- the beat line: the fill on the sounding bar follows the readout ----
-    // practice.js prints "bar.beat" into #measureReadout; the chart shows it
+    // jam.js prints "bar.beat" into #measureReadout; the chart shows it
     // instead, as a fill along the top of the sounding bar, a quarter per beat.
     function beatLine(){
       const bars = [...document.querySelectorAll('#chords .bar')];
@@ -233,7 +233,7 @@
     // ---- copy the link from the bar, where there's only room for an icon ----
     const quickShare = $('quickShare');
     quickShare.addEventListener('click', async () => {
-      const copied = await GT.practice.copyShareLink();
+      const copied = await GT.jam.copyShareLink();
       if (!copied){
         // no clipboard here, so fall back to the Settings menu's field, which
         // can be selected by hand

@@ -42,7 +42,7 @@
   }
 
   // ---- what to render ----
-  // The loudest thing the practice tab can do: the busiest resolved style
+  // The loudest thing the jam tab can do: the busiest resolved style
   // with the guitar voice, and a six-string part strum on every beat at the
   // part's default level, together.
   function loudestBar(a, opts = {}){
@@ -252,7 +252,7 @@
   }
 
   // ---- two levels pinned ----
-  // A root alone (the practice tab's roots-only mode) sits where the triad
+  // A root alone (the jam tab's roots-only mode) sits where the triad
   // sat; the guitar comp sits where the piano comp does, so switching the
   // voice doesn't move the band.
   async function testTheLevelsAreMatched(t){

@@ -1,5 +1,5 @@
 // Draws a neck as SVG from a set of markers and shape outlines. Shared by the
-// practice tab's fretboard, the chord finder's CAGED overview and the reverse
+// jam tab's fretboard, the chord finder's CAGED overview and the reverse
 // chord finder, so all three look the same.
 //
 // A neck can show all 15 frets or a stretch of them. `geometry(from, to)`
@@ -79,7 +79,7 @@
       return els;
     }
 
-    // Markers carry optional extras the practice tab uses for its spotlight and
+    // Markers carry optional extras the jam tab uses for its spotlight and
     // follow-playback highlighting; a plain diagram can leave them off.
     // Anything outside this neck's frets is simply not drawn.
     function buildSVG(markers, lines){

@@ -793,8 +793,8 @@
     t.equal(bad.join('; '), '', `Every quality the drill can ask can be played (${QUALITIES.length} qualities)`);
   }
 
-  // ---- 3i. every chord the practice tab plays is inside the recordings ----
-  // The piano has no range to run out of; fifteen recordings do. The practice
+  // ---- 3i. every chord the jam tab plays is inside the recordings ----
+  // The piano has no range to run out of; fifteen recordings do. The jam
   // tab stacks a chord upward from the third octave, so a 13th in a high key
   // reaches further than anything the neck can play — and a note past the top
   // sample would come out pitched a long way from anything a guitar sounds
@@ -821,7 +821,7 @@
         }
       });
     }));
-    t.equal(bad.join('; '), '', `Every chord the practice tab plays has recordings for it (${checked} notes)`);
+    t.equal(bad.join('; '), '', `Every chord the jam tab plays has recordings for it (${checked} notes)`);
   }
 
   // ---- 3i-bis. the piano map says what the .sfz says ----
@@ -1118,7 +1118,7 @@
     for (let slot = 0; slot < 16; slot++) scheduleSlot(p, slot, slot, 1, { audio: fake, chord: A, next: D, changing: false });
     t.equal(rec.map(r => `${r[0]}:${r[1]}`).join(','), '14:A', 'staying put, the pattern plays its own chord there');
 
-    const { CLICK } = GT.practice;
+    const { CLICK } = GT.jam;
     t.ok(CLICK.downbeat <= HAT.accent && CLICK.other <= HAT.accent, `the click and the count-in sit at the band's hat level (${CLICK.downbeat}, ${CLICK.other} against ${HAT.accent})`);
     t.ok(CLICK.downbeat > CLICK.other, 'with a downbeat accent');
 
@@ -1856,7 +1856,7 @@
   }
 
   // ---- 4y. the Voice control reaches every style ----
-  // The practice tab's Voice control picks piano or guitar. It used to be
+  // The jam tab's Voice control picks piano or guitar. It used to be
   // read in one place — the Simple style's own beat — so choosing Guitar
   // did nothing at all under Rock, Blues, Jazz, Pop or Funk, which all comp
   // through playStyleVoice. Nothing caught it because sound isn't testable;
@@ -1893,7 +1893,7 @@
 
     // A preset the key's mode offers must have a variant that mode can show.
     // Choosing one whose variants are all written for the other mode leaves
-    // nothing to select, and the practice tab now drops a selection whose
+    // nothing to select, and the jam tab now drops a selection whose
     // variant the mode has no room for — so such a preset would clear itself
     // the instant you picked it.
     const fits = (item, mode) => !item.mode || item.mode === mode;
@@ -2663,7 +2663,7 @@
       ['Ear trainer: one octave of a box is one octave of it', testOneOctaveOfABox],
       ['Ear trainer: every chord quality it can ask, it can play', testEveryQualityCanBeAsked],
       ['Every note the neck can play has a recording near it', testEveryNoteHasARecording],
-      ['Every chord the practice tab plays has recordings for it', testEveryChordFitsTheRecordings],
+      ['Every chord the jam tab plays has recordings for it', testEveryChordFitsTheRecordings],
       ['The piano map covers both layers end to end', testThePianoMapIsWhole],
       ['A strum is a sweep', testAStrumIsASweep],
       ['One string, one note; a bend goes where it says', testOneStringOneNote],
@@ -2692,7 +2692,8 @@
       ['The progression presets are well-formed', testData],
     ].concat(GT.fretboardSuites || []).concat(GT.earSuites || [])
      .concat(GT.soundSuites || [])       // the measured ones: they render the mix offline
-     .concat(GT.practiceSuites || []);   // added by the tests-*.js files, if they loaded; practice last
+     .concat(GT.drillsSuites || [])
+     .concat(GT.jamSuites || []);   // added by the tests-*.js files, if they loaded; jam last
     const out = [];
     for (const [title, fn] of suites){
       const from = results.length;

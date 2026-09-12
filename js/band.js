@@ -1,6 +1,6 @@
 // The band, one slot at a time. A style's pattern says what the kit, the
 // comp and the bass do on each slot of a bar; this schedules one slot of it,
-// and the three players — the practice tab, the parts page, the review page
+// and the three players — the jam tab, the parts page, the review page
 // — call it rather than each keeping a copy of the rules. The rules:
 //
 //   kick / snare / hat / ride / rim / ghost / hatOpen — slot lists; the hat

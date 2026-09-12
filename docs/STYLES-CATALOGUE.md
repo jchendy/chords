@@ -876,7 +876,7 @@ Grunge, pop and rock live on quiet–loud: the same part played palm-muted and c
 
 ### A tempo per style
 
-The practice tab keeps one tempo across styles; a doom part at 120 or a thrash part at 84 is the wrong music. Each style carries its usual tempo (as the guide and this page do) and picking a style offers it.
+The jam tab keeps one tempo across styles; a doom part at 120 or a thrash part at 84 is the wrong music. Each style carries its usual tempo (as the guide and this page do) and picking a style offers it.
 
 ### Double stops placed by shape
 

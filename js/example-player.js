@@ -2,9 +2,9 @@
 // part (tab.js), and one part at a time played over its style's band —
 // the kit, the comp and the bass through band.js, the part on the guitar
 // on its own bus through audio.playPartNotes — looping over its bars,
-// queued ahead the way the practice tab does it, the playhead and the
+// queued ahead the way the jam tab does it, the playhead and the
 // sounding notes lit as it goes. The parts page and the Hendrix page both
-// play through this; the practice tab has its own scheduler, wound round
+// play through this; the jam tab has its own scheduler, wound round
 // its controls. A card is any element holding a `.tab` (the drawing), a
 // `.play` button and, once drawn, the `.tab-playhead` inside the SVG.
 (function(){
@@ -47,7 +47,7 @@
   // ---- the player ----
   // One part at a time: the style's own kit, comp and bass under it, the
   // part on the guitar on its own bus, looping over the six bars, queued
-  // 0.4 s ahead the way the practice tab does it.
+  // 0.4 s ahead the way the jam tab does it.
   const TICK_MS = 25;
   const ahead = () => audio.scheduleAhead(document.hidden);   // 0.4 s visible, wider hidden
   let playing = null;                  // { style, feel, chords, notes, tempo, card, metrics }
@@ -106,8 +106,13 @@
           audio.playChord(chord, t0 + beat * spb, spb, beat === 0 ? 0.86 : 0.68, 'piano');
           audio.playHiHat(t0 + beat * spb, 0.4);
         }
+      } else if (style === 'click'){
+        // a metronome: the hat on every beat, the first of the bar heavier,
+        // and the chord once a bar under it when the page asks (`hooks.comp`)
+        for (let beat = 0; beat < beats; beat++) audio.playHiHat(t0 + beat * spb, beat === 0 ? 0.55 : 0.32);
+        if (playing.hooks.comp) audio.playChord(chord, t0, barLen, 0.6, 'piano');
       } else {
-        // the band as the practice tab plays it: fills, approaches, pushes,
+        // the band as the jam tab plays it: fills, approaches, pushes,
         // stop-time bars and all, through band.js
         const bctx = { chord, next, audio, voice: 'piano',
                        changing: displayName(next) !== displayName(chord),
@@ -117,7 +122,7 @@
           GT.band.scheduleSlot(feel, slot, t0 + slot * slotDur + GT.band.swingOffset(feel, slot, slotDur), slotDur, bctx);
         }
       }
-      // the part through the engine's one player, at the practice tab's default level
+      // the part through the engine's one player, at the jam tab's default level
       audio.playPartNotes(notes.filter(n => n.bar === bar), n => t0 + n.at * slotDur + GT.band.swingOffset(feel, Math.floor(n.at), slotDur), slotDur, audio.PART_LEVEL, { slapback: !!feel.slapback })
         .forEach(({ note: n, time, until }) => log.push({ time, until, slot: bar * grid + Math.floor(n.at), where: `${n.string}:${n.fret}` }));
       for (let slot = 0; slot < grid; slot++) log.push({ time: t0 + slot * slotDur, slot: bar * grid + slot, head: true });

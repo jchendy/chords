@@ -1,6 +1,6 @@
 // Reverse chord finder tab: click notes on a fretboard, get back every chord
 // name those notes could go by. The neck itself comes from neck.js, so it
-// matches the practice tab's; this file only adds the click targets.
+// matches the jam tab's; this file only adds the click targets.
 (function(){
   'use strict';
   const GT = (window.GT = window.GT || {});
@@ -16,7 +16,7 @@
   let reverseSelection = new Array(6).fill(null);   // per string: fret number or null (muted)
 
   function renderReverseFretboard(){
-    // the same empty neck the practice tab draws, from the same code
+    // the same empty neck the jam tab draws, from the same code
     const els = board();
 
     // one clickable target per string/fret intersection, plus fret 0 (open)

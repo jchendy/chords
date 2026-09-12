@@ -771,7 +771,7 @@
   }
 
   // A plain triad also gets the whole-neck CAGED picture at the top — the same
-  // five shapes, colours and labels the practice tab draws.
+  // five shapes, colours and labels the jam tab draws.
   function buildCagedOverview(parsed){
     const isMinor = parsed.formula.name === 'm';
     const { markers, lines, shapesShown } = cagedTriadBoard(parsed.rootPc, isMinor, parsed.rootName);

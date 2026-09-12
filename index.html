@@ -15,14 +15,14 @@
      - Colour means one thing only: which CAGED shape a note is. A chosen
        control is ink with a rule under it, an unchosen one is muted.
        Emphasis is weight, not hue.
-     - Three tiers of control on the practice tab, three visual weights: the
+     - Three tiers of control on the jam tab, three visual weights: the
        view tabs (large), the toolbar (small caps), and a quieter row for the
        shapes under the legend. Set-once things live in the Set up sheet.
      - The chart is the familiar grid, four bars to a row. While playing, a
        beat line appears along the top of every bar and fills through the
        sounding one, a quarter per beat.
      - The hand position is drawn on the neck as a window you drag.
-     - One transport, pinned to the bottom of the practice tab. */
+     - One transport, pinned to the bottom of the jam tab. */
 
   :root{
     color-scheme: dark;
@@ -102,11 +102,11 @@
   .menu-item .site-tab.active{ text-decoration:underline; text-underline-offset:4px; }
   .menu-btn[aria-expanded="true"]{ color:var(--ink); border-color:var(--muted); }
 
-  /* every tab is a page; the practice tab keeps room for its pinned transport */
+  /* every tab is a page; the jam tab keeps room for its pinned transport */
   .page{ max-width:1120px; margin:0 auto; padding:14px 22px 40px; border-top:1px solid var(--line); }
   #page-caged{ padding-bottom:84px; }
 
-  /* ---------- the chart: the practice tab's own thing ---------- */
+  /* ---------- the chart: the jam tab's own thing ---------- */
   .chart{ max-width:1120px; margin:0 auto; padding:14px 22px 8px; border-top:1px solid var(--line); }
   .chart-head{ display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
   .keyline{ margin:0; font-family:Fraunces,Georgia,serif; font-style:italic; font-weight:500; color:var(--ink); font-size:1.5rem; line-height:1; }
@@ -138,7 +138,7 @@
   .progline{ font-family:Fraunces,Georgia,serif; font-size:1.15rem; color:var(--ink); line-height:1; white-space:nowrap; }
   .progline.unset{ color:var(--muted); font-style:italic; }
 
-  /* one cell per bar, four to a row the way a chart reads; practice.js sets
+  /* one cell per bar, four to a row the way a chart reads; jam.js sets
      --cols to the bar count when there are fewer than four */
   .chart-grid{ display:grid; grid-template-columns:repeat(var(--cols, 4), 1fr); gap:10px 14px; margin:12px 0 4px; }
   .chart-grid .bar{ position:relative; min-width:0; padding:12px 6px 6px; text-align:center; cursor:pointer; border-radius:6px; }
@@ -289,7 +289,7 @@
   .bar-slot .tb-lbl{ min-width:0; }
   .bar-slot .segmented{ flex-wrap:nowrap; }
   .bar-slot .seg-btn{ font-size:.76rem; margin:0 7px; }
-  /* practice.js writes "bar.beat" here and the chart's beat line reads it;
+  /* jam.js writes "bar.beat" here and the chart's beat line reads it;
      nothing needs to print it */
   .counter{ display:none; }
   /* The bar folded away to a single button, floating clear of the page. The
@@ -452,6 +452,44 @@
   /* setting up an exercise is one job; doing one is another. The setup reads
      as a single panel of rows rather than four strips of toolbar. */
   .ear-setup{ border:1px solid var(--line); border-radius:12px; padding:4px 16px 14px; margin-top:16px; }
+  /* the drills: the setup rows above, the tab and the neck below, the neck
+     beside the tab when the screen is wide enough */
+  .drills .tertiary{ display:contents; }
+  .drills .shapes .seg-btn{ width:26px; text-align:center; margin:0 2px; border-bottom-width:3px; }
+  .drills .shapes [data-value="C"].active{ border-bottom-color:var(--c); color:var(--c); }
+  .drills .shapes [data-value="A"].active{ border-bottom-color:var(--a); color:var(--a); }
+  .drills .shapes [data-value="G"].active{ border-bottom-color:var(--g); color:var(--g); }
+  .drills .shapes [data-value="E"].active{ border-bottom-color:var(--e); color:var(--e); }
+  .drills .shapes [data-value="D"].active{ border-bottom-color:var(--d); color:var(--d); }
+  .drill-what{ color:var(--muted); font-size:.85rem; flex:1 1 260px; }
+  .drill-tempo{ width:150px; accent-color:var(--ink); vertical-align:middle; }
+  .drill-bpm{ font-variant-numeric:tabular-nums; color:var(--muted); font-size:.85rem; }
+  .drill-card{ margin-top:16px; border:1px solid var(--line); border-radius:12px; background:var(--panel); padding:12px 14px 10px; }
+  .drill-card.playing{ border-color:var(--a); }
+  .drill-bar{ display:flex; align-items:center; flex-wrap:wrap; gap:10px 16px; }
+  .drill-card.playing .play{ background:var(--a); border-color:var(--a); color:#0c0b0a; }
+  .drill-brief{ margin:0; color:var(--muted); font-size:.9rem; flex:1 1 320px; max-width:80ch; }
+  .drill-body{ margin-top:10px; }
+  .drill-body .tab{ overflow-x:auto; }
+  .drill-body .tab svg{ display:block; height:auto; max-width:100%; }
+  .drill-body .neck{ margin-top:8px; }
+  .drill-body .neck-title{ font-size:12px; color:var(--muted2); margin:0 0 4px; }
+  .drill-empty{ margin:8px 0; color:var(--muted); }
+  /* the drill large: the whole window, the tab and the neck side by side */
+  dialog.big{ width:100vw; height:100vh; max-width:none; max-height:none; margin:0; padding:0; border:0; background:var(--bg); color:var(--ink); overflow:auto; }
+  dialog.big::backdrop{ background:rgba(0,0,0,.65); }
+  dialog.big .drill-card{ margin:0; border:0; border-radius:0; min-height:100vh; padding:22px 30px 40px; }
+  @media (min-width:1000px){
+    dialog.big .drill-body{ display:grid; grid-template-columns:minmax(0, 3fr) minmax(0, 2fr); gap:24px; align-items:start; }
+    dialog.big .drill-body .neck{ margin:0; position:sticky; top:16px; }
+    dialog.big .drill-body .neck[hidden]{ display:none; }
+  }
+  @media (max-width:640px){ dialog.big .drill-card{ padding:14px 12px 30px; } }
+  @media (min-width:1100px){
+    .drill-body{ display:grid; grid-template-columns:minmax(0, 3fr) minmax(0, 2fr); gap:16px; align-items:start; }
+    .drill-body .neck{ margin:0; position:sticky; top:12px; }
+    .drill-body .neck[hidden]{ display:none; }
+  }
   .setup-row{ display:flex; align-items:center; flex-wrap:wrap; gap:10px 16px; padding:10px 0; }
   .setup-row + .setup-row{ border-top:1px solid var(--line); }
   .setup-row > .tb-lbl:first-child{ min-width:52px; }
@@ -692,10 +730,11 @@
   <!-- the tools, in the same vocabulary as every other choice on the page;
        tabs.js switches pages by data-tab and keeps the slug in the URL -->
   <nav class="tools" id="siteTabs" aria-label="Tools">
-    <button type="button" class="seg-btn site-tab active" data-tab="caged">Practice</button>
+    <button type="button" class="seg-btn site-tab active" data-tab="caged">Jam</button>
     <button type="button" class="seg-btn site-tab" data-tab="finder">Chord finder</button>
     <button type="button" class="seg-btn site-tab" data-tab="reverse">Reverse chord finder</button>
     <button type="button" class="seg-btn site-tab" data-tab="ear">Ear training</button>
+    <button type="button" class="seg-btn site-tab" data-tab="drills">Drills</button>
     <button type="button" class="seg-btn site-tab" data-tab="dives">Style Deep Dives</button>
   </nav>
   <span class="sp"></span>
@@ -714,7 +753,7 @@
 
 <main class="site-main">
 
-<!-- ================= Practice ============================================ -->
+<!-- ================= Jam ============================================ -->
 <div class="tab-page" id="page-caged">
 
   <!-- the chart: the key is its title, and the title is the control — the
@@ -723,7 +762,7 @@
   <section class="chart">
     <div class="chart-head">
       <!-- the same transport control as the one pinned below, so playback can
-           start without looking away from the chart; practice.js drives every
+           start without looking away from the chart; jam.js drives every
            .play-btn together -->
       <button class="play-btn play-sm" type="button" aria-label="Play"></button>
       <!-- the key: its name is the control, and it opens a list of its own —
@@ -790,7 +829,7 @@
         </span>
       </div>
     </div>
-    <!-- practice.js renders one .bar per measure in here, four to a row like a
+    <!-- jam.js renders one .bar per measure in here, four to a row like a
          chart, and marks the sounding one .active; stage.js draws the beat
          line along the top from the readout in the transport -->
     <!-- The chart, or the part to play over it: two readings of the same
@@ -875,7 +914,7 @@
     </div>
     </div>
     <!-- one chord of the chart, edited where it is: the row for the bar you
-         tapped (practice.js renders one row a chord into #chordSlots and
+         tapped (jam.js renders one row a chord into #chordSlots and
          shows the one asked for) -->
     <div class="popover bar-editor" id="barEditor" hidden>
       <div class="chord-row chord-head" aria-hidden="true"><span class="chord-num"></span><span>Chord</span><span>Quality</span><span>Type it</span><span></span></div>
@@ -977,11 +1016,11 @@
   </div>
 
   <!-- ---------------- the one transport ---------------- -->
-  <!-- Inside the practice tab, so it goes with it. -->
+  <!-- Inside the jam tab, so it goes with it. -->
   <footer class="transport">
     <button class="play-btn" type="button" aria-label="Play"></button>
     <!-- loop a stretch of bars: on or off, and the first and last bar of it;
-         practice.js fills the two lists from the chart and wraps the cursor -->
+         jam.js fills the two lists from the chart and wraps the cursor -->
     <span class="loop" id="loopWrap" title="Loop a stretch of bars">
       <button type="button" class="ib" id="loopToggle" aria-pressed="false" aria-label="Loop these bars" title="Loop these bars"><svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V7.5A2.5 2.5 0 0 1 6.5 5H15"/><path d="M12.5 2.5L15 5l-2.5 2.5"/><path d="M16 11v1.5a2.5 2.5 0 0 1-2.5 2.5H5"/><path d="M7.5 17.5L5 15l2.5-2.5"/></svg></button>
       <select id="loopFrom" class="sel loop-sel" aria-label="Loop from bar"></select>
@@ -994,7 +1033,7 @@
           <input type="range" id="tempo" min="40" max="200" value="120" aria-label="Tempo">
           <span class="val" id="tempoVal">120 BPM</span>
         </div>
-        <!-- the tempos worth one tap; practice.js binds every .bpm-preset
+        <!-- the tempos worth one tap; jam.js binds every .bpm-preset
              and lights whichever matches the slider -->
         <span class="segmented bpm-row" aria-label="Tempo shortcuts">
           <button type="button" class="seg-btn bpm-preset" data-bpm="60">60</button>
@@ -1033,7 +1072,7 @@
   </footer>
 
   <!-- The bar collapsed: everything the neck doesn't need gone, and Play kept
-       where a thumb can find it. The button carries .play-btn, so practice.js
+       where a thumb can find it. The button carries .play-btn, so jam.js
        drives it along with the others without knowing it exists. -->
   <div class="mini-transport" id="miniTransport" hidden>
     <button type="button" class="ib" id="transportExpand" aria-label="Show the playback bar" title="Show the playback bar">
@@ -1048,7 +1087,7 @@
     <div class="sheet-head"><span class="sheet-title">Style</span><button type="button" class="tbtn" id="setupClose">Done</button></div>
     <div class="frow"><input type="search" id="styleSearch" class="chord-text" placeholder="Search the styles…" aria-label="Search the styles"></div>
     <div class="frow" id="styleRecentRow" hidden><span class="tb-lbl">Recent</span><span class="segmented" id="styleRecent"></span></div>
-    <!-- one list of styles, grouped by genre; built by practice.js from the
+    <!-- one list of styles, grouped by genre; built by jam.js from the
          resolved STYLES so it's written once. The bar's picker (a select over
          the style name) offers the same list for the keyboard. -->
     <div class="style-list" id="styleGroup"></div>
@@ -1279,10 +1318,123 @@
 </div>
 
 
+<!-- ================= Drills ============================================== -->
+<!-- Exercises for the hands: chord changes, scale shapes, picking speed,
+     string crossing, arpeggios — written for the key, tempo, scale, shapes
+     and position chosen, as tab with the neck following, over a click.
+     drills.js builds the drill from the same shapes, boxes, neck and tab
+     the jam tab uses, and plays it through the example player. -->
+<div class="tab-page" id="page-drills" hidden>
+  <section class="page drills">
+    <div class="ear-setup drills-setup" id="drillSetup">
+      <div class="setup-row">
+        <span class="tb-lbl">Drill</span>
+        <span class="segmented" id="drillKindGroup">
+          <button type="button" class="seg-btn" data-value="changes">Chord changes</button>
+          <button type="button" class="seg-btn active" data-value="scale">Scale shapes</button>
+          <button type="button" class="seg-btn" data-value="picking">Picking speed</button>
+          <button type="button" class="seg-btn" data-value="crossing">String crossing</button>
+          <button type="button" class="seg-btn" data-value="arpeggio">Arpeggios</button>
+        </span>
+        <span class="drill-what" id="drillKindWhat"></span>
+      </div>
+      <div class="setup-row">
+        <span class="tb-lbl">Key</span>
+        <select id="drillKey" class="sel" aria-label="Key"></select>
+        <span class="setup-field"><span class="tb-lbl">Tempo</span>
+          <input type="range" id="drillTempo" class="drill-tempo" min="40" max="208" value="80" aria-label="Tempo">
+          <span class="drill-bpm"><b id="drillTempoOut">80</b> BPM</span></span>
+        <span class="setup-field" id="drillDivField"><span class="tb-lbl">Notes a beat</span>
+          <span class="segmented" id="drillDivGroup">
+            <button type="button" class="seg-btn" data-value="1">1</button>
+            <button type="button" class="seg-btn active" data-value="2">2</button>
+            <button type="button" class="seg-btn" data-value="3">3</button>
+            <button type="button" class="seg-btn" data-value="4">4</button>
+          </span></span>
+      </div>
+      <div class="setup-row" id="drillChordsRow" hidden>
+        <label class="tb-lbl" for="drillChords">Chords</label>
+        <input type="text" id="drillChords" class="mid-input" placeholder="e.g. G D Em C — or the key's own" autocomplete="off" spellcheck="false" aria-label="Chords to change between">
+        <span class="setup-field" id="drillBeatsField"><span class="tb-lbl">Beats a chord</span>
+          <select id="drillBeats" class="sel" aria-label="Beats a chord"><option value="4">4</option><option value="8">8</option><option value="16">16</option></select></span>
+        <span class="setup-field" id="drillStrumField"><span class="tb-lbl">Pattern</span>
+          <select id="drillStrum" class="sel" aria-label="Strumming pattern"></select></span>
+      </div>
+      <div class="setup-row" id="drillScaleRow">
+        <span class="tb-lbl">Scale</span>
+        <select id="drillScale" class="sel" aria-label="Scale"></select>
+        <span class="setup-field" id="drillPatternField"><span class="tb-lbl">Pattern</span>
+          <span class="segmented" id="drillPatternGroup">
+            <button type="button" class="seg-btn active" data-value="updown">Up and down</button>
+            <button type="button" class="seg-btn" data-value="threes">In threes</button>
+            <button type="button" class="seg-btn" data-value="fours">In fours</button>
+            <button type="button" class="seg-btn" data-value="thirds">In thirds</button>
+            <button type="button" class="seg-btn" data-value="boxes">Into the next box</button>
+          </span></span>
+      </div>
+      <div class="setup-row" id="drillPickRow" hidden>
+        <span class="tb-lbl">Notes a string</span>
+        <span class="segmented" id="drillPerStringGroup">
+          <button type="button" class="seg-btn" data-value="2">2</button>
+          <button type="button" class="seg-btn" data-value="3">3</button>
+          <button type="button" class="seg-btn active" data-value="4">4</button>
+          <button type="button" class="seg-btn" data-value="6">6</button>
+        </span>
+        <span class="setup-field"><span class="tb-lbl">Direction</span>
+          <span class="segmented" id="drillDirGroup">
+            <button type="button" class="seg-btn" data-value="up">Up</button>
+            <button type="button" class="seg-btn" data-value="down">Down</button>
+            <button type="button" class="seg-btn active" data-value="updown">Up and down</button>
+          </span></span>
+      </div>
+      <div class="setup-row" id="drillCrossRow" hidden>
+        <span class="tb-lbl">Pattern</span>
+        <span class="segmented" id="drillCrossGroup">
+          <button type="button" class="seg-btn" data-value="adjacent">String to string</button>
+          <button type="button" class="seg-btn active" data-value="skip">Skip one</button>
+          <button type="button" class="seg-btn" data-value="outside">Outside in</button>
+          <button type="button" class="seg-btn" data-value="pedal">Off the low string</button>
+        </span>
+        <span class="setup-field"><span class="tb-lbl">Strings</span>
+          <select id="drillStrings" class="sel" aria-label="Strings"><option value="all">All six</option><option value="low">Bottom four</option><option value="mid">Middle four</option><option value="high">Top four</option></select></span>
+      </div>
+      <div class="setup-row">
+        <span class="tb-lbl">Shapes</span>
+        <span class="segmented shapes" id="drillShapesGroup" role="group" aria-label="Shapes allowed">
+          <button type="button" class="seg-btn active" data-value="C">C</button>
+          <button type="button" class="seg-btn active" data-value="A">A</button>
+          <button type="button" class="seg-btn active" data-value="G">G</button>
+          <button type="button" class="seg-btn active" data-value="E">E</button>
+          <button type="button" class="seg-btn active" data-value="D">D</button>
+        </span>
+        <span class="setup-field" id="drillBoxField"><span class="tb-lbl">Box</span>
+          <select id="drillBox" class="sel" aria-label="Box"></select></span>
+        <span class="setup-field" id="drillPosField" hidden><span class="tb-lbl">Position</span>
+          <select id="drillPos" class="sel" aria-label="Position"></select></span>
+      </div>
+    </div>
+    <div class="drill-card" id="drillCard">
+      <div class="toolbar drill-bar">
+        <button type="button" class="tbtn primary play">Play</button>
+        <label class="check"><input type="checkbox" id="drillComp"><span>Chord under the click</span></label>
+        <label class="check"><input type="checkbox" id="drillNeckToggle" checked><span>Neck</span></label>
+        <button type="button" class="tbtn" id="drillShare">Copy link</button>
+        <button type="button" class="tbtn" id="drillExpand" title="The drill large, tab and neck side by side">Expand ⤢</button>
+        <button type="button" class="tbtn" id="drillClose" hidden>Close ✕</button>
+        <p class="drill-brief" id="drillBrief"></p>
+      </div>
+      <div class="drill-body">
+        <div class="tab part-tab" id="drillTab"></div>
+        <div class="neck" id="drillNeck" hidden></div>
+      </div>
+    </div>
+  </section>
+</div>
+
 <!-- ================= Style Deep Dives ====================================== -->
 <!-- One player's way of playing, studied end to end: the research, the
      shapes, the scales, playable examples, exercises and studies, each of
-     them a link back into Practice. Each dive is a page of its own; this tab
+     them a link back into Jam. Each dive is a page of its own; this tab
      is the shelf. -->
 <div class="tab-page" id="page-dives" hidden>
   <section class="page dives">
@@ -1324,12 +1476,15 @@
 <script src="js/tooltips.js"></script>
 <script src="js/tabs.js"></script>
 <script src="js/fretboard-view.js"></script>
-<script src="js/practice.js"></script>
+<script src="js/jam.js"></script>
 <script src="js/stage.js"></script>
 <script src="js/chord-finder.js"></script>
 <script src="js/tab.js"></script>
 <script src="js/ear-training.js"></script>
 <script src="js/reverse-finder.js"></script>
+<script src="js/example-player.js"></script>
+<script src="js/neck-follow.js"></script>
+<script src="js/drills.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

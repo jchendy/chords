@@ -409,7 +409,7 @@
         const bctx = { chord, next, audio, voice: 'piano', changing, fillNow: lastBar && !!p.fill, stopped, jit: jitter };
         for (let slot = 0; slot < grid; slot++) GT.band.scheduleSlot(p, slot, t0 + slot * slotDur + swingOf(slot) + jitter(0.006), slotDur, bctx);
       }
-      // the part through the engine's one player, at the practice tab's default level
+      // the part through the engine's one player, at the jam tab's default level
       audio.playPartNotes(notes.filter(n => n.bar === bar), n => t0 + n.at * slotDur + swingOf(Math.floor(n.at)), slotDur, audio.PART_LEVEL, { slapback: !!(opt.slapback && p.slapback), jit: jitter })
         .forEach(({ note: n, time, until }) => log.push({ time, until, slot: bar * grid + Math.floor(n.at) }));
       for (let slot = 0; slot < grid; slot++) log.push({ time: t0 + slot * slotDur, slot: bar * grid + slot, head: true });

@@ -1,7 +1,7 @@
 // Regression tests for the ear trainer's drill — the part that can only be
 // tested by pressing the buttons.
 //
-// Like the practice tests, this builds the controls the tab binds to rather
+// Like the jam tests, this builds the controls the tab binds to rather
 // than copying markup out of index.html: the module only ever asks for ids,
 // so that's all a fixture owes it, and a control added to the real page and
 // forgotten here fails loudly on the next run.
