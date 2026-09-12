@@ -171,11 +171,69 @@
     t.ok(rms(slap, 0.05 + at, 0.1 + at) < rms(slap, 0.05, 0.1), 'quieter than the pluck');
   }
 
+  // ---- the kit ----
+  // the power below a cutoff: a two-pole one-pole lowpass over the samples,
+  // enough to say whether a hit has a body or only a knock
+  function lowPower(buf, cutoff, from, to){
+    const d = buf.getChannelData(0), sr = buf.sampleRate;
+    const k = 1 - Math.exp(-2 * Math.PI * cutoff / sr);
+    let y1 = 0, y2 = 0, sum = 0;
+    const i0 = Math.floor(from * sr), i1 = Math.min(d.length, Math.floor(to * sr));
+    for (let i = 0; i < i1; i++){
+      y1 += k * (d[i] - y1); y2 += k * (y1 - y2);
+      if (i >= i0) sum += y2 * y2;
+    }
+    return sum / Math.max(1, i1 - i0);
+  }
+  // how far two stretches of a render differ, sample for sample
+  function maxDiff(buf, t0, t1, len){
+    const d = buf.getChannelData(0), sr = buf.sampleRate;
+    const a = Math.floor(t0 * sr), b = Math.floor(t1 * sr), n = Math.floor(len * sr);
+    let m = 0;
+    for (let i = 0; i < n; i++) m = Math.max(m, Math.abs(d[a + i] - d[b + i]));
+    return m;
+  }
+
+  async function testTheKitIsNeverTheSameHitTwice(t){
+    // two hats half a second apart, in one render: the same call, and not
+    // the same waveform (the moments are whole render quanta apart — 6144
+    // and 30720 samples — since the browser samples a frequency ramp per
+    // quantum and two hits on different footings would differ regardless)
+    const t1 = 6144 / 48000, t2 = 30720 / 48000;
+    const hats = await audio.renderOffline(1.2, a => { a.playHiHat(t1, 0.55); a.playHiHat(t2, 0.55); }, { random: seeded(11), dry: true });
+    const diff = maxDiff(hats, t1, t2, 0.05), level = peak(hats);
+    t.ok(diff > level * 0.2, `two hi-hat hits differ by ${diff.toFixed(3)} at most against a peak of ${level.toFixed(3)}: no two the same`);
+    const snares = await audio.renderOffline(1.2, a => { a.playSnare(t1, 0.85); a.playSnare(t2, 0.85); }, { random: seeded(11), dry: true });
+    t.ok(maxDiff(snares, t1, t2, 0.05) > peak(snares) * 0.2, 'nor two snares');
+    // an open hat, then a closed one a tenth of a second on: the open one chokes
+    const lone = await audio.renderOffline(0.6, a => a.playHiHat(0.05, 0.55, 0.28), { random: seeded(12), dry: true });
+    const choked = await audio.renderOffline(0.6, a => { a.playHiHat(0.05, 0.55, 0.28); a.playHiHat(0.15, 0.32, 0.06); }, { random: seeded(12), dry: true });
+    const ringLone = rms(lone, 0.22, 0.3), ringChoked = rms(choked, 0.22, 0.3);
+    t.ok(ringChoked < ringLone * 0.1, `a closed hat chokes the open one: ${dB(ringChoked / ringLone).toFixed(1)} dB of its ring left after the choke`);
+    // the rim is a knock, not a quiet snare: next to nothing below 800 Hz
+    const snare = await audio.renderOffline(0.5, a => a.playSnare(0.05, 0.85), { random: seeded(13), dry: true });
+    const rim = await audio.renderOffline(0.5, a => a.playSnare(0.05, 0.85, 'rim'), { random: seeded(13), dry: true });
+    const bodySnare = lowPower(snare, 800, 0.05, 0.3), bodyRim = lowPower(rim, 800, 0.05, 0.3);
+    t.ok(bodyRim < bodySnare * 0.2, `the rim has ${(100 * bodyRim / bodySnare).toFixed(1)}% of the snare's energy below 800 Hz`);
+    t.ok(rms(rim, 0.05, 0.1) > 0.005, 'and is heard');
+    // the ghost is the snare barely: the same stroke, well under it
+    const ghost = await audio.renderOffline(0.5, a => a.playSnare(0.05, 0.85, 'ghost'), { random: seeded(13), dry: true });
+    t.ok(rms(ghost, 0.05, 0.3) < rms(snare, 0.05, 0.3) * 0.7, `a ghost at the snare's velocity is ${(dB(rms(snare, 0.05, 0.3)) - dB(rms(ghost, 0.05, 0.3))).toFixed(1)} dB under it`);
+    // the kick has its beater: energy above 3 kHz in the first two milliseconds
+    const kick = await audio.renderOffline(0.5, a => a.playKick(0.05, 0.9), { random: seeded(14), dry: true });
+    // (from where it lands: the band's compressor looks ahead, so a hit
+    // comes out some milliseconds after it was struck)
+    const on = kick.getChannelData(0).findIndex(v => Math.abs(v) > 1e-4) / kick.sampleRate;
+    const high = Math.sqrt(Math.max(0, rms(kick, on, on + 0.003) ** 2 - lowPower(kick, 3000, on, on + 0.003)));
+    t.ok(high > 0.015, `the kick's beater: ${fmt(high)} above 3 kHz in the first three milliseconds, before the drum speaks`);
+  }
+
   GT.sound = { peak, rms, dB, seeded, withVoices, loudestBar, rockBars, measureDucking };
   GT.soundSuites = [
     ['Sound: the mix stays under full scale', testTheMixStaysUnderFullScale],
     ['Sound: what a six-string strum sums to', testWhatASixStringStrumSumsTo],
     ['Sound: the part does not duck the band', testThePartDoesNotDuckTheBand],
     ['Sound: the techniques are heard', testTheTechniquesAreHeard],
+    ['Sound: the kit is never the same hit twice', testTheKitIsNeverTheSameHitTwice],
   ];
 })();

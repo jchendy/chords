@@ -4,7 +4,8 @@
 // — call it rather than each keeping a copy of the rules. The rules:
 //
 //   kick / snare / hat / ride / rim / ghost / hatOpen — slot lists; the hat
-//     accents the beat, an open hat rings longer, ghost and rim are quiet snares
+//     accents the beat, an open hat rings longer and a closed one chokes it,
+//     a ghost is the snare barely, a rim is the stick on the rim
 //   kickVel / snareVel, kickVels / snareVels — one level, or a level per slot
 //   chord: [{ slot, dur, vel, stroke? }] — the comp; `stroke` ('down'/'up')
 //     says which way the pick goes on the guitar voice, else the hand's
@@ -81,8 +82,8 @@
     } else {
       if (style.kick && style.kick.includes(slot)) audio.playKick(at, vk);
       if (style.snare && style.snare.includes(slot)) audio.playSnare(at, vs);
-      if (style.ghost && style.ghost.includes(slot)) audio.playSnare(at, 0.22);
-      if (style.rim && style.rim.includes(slot)) audio.playSnare(at, 0.3);
+      if (style.ghost && style.ghost.includes(slot)) audio.playSnare(at, 0.22, 'ghost');
+      if (style.rim && style.rim.includes(slot)) audio.playSnare(at, 0.3, 'rim');
       if (style.hat && style.hat.includes(slot)){
         const open = style.hatOpen && style.hatOpen.includes(slot);
         audio.playHiHat(at, slot % per === 0 ? HAT.accent : HAT.other, open ? 0.28 : 0.06);

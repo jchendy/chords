@@ -1061,8 +1061,11 @@ offline through a graph of the engine's own (`audio.renderOffline`) and
 read the result as numbers — a peak, an RMS, the power the band loses under
 the part — rather than listening and guessing: the loudest bar the tab can
 play stays under full scale, six strings swept peak no higher than six
-struck together, and the part does not duck the band, measured against the
-old shared compressor kept in the engine as the reference. On `http://` the
+struck together, the part does not duck the band, measured against the
+old shared compressor kept in the engine as the reference, the techniques
+are heard (the mute over, the takeover clean, the slapback a repeat), and
+the kit is never the same hit twice (two hats sample for sample, the choke,
+the rim's low band, the beater's click). On `http://` the
 recordings are what is measured; on `file://` the synthesized voices are,
 and each label says which. The runner awaits a suite that returns a
 promise, so these run inside `tests.html` with the rest.
@@ -1144,8 +1147,23 @@ a second pick with an attack of its own.
 
 There's a reverb too — a convolver fed by a synthesized room, decaying noise
 whose top end rolls off over the tail — with a send from each voice at its
-own level. Drums are the classic recipes: a pitched-down
-sine for the kick, filtered white noise for the snare and cymbals. The bass
+own level.
+
+The kit is synthesized, from the classic recipes — a pitched-down sine for
+the kick, filtered white noise for the snare and the cymbals — with what a
+recipe usually lacks. No two hits are the same: every noise voice starts
+somewhere else in a two-second buffer and its filter and its length sit a
+shade off (the kit draws from a random stream of its own, so the guitar
+comes out the same whether or not the band is under it, which is what lets
+the ducking test read dynamics rather than chance). A closed hat chokes an
+open one still ringing, through the same string registry the guitar uses
+(measured: 30 dB of the open hat's ring gone). The kick has a beater — a
+few milliseconds of click above 3 kHz before the drum speaks. The rim
+shot is a knock and a ping with no body (2.7 % of the snare's energy
+below 800 Hz, where it used to be a quiet snare), the ghost is the snare's
+own stroke with its noise short and its body faint, and the ride is a
+bell of five inharmonic partials over a bandpassed wash rather than a hat
+with a square wave in it. The bass
 under a progression is the recorded double bass (see below); the synthesized
 one it replaced — a triangle wave through a lowpass at 850 Hz — is still what
 plays when the recordings can't be reached, and the two were levelled against
@@ -1337,7 +1355,7 @@ by what each part does:
 | `tabs.js` | Tab switching, plus the URL fragment and page title that go with each tab — including `setState`, which lets a tab write its own state after the slug so an exercise can be bookmarked. |
 | `main.js` | Boots each tab and wires the header together. |
 | `tests.js` | The regression tests, run by `tests.html`. |
-| `js/tests-sound.js` | The measured tests: the mix rendered offline and read as numbers — no clipping, a strum's sum, the part not ducking the band. |
+| `js/tests-sound.js` | The measured tests: the mix rendered offline and read as numbers — no clipping, a strum's sum, the part not ducking the band, the techniques heard, the kit's hits, choke, rim and beater. |
 | `tests-ear.js` | The ear trainer's drill, pressed rather than reasoned about: builds the controls it binds to, then answers questions. Loads before `ear-training.js`. |
 | `tests-fretboard.js` | What the fretboard draws: builds the controls the view binds to, then checks the shapes it renders. Loads before `fretboard-view.js`. |
 

@@ -56,10 +56,15 @@
   // The graph as one object, so an offline render can build its own and
   // point the module at it for the length of a schedule; `offline` keeps
   // that render off the sleep timers and the live queue. `rnd` is the
-  // engine's only randomness — seedable, so a render can be reproduced.
+  // engine's randomness — seedable, so a render can be reproduced; the kit
+  // draws from a stream of its own (`kitRnd`), so what the guitar gets is
+  // the same whether or not the band is playing under it, and a measurement
+  // of the two together against each alone reads dynamics, not chance.
   let G = null;
   let offline = false;
   let rnd = Math.random;
+  let kitRnd = Math.random;
+  const lcg = seed => { let x = (Math.floor(seed) * 9301 + 49297) % 233280; return () => { x = (x * 9301 + 49297) % 233280; return x / 233280; }; };
 
   // A room for the convolver: stereo noise dying away over `seconds`, its
   // top end rolling off as it goes, so the tail darkens the way a real one
@@ -358,7 +363,7 @@
     slap.connect(slapDelay).connect(slapTone).connect(partGain);
     slapTone.connect(slapBack).connect(slapDelay);
 
-    const bufferSize = Math.floor(ctx.sampleRate * 0.5);
+    const bufferSize = Math.floor(ctx.sampleRate * 2);   // two seconds, so every hit can start somewhere else in it
     const noise = g.noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
     const data = noise.getChannelData(0);
     for (let i = 0; i < bufferSize; i++){
@@ -376,13 +381,13 @@
   // the offline one.
   async function renderOffline(seconds, schedule, { sampleRate = 48000, random, limiter = true, mute = [], dynamics, dry = false } = {}){
     const ctx = new OfflineAudioContext(2, Math.ceil(seconds * sampleRate), sampleRate);
-    const live = G, wasOffline = offline, wasRnd = rnd;
-    if (random) rnd = random;                 // before the graph: its room and its noise draw from it too
+    const live = G, wasOffline = offline, wasRnd = rnd, wasKit = kitRnd;
+    if (random){ rnd = random; kitRnd = lcg(random() * 1e6); }   // before the graph: its room and its noise draw from it too
     const g = buildGraph(ctx, { limiter, mute, dynamics, dry });
     G = g; applyGraph(g); offline = true;     // the module plays through this graph, claims and all
     try { schedule(GT.audio, ctx); }
     finally {
-      offline = wasOffline; rnd = wasRnd;
+      offline = wasOffline; rnd = wasRnd; kitRnd = wasKit;
       G = live;
       if (live) applyGraph(live); else audioCtx = null;
     }
@@ -1395,39 +1400,76 @@
     osc.stop(time + duration + 0.05);
   }
 
-  function playHiHat(time, velocity = 1, decay = 0.06){
+  // ---- the kit -------------------------------------------------------------
+  // Synthesized, and meant to sit under the guitar: the recipes are the
+  // classic ones (a pitched-down sine for the kick, filtered noise for the
+  // snare and the cymbals), with what a recipe usually lacks — no two hits
+  // the same (every noise voice starts somewhere else in a two-second
+  // buffer, its filter and its length a shade off), a hat that chokes, a
+  // beater on the kick, and a rim, a ghost and a ride of their own rather
+  // than a snare turned down.
+  const noiseVoice = (time, length) => {
     const src = audioCtx.createBufferSource();
     src.buffer = noiseBuffer;
+    const room = Math.max(0, noiseBuffer.duration - length - 0.05);
+    return { src, offset: kitRnd() * room };
+  };
+  const vary = (x, by) => x * (1 - by + 2 * by * kitRnd());
+
+  function playHiHat(time, velocity = 1, decay = 0.06){
+    const ring = vary(decay, 0.08);
+    const { src, offset } = noiseVoice(time, ring + 0.03);
     const highpass = audioCtx.createBiquadFilter();
     highpass.type = 'highpass';
-    highpass.frequency.value = 8000;
+    highpass.frequency.value = vary(8000, 0.06);
     const envelope = audioCtx.createGain();
     envelope.gain.setValueAtTime(0.0001, time);
     envelope.gain.exponentialRampToValueAtTime(velocity, time + 0.002);
-    envelope.gain.exponentialRampToValueAtTime(0.0001, time + decay);
-    src.connect(highpass).connect(envelope).connect(hihatGain);
-    startVoice(src, time, envelope);
-    src.stop(time + decay + 0.03);
+    envelope.gain.exponentialRampToValueAtTime(0.0001, time + ring);
+    // the choke: a closed hat stops an open one still ringing
+    const damp = audioCtx.createGain();
+    src.connect(highpass).connect(envelope).connect(damp).connect(hihatGain);
+    claim('kit:hat', src, damp, time, time + ring, HAT_CHOKE);
+    startVoice(src, time, envelope, offset);
+    src.stop(time + ring + 0.03);
   }
+  const HAT_CHOKE = 0.03;
 
+  // a bell of inharmonic partials over a bandpassed wash, which is what a
+  // ride is — not a hat with a square wave in it
+  const RIDE_PARTIALS = [1, 1.34, 1.87, 2.51, 3.66];
   function playRide(time, velocity = 1){
-    playHiHat(time, velocity * 0.5, 0.3);          // wash
-    const osc = audioCtx.createOscillator();
-    osc.type = 'square';
-    osc.frequency.value = 640;
-    const env = audioCtx.createGain();
-    env.gain.setValueAtTime(0.0001, time);
-    env.gain.exponentialRampToValueAtTime(velocity * 0.1, time + 0.003);
-    env.gain.exponentialRampToValueAtTime(0.0001, time + 0.22);
-    osc.connect(env).connect(hihatGain);
-    startVoice(osc, time, env);
-    osc.stop(time + 0.24);
+    const wash = 0.5;
+    const { src, offset } = noiseVoice(time, wash + 0.03);
+    const bp = audioCtx.createBiquadFilter();
+    bp.type = 'bandpass'; bp.frequency.value = vary(6500, 0.05); bp.Q.value = 0.8;
+    const wg = audioCtx.createGain();
+    wg.gain.setValueAtTime(0.0001, time);
+    wg.gain.exponentialRampToValueAtTime(velocity * 0.35, time + 0.003);
+    wg.gain.exponentialRampToValueAtTime(0.0001, time + wash);
+    src.connect(bp).connect(wg).connect(hihatGain);
+    startVoice(src, time, wg, offset);
+    src.stop(time + wash + 0.03);
+    const base = vary(520, 0.02);
+    RIDE_PARTIALS.forEach((ratio, k) => {
+      const osc = audioCtx.createOscillator();
+      osc.type = k % 2 ? 'square' : 'triangle';
+      osc.frequency.value = base * ratio;
+      const env = audioCtx.createGain();
+      const level = velocity * 0.07 / (1 + k * 0.6), ring = 0.6 / (1 + k * 0.5);
+      env.gain.setValueAtTime(0.0001, time);
+      env.gain.exponentialRampToValueAtTime(level, time + 0.003);
+      env.gain.exponentialRampToValueAtTime(0.0001, time + ring);
+      osc.connect(env).connect(hihatGain);
+      startVoice(osc, time, env);
+      osc.stop(time + ring + 0.02);
+    });
   }
 
   function playKick(time, velocity = 1){
     const osc = audioCtx.createOscillator();
     osc.type = 'sine';
-    osc.frequency.setValueAtTime(150, time);
+    osc.frequency.setValueAtTime(vary(150, 0.04), time);
     osc.frequency.exponentialRampToValueAtTime(46, time + 0.11);
     const env = audioCtx.createGain();
     env.gain.setValueAtTime(0.0001, time);
@@ -1436,22 +1478,58 @@
     osc.connect(env).connect(drumGain);
     startVoice(osc, time, env);
     osc.stop(time + 0.32);
+    // the beater: a few milliseconds of click on the front
+    const { src, offset } = noiseVoice(time, 0.01);
+    const hp = audioCtx.createBiquadFilter();
+    hp.type = 'highpass'; hp.frequency.value = 3000;
+    const cg = audioCtx.createGain();
+    cg.gain.setValueAtTime(0.0001, time);
+    cg.gain.exponentialRampToValueAtTime(velocity * 0.3, time + 0.001);
+    cg.gain.exponentialRampToValueAtTime(0.0001, time + 0.006);
+    src.connect(hp).connect(cg).connect(drumGain);
+    startVoice(src, time, cg, offset);
+    src.stop(time + 0.01);
   }
 
-  function playSnare(time, velocity = 1){
-    const src = audioCtx.createBufferSource();
-    src.buffer = noiseBuffer;
+  // `kind`: the snare itself, a 'ghost' (the same stroke, barely, the
+  // noise short and the body faint) or a 'rim' (the stick on the rim: a
+  // knock and a ping, no body, dry)
+  function playSnare(time, velocity = 1, kind = 'snare'){
+    if (kind === 'rim'){
+      const { src, offset } = noiseVoice(time, 0.05);
+      const bp = audioCtx.createBiquadFilter();
+      bp.type = 'bandpass'; bp.frequency.value = vary(3200, 0.05); bp.Q.value = 1.4;
+      const ng = audioCtx.createGain();
+      ng.gain.setValueAtTime(0.0001, time);
+      ng.gain.exponentialRampToValueAtTime(velocity * 1.4, time + 0.001);
+      ng.gain.exponentialRampToValueAtTime(0.0001, time + 0.03);
+      src.connect(bp).connect(ng).connect(drumGain);
+      startVoice(src, time, ng, offset);
+      src.stop(time + 0.05);
+      const osc = audioCtx.createOscillator();
+      osc.type = 'triangle'; osc.frequency.value = vary(1200, 0.03);
+      const og = audioCtx.createGain();
+      og.gain.setValueAtTime(0.0001, time);
+      og.gain.exponentialRampToValueAtTime(velocity * 0.5, time + 0.001);
+      og.gain.exponentialRampToValueAtTime(0.0001, time + 0.02);
+      osc.connect(og).connect(drumGain);
+      startVoice(osc, time, og);
+      osc.stop(time + 0.03);
+      return;
+    }
+    const ghost = kind === 'ghost';
+    const { src, offset } = noiseVoice(time, 0.2);
     const bp = audioCtx.createBiquadFilter();
     bp.type = 'bandpass';
-    bp.frequency.value = 1900;
+    bp.frequency.value = vary(1900, 0.08);
     bp.Q.value = 0.6;
     const ng = audioCtx.createGain();
     ng.gain.setValueAtTime(0.0001, time);
     ng.gain.exponentialRampToValueAtTime(velocity, time + 0.002);
-    ng.gain.exponentialRampToValueAtTime(0.0001, time + 0.16);
+    ng.gain.exponentialRampToValueAtTime(0.0001, time + (ghost ? 0.08 : vary(0.16, 0.08)));
     src.connect(bp).connect(ng).connect(drumGain);
     ng.connect(reverbSends.drums);
-    startVoice(src, time, ng);
+    startVoice(src, time, ng, offset);
     src.stop(time + 0.18);
 
     const osc = audioCtx.createOscillator();
@@ -1460,7 +1538,7 @@
     osc.frequency.exponentialRampToValueAtTime(130, time + 0.09);
     const og = audioCtx.createGain();
     og.gain.setValueAtTime(0.0001, time);
-    og.gain.exponentialRampToValueAtTime(velocity * 0.45, time + 0.004);
+    og.gain.exponentialRampToValueAtTime(velocity * (ghost ? 0.3 : 0.45), time + 0.004);
     og.gain.exponentialRampToValueAtTime(0.0001, time + 0.11);
     osc.connect(og).connect(drumGain);
     startVoice(osc, time, og);
