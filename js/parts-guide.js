@@ -8,7 +8,7 @@
   'use strict';
   const GT = (window.GT = window.GT || {});
   const { chordFromName, displayName, SEMITONE } = GT.theory;
-  const { LIBRARY, SIMPLE_FEEL, partsFor, realise, rollFills } = GT.parts;
+  const { SIMPLE_FEEL, partsFor, realise } = GT.parts;
   const { GUIDE } = GT.partsGuide;
   const audio = GT.audio;
   const { STYLES } = audio;
@@ -47,13 +47,12 @@
   function realiseFor(style, feel, part, entry){
     const chords = chordsOf(entry);
     const bars = chords.map(chord => ({ chord }));
-    const picks = [0, 1, 2];                       // fills 1, 2, 3 across the three phrases
     const opts = {
       reading, window: windowFor(entry.key), scaleTheory: 'parallel', stringSet: 2,
       stayOnKey: false, key: { tonic: entry.key, mode: 'major' },
       tech: techOn ? null : { double: false, bend: false, hammer: false, pull: false, slide: false },
     };
-    return { chords, notes: realise(part, bars, picks, opts) };
+    return { chords, notes: realise(part, bars, 1, opts, { grid: feel.grid }) };   // one seed, so the page reads the same each time
   }
 
   // ---- drawing ----
@@ -65,6 +64,7 @@
       notes: notes.map(n => ({
         string: n.string, fret: n.fret, at: n.bar * grid + n.at, dur: n.dur,
         bend: n.bend, slide: n.slide, tech: n.tech, to: n.to, soft: n.soft, mute: n.mute,
+        vib: n.vib, trem: n.trem, rake: n.rake, ghost: n.ghost, tone: !n.strum && (n.mute || n.ghost) ? 'muted' : undefined,
         lead: !n.strum || !notes.some(m => m.bar === n.bar && m.at === n.at && m.strum && m.spread > n.spread),
       })),
       totalSlots: chords.length * grid,

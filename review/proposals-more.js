@@ -781,7 +781,8 @@
     fillsOnChange: [[n(0, 22, 0.8, 0.85), n(1, 19, 0.8, 0.75), n(2, 17, 0.8, 0.75), n(3, 15, 1.6, 0.85), n(5, 17, 0.8, 0.7), n(6, 19, 0.8, 0.8), n(7, 22, 0.8, 0.75), n(8, 19, 0.8, 0.8), nx(9, 17, 0.8, 0.75), nx(10, 16, 1.6, 0.85, { vib: true })]],
   });
   extend('blues|One-chord boogie|Boogie pedal', {
-    why2: 'Fourth pass, up the neck: the shout on the top strings — 5th, ♭7, 5th over the pedal — and the ♭3-to-3 hammer an octave up.',
+    why2: 'Fourth pass, up the neck: the shout on the top strings — 5th, ♭7, 5th over the pedal — and the ♭3-to-3 hammer an octave up. And when the one chord does move (the IV in a boogie that has one), the pedal walks up into it.',
+    fillsOnChange: [[n(0, 0, 1.6, 0.9, { pm: true }), n(2, 0, 0.8, 0.6, { pm: true }), h(3, 3, 4, 1.6, 0.8), n(5, 0, 0.8, 0.6, { pm: true }), nx(6, -5, 1.6, 0.85, { pm: true }), nx(8, -3, 0.8, 0.7, { pm: true }), nx(9, -2, 1.6, 0.8, { pm: true }), nx(11, -1, 0.8, 0.8, { pm: true })]],
     fills: [[n(0, 0, 1.6, 0.9, { pm: true }), n(2, 0, 0.8, 0.6, { pm: true }), n(3, 19, 0.8, 0.85), n(4, 22, 0.8, 0.8), n(5, 19, 0.8, 0.8), n(6, 0, 1.6, 0.9, { pm: true }), n(8, 0, 0.8, 0.6, { pm: true }), h(9, 15, 16, 1.6, 0.8), n(11, 12, 0.8, 0.7)]],
   });
   extend('blues|Delta fingerstyle|Dead thumb and fills', {

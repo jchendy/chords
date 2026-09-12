@@ -802,6 +802,26 @@ which it got. Decisions save to this browser and, when `serve.py` is
 serving, to `review/decisions.json` (not tracked); "Copy decisions" puts
 them on the clipboard for the deployed copy, which has no server.
 
+**Implemented.** Everything the review page proposed is what the app now
+plays. `js/styles.js` merges the proposals in `review/proposals*.js` over
+the base data (the band patterns in `js/styles-base.js`, the parts library
+in `js/parts.js`, the guide in `js/parts-guide-data.js`) at load: a
+proposal's band fields override the base feel's, a proposed part replaces
+the base part it names and the rest stay, an added feel becomes a new
+variant of its style, and the guide page is written from the verdicts and
+the parts' reasons. Sixty-one feels, ninety-seven parts. The engine in
+`parts.js` is the review page's: fills that know whether the chord is
+changing, turnarounds, tails, pickups, stop-time, rolled figures, lead
+rolls, ghost notes, rakes, tremolo, vibrato marks, chord slides, colour
+tones, shell and power voicings, double stops placed by shape, the thumb on
+the bass strings, easy mode; the band scheduler plays ghost snares, open
+hats, rim, ride, a drum fill into the top of the form, the bass approaching
+changes, the comp anticipating them, swung sixteenths, three beats to the
+bar, slapback on the styles that live on it, and humanizing (a checkbox).
+A part is realised from one seed ("New fills" is a new seed), so a link
+holds the exact roll. The review page still works: its left column is the
+base data, what the app played before.
+
 **What the fills are made of.** Each style's fills are written from what
 its players actually play between the chords, and the file says so above
 each: which notes carry the style (a blues line is the root, the ♭3 leaning
@@ -1208,6 +1228,8 @@ by what each part does:
 | `tab.js` | Draws guitar tablature from a note list. |
 | `parts-guide-data.js` | What the parts page says about each style and part: progression, tempo, what the rhythm and notes are made of, where the idiom comes from. Pure data. |
 | `parts-guide.js` | The parts page (`parts.html`): every part written out and playable, in any reading. Has a small player of its own. |
+| `js/styles-base.js` | The band patterns the app started with: the base `STYLES`, one entry per style with its feels. |
+| `js/styles.js` | Resolves what the app plays: the proposals merged over the base patterns, parts and guide at load (`GT.styles`), with the base kept for the review page. |
 | `review/review.js` | The style review page (`review.html`): existing beside proposed, playable, with decisions. Its own player and realiser, a superset of the app's for the proposed features. |
 | `review/proposals*.js` | The proposals: revised bands and parts per existing style, new styles, the engine list. Data plus the parts, written with the same helpers parts.js uses and a few more. |
 | `review/proposals-easy.js` | Easy mode's hand-written parts: the beginner's form of a part where the page's simplifying rule can't find it. |

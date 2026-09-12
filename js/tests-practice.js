@@ -87,6 +87,9 @@
   ['partPanel', 'partControls', 'partTab', 'partNote'].forEach(id => add('div', id));
   add('span', 'partName');
   ['partPrev', 'partNext', 'partReroll'].forEach(id => add('button', id, { type: 'button' }));
+  add('input', 'partEasy', { type: 'checkbox' });
+  add('input', 'partHumanize', { type: 'checkbox' });
+  add('span', 'partLead');
   add('span', 'styleGroup');          // practice.js fills the list itself
   document.body.appendChild(root);
 
@@ -483,8 +486,8 @@
     const names = options.map(o => o.text);
     if (new Set(names).size !== names.length) bad.push('two entries share a name');
     if (names.some(n => n.indexOf('·') >= 0)) bad.push('an entry is still named genre · feel');
-    ['Simple quarter note', 'Straight rock', 'Rock', 'Half-time rock', 'Blues shuffle', 'Slow blues', 'Jump blues',
-     'Swing', 'Bossa nova', 'Pop', 'Classic funk', 'Disco'].forEach(n => {
+    ['Simple quarter note', 'Straight rock (eighth-note)', 'Rock', 'Half-time (Levee-style)', 'Blues shuffle', 'Slow blues (12/8)', 'Jump blues (swung)',
+     'Swing', 'Bossa nova', 'Pop (four on the floor)', 'Classic funk (Nolen-inspired)', 'Disco (Rodgers-inspired)', "Rock 'n' roll", 'Texas shuffle', 'Punk'].forEach(n => {
       if (!names.includes(n)) bad.push(`no entry called "${n}"`);
     });
 
@@ -609,12 +612,14 @@
       const after = GT.practice.partState().window;
       if (JSON.stringify(after) === JSON.stringify(before)) bad.push('stepping the box left the part in the old window');
 
-      // and new fills change the answering bars but never the figure
-      const was = GT.practice.partState().notes;
+      // and new fills are a new seed in the same window: the figures may
+      // roll too now (a part can roll its figures, tag tails on them, put a
+      // lead in the fill bars), but the part and where it sits do not move
+      const was = GT.practice.partState();
       q('#partReroll').click();
-      const now = GT.practice.partState().notes;
-      const figureOf = ns => JSON.stringify(ns.filter(n => n.bar % 2 === 0));
-      if (figureOf(was) !== figureOf(now)) bad.push('re-rolling the fills changed the figure');
+      const now = GT.practice.partState();
+      if (now.seed === was.seed) bad.push('re-rolling the fills kept the seed');
+      if (JSON.stringify(now.window) !== JSON.stringify(was.window)) bad.push('re-rolling the fills moved the part');
     }
     q('#chartViewGroup .seg-btn[data-value="chart"]').click();
     if (notesOf() !== '[]') bad.push('going back to the chart left notes behind');

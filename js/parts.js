@@ -32,7 +32,7 @@
 (function(){
   'use strict';
   const GT = (window.GT = window.GT || {});
-  const { SEMITONE } = GT.theory;
+  const { SEMITONE, displayName } = GT.theory;
   const { STRING_MIDI, FRET_COUNT } = GT.fretboard;
 
   // ---- the library ---------------------------------------------------------
@@ -1200,8 +1200,9 @@
 
   // The parts written for a feel. Every feel the picker offers has some,
   // and a test says so; a feel with none would simply offer nothing.
+  let LIBRARY_NOW = LIBRARY;
   function partsFor(style, feel){
-    return (LIBRARY[style] && LIBRARY[style][feel]) || [];
+    return (LIBRARY_NOW[style] && LIBRARY_NOW[style][feel]) || [];
   }
 
   // ---- which notes a reading allows ----------------------------------------
@@ -1480,29 +1481,286 @@
   // where the chords change — and which fill is `picks[phrase]`, so the same
   // roll gives the same part until it's re-rolled on purpose.
   // The figure's variants take the phrases in turn, figure first.
+  // ---- the figure this bar plays --------------------------------------------
   function figureFor(part, phrase){
     const figures = [part.figure, ...(part.variants || [])];
     return figures[phrase % figures.length];
   }
 
-  function realise(part, bars, picks, opts){
-    const notes = [];
-    bars.forEach((bar, b) => {
-      if (!bar.chord) return;
-      const phrase = Math.floor(b / 2);
-      const written = b % 2 === 0
-        ? figureFor(part, phrase)
-        : part.fills[Math.abs(picks[phrase] || 0) % part.fills.length];
-      // the bar after this one, round to the first at the end: a loop
-      const after = bars[(b + 1) % bars.length];
-      realiseBar(written, bar.chord, opts, after && after.chord).forEach(note => notes.push({ ...note, bar: b }));
+  // ---- the roll -------------------------------------------------------------
+  // A part is realised from a seed: the same seed gives the same fills, the
+  // same tails, the same stop-time bars, so a link or a test can hold a
+  // realisation still; "New fills" is a new seed.
+  function rng(seed){
+    let x = (seed * 9301 + 49297) % 233280;
+    return () => { x = (x * 9301 + 49297) % 233280; return x / 233280; };
+  }
+  const newSeed = (random = Math.random) => Math.floor(random() * 1e6) + 1;
+
+  // ---- easy mode ------------------------------------------------------------
+  // The beginner's version of a part. Where the part carries one (`easy`) it
+  // is used; anywhere else the rule below does it: ghost notes go, so do
+  // rakes, tremolo, chord slides and colour tones; bends, hammer-ons,
+  // pull-offs and slides play plain (double stops stay — they are not the
+  // hard part); sixteenths move back onto the eighths and the middle of a
+  // triplet goes; tails, pickups and stop-time stay in the part with their
+  // chance at zero, so the seed draws the same fills as it does with easy
+  // mode off.
+  const EASY_TECH = { double: true, bend: false, hammer: false, pull: false, slide: false };
+  function simplify(written, grid){
+    const per = grid % 3 === 0 ? 3 : 4;
+    const out = [];
+    (written || []).forEach(w => {
+      if (w.ghost) return;
+      const x = { ...w };
+      delete x.rake; delete x.trem; delete x.chordSlide; delete x.add; delete x.up;
+      if (per === 4 && x.at % 2 === 1) x.at = x.at - 1;
+      if (per === 3 && x.at % 3 === 1) return;
+      if (per === 4 && x.dur < 2) x.dur = 2;
+      if (per === 3 && x.dur < 1.5) x.dur = 1.5;
+      out.push(x);
     });
-    return notes;
+    // a moved sixteenth that lands on a note, or on a strum of the same
+    // voicing, is dropped; a bass strum under a chord on the same slot (the
+    // batida's thumb and fingers) is two voicings and stays
+    const seen = new Set();
+    return out.filter(x => { const k = `${x.at}${x.strum ? 's' + (x.voicing || 'full') : 'n'}`; if (seen.has(k)) return false; seen.add(k); return true; });
+  }
+  function easyVersion(part, grid){
+    const off = { tailChance: 0, pickupChance: 0, stopChance: 0 };
+    if (part.easy) return { ...part, ...off, turnarounds: null, turnaround: null, ...part.easy, easyKind: 'written' };
+    const lists = {};
+    ['figure', 'turnaround'].forEach(k => { if (part[k]) lists[k] = simplify(part[k], grid); });
+    ['variants', 'fills', 'fillsOnChange', 'fillsOnStay', 'turnarounds', 'leads'].forEach(k => { if (part[k]) lists[k] = part[k].map(bar => simplify(bar, grid)); });
+    return { ...part, ...lists, ...off, easyKind: 'auto' };
   }
 
-  // A fresh roll of fills for a progression this many bars long.
-  const rollFills = (part, barCount, rng = Math.random) =>
-    Array.from({ length: Math.ceil(barCount / 2) }, () => Math.floor(rng() * part.fills.length));
+  // ---- two notes at once, and the voicings a strum can ask for -------------
+  // A double stop on the strings a hand would use: the written interval
+  // first, then the string gap the shape has — adjacent for anything up to a
+  // 5th, one string skipped for 6ths, 7ths and octaves, two for 10ths — and
+  // the root with its 6th (the boogie) adjacent, a stretch, not the 6ths
+  // shape. The interval may invert (a 3rd voiced as a 6th, the same two
+  // notes) when that is what keeps the pair on the treble strings the box
+  // has — not when the lower note bends, since the bend needs the shape.
+  function placePair(w, cells, pal, base){
+    const s1 = snap(pal.root, w.iv, pal.allowed), s2 = snap(pal.root, w.iv2, pal.allowed);
+    if (!s1 || !s2) return null;
+    const want1 = base + w.iv + s1.shift, semis = (w.iv2 + s2.shift) - (w.iv + s1.shift);
+    const span = Math.abs(semis);
+    const boogie = span >= 8 && span <= 9 && ((w.iv % 12) + 12) % 12 === 0;
+    const pref = span <= 7 || boogie ? [1, 2] : span <= 12 ? [2, 1, 3] : [3, 2];
+    const want2 = want1 + semis;
+    let best = null;
+    cells.filter(c => c.midi % 12 === s1.pc).forEach(c1 => {
+      cells.filter(c => c.midi % 12 === s2.pc && c.string !== c1.string).forEach(c2 => {
+        const diff = (c2.midi - c1.midi) - semis;
+        const interval = diff === 0 ? 0 : (Math.abs(diff) === 12 && !w.up) ? 6 : Math.abs(diff) * 10;
+        const rank = pref.indexOf(Math.abs(c2.string - c1.string));
+        const score = interval + (rank < 0 ? 30 : rank * 8) + Math.abs(c1.midi - want1) + Math.abs(c2.midi - want2) / 2;
+        if (!best || score < best.score) best = { c1, c2, score };
+      });
+    });
+    return best;
+  }
+  // The thumb's note: "bass" is the lowest root on a bass string (E, A or
+  // D), "fifth" the 5th on the bass string next to it — where an alternating
+  // thumb goes — never a note up on the treble strings.
+  function thumbCell(chord, opts, voicing){
+    // a strum is the chord itself, whatever the reading: the chord's own
+    // root and 5th, not the palette's (which is the key's when a part
+    // stays on the I)
+    const rootPc = pc(chord.note);
+    const cells = cellsIn(opts.window).filter(c => c.string >= 3);
+    const roots = cells.filter(c => c.midi % 12 === rootPc).sort((a, b) => a.midi - b.midi);
+    if (!roots.length) return null;
+    const r = roots[0];
+    if (voicing === 'bass') return [r];
+    const fifthPc = chord.fifth ? pc(chord.fifth) : (rootPc + 7) % 12;
+    const byNearness = (a, b) => Math.abs(a.midi - r.midi) - Math.abs(b.midi - r.midi);
+    const beside = cells.filter(c => c.midi % 12 === fifthPc && Math.abs(c.string - r.string) === 1).sort(byNearness);
+    if (beside.length) return [beside[0]];
+    const any = cells.filter(c => c.midi % 12 === fifthPc).sort(byNearness);
+    return any.length ? [any[0]] : null;
+  }
+  // A power chord: the root on the lowest string that has it, the 5th on the
+  // next string up, the octave above that.
+  function powerVoicing(chord, opts){
+    const rootPc = pc(chord.note);
+    const cells = cellsIn(opts.window);
+    const roots = cells.filter(c => c.midi % 12 === rootPc && c.string >= 2).sort((a, b) => b.string - a.string || a.midi - b.midi);
+    for (const r of roots){
+      const fifth = cells.find(c => c.string === r.string - 1 && c.midi === r.midi + 7);
+      if (!fifth) continue;
+      const oct = cells.find(c => c.string === r.string - 2 && c.midi === r.midi + 12);
+      return oct ? [r, fifth, oct] : [r, fifth];
+    }
+    return strumCells(chord, opts, 'low');
+  }
+  // Root, 3rd and 7th (or 5th for a triad) on three strings, the 5th left
+  // out — what a big-band rhythm guitar plays.
+  function shellVoicing(chord, opts){
+    const cells = cellsIn(opts.window);
+    const pcs = [pc(chord.note), pc(chord.third), chord.seventh ? pc(chord.seventh) : pc(chord.fifth)];
+    const roots = cells.filter(c => c.midi % 12 === pcs[0] && c.string >= 3).sort((a, b) => a.midi - b.midi);
+    if (!roots.length) return null;
+    const root = roots[0];
+    const out = [root];
+    let string = root.string;
+    for (const want of pcs.slice(1)){
+      const cand = cells.filter(c => c.midi % 12 === want && c.string < string && c.string >= string - 2 && c.midi > out[out.length - 1].midi)
+        .sort((a, b) => a.string - b.string);
+      const c = cand[cand.length - 1] || cells.filter(x => x.midi % 12 === want && x.string < string).sort((a, b) => b.string - a.string)[0];
+      if (!c) return null;
+      out.push(c); string = c.string;
+    }
+    return out;
+  }
+  // One extra note above a grip: a colour tone (the 9th, the 6th) on a strum.
+  function placeIv(chord, opts, iv, above){
+    const pal = palette(chord, opts);
+    const sn = snap(pal.root, iv, pal.allowed);
+    if (!sn) return null;
+    const cells = cellsIn(opts.window).filter(c => c.midi % 12 === sn.pc && (above == null || c.midi > above));
+    if (!cells.length) return null;
+    cells.sort((a, b) => a.midi - b.midi);
+    return cells[0];
+  }
 
-  GT.parts = { LIBRARY, SIMPLE_FEEL, TECHNIQUES, partsFor, palette, snap, realiseBar, realise, rollFills, figureFor, cellsIn, homeMidi, gripIn, triadIn, strumCells, strumStringLevel };
+  // ---- the realiser ---------------------------------------------------------
+  // The whole part over the progression's bars. A bar is a figure bar or a
+  // fill bar (every `phrase` bars, the last of each pair by default); the
+  // figures take the phrases in turn, or are rolled when the part says so;
+  // a fill knows whether the next bar changes chord and draws from that list
+  // and the plain fills together; the last bar of the form is a turnaround
+  // where the part has one; tails, pickups and stop-time bars happen by
+  // their chances; a lead roll puts the part's lead lines in the fill bars.
+  // Then each written bar is placed on the neck: strums through the voicing
+  // asked for, double stops by shape, single notes through realiseBar, and
+  // the flags applied after — ghost, staccato, palm mute, vibrato, rake,
+  // chord slides, colour tones, tremolo.
+  //   feat: { grid, phrase, easy, seed }
+  function realise(part, bars, seed, opts, feat = {}){
+    const grid = feat.grid || 16;
+    if (feat.easy){
+      part = easyVersion(part, grid);
+      const tech = { ...(opts.tech || {}) };
+      Object.keys(EASY_TECH).forEach(k => { if (!EASY_TECH[k]) tech[k] = false; });
+      opts = { ...opts, tech };
+    }
+    const roll = rng(Number(seed) || 1);
+    const phrase = feat.phrase || 2;
+    const out = [];
+    const stopBars = new Set();
+    const pick = list => list[Math.floor(roll() * list.length)];
+    const cells = cellsIn(opts.window);
+    const leadRoll = !!(part.leads && part.leads.length) && roll() < (part.leadChance == null ? 0.35 : part.leadChance);
+    let figureTurn = 0;
+    bars.forEach((bar, b) => {
+      if (!bar.chord) return;
+      const next = bars[(b + 1) % bars.length].chord;
+      const changing = displayName(next) !== displayName(bar.chord);
+      const last = b === bars.length - 1;
+      const fillBar = (b % phrase) === phrase - 1;
+      let written;
+      const turnarounds = part.turnarounds || (part.turnaround ? [part.turnaround] : null);
+      if (last && turnarounds) written = pick(turnarounds);
+      else if (fillBar){
+        if (part.stops && part.stops.length && roll() < (part.stopChance == null ? 0.2 : part.stopChance)){
+          written = pick(part.stops);
+          stopBars.add(b);
+        } else if (leadRoll){
+          written = pick(part.leads);
+        } else {
+          const situation = (changing ? part.fillsOnChange : part.fillsOnStay) || [];
+          const list = situation.concat(part.fills || []);
+          written = pick(list.length ? list : (part.fills || [part.figure]));
+        }
+      } else {
+        const figures = [part.figure, ...(part.variants || [])];
+        written = part.figureMode === 'roll' ? pick(figures) : figures[figureTurn++ % figures.length];
+        if (part.tails && part.tails.length && roll() < (part.tailChance == null ? 0.5 : part.tailChance)){
+          written = written.filter(w => w.at < grid / 2).concat(pick(part.tails));
+        }
+        if (changing && part.pickups && part.pickups.length && roll() < (part.pickupChance == null ? 0.5 : part.pickupChance)){
+          written = written.filter(w => w.at < grid * 3 / 4).concat(pick(part.pickups));
+        }
+      }
+      // strums with a voicing of their own, on the next chord or with a
+      // colour tone, and double stops, are placed here; the rest goes
+      // through realiseBar
+      const plain = [], extra = [], pairs = [];
+      const doubleOk = !(opts.tech && opts.tech.double === false);
+      written.forEach(w => {
+        if (w.strum && (w.voicing === 'shell' || w.voicing === 'power' || w.voicing === 'bass' || w.voicing === 'fifth' || w.add || w.next)) extra.push(w);
+        else if (w.tech === 'double' && doubleOk) pairs.push(w);
+        else plain.push(w);
+      });
+      let notes = realiseBar(plain, bar.chord, opts, next);
+      const pal = palette(bar.chord, opts), nextPal = palette(next, opts);
+      pairs.forEach(w => {
+        const placed = placePair(w, cells, w.next ? nextPal : pal, homeMidi(cells, (w.next ? nextPal : pal).root));
+        if (!placed){ notes = notes.concat(realiseBar([w], w.next ? next : bar.chord, opts, next)); return; }
+        const mk = (c, more) => ({ at: w.at, dur: w.dur, vel: w.vel, string: c.string, fret: c.fret, midi: c.midi, iv: w.iv, next: !!w.next, tech: 'double', ...more });
+        notes.push(mk(placed.c1, {}), mk(placed.c2, { pair: true, iv: w.iv2 }));
+      });
+      extra.forEach(w => {
+        const on = w.next ? next : bar.chord;
+        // in the triads reading every strum is the triad the neck shows,
+        // whatever voicing was asked for; elsewhere the voicing is built
+        const triads = opts.reading === 'triads3';
+        let grip = triads ? strumCells(on, opts, ['shell', 'power'].includes(w.voicing) ? 'full' : (w.voicing || 'full'))
+                 : w.voicing === 'shell' ? shellVoicing(on, opts) : w.voicing === 'power' ? powerVoicing(on, opts)
+                 : (w.voicing === 'bass' || w.voicing === 'fifth') ? (thumbCell(on, opts, w.voicing) || strumCells(on, opts, w.voicing))
+                 : strumCells(on, opts, w.voicing || 'full');
+        if (!grip) return;
+        grip = grip.slice().sort((a, b) => a.midi - b.midi);
+        let colour = null;
+        if (w.add){
+          const top = grip[grip.length - 1].midi;
+          colour = placeIv(on, opts, w.add, top);
+          if (colour) grip.push(colour);
+        }
+        const each = w.vel * strumStringLevel(grip.length);
+        grip.forEach((c, k) => notes.push({ at: w.at, dur: w.dur, vel: each, string: c.string, fret: c.fret, midi: c.midi,
+                                             strum: true, voicing: w.voicing, mute: !!w.mute, next: !!w.next, spread: k * STRUM_SPREAD,
+                                             ...(c === colour ? { colour: true } : {}) }));
+      });
+      // the flags, matched back to the written note by its moment
+      const techOn = k => !(opts.tech && opts.tech[k] === false);
+      written.forEach(w => {
+        const mine = notes.filter(n => Math.abs(n.at - w.at) < 1e-9 && (!!n.strum === !!w.strum));
+        if (!mine.length) return;
+        mine.forEach(n => {
+          if (w.ghost){ n.vel *= 0.35; n.mute = true; n.ghost = true; }
+          if (w.stacc) n.dur = Math.min(n.dur, 0.5);
+          if (w.pm) n.mute = true;
+          if (w.vib) n.vib = true;
+          if (w.rake) n.rake = true;
+          // a chord slid in, and the lower note of a double stop bent — only to
+          // a note the reading offers, and only with the technique switched on
+          if (w.chordSlide && n.strum && techOn('slide')){ const from = n.fret - w.chordSlide; if (from >= 1 && from <= FRET_COUNT) n.slide = from; }
+          if (w.tech === 'double' && w.up && !n.pair && n.fret > 0 && techOn('bend') && (w.next ? nextPal : pal).allowed.has(((n.midi + w.up) % 12 + 12) % 12)) n.bend = w.up;
+        });
+        if (w.trem && !w.strum){
+          const n = mine[0];
+          const reps = w.trem, step = n.dur / reps;
+          notes = notes.filter(x => x !== n);
+          for (let k = 0; k < reps; k++) notes.push({ ...n, at: n.at + k * step, dur: step * 0.9, vel: n.vel * (k % 2 ? 0.75 : 1), trem: true });
+        }
+      });
+      notes.forEach(n => out.push({ ...n, bar: b }));
+    });
+    out.stopBars = stopBars;
+    out.leadRoll = leadRoll;
+    return out;
+  }
+
+  // A fresh roll for a part: a seed. Kept under its old name.
+  const rollFills = (part, barCount, random = Math.random) => newSeed(random);
+
+  GT.parts = { get LIBRARY(){ return LIBRARY_NOW; }, set LIBRARY(v){ LIBRARY_NOW = v; }, LIBRARY_BASE: LIBRARY,
+               SIMPLE_FEEL, TECHNIQUES, EASY_TECH, partsFor, palette, snap, realiseBar, realise, rollFills, newSeed, rng, figureFor,
+               simplify, easyVersion, placePair, thumbCell, powerVoicing, shellVoicing, placeIv,
+               cellsIn, homeMidi, gripIn, triadIn, strumCells, strumStringLevel };
 })();

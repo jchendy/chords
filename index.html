@@ -485,6 +485,9 @@
   .tech-btn[aria-pressed="false"]{ color:var(--muted); text-decoration:line-through; opacity:.7; }
   .tech-btn:hover{ border-color:var(--muted); }
   .part-volume{ display:inline-flex; align-items:center; gap:6px; }
+  .part-check{ display:inline-flex; align-items:center; gap:4px; font-size:12px; color:var(--muted); }
+  .part-check input{ accent-color:var(--a); margin:0; }
+  .part-lead{ font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--a); border:1px solid var(--a); border-radius:999px; padding:1px 7px; }
   .part-volume-label{ font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); }
   .part-volume input{ width:96px; accent-color:var(--a); }
   .part-volume .i-cross{ display:none; }
@@ -683,6 +686,9 @@
         </span>
         <span class="part-name" id="partName"></span>
         <button type="button" class="tbtn" id="partReroll" title="Different fills, same part">New fills</button>
+        <span class="part-lead" id="partLead" title="This roll puts the part's lead lines in the fill bars" hidden>lead roll</span>
+        <label class="part-check" title="The beginner's version: fewer notes, on the beat, no bends or slides"><input type="checkbox" id="partEasy"><span>Easy</span></label>
+        <label class="part-check" title="Timing and loudness moved a little, the way a player does"><input type="checkbox" id="partHumanize"><span>Humanize</span></label>
         <!-- how loud the part is against the band, and a mute for when you're
              playing it yourself; the slider keeps its place while muted -->
         <span class="part-volume" title="How loud the part is">
@@ -1127,9 +1133,18 @@
 <script src="js/theory.js"></script>
 <script src="js/progressions.js"></script>
 <script src="js/fretboard.js"></script>
+<script src="js/parts.js"></script>
+<script src="js/parts-guide-data.js"></script>
+<script src="js/styles-base.js"></script>
+<script src="review/proposals.js"></script>
+<script src="review/proposals-2.js"></script>
+<script src="review/proposals-3.js"></script>
+<script src="review/proposals-4.js"></script>
+<script src="review/proposals-more.js"></script>
+<script src="review/proposals-easy.js"></script>
+<script src="js/styles.js"></script>
 <script src="js/audio.js"></script>
 <script src="js/neck.js"></script>
-<script src="js/parts.js"></script>
 <script src="js/tooltips.js"></script>
 <script src="js/tabs.js"></script>
 <script src="js/fretboard-view.js"></script>

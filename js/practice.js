@@ -835,7 +835,7 @@
     const changed = style !== currentStyle || feelValue() !== value;
     currentStyle = style;
     updatePlaybackUI();
-    if (changed) partFills = [];          // a different feel is a different part
+    if (changed) partSeed = 0;            // a different feel is a different part
     rebuildPart();
   }
   const feelValue = () => currentStyle === 'simple' ? `simple.${noteBeats}` : `${currentStyle}.${currentVariant}`;
@@ -910,7 +910,9 @@
   // how many measures a given chord in the progression lasts, and the beats
   // that works out to (4/4 throughout)
   function measuresFor(i){ return slotMeasures[i] || DEFAULT_MEASURES; }
-  function beatsForChord(i){ return measuresFor(i) * 4; }
+  // beats to the bar: four, or what the style says (the waltzes are in three)
+  const beatsPerBar = () => currentStyle === 'simple' ? 4 : ((STYLES[currentStyle].variants[currentVariant] || {}).beats || 4);
+  function beatsForChord(i){ return measuresFor(i) * beatsPerBar(); }
   function getNoteBeats(){ return noteBeats; } // 1 = quarter, 2 = half, 4 = whole
 
   tempoInput.addEventListener('input', () => {
@@ -1006,7 +1008,7 @@
     if (chord){
       const perBeat = GT.parts.SIMPLE_FEEL.grid / 4, slotDur = secondsPerBeat / perBeat;
       for (let k = 0; k < perBeat; k++){
-        schedulePartSlot(barOffset(chordIdx) + Math.floor(beatInChord / 4), beatInMeasure * perBeat + k, nextNoteTime + k * slotDur, slotDur);
+        schedulePartSlot(barOffset(chordIdx) + Math.floor(beatInChord / 4), beatInMeasure * perBeat + k, nextNoteTime + k * slotDur, slotDur, null);
       }
     }
     // Every beat goes in the log, struck or not. The log is what the chart
@@ -1022,45 +1024,87 @@
     }
   }
 
+  // timing and velocity moved a little, when humanizing is on
+  const jit = amt => partHumanize ? (Math.random() * 2 - 1) * amt : 0;
+
   function scheduleStyleBeat(style, chord, secondsPerBeat, beatInMeasure){
-    const subPerBeat = style.grid / 4;
+    const beats = style.beats || 4;
+    const subPerBeat = style.grid / beats;
     const slotDur = secondsPerBeat / subPerBeat;
+    const grid = style.grid;
     const nextChord = currentProgression[(chordIdx + 1) % currentProgression.length];
-    const approachNext = Math.floor(beatInChord / 4) === measuresFor(chordIdx) - 1;
-    const accentEvery = style.grid / 4;
+    const measure = Math.floor(beatInChord / beats);
+    const approachNext = measure === measuresFor(chordIdx) - 1;
+    // the change is coming: the next bar is another chord
+    const changing = approachNext && displayName(nextChord) !== displayName(chord);
+    const barIdx = barOffset(chordIdx) + measure;
+    // the last bar of the form: the kit's fill, where the style has one
+    const fillNow = style.fill && chordIdx === currentProgression.length - 1 && approachNext;
+    // stop-time: the band hits the One and stops; the guitar has the bar
+    const stopped = partOn && partNotes.stopBars && partNotes.stopBars.has(barIdx);
+    // swung sixteenths: the second of each pair late by this much of a sixteenth
+    const swingOf = slot => (style.swing && grid % 4 === 0 && slot % 2 === 1) ? style.swing * slotDur * 0.5 : 0;
+    const lastEighth = grid - subPerBeat / 2;
 
     for (let k = 0; k < subPerBeat; k++){
       const slot = beatInMeasure * subPerBeat + k;
-      const t = nextNoteTime + k * slotDur;
+      const t = nextNoteTime + k * slotDur + swingOf(slot) + jit(0.006);
+      const vk = (style.kickVels && style.kickVels[slot]) || style.kickVel || 0.9;
+      const vs = (style.snareVels && style.snareVels[slot]) || style.snareVel || 0.85;
 
-      if (style.kick && style.kick.includes(slot)) playKick(t, style.kickVel || 0.9);
-      if (style.snare && style.snare.includes(slot)) playSnare(t, style.snareVel || 0.85);
-      if (style.hat && style.hat.includes(slot)){
-        playHiHat(t, slot % accentEvery === 0 ? 0.55 : 0.32);
-      }
-      if (style.ride && style.ride.includes(slot)) playRide(t, 0.55);
-
-      if (chord){
-        const ce = style.chord && style.chord.find(e => e.slot === slot);
-        if (ce) playStyleVoice(style.voice, chord, t, ce.dur * slotDur, ce.vel, chordVoice);
-
-        const be = style.bass && style.bass.find(e => e.slot === slot);
-        if (be){
-          const freq = 'walk' in be
-            ? walkBassFreq(chord, nextChord, be.walk, approachNext)
-            : audio.bassNote(SEMITONE[chord.note] % 12, be.off);
-          playBass(freq, t, be.dur * slotDur, be.vel);
+      if (stopped){
+        if (slot === 0 && chord){
+          if (style.kick && style.kick.length) playKick(t, vk);
+          if (style.chord && style.chord.length) playStyleVoice(style.voice, chord, t, slotDur * 2, 0.7, chordVoice);
+          if (style.bass && style.bass.length) playBass(audio.bassNote(SEMITONE[chord.note] % 12, 0), t, slotDur * 2, 0.9);
+        }
+      } else {
+        if (fillNow){
+          if (style.fill.kick && style.fill.kick.includes(slot)) playKick(t, vk);
+          if (style.fill.snare && style.fill.snare.includes(slot)) playSnare(t, 0.5 + 0.4 * (slot / grid));
+          if (style.fill.hat && style.fill.hat.includes(slot)) playHiHat(t, 0.5);
+        } else {
+          if (style.kick && style.kick.includes(slot)) playKick(t, vk);
+          if (style.snare && style.snare.includes(slot)) playSnare(t, vs);
+          if (style.ghost && style.ghost.includes(slot)) playSnare(t, 0.22);
+          if (style.rim && style.rim.includes(slot)) playSnare(t, 0.3);
+          if (style.hat && style.hat.includes(slot)){
+            const open = style.hatOpen && style.hatOpen.includes(slot);
+            playHiHat(t, slot % subPerBeat === 0 ? 0.55 : 0.32, open ? 0.28 : 0.06);
+          }
+          if (style.ride && style.ride.includes(slot)) playRide(t, slot % subPerBeat === 0 ? 0.6 : 0.45);
         }
 
-        schedulePartSlot(barOffset(chordIdx) + Math.floor(beatInChord / 4), slot, t, slotDur);
+        if (chord){
+          const ce = style.chord && style.chord.find(e => e.slot === slot);
+          if (ce) playStyleVoice(style.voice, chord, t, ce.dur * slotDur, ce.vel + jit(0.06), chordVoice);
+          // the comp anticipating the change: the next chord on the last eighth
+          if (style.compAnticipate && changing && slot === lastEighth){
+            playStyleVoice(style.voice, nextChord, t, slotDur * (subPerBeat / 2), 0.6, chordVoice);
+          }
+          const be = style.bass && style.bass.find(e => e.slot === slot);
+          if (be){
+            let freq;
+            if ('walk' in be) freq = walkBassFreq(chord, nextChord, be.walk, changing);
+            else if (be.next) freq = audio.bassNote(SEMITONE[(changing ? nextChord : chord).note] % 12, be.off || 0);
+            else freq = audio.bassNote(SEMITONE[chord.note] % 12, be.off);
+            // a chromatic approach into the change, on the last eighth
+            if (style.bassApproach && changing && slot >= lastEighth) freq = audio.bassNote(SEMITONE[nextChord.note] % 12, -1);
+            playBass(freq, t, be.dur * slotDur, be.vel + jit(0.05));
+          } else if (style.bassApproach && changing && slot === lastEighth && !(style.bass || []).some(e => e.slot >= lastEighth)){
+            playBass(audio.bassNote(SEMITONE[nextChord.note] % 12, -1), t, slotDur * (subPerBeat / 2), 0.75);
+          }
+        }
       }
+
+      if (chord) schedulePartSlot(barIdx, slot, t, slotDur, style);
     }
 
     if (chord){
       scheduledLog.push({
         idx: chordIdx, time: nextNoteTime,
-        measure: Math.floor(beatInChord / 4) + 1,
-        beat: (beatInChord % 4) + 1,
+        measure: measure + 1,
+        beat: (beatInChord % beats) + 1,
       });
     }
   }
@@ -1087,7 +1131,7 @@
 
     while (nextNoteTime < now + SCHEDULE_AHEAD_SEC){
       const chord = currentProgression[chordIdx];
-      const beatInMeasure = beatInChord % 4;
+      const beatInMeasure = beatInChord % beatsPerBar();
 
       if (currentStyle === 'simple'){
         scheduleSimpleBeat(chord, secondsPerBeat, beatInMeasure, beatInMeasure === 0);
@@ -1107,7 +1151,7 @@
     // during the count-in, show the running beat number where the
     // measure.beat readout normally sits
     if (countInFrom != null && now < playbackStartTime - 0.0005){
-      const b = Math.min(4, Math.max(1, Math.floor((now - countInFrom) / countInSpb) + 1));
+      const b = Math.min(beatsPerBar(), Math.max(1, Math.floor((now - countInFrom) / countInSpb) + 1));
       measureReadout.textContent = String(b);
       requestAnimationFrame(syncHighlight);
       return;
@@ -1159,8 +1203,8 @@
       // measure.beat took over.
       countInFrom = countInToggle.checked ? nextNoteTime : null;
       if (countInToggle.checked){
-        for (let i = 0; i < 4; i++) playHiHat(nextNoteTime + i * countInSpb);
-        nextNoteTime += 4 * countInSpb;
+        for (let i = 0; i < beatsPerBar(); i++) playHiHat(nextNoteTime + i * countInSpb);
+        nextNoteTime += beatsPerBar() * countInSpb;
       }
       playbackStartTime = nextNoteTime;
       scheduler();
@@ -1223,7 +1267,7 @@
       const off = Object.keys(partTech).filter(k => !partTech[k]).map(k => TECH_LETTERS[k]).join('');
       const extras = (partVolume !== PART_VOLUME_DEFAULT ? `.v${partVolume}` : '') + (partMuted ? '.m' : '')
         + (off ? `.o${off}` : '');            // the techniques switched off, by letter
-      p.set('p', `${partIdx}.${partScale === 'key' ? 'k' : 'f'}.${partFills.join('')}${extras}`);
+      p.set('p', `${partIdx}.${partScale === 'key' ? 'k' : 'f'}.${partSeed}${extras}${partEasy ? '.e' : ''}`);
     }
     // the band's volume is heard in both views, so it's its own field
     if (bandVolume !== BAND_VOLUME_DEFAULT || bandMuted) p.set('b', `${bandVolume}${bandMuted ? '.m' : ''}`);
@@ -1273,18 +1317,21 @@
       const [idx, scale, fills, ...extras] = part.split('.');
       partIdx = Number(idx) || 0;
       partScale = scale === 'k' ? 'key' : 'follow';
-      partFills = (fills || '').split('').map(Number).filter(n => !Number.isNaN(n));
+      partSeed = Number(fills) || 0;
+      partEasy = false;
       partVolume = PART_VOLUME_DEFAULT;
       partMuted = false;
       partTech = { double: true, bend: true, hammer: true, pull: true, slide: true };
       extras.forEach(x => {
         if (x === 'm') partMuted = true;
+        else if (x === 'e') partEasy = true;
         else if (/^v\d+$/.test(x)) partVolume = Math.max(0, Math.min(100, Number(x.slice(1))));
         else if (/^o[dbhps]*$/.test(x)){
           Object.keys(TECH_LETTERS).forEach(k => { if (x.includes(TECH_LETTERS[k])) partTech[k] = false; });
         }
       });
       syncPartTech();
+      syncPartToggles();
     }
     bandVolume = BAND_VOLUME_DEFAULT;
     bandMuted = false;
@@ -1345,7 +1392,12 @@
   let partFollowFailed = false;      // logged once, not sixty times a second
   let partBars = [];                 // what the tab was last drawn from, for a redraw on resize
   let partIdx = 0;                  // which of the feel's parts
-  let partFills = [];               // one fill choice per two-bar phrase
+  let partSeed = 0;                 // the roll the part was realised from; 0 = not rolled yet
+  let partEasy = false;             // the beginner's version of the part
+  let partHumanize = false;         // timing and velocity moved a little
+  const partEasyToggle = document.getElementById('partEasy'), partHumanToggle = document.getElementById('partHumanize');
+  const partLeadEl = document.getElementById('partLead');
+  const syncPartToggles = () => { partEasyToggle.checked = partEasy; partHumanToggle.checked = partHumanize; };
   let partScale = 'follow';         // 'follow' the chords | stay on the 'key'
   let partVolume = 70;              // 0..100, where the slider sits
   let partMuted = false;            // ...and whether it's heard at all
@@ -1416,7 +1468,7 @@
     // ...but whether a part CAN be shown is in it: a link opens before the
     // neck has worked out its position, and without this the view stayed on
     // "switch to one position" while looking at one.
-    return JSON.stringify([partOn, partIdx, partFills, partScale, partTech, currentMode, currentTonic,
+    return JSON.stringify([partOn, partIdx, partSeed, partEasy, partScale, partTech, currentMode, currentTonic,
       feel && feel.label, pv.reading, pv.inPosition, pv.scaleTheory, partAvailable(),
       currentProgression.map((c, i) => `${displayName(c)}.${measuresFor(i)}`)]);
   }
@@ -1455,15 +1507,13 @@
     partNoteEl.hidden = true;
     partControls.hidden = false;
     const part = partNow(), bars = progressionBars(), pv = view.positionView();
-    // a roll for every phrase this progression has, keeping the ones it had
-    const phrases = Math.ceil(bars.length / 2);
-    if (partFills.length < phrases){
-      partFills = partFills.concat(GT.parts.rollFills(part, (phrases - partFills.length) * 2));
-    }
-    partNotes = GT.parts.realise(part, bars, partFills, {
+    // the roll: a seed, kept until "New fills" or another part asks for a new one
+    if (!partSeed) partSeed = GT.parts.newSeed();
+    partNotes = GT.parts.realise(part, bars, partSeed, {
       reading: pv.reading, window: partWindow, scaleTheory: pv.scaleTheory, stringSet: pv.stringSet,
       stayOnKey: partScale === 'key', key: { tonic: currentTonic, mode: currentMode }, tech: { ...partTech },
-    });
+    }, { grid: feelNow().grid, easy: partEasy });
+    partLeadEl.hidden = !partNotes.leadRoll;
     partNameEl.textContent = part.name;
     drawPartTab(bars);
     // Taken now, after the fills have been rolled, not before: stored before
@@ -1490,6 +1540,7 @@
       })),
       notes: partNotes.map(n => ({ string: n.string, fret: n.fret, at: n.bar * grid + n.at, dur: n.dur,
                                    bend: n.bend, slide: n.slide, tech: n.tech, to: n.to, soft: n.soft, mute: n.mute,
+                                   vib: n.vib, trem: n.trem, rake: n.rake, ghost: n.ghost, tone: !n.strum && (n.mute || n.ghost) ? 'muted' : undefined,
                                    // the top string of a strum carries its marks, over the tab
                                    lead: !n.strum || !partNotes.some(m => m.bar === n.bar && m.at === n.at && m.strum && m.spread > n.spread) })),
       totalSlots: bars.length * grid,
@@ -1533,20 +1584,28 @@
 
   // Sound and log the part's notes for one slot of one bar. Called from the
   // style scheduler, which already walks the grid slot by slot.
-  function schedulePartSlot(barIdx, slot, t, slotDur){
+  function schedulePartSlot(barIdx, slot, t, slotDur, style){
     if (!partOn || !partNotes.length) return;
+    const hz = m => 440 * Math.pow(2, (m - 69) / 12);
     partNotes.forEach(n => {
-      if (n.bar !== barIdx || n.at !== slot) return;
+      if (n.bar !== barIdx || Math.floor(n.at) !== slot) return;
       const dur = n.dur * slotDur;
-      const at = t + (n.spread || 0);            // a strum's strings arrive one after another
-      const hz = m => 440 * Math.pow(2, (m - 69) / 12);
+      // a tremolo pick sits between slots; a strum's strings arrive one after another
+      const at = t + (n.at - slot) * slotDur + (n.spread || 0) + jit(0.008);
+      const vel = n.vel * partLevel() * (1 + jit(0.08));
       // what the note's technique asks of the engine, if anything
       const fx = n.bend ? { bend: n.bend }
                : n.slide != null ? { slideFrom: hz(n.midi + (n.slide - n.fret)) }
                : n.soft ? { soft: true }
                : n.mute ? { mute: true } : null;
-      if (partLevel() > 0) audio.playPluck(hz(n.midi), at, dur, n.vel * partLevel(), 'part', fx);
-      partLog.push({ time: at, until: at + dur, string: n.string, fret: n.fret, slot: barIdx * feelNow().grid + n.at });
+      if (partLevel() > 0){
+        // a rake: two muted strings swept into the note, the way a pick does
+        if (n.rake) [2, 1].forEach((k, i) => audio.playPluck(hz(n.midi - 5 * k), at - 0.028 + i * 0.012, 0.06, 0.22 * partLevel(), 'part', { mute: true }));
+        audio.playPluck(hz(n.midi), at, dur, vel, 'part', fx);
+        // slapback echo, on the styles that live on it
+        if (style && style.slapback) audio.playPluck(hz(n.midi), at + 0.11, Math.min(dur, 0.25), vel * 0.35, 'part', fx && fx.mute ? fx : null);
+      }
+      partLog.push({ time: at, until: at + dur, string: n.string, fret: n.fret, slot: barIdx * feelNow().grid + Math.floor(n.at) });
     });
     if (partLog.length > 256) partLog = partLog.filter(e => e.until > audio.ctx().currentTime);
   }
@@ -1563,7 +1622,7 @@
     if (head && partTab && active){
       // the slot the beat is in: the bar from the chart's own count, the
       // slot within it from how far into the beat the clock is
-      const grid = feelNow().grid, perBeat = grid / 4;
+      const grid = feelNow().grid, perBeat = grid / beatsPerBar();
       const barIdx = barOffset(active.idx) + Math.min(active.measure, measuresFor(active.idx)) - 1;
       const into = Math.max(0, (now - active.time) / (60 / getTempo()));
       const slot = barIdx * grid + (active.beat - 1) * perBeat + Math.min(perBeat - 1, Math.floor(into * perBeat));
@@ -1624,9 +1683,12 @@
     rebuildPart();
     writeShareState();
   }));
-  document.getElementById('partPrev').addEventListener('click', () => { partIdx--; partFills = []; rebuildPart(); writeShareState(); });
-  document.getElementById('partNext').addEventListener('click', () => { partIdx++; partFills = []; rebuildPart(); writeShareState(); });
-  document.getElementById('partReroll').addEventListener('click', () => { partFills = []; rebuildPart(); writeShareState(); });
+  document.getElementById('partPrev').addEventListener('click', () => { partIdx--; partSeed = 0; rebuildPart(); writeShareState(); });
+  document.getElementById('partNext').addEventListener('click', () => { partIdx++; partSeed = 0; rebuildPart(); writeShareState(); });
+  document.getElementById('partReroll').addEventListener('click', () => { partSeed = 0; rebuildPart(); writeShareState(); });
+  partEasyToggle.addEventListener('change', () => { partEasy = partEasyToggle.checked; rebuildPart(); writeShareState(); });
+  partHumanToggle.addEventListener('change', () => { partHumanize = partHumanToggle.checked; });
+
   // The arrows (and the window on the neck, which forwards to them) are you
   // moving the box; the neck moving it for you during playback is not.
   ['boxPrev', 'boxNext'].forEach(id => {
@@ -1864,7 +1926,7 @@
     // the realised part and the window it was realised in, so a test can
     // hold it still across the things that must not move it
     partState: () => ({ notes: partNotes.map(n => ({ ...n })), window: partWindow && { ...partWindow },
-                        fills: partFills.slice(), signature: partSignature(), tech: { ...partTech },
+                        seed: partSeed, easy: partEasy, signature: partSignature(), tech: { ...partTech },
                         named: [...partTabEl.querySelectorAll('.tab-chord.now')].map(el => el.textContent) }),
     showPartBar,
     init(){

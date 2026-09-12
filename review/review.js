@@ -17,7 +17,9 @@
   const parts = GT.parts;
   const audio = GT.audio;
   const { STYLES } = audio;
-  const GUIDE = GT.partsGuide.GUIDE;
+  // what the app played before the proposals were merged in: the base data
+  const BASE = GT.styles.base, BASE_LIBRARY = BASE.LIBRARY;
+  const GUIDE = GT.styles.base.GUIDE;   // the guide as it was: the existing side is what the app played before
   const R = GT.review;                       // the proposals (review/proposals.js)
 
   const $ = id => document.getElementById(id);
@@ -538,7 +540,7 @@
     };
     const notes = advanced
       ? realiseAdvanced(part, bars, opts, { seed: seed || opt.seed, phrase: opt.phrase, grid })
-      : parts.realise(part, bars, seed ? parts.rollFills(part, bars.length, rng(seed)) : [0, 1, 2, 0, 1, 2].slice(0, Math.ceil(bars.length / 2)), opts);
+      : parts.realise(part, bars, seed || opt.seed, opts, { grid });
     return { chords, notes };
   }
 
@@ -583,7 +585,8 @@
   }
 
   // ---- rendering ----
-  const feelOf = (style, label) => style === 'simple' ? parts.SIMPLE_FEEL : STYLES[style].variants.find(v => v.label === label);
+  const feelOf = (style, label) => style === 'simple' ? parts.SIMPLE_FEEL : BASE.STYLES[style].variants.find(v => v.label === label);
+  const basePartsFor = (style, label) => (BASE_LIBRARY[style] && BASE_LIBRARY[style][label]) || [];
   const guideFor = (style, label) => GUIDE[`${style}/${label}`] || (GUIDE[style] && GUIDE[style].feel === label ? GUIDE[style] : null);
 
   let cardCount = 0;
@@ -698,7 +701,7 @@
         sec.appendChild(block);
         const exCol = block.querySelector('.col.existing'), prCol = block.querySelector('.col.proposed');
         bandCard(exCol.querySelector('.band'), feel, ex.style, entry, 'The band now');
-        parts.partsFor(ex.style, ex.label).forEach(part => partCard(exCol.querySelector('.parts'), part, entry, ex.style, feel, false));
+        basePartsFor(ex.style, ex.label).forEach(part => partCard(exCol.querySelector('.parts'), part, entry, ex.style, feel, false));
         const proposedPattern = ex.band ? { ...feel, ...ex.band } : feel;
         bandCard(prCol.querySelector('.band'), proposedPattern, ex.style, entry, ex.band ? 'The band, revised' : 'The band, unchanged');
         (ex.parts || []).forEach(part => partCard(prCol.querySelector('.parts'), part, entry, ex.style, proposedPattern, true, part.replaces ? `replaces ${part.replaces}` : 'new'));

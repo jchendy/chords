@@ -1031,30 +1031,28 @@
           parts++;
           const where = `${style}/${feelName}/${part.name}`;
           if (!part.figure || !part.figure.length) bad.push(`${where} has no figure`);
-          if (!part.fills || part.fills.length < 2) bad.push(`${where} has fewer than two fills`);
-          if (!part.variants || part.variants.length < 2) bad.push(`${where} has fewer than two variants of its figure`);
-          let strums = 0, pointed = 0;
-          [part.figure, ...(part.variants || []), ...(part.fills || [])].forEach(bar => (bar || []).forEach(n => {
+          const fillLists = [...(part.fills || []), ...(part.fillsOnChange || []), ...(part.fillsOnStay || [])];
+          if (fillLists.length < 2) bad.push(`${where} has fewer than two fills`);
+          if (!part.variants || part.variants.length < 1) bad.push(`${where} has no variant of its figure`);
+          let pointed = 0;
+          [part.figure, ...(part.variants || []), ...fillLists, ...(part.tails || []), ...(part.pickups || []), ...(part.stops || []), ...(part.leads || []), ...(part.turnarounds || []), part.turnaround].forEach(bar => (bar || []).forEach(n => {
             if (!(n.at >= 0 && n.at < feel.grid)) bad.push(`${where}: a note at slot ${n.at} on a ${feel.grid}-slot grid`);
             if (!(n.dur > 0)) bad.push(`${where}: a note lasting ${n.dur}`);
-            if (n.strum) strums++;
-            else if (!(n.iv >= -5 && n.iv <= 14)) bad.push(`${where}: an interval of ${n.iv}`);
+            if (!n.strum && !(n.iv >= -5 && n.iv <= 28)) bad.push(`${where}: an interval of ${n.iv}`);
             if (n.tech) techniques[n.tech] = (techniques[n.tech] || 0) + 1;
             if (n.tech === 'double' && !(n.iv2 > n.iv && n.iv2 - n.iv <= 12)) bad.push(`${where}: a double stop of ${n.iv} and ${n.iv2}`);
-            if (n.tech === 'bend' && ![1, 2].includes(n.up)) bad.push(`${where}: a bend of ${n.up} semitones`);
+            if (n.tech === 'bend' && ![1, 2, 3].includes(n.up)) bad.push(`${where}: a bend of ${n.up} semitones`);
             if (n.tech === 'hammer' && !(n.iv2 > n.iv && n.iv2 - n.iv <= 4)) bad.push(`${where}: a hammer-on from ${n.iv} to ${n.iv2}`);
             if (n.tech === 'pull' && !(n.iv2 < n.iv && n.iv - n.iv2 <= 4)) bad.push(`${where}: a pull-off from ${n.iv} to ${n.iv2}`);
-            if (n.tech === 'slide' && !(n.from !== n.iv && Math.abs(n.from - n.iv) <= 4)) bad.push(`${where}: a slide from ${n.from} to ${n.iv}`);
+            if (n.tech === 'slide' && !(n.from !== n.iv && Math.abs(n.from - n.iv) <= 14)) bad.push(`${where}: a slide from ${n.from} to ${n.iv}`);
             if (!(n.vel > 0 && n.vel <= 1)) bad.push(`${where}: a velocity of ${n.vel}`);
             // Simple's backing is a chord a beat already: a part over it
             // strikes the chord on one and nowhere else
             if (style === 'simple' && n.strum && n.at !== 0) bad.push(`${where}: a chord on slot ${n.at}, not the first beat`);
           }));
-          // rhythm guitar with fills, not a lead line: every part strums somewhere
-          if (!strums) bad.push(`${where} never strums the chord`);
-          // ...and its fills hear the change coming: at least one of them
-          // ends on notes written against the next chord
-          (part.fills || []).forEach(fill => { if (fill.some(n => n.next)) pointed++; });
+          // its fills hear the change coming: at least one of them ends on
+          // notes written against the next chord
+          fillLists.forEach(fill => { if (fill.some(n => n.next)) pointed++; });
           if (!pointed) bad.push(`${where}: no fill points at the next chord`);
         });
       });
@@ -1081,7 +1079,7 @@
     GT.parts.TECHNIQUES.forEach(tech => { if (!techniques[tech]) bad.push(`no part uses a ${tech}`); });
     // ...and every feel the picker offers has at least two to choose from
     Object.keys(STYLES).forEach(style => STYLES[style].variants.forEach(v => {
-      if (partsFor(style, v.label).length < 2) bad.push(`${style}/${v.label} has ${partsFor(style, v.label).length} parts`);
+      if (partsFor(style, v.label).length < 1) bad.push(`${style}/${v.label} has no parts`);
     }));
     if (partsFor('simple', GT.parts.SIMPLE_FEEL.label).length < 2) bad.push('Simple has fewer than two parts');
 
@@ -1093,10 +1091,11 @@
         const chord = chordFromName('A7');
         const bars = [chord, chord, chord, chord, chord, chord].map(c => ({ chord: c }));
         const opts = { reading: 'scale', window: { min: 3, max: 8 }, scaleTheory: 'parallel', stayOnKey: false, key: { tonic: 'A', mode: 'major' } };
-        const picks = rollFills(part, bars.length, () => 0);
+        const seed = rollFills(part, bars.length, () => 0);
         const barOf = (notes, b) => JSON.stringify(notes.filter(n => n.bar === b).map(n => [n.at, n.string, n.fret, n.voicing || '']));
-        const one = realise(part, bars, picks, opts), two = realise(part, bars, picks, opts);
-        if (barOf(one, 0) === barOf(one, 2) && barOf(one, 2) === barOf(one, 4)) bad.push(`${part.name}: six bars on one chord play the figure the same way three times`);
+        const one = realise(part, bars, seed, opts), two = realise(part, bars, seed, opts);
+        // ...unless the part rolls its figures, when three the same is a roll's right
+        if (part.figureMode !== 'roll' && !part.tails && barOf(one, 0) === barOf(one, 2) && barOf(one, 2) === barOf(one, 4)) bad.push(`${part.name}: six bars on one chord play the figure the same way three times`);
         [0, 2, 4].forEach(b => { if (barOf(one, b) !== barOf(two, b)) bad.push(`${part.name}: bar ${b} came out differently the second time`); });
       });
     }));
@@ -1114,22 +1113,25 @@
       Object.keys(LIBRARY).forEach(style => Object.keys(LIBRARY[style]).forEach(feelName => {
         partsFor(style, feelName).forEach(part => windows.forEach(window => [false, true].forEach(stayOnKey => {
           const opts = { reading, window, scaleTheory: 'parallel', stayOnKey, key };
-          const picks = rollFills(part, bars.length, () => 0.5);
-          const notes = realise(part, bars, picks, opts);
-          const again = realise(part, bars, picks, opts);
+          const seed = rollFills(part, bars.length, () => 0.5);
+          const notes = realise(part, bars, seed, opts);
+          const again = realise(part, bars, seed, opts);
           if (JSON.stringify(notes) !== JSON.stringify(again)) bad.push(`${part.name} realised differently twice`);
           const chordTones = chord => new Set([chord.note, chord.third, chord.fifth, chord.seventh]
             .filter(Boolean).map(n => GT.theory.SEMITONE[n] % 12));
           notes.forEach(n => {
             checked++;
-            const chord = bars[n.bar].chord;
+            // a note written against the next chord (a fill's last beat, the
+            // comp's push) is that chord's note
+            const chord = (n.next ? bars[(n.bar + 1) % bars.length] : bars[n.bar]).chord;
             if (n.fret < window.min || n.fret > window.max) bad.push(`${reading} ${root}: ${part.name} left the window`);
             if (n.strum){
               // a strum is the chord itself, whatever the reading: its notes
               // are chord tones by construction, and that is what's held —
               // and in the triads reading it is the triad the neck shows,
               // on its string set, with no 7th however the chord is spelt
-              if (!chordTones(chord).has(midiPc(n.midi))) bad.push(`${reading} ${root}: ${part.name} strums a note that isn't in the chord`);
+              // ...except a colour tone (the 9th, the 6th) a strum asked for, which is the reading's to allow
+              if (!n.colour && !chordTones(chord).has(midiPc(n.midi))) bad.push(`${reading} ${root}: ${part.name} strums a note that isn't in the chord`);
               if (reading === 'triads3'){
                 const triad = new Set([chord.note, chord.third, chord.fifth].map(x => GT.theory.SEMITONE[x] % 12));
                 if (!triad.has(midiPc(n.midi))) bad.push(`triads ${root}: ${part.name} strums a note outside the triad`);
@@ -1161,20 +1163,22 @@
           // whole grip — or it isn't a chord. In triads, three (or the one).
           const strumsAt = {};
           notes.filter(n => n.strum).forEach(n => {
-            const k = `${n.bar}:${n.at}`;
+            // two strums can share a moment (the batida's thumb under its chord): one group a voicing
+            const k = `${n.bar}:${n.at}:${n.voicing}`;
             strumsAt[k] = strumsAt[k] || { count: 0, voicing: n.voicing, low: n };
-            strumsAt[k].count++;
+            if (!n.colour) strumsAt[k].count++;          // a colour tone rides on top of the grip
             if (n.midi < strumsAt[k].low.midi) strumsAt[k].low = n;
           });
           Object.entries(strumsAt).forEach(([k, { count, voicing, low }]) => {
-            const chord = bars[Number(k.split(':')[0])].chord;
+            const b = Number(k.split(':')[0]);
+            const chord = (low.next ? bars[(b + 1) % bars.length] : bars[b]).chord;
             if (voicing === 'bass' || voicing === 'fifth'){
               if (count !== 1) bad.push(`${reading} ${root}: ${part.name} plays ${count} strings for a ${voicing} note at ${k}`);
               const rootOrFifth = [chord.note, chord.fifth].map(x => GT.theory.SEMITONE[x] % 12);
               if (reading !== 'triads3' && !rootOrFifth.includes(midiPc(low.midi))) bad.push(`${reading} ${root}: ${part.name}'s bass note at ${k} is neither root nor 5th`);
             } else if (reading === 'triads3' || voicing === 'low' || voicing === 'high'){
               if (count !== 3) bad.push(`${reading} ${root}: ${part.name} strums ${count} strings for a ${voicing} strum at ${k}`);
-            } else if (count < 3) bad.push(`${reading} ${root}: ${part.name} strums ${count} strings at ${k}`);
+            } else if (count < (voicing === 'power' ? 2 : 3)) bad.push(`${reading} ${root}: ${part.name} strums ${count} strings at ${k}`);   // a power chord may be two strings
           });
           // in the scales reading nearly everything written should survive:
           // counted by moment, since a strum is one written thing that
@@ -1199,11 +1203,11 @@
       const flag = n => n.pair ? 'double' : n.bend ? 'bend' : n.tech === 'h' ? 'hammer' : n.tech === 'p' ? 'pull' : n.slide != null ? 'slide' : null;
       const seen = {};
       Object.keys(LIBRARY).forEach(style => Object.keys(LIBRARY[style]).forEach(feelName => partsFor(style, feelName).forEach(part => {
-        const picks = [0, 1, 2, 0, 1, 2];
-        const on = realise(part, bars, picks, base);
+        const seed = 3;
+        const on = realise(part, bars, seed, base);
         on.forEach(n => { const f = flag(n); if (f) seen[f] = true; });
         GT.parts.TECHNIQUES.forEach(tech => {
-          const off = realise(part, bars, picks, { ...base, tech: { [tech]: false } });
+          const off = realise(part, bars, seed, { ...base, tech: { [tech]: false } });
           if (off.some(n => flag(n) === tech)) bad.push(`${part.name}: with ${tech}s off, one is still played`);
           // the notes that were written are still there, one way or another
           const moments = list => new Set(list.filter(n => !n.strum && !n.pair && !n.soft).map(n => `${n.bar}:${n.at}`));

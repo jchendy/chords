@@ -107,8 +107,13 @@
         <rect x="${x - w / 2}" y="${y - 6}" width="${w}" height="12" rx="2"/>
         <text x="${x}" y="${y + 3.5}" text-anchor="middle">${label}</text>
       </g>`);
-      // one "x" a strum, over its lowest string, not one a string
+      // one "x" a strum, over its lowest string, not one a string; a ghost
+      // note the same, dim; vibrato as "~", tremolo picking as "≡", a rake
+      // as "r" before the number
       if (n.mute && n.lead !== false) els.push(`<text class="tab-tech" x="${x}" y="${y - 7}" text-anchor="middle">x</text>`);
+      else if (n.vib) els.push(`<text class="tab-tech" x="${x}" y="${y - 7}" text-anchor="middle">~</text>`);
+      else if (n.trem) els.push(`<text class="tab-tech" x="${x}" y="${y - 7}" text-anchor="middle">≡</text>`);
+      if (n.rake) els.push(`<text class="tab-tech" x="${x - w / 2 - 4}" y="${y + 3.5}" text-anchor="middle">r</text>`);
       if (n.tech === 'h' || n.tech === 'p'){
         // the letter sits over the gap to the note it leads to, which the
         // realisation put half this note's length later
