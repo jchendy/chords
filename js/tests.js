@@ -2321,7 +2321,7 @@
   }
 
   // ---- a very small test runner ----
-  function run(){
+  async function run(){
     const results = [];
     const t = {
       ok(cond, what){ results.push({ pass: !!cond, what }); },
@@ -2366,20 +2366,24 @@
       ['Finder: a sus chord keeps its 5th', testSusChordsKeepTheirFifth],
       ['The progression presets are well-formed', testData],
     ].concat(GT.fretboardSuites || []).concat(GT.earSuites || [])
-     .concat(GT.practiceSuites || []);   // added by the tests-*.js files, if they loaded
+     .concat(GT.soundSuites || [])       // the measured ones: they render the mix offline
+     .concat(GT.practiceSuites || []);   // added by the tests-*.js files, if they loaded; practice last
     const out = [];
-    suites.forEach(([title, fn]) => {
+    for (const [title, fn] of suites){
       const from = results.length;
       // A suite that throws used to take the page down with it, and a page
       // with no results at all says less than a red line does — least of all
-      // when what threw is the thing the suite was written to catch.
+      // when what threw is the thing the suite was written to catch. A suite
+      // that returns a promise (an offline render) is awaited, and a
+      // rejection reports the same way.
       try {
-        fn(t);
+        const r = fn(t);
+        if (r && typeof r.then === 'function') await r;
       } catch (e){
         t.equal(String(e && e.message || e), '', `${title}: threw before it could finish`);
       }
       out.push({ title, cases: results.slice(from) });
-    });
+    }
     const failed = results.filter(r => !r.pass);
     window.TEST_RESULTS = {
       total: results.length,

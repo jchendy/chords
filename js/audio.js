@@ -53,6 +53,13 @@
   let partGain = null;          // the suggested part, on its own bus beside it
   let partSend = null;          // ...and its own send into its own room
   let bandLevelWanted = 1;      // the band's volume, kept for a context not yet built
+  // The graph as one object, so an offline render can build its own and
+  // point the module at it for the length of a schedule; `offline` keeps
+  // that render off the sleep timers and the live queue. `rnd` is the
+  // engine's only randomness — seedable, so a render can be reproduced.
+  let G = null;
+  let offline = false;
+  let rnd = Math.random;
 
   // A room for the convolver: stereo noise dying away over `seconds`, its
   // top end rolling off as it goes, so the tail darkens the way a real one
@@ -198,93 +205,134 @@
   });
 
   function ensureAudio(){
-    if(!audioCtx){
+    if (!audioCtx){
       claimPlaybackAudio();
-      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      G = buildGraph(new (window.AudioContext || window.webkitAudioContext)());
+      applyGraph(G);
+    }
+  }
 
-      // Every bus meets at one limiter, so a kick, a bass note and a full
-      // chord landing on the same beat can't add up past what the output
-      // can carry. Gentle enough to be inaudible until it's needed.
-      const limiter = audioCtx.createDynamicsCompressor();
+  // The module plays through whichever graph is applied: the live one, or an
+  // offline one for the length of a render.
+  function applyGraph(g){
+    audioCtx = g.ctx; masterGain = g.masterGain; hihatGain = g.hihatGain; bassGain = g.bassGain;
+    drumGain = g.drumGain; noiseBuffer = g.noiseBuffer; pianoWave = g.pianoWave; reverb = g.reverb;
+    reverbSends = g.reverbSends; bandGain = g.bandGain; partGain = g.partGain; partSend = g.partSend;
+  }
+
+  // Every bus, built on a context. `limiter: false` connects the buses to the
+  // destination bare, so what goes INTO the limiter can be measured; `mute`
+  // names buses ('band', 'part') to leave silent, so one can be measured alone.
+  function buildGraph(ctx, { limiter: withLimiter = true, mute = [] } = {}){
+    const g = { ctx };
+    // Every bus meets at one limiter, so a kick, a bass note and a full
+    // chord landing on the same beat can't add up past what the output
+    // can carry. Gentle enough to be inaudible until it's needed.
+    let out = ctx.destination;
+    if (withLimiter){
+      const limiter = ctx.createDynamicsCompressor();
       limiter.threshold.value = -10;
       limiter.knee.value = 12;
       limiter.ratio.value = 6;
       limiter.attack.value = 0.003;
       limiter.release.value = 0.12;
-      limiter.connect(audioCtx.destination);
-
-      // The band — comp, bass, drums and the room they share — meets on
-      // one bus before the limiter, so it has one
-      // volume against the suggested part, which has a bus of its own.
-      bandGain = audioCtx.createGain();
-      bandGain.gain.value = bandLevelWanted;
-      bandGain.connect(limiter);
-
-      masterGain = audioCtx.createGain();
-      masterGain.gain.value = 0.3;
-      const tone = audioCtx.createBiquadFilter();
-      tone.type = 'lowpass';
-      tone.frequency.value = 4800;
-      tone.Q.value = 0.7;
-      masterGain.connect(tone);
-      tone.connect(bandGain);
-
-      // separate percussion chain so the hi-hat's high end isn't
-      // swallowed by the piano voice's lowpass filter
-      hihatGain = audioCtx.createGain();
-      hihatGain.gain.value = 0.4;
-      hihatGain.connect(bandGain);
-
-      // bass and kick/snare buses for the styles
-      bassGain = audioCtx.createGain();
-      bassGain.gain.value = 0.42;
-      bassGain.connect(bandGain);
-
-      drumGain = audioCtx.createGain();
-      drumGain.gain.value = 0.55;
-      drumGain.connect(bandGain);
-
-      pianoWave = pianoWaveFor(audioCtx);
-
-      // a shared reverb, with a send from each voice at its own level
-      reverb = audioCtx.createConvolver();
-      reverb.buffer = roomImpulse(audioCtx, 1.8);
-      const reverbOut = audioCtx.createGain();
-      reverbOut.gain.value = 0.5;
-      reverb.connect(reverbOut).connect(bandGain);
-      reverbSends = {};
-      [['piano', 0.14], ['clean', 0.32], ['drums', 0.08]].forEach(([name, level]) => {
-        const g = audioCtx.createGain();
-        g.gain.value = level;
-        g.connect(reverb);
-        reverbSends[name] = g;
-      });
-
-      // The part's bus: the same tone the comp guitar has (masterGain's
-      // lowpass) and the same room, but its own copies, so turning the band
-      // down takes the band's reverb with it and leaves the part's alone.
-      partGain = audioCtx.createGain();
-      partGain.gain.value = 0.3;
-      const partTone = audioCtx.createBiquadFilter();
-      partTone.type = 'lowpass';
-      partTone.frequency.value = 4800;
-      partTone.Q.value = 0.7;
-      partGain.connect(partTone).connect(limiter);
-      const partRoom = audioCtx.createConvolver();
-      partRoom.buffer = reverb.buffer;
-      const partRoomOut = audioCtx.createGain();
-      partRoomOut.gain.value = 0.5;
-      partSend = audioCtx.createGain();
-      partSend.gain.value = 0.32;           // the clean guitar's send, the same
-      partSend.connect(partRoom).connect(partRoomOut).connect(limiter);
-
-      const bufferSize = Math.floor(audioCtx.sampleRate * 0.5);
-      noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-      const data = noiseBuffer.getChannelData(0);
-      for (let i = 0; i < bufferSize; i++){
-        data[i] = Math.random() * 2 - 1;
-      }
+      limiter.connect(ctx.destination);
+      out = limiter;
+      g.limiter = limiter;
     }
+
+    // The band — comp, bass, drums and the room they share — meets on
+    // one bus before the limiter, so it has one
+    // volume against the suggested part, which has a bus of its own.
+    const bandGain = g.bandGain = ctx.createGain();
+    bandGain.gain.value = mute.includes('band') ? 0 : bandLevelWanted;
+    bandGain.connect(out);
+
+    const masterGain = g.masterGain = ctx.createGain();
+    masterGain.gain.value = 0.3;
+    const tone = ctx.createBiquadFilter();
+    tone.type = 'lowpass';
+    tone.frequency.value = 4800;
+    tone.Q.value = 0.7;
+    masterGain.connect(tone);
+    tone.connect(bandGain);
+
+    // separate percussion chain so the hi-hat's high end isn't
+    // swallowed by the piano voice's lowpass filter
+    const hihatGain = g.hihatGain = ctx.createGain();
+    hihatGain.gain.value = 0.4;
+    hihatGain.connect(bandGain);
+
+    // bass and kick/snare buses for the styles
+    const bassGain = g.bassGain = ctx.createGain();
+    bassGain.gain.value = 0.42;
+    bassGain.connect(bandGain);
+
+    const drumGain = g.drumGain = ctx.createGain();
+    drumGain.gain.value = 0.55;
+    drumGain.connect(bandGain);
+
+    g.pianoWave = pianoWaveFor(ctx);
+
+    // a shared reverb, with a send from each voice at its own level
+    const reverb = g.reverb = ctx.createConvolver();
+    reverb.buffer = roomImpulse(ctx, 1.8);
+    const reverbOut = ctx.createGain();
+    reverbOut.gain.value = 0.5;
+    reverb.connect(reverbOut).connect(bandGain);
+    g.reverbSends = {};
+    [['piano', 0.14], ['clean', 0.32], ['drums', 0.08]].forEach(([name, level]) => {
+      const s = ctx.createGain();
+      s.gain.value = level;
+      s.connect(reverb);
+      g.reverbSends[name] = s;
+    });
+
+    // The part's bus: the same tone the comp guitar has (masterGain's
+    // lowpass) and the same room, but its own copies, so turning the band
+    // down takes the band's reverb with it and leaves the part's alone.
+    const partGain = g.partGain = ctx.createGain();
+    partGain.gain.value = mute.includes('part') ? 0 : 0.3;
+    const partTone = ctx.createBiquadFilter();
+    partTone.type = 'lowpass';
+    partTone.frequency.value = 4800;
+    partTone.Q.value = 0.7;
+    partGain.connect(partTone).connect(out);
+    const partRoom = ctx.createConvolver();
+    partRoom.buffer = reverb.buffer;
+    const partRoomOut = ctx.createGain();
+    partRoomOut.gain.value = 0.5;
+    const partSend = g.partSend = ctx.createGain();
+    partSend.gain.value = mute.includes('part') ? 0 : 0.32;           // the clean guitar's send, the same
+    partSend.connect(partRoom).connect(partRoomOut).connect(out);
+
+    const bufferSize = Math.floor(ctx.sampleRate * 0.5);
+    const noise = g.noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = noise.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++){
+      data[i] = Math.random() * 2 - 1;
+    }
+    return g;
+  }
+
+  // Render a schedule through a graph of its own and hand back the audio,
+  // so a test can measure what the mix does rather than guess. The schedule
+  // is synchronous, so pointing the module at the offline graph for its
+  // duration is safe; the live graph, the sleep timers and the queue are
+  // untouched. `random` seeds the engine's randomness for a render that
+  // can be reproduced; sample buffers decoded on the live context play on
+  // the offline one.
+  async function renderOffline(seconds, schedule, { sampleRate = 48000, random, limiter = true, mute = [] } = {}){
+    const ctx = new OfflineAudioContext(2, Math.ceil(seconds * sampleRate), sampleRate);
+    const live = G, wasOffline = offline, wasRnd = rnd;
+    const g = buildGraph(ctx, { limiter, mute });
+    applyGraph(g); offline = true; if (random) rnd = random;
+    try { schedule(GT.audio, ctx); }
+    finally {
+      offline = wasOffline; rnd = wasRnd;
+      if (live) applyGraph(live); else audioCtx = null;
+    }
+    return ctx.startRendering();
   }
 
   // simple additive "piano" tone: a handful of decaying harmonics
@@ -304,7 +352,8 @@
   // Start a source, and remember it until its moment comes. Notes are queued
   // ahead of the sound, so stopping playback has to be able to call off the
   // ones that haven't started — otherwise the queue plays on past the button.
-  function startVoice(node, time, gain){
+  function startVoice(node, time, gain, offset){
+    if (offline){ node.start(time, offset || 0); return node; }
     wakeForVoice(time);
     // Every voice here is stopped explicitly, a moment after it's started, so
     // this is where the engine learns how long it will be busy. Watching the
@@ -316,7 +365,7 @@
       planSleep();
       return stop(when);
     };
-    node.start(time);
+    node.start(time, offset || 0);
     pending.push({ node, time, gain });
     // the list only ever needs the notes still to come
     if (pending.length > 256){
@@ -1240,6 +1289,7 @@
 
   GT.audio = {
     ctx: () => audioCtx,               // live handle; null until ensureAudio() runs
+    renderOffline, buildGraph,          // a render through a graph of its own, for measuring
     pianoWaveFor, PIANO_PARTIALS,      // exposed so the tests can render a note offline
     GUITAR_SAMPLES, sampleFor,         // ...and to check every note has a recording behind it
     ensureAudio, keepAwake, planSleep, sleepDelay, IDLE_SLEEP_SEC, HIDDEN_SLEEP_SEC, cancelScheduled, stepsToSkip, noteFreq, chordFrequencies, pcFreq, bassFreqAt, walkBassFreq, ROOT_OCTAVE,
