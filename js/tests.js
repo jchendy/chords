@@ -1062,6 +1062,52 @@
     t.ok(fineBar([s(0), s(2), s(4)], 4) === false && fineBar([s(0), s(3)], 4) === true && fineBar([s(0), s(1)], 3) === false, 'a bar is in sixteenths when a strum sits off the eighths, on a four-slot beat');
   }
 
+
+  // No slot strikes the comp twice. A pattern with a strike on its last
+  // eighth and the push into a change had both — the chord and the next
+  // one, together — on jazz Swing; the push takes the slot now. Every
+  // resolved feel is walked on a changing bar. And the click and the
+  // count-in sit at the band's own hat level, with a downbeat accent, and
+  // the queue's cushion is the tested 0.4 s on a visible page and wider
+  // than a browser's throttled second when hidden.
+  function testNoSlotStrikesTheCompTwice(t){
+    const { scheduleSlot, HAT } = GT.band;
+    const calls = [];
+    const fake = {
+      playKick(){}, playSnare(){}, playHiHat(){}, playRide(){}, playBass(){},
+      playStyleVoice: (sv, chord, at, dur, vel) => calls.push([at, chord.note]),
+      bassNote: () => 100, walkBassFreq: () => 200,
+    };
+    const A = chordFromName('A'), D = chordFromName('D');
+    const twice = [];
+    Object.keys(GT.audio.STYLES).forEach(s => GT.audio.STYLES[s].variants.forEach(v => {
+      calls.length = 0;
+      for (let slot = 0; slot < v.grid; slot++) scheduleSlot(v, slot, slot, 1, { audio: fake, chord: A, next: D, changing: true });
+      const per = {};
+      calls.forEach(([at]) => { per[at] = (per[at] || 0) + 1; });
+      Object.entries(per).forEach(([at, n]) => { if (n > 1) twice.push(`${s}/${v.label} slot ${at}`); });
+    }));
+    t.equal(twice.join('; '), '', 'no slot of any feel strikes the comp twice on a changing bar');
+    // the push keeps the pattern's own length and weight on that slot
+    calls.length = 0;
+    const p = { grid: 16, chord: [{ slot: 14, dur: 2, vel: 0.5 }], compAnticipate: true };
+    const rec = [];
+    fake.playStyleVoice = (sv, chord, at, dur, vel) => rec.push([at, chord.note, dur, vel]);
+    for (let slot = 0; slot < 16; slot++) scheduleSlot(p, slot, slot, 1, { audio: fake, chord: A, next: D, changing: true });
+    t.equal(rec.map(r => `${r[0]}:${r[1]}:${r[2]}:${r[3]}`).join(','), '14:D:2:0.5', "the push is the next chord at the pattern's own slot, length and weight");
+    rec.length = 0;
+    for (let slot = 0; slot < 16; slot++) scheduleSlot(p, slot, slot, 1, { audio: fake, chord: A, next: D, changing: false });
+    t.equal(rec.map(r => `${r[0]}:${r[1]}`).join(','), '14:A', 'staying put, the pattern plays its own chord there');
+
+    const { CLICK } = GT.practice;
+    t.ok(CLICK.downbeat <= HAT.accent && CLICK.other <= HAT.accent, `the click and the count-in sit at the band's hat level (${CLICK.downbeat}, ${CLICK.other} against ${HAT.accent})`);
+    t.ok(CLICK.downbeat > CLICK.other, 'with a downbeat accent');
+
+    const { scheduleAhead } = GT.audio;
+    t.equal(scheduleAhead(false), 0.4, 'a visible page queues 0.4 s ahead (T36)');
+    t.ok(scheduleAhead(true) >= 1.125, `a hidden page queues more than a throttled second ahead (${scheduleAhead(true)} s)`);
+  }
+
   // The band, one slot at a time, on a stand-in that records what it was
   // asked to play: the approach and the push land on the last eighth of the
   // bar on every grid, a stop-time bar is the One and nothing after, the last
@@ -2402,6 +2448,7 @@
       ['A strum is a sweep', testAStrumIsASweep],
       ['The stroke follows the grid', testTheStrokeFollowsTheGrid],
       ['The band plays each slot by the pattern', testTheBandBySlot],
+      ['No slot strikes the comp twice; the click and the cushion', testNoSlotStrikesTheCompTwice],
       ['The engine mixes a part the ways the styles ask', testTheEngineFeatures],
       ['The suggested parts realise inside the reading', testTheSuggestedParts],
       ['The engine sleeps when idle, never while playing', testTheEngineSleepsButNotWhilePlaying],

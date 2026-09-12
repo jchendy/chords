@@ -1175,7 +1175,7 @@
   // its moment has passed doesn't play late — every note of it starts at once,
   // which is what a burst of pops is. Stopping playback calls off whatever is
   // still queued, so the cushion costs nothing at the button.
-  const SCHEDULE_AHEAD_SEC = 0.4;
+  const scheduleAhead = () => audio.scheduleAhead(document.hidden);   // 0.4 s visible, wider hidden — see audio.js
 
   // How hard the Simple style strikes: an accent on the downbeat, not a
   // different instrument. This was 1 against 0.62 — 4.4 dB, half again as
@@ -1185,6 +1185,10 @@
   // of decibels. The layers cross-fade now (see audio.js), and this is the
   // other half of the fix.
   const SIMPLE_ACCENT = { downbeat: 0.86, other: 0.68 };
+  // The click and the count-in at the band's own hat level (band.js HAT),
+  // the downbeat accented: they used to play at 1.0, five decibels over
+  // the loudest hat the band ever plays.
+  const CLICK = { downbeat: GT.band.HAT.accent, other: 0.4 };
 
   // How long a hit in the Simple style rings: until the next one lands, and no
   // longer. It used to ring 2.3 times that, on the reasoning that a piano's
@@ -1212,7 +1216,7 @@
         playChord(chord, nextNoteTime, duration, velocity, chordVoice);
       }
     }
-    if (clickToggle.checked) playHiHat(nextNoteTime);
+    if (clickToggle.checked) playHiHat(nextNoteTime, beatInMeasure === 0 ? CLICK.downbeat : CLICK.other);
     // the part, on its sixteenth grid, whether or not this beat struck a chord
     if (chord){
       const perBeat = GT.parts.SIMPLE_FEEL.grid / 4, slotDur = secondsPerBeat / perBeat;
@@ -1290,7 +1294,7 @@
       advanceBeat(secondsPerBeat);
     }
 
-    while (nextNoteTime < now + SCHEDULE_AHEAD_SEC){
+    while (nextNoteTime < now + scheduleAhead()){
       const chord = currentProgression[chordIdx];
       const beatInMeasure = beatInChord % beatsPerBar();
 
@@ -1304,6 +1308,14 @@
     }
     schedulerId = setTimeout(scheduler, LOOKAHEAD_MS);
   }
+  // Going hidden, the queue is filled to the wider cushion at once — the
+  // event arrives before the timers slow, and the first slow tick would
+  // otherwise find the queue empty.
+  document.addEventListener('visibilitychange', () => {
+    if (!isPlaying || !document.hidden) return;
+    clearTimeout(schedulerId);
+    scheduler();
+  });
 
   function syncHighlight(){
     if (!isPlaying) return;
@@ -1364,7 +1376,7 @@
       // measure.beat took over.
       countInFrom = countInToggle.checked ? nextNoteTime : null;
       if (countInToggle.checked){
-        for (let i = 0; i < beatsPerBar(); i++) playHiHat(nextNoteTime + i * countInSpb);
+        for (let i = 0; i < beatsPerBar(); i++) playHiHat(nextNoteTime + i * countInSpb, i === 0 ? CLICK.downbeat : CLICK.other);
         nextNoteTime += beatsPerBar() * countInSpb;
       }
       playbackStartTime = nextNoteTime;
@@ -2084,7 +2096,7 @@
     stop(){ if (isPlaying) togglePlay(); },
     loadProgression,
     copyShareLink,
-    simpleHitSeconds, SIMPLE_ACCENT, DEFAULT_FEEL,
+    simpleHitSeconds, SIMPLE_ACCENT, CLICK, DEFAULT_FEEL,
     setTempo, getTempo,
     // the realised part and the window it was realised in, so a test can
     // hold it still across the things that must not move it

@@ -10,7 +10,8 @@
 //     says which way the pick goes on the guitar voice, else the hand's
 //     rule (parts.js strokeFor) decides from the slot; compAnticipate
 //     strikes the NEXT chord on the last eighth of a bar before a change
-//     (the "and of 4" push), as an upstroke
+//     (the "and of 4" push), as an upstroke, in place of any strike the
+//     pattern has on that slot
 //   bass: [{ slot, off | walk | next, dur, vel }] — the bass: an interval off
 //     the root, a step of a walking line, or the next chord's root; with
 //     bassApproach the last eighth before a change is a semitone below the
@@ -31,6 +32,9 @@
   const { SEMITONE } = GT.theory;
 
   const beatsOf = style => style.beats || 4;
+  // the hat's two levels — on the beat and off it — named so the click and
+  // the count-in can sit at the band's level rather than over it
+  const HAT = { accent: 0.55, other: 0.32 };
   // the last eighth of the bar as a slot: 14 on sixteen, 11 on twelve (the
   // last triplet third), 8 on nine
   const lastEighth = style => Math.ceil(style.grid - style.grid / beatsOf(style) / 2);
@@ -81,17 +85,19 @@
       if (style.rim && style.rim.includes(slot)) audio.playSnare(at, 0.3);
       if (style.hat && style.hat.includes(slot)){
         const open = style.hatOpen && style.hatOpen.includes(slot);
-        audio.playHiHat(at, slot % per === 0 ? 0.55 : 0.32, open ? 0.28 : 0.06);
+        audio.playHiHat(at, slot % per === 0 ? HAT.accent : HAT.other, open ? 0.28 : 0.06);
       }
       if (style.ride && style.ride.includes(slot)) audio.playRide(at, slot % per === 0 ? 0.6 : 0.45);
     }
 
     if (!chord) return;
     const ce = style.chord && style.chord.find(e => e.slot === slot);
-    if (ce) audio.playStyleVoice(style.voice, chord, at, ce.dur * slotDur, ce.vel + jit(0.06), voice, { stroke: ce.stroke || strokeAt(slot) });
-    if (style.compAnticipate && ctx.changing && slot === last && next){
-      audio.playStyleVoice(style.voice, next, at, slotDur * (per / 2), 0.6, voice, { stroke: 'up' });   // the push is an upstroke
-    }
+    // the push: the next chord on the last eighth before a change, an
+    // upstroke, in place of any strike the pattern has there — with that
+    // strike's own length and weight if it has one, not as well as it
+    const pushing = style.compAnticipate && ctx.changing && slot === last && next;
+    if (ce && !pushing) audio.playStyleVoice(style.voice, chord, at, ce.dur * slotDur, ce.vel + jit(0.06), voice, { stroke: ce.stroke || strokeAt(slot) });
+    if (pushing) audio.playStyleVoice(style.voice, next, at, (ce ? ce.dur : per / 2) * slotDur, (ce ? ce.vel : 0.6) + jit(0.06), voice, { stroke: 'up' });
     const be = style.bass && style.bass.find(e => e.slot === slot);
     if (be){
       let freq;
@@ -105,5 +111,5 @@
     }
   }
 
-  GT.band = { beatsOf, lastEighth, swingOffset, scheduleSlot };
+  GT.band = { beatsOf, lastEighth, swingOffset, scheduleSlot, HAT };
 })();

@@ -375,6 +375,14 @@
     return node;
   }
 
+  // How far ahead of the clock a scheduler queues its notes. Visible, 0.4 s
+  // (T36): enough to ride out a throttled timer, short enough that stop is
+  // stop. Hidden, browsers clamp timers to a second, so the queue has to
+  // hold more than a second or the music slips once a second; each
+  // scheduler refills at once on going hidden, before the first slow tick.
+  const SCHEDULE_AHEAD = { visible: 0.4, hidden: 1.25 };
+  const scheduleAhead = hidden => SCHEDULE_AHEAD[hidden ? 'hidden' : 'visible'];
+
   // How many steps a scheduler's cursor has to jump to land on or after `now`.
   // A moment that has already passed can't be scheduled: the audio clock
   // doesn't play a past time late, it starts everything at that time at once,
@@ -1393,6 +1401,7 @@
   GT.audio = {
     ctx: () => audioCtx,               // live handle; null until ensureAudio() runs
     renderOffline, buildGraph,          // a render through a graph of its own, for measuring
+    scheduleAhead, SCHEDULE_AHEAD,
     strum, strumPlan, STRUM_SHARE, SWEEP, SWEEP_TAPER, playPartNotes, PART_LEVEL, partFx,
     pianoWaveFor, PIANO_PARTIALS,      // exposed so the tests can render a note offline
     GUITAR_SAMPLES, sampleFor,         // ...and to check every note has a recording behind it

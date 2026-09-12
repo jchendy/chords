@@ -142,7 +142,7 @@ A style's pattern is slot lists for the kit (`kick`, `snare`, `hat`, `ride`,
 chord's root), a `fill` for the last bar of the form, `bassApproach` (a
 semitone below the chord to come, on the last eighth before a change),
 `compAnticipate` (the next chord struck on that last eighth, as an
-upstroke), an optional `stroke` on a chord entry for the guitar voice (la
+upstroke, in place of any strike the pattern has there), an optional `stroke` on a chord entry for the guitar voice (la
 pompe is all downstrokes; otherwise the hand's rule decides), `swing` for
 sixteen-slot grids, `beats` when not four, `slapback` where the style lives
 on it, and `voice` (`triad`, `dom7` or `jazz`). `js/band.js` has the rules

@@ -349,7 +349,8 @@
   }
 
   // ---- the player ----
-  const AHEAD = 0.4, TICK_MS = 25;
+  const TICK_MS = 25;
+  const ahead = () => audio.scheduleAhead(document.hidden);   // 0.4 s visible, wider hidden
   let playing = null, timer = 0, nextBarTime = 0, bar = 0, log = [];
 
   function stop(){
@@ -392,7 +393,7 @@
     // swung sixteenths: the second of each pair of 16ths late by this much of a 16th
     const swingOf = slot => GT.band.swingOffset(p, slot, slotDur);
     for (let skip = audio.stepsToSkip(nextBarTime, ctx.currentTime, barLen); skip > 0; skip--){ nextBarTime += barLen; bar = (bar + 1) % chords.length; }
-    while (nextBarTime < ctx.currentTime + AHEAD){
+    while (nextBarTime < ctx.currentTime + ahead()){
       const t0 = nextBarTime;
       const chord = chords[bar], next = chords[(bar + 1) % chords.length];
       const changing = displayName(next) !== displayName(chord);
@@ -418,6 +419,8 @@
     if (log.length > 600) log = log.filter(e => (e.until || e.time) > ctx.currentTime - 1);
     timer = setTimeout(tick, TICK_MS);
   }
+  // going hidden, the queue is filled to the wider cushion before the timers slow
+  document.addEventListener('visibilitychange', () => { if (playing && document.hidden){ clearTimeout(timer); tick(); } });
 
   function follow(){
     if (!playing) return;
