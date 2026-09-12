@@ -293,7 +293,8 @@
   /* ---------- the menus, the bar editor, the type-it popover ---------- */
   .chart-body{ display:grid; grid-template-columns:minmax(0, 1fr); gap:16px 28px; }
   .chart-main{ min-width:0; }
-  .quick-tools{ display:inline-flex; align-items:center; gap:6px; }
+  .quick-tools, .style-tools{ display:inline-flex; align-items:center; gap:6px; }
+  .style-tools{ margin-left:8px; }
   .type-it-pop{ top:calc(100% + 6px); left:0; width:min(420px, calc(100vw - 24px)); }
   .type-it-pop .chord-type-row{ padding:0; }
   .preset-variants{ padding:2px 0 0; }
@@ -706,6 +707,12 @@
           <span class="styleline" id="styleLabel">Simple</span>
           <svg class="key-caret" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 6l4.5 4.5L12.5 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
           <select id="quickStyle" class="key-select" aria-label="Backing style"></select>
+        </span>
+        <!-- what the style is usually played over and at: the progression and
+             the tempo its page on the parts guide shows it with, one press each -->
+        <span class="style-tools ctl">
+          <button type="button" class="ib" id="styleProgBtn" aria-label="Use a progression for this style" title="Use a progression for this style"><svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 4.5v11M8.7 4.5v11M14.3 4.5v11M3 10h11.3"/><path d="M17 4.5v11" stroke-width="2.6"/></svg></button>
+          <button type="button" class="ib" id="styleTempoBtn" aria-label="Use the tempo for this style" title="Use the tempo for this style"><svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7.2 3h5.6l2.7 14H4.5z"/><path d="M10 12.5L14.8 5"/><circle cx="10" cy="12.8" r="1.1" fill="currentColor" stroke="none"/></svg></button>
         </span>
       </div>
     </div>

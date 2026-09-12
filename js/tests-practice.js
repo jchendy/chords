@@ -36,7 +36,7 @@
     .forEach(id => add('span', id));
   ['chords', 'chordSlots', 'presetVariantGroup', 'presetVariantRow',
    'clickRow', 'rootOnlyRow'].forEach(id => add('div', id));
-  ['quickKeyDice', 'quickRandomChords', 'shareBtn'].forEach(id => add('button', id, { type: 'button' }));
+  ['quickKeyDice', 'quickRandomChords', 'shareBtn', 'styleProgBtn', 'styleTempoBtn'].forEach(id => add('button', id, { type: 'button' }));
   // the tab reaches for the label wrapping a checkbox to grey it out
   ['commonToggle', 'randomSeventhsToggle', 'clickToggle', 'countInToggle',
    'rootOnlyToggle'].forEach(id => {
@@ -767,6 +767,22 @@
     search.value = ''; search.dispatchEvent(new Event('input'));
     if ([...document.querySelectorAll('#styleGroup .genre-btn')].some(b => b.hidden)) bad.push('clearing the search left a feel hidden');
     t.equal(bad.join('; '), '', 'The tempo presets work, the chart edits in place, the picker is grouped and searchable');
+
+    // the buttons by the style: the progression and tempo its guide page
+    // shows it over, one press each
+    const sb = [];
+    q('#styleGroup .genre-btn[data-value="blues.0"]').click();
+    const guide = GT.partsGuide.GUIDE['blues/Blues shuffle'] || GT.partsGuide.GUIDE.blues;
+    setTempo(77);
+    q('#styleTempoBtn').click();
+    if (getTempo() !== guide.tempo) sb.push(`the style's tempo button set ${getTempo()}, its page says ${guide.tempo}`);
+    q('#styleProgBtn').click();
+    const onChart = [...document.querySelectorAll('#chords .bar .chord-name')].map(x => x.textContent);
+    // the guide's six bars, one chord each, read back as the chart's bars
+    if (onChart.join(' ') !== guide.progression.join(' ')) sb.push(`the style's progression button put "${onChart.join(' ')}" on the chart, its page says "${guide.progression.join(' ')}"`);
+    if (!q('#keyReadout').textContent.startsWith(guide.key)) sb.push(`the key came out ${q('#keyReadout').textContent}, its page says ${guide.key}`);
+    if (!/Blues shuffle/.test(q('#styleProgBtn').title) || !/A7/.test(q('#styleProgBtn').title)) sb.push(`the progression button's tooltip reads "${q('#styleProgBtn').title}"`);
+    t.equal(sb.join('; '), '', 'The buttons by the style load its progression and its tempo');
 
     // the part's excuse does what it says: across the neck, the words
     // "switch the neck to In one position" are a button that does

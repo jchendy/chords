@@ -182,7 +182,9 @@ names the tab you're on.
   name beside it, both directly editable (the real pickers lie over the text)
   with a dice for each, a
   gear that opens the Settings menu, a Type it button (a popover with the
-  progression as chord names, one per bar), and the style as *genre › feel* —
+  progression as chord names, one per bar), and the style as *genre › feel* with two buttons beside it that load the
+  progression the style is usually played over and set the tempo it is
+  usually played at (the ones its page in the parts guide shows it with) —
   and a Play at the head of the row, so playback starts without looking away
   from the chart. When the chosen preset has variants (the blues: 12-bar,
   quick change, jazz blues…) they show as a row under the title. The chart's

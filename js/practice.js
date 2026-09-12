@@ -1042,7 +1042,44 @@
     // the name as genre › feel, so sixty-one styles read as families
     const feel = feelName(currentStyle, currentStyle === 'simple' ? noteBeats : currentVariant);
     styleLabel.textContent = currentStyle === 'simple' ? feel : `${STYLES[currentStyle].label} › ${feel}`;
+    syncStyleTools();
   }
+
+  // ---- what the style is usually played over and at ----
+  // The parts guide shows every feel over a progression that suits it, in a
+  // key, at a tempo (js/parts-guide-data.js, with the proposals merged over
+  // it). The two buttons beside the style name load that progression, or set
+  // that tempo, one press each — a way in when you want to hear the style
+  // as itself rather than over whatever was on the chart.
+  const guideNow = () => {
+    const g = GT.partsGuide && GT.partsGuide.GUIDE;
+    const f = feelNow();
+    if (!g || !f) return null;
+    return g[`${currentStyle}/${f.label}`] || (g[currentStyle] && g[currentStyle].feel === f.label ? g[currentStyle] : null);
+  };
+  const styleProgBtn = document.getElementById('styleProgBtn'), styleTempoBtn = document.getElementById('styleTempoBtn');
+  function syncStyleTools(){
+    const g = guideNow();
+    const name = styleLabel.textContent;
+    if (styleProgBtn){
+      styleProgBtn.disabled = !(g && g.progression);
+      styleProgBtn.title = g && g.progression ? `Use a progression ${name} is usually played over: ${g.progression.join(' · ')} in ${g.key}${g.mode === 'minor' ? ' minor' : ''}` : 'No progression suggested for this style';
+      styleProgBtn.setAttribute('aria-label', styleProgBtn.title);
+    }
+    if (styleTempoBtn){
+      styleTempoBtn.disabled = !(g && g.tempo);
+      styleTempoBtn.title = g && g.tempo ? `Use the tempo ${name} is usually played at: ${g.tempo} BPM` : 'No tempo suggested for this style';
+      styleTempoBtn.setAttribute('aria-label', styleTempoBtn.title);
+    }
+  }
+  if (styleProgBtn) styleProgBtn.addEventListener('click', () => {
+    const g = guideNow();
+    if (g && g.progression) loadProgression({ chords: g.progression, key: g.key });
+  });
+  if (styleTempoBtn) styleTempoBtn.addEventListener('click', () => {
+    const g = guideNow();
+    if (g && g.tempo) setTempo(g.tempo);
+  });
 
   function updatePlaybackUI(){
     const simple = currentStyle === 'simple';
