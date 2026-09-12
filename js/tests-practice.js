@@ -87,6 +87,9 @@
   ['partPanel', 'partControls', 'partTab', 'partNote'].forEach(id => add('div', id));
   add('span', 'partName');
   add('button', 'partReroll', { type: 'button' });
+  // the blend, with its three buttons, as the page has them
+  const blend = add('span', 'partBlendGroup');
+  ['rhythm', 'mixed', 'lead'].forEach(v => { const b = document.createElement('button'); b.type = 'button'; b.className = 'seg-btn' + (v === 'mixed' ? ' active' : ''); b.dataset.value = v; blend.appendChild(b); });
   add('button', 'styleDice', { type: 'button' });
   add('span', 'loopWrap'); add('button', 'loopToggle', { type: 'button' }); add('select', 'loopFrom'); add('select', 'loopTo');
   add('input', 'partEasy', { type: 'checkbox' });
@@ -836,6 +839,50 @@
     t.equal(bad.join('; '), '', 'the key menu is twelve relative pairs, lit where you are, and a press moves you');
   }
 
+  // A part written with lead lines can be comping alone, a lead pass, or
+  // both: the control shows for such a part and not for one without, Lead
+  // puts the lead lines in every bar, Rhythm in none, and the choice rides
+  // the link.
+  function testTheBlend(t){
+    start();
+    const bad = [];
+    const lib = GT.parts.LIBRARY;
+    // a style and part with lead lines, and one without, found rather than named
+    let withLeads = null, without = null;
+    Object.entries(lib).forEach(([style, feels]) => style !== 'simple' && Object.entries(feels).forEach(([feel, parts]) => parts.forEach((p, i) => {
+      if (!withLeads && GT.parts.hasLeads(p)) withLeads = { style, feel, i };
+      if (!without && !GT.parts.hasLeads(p)) without = { style, feel, i };
+    })));
+    if (!withLeads || !without){ t.ok(false, 'the library has parts with and without lead lines'); return; }
+    const goTo = ({ style, feel, i }) => {
+      const qs = q('#quickStyle');
+      const o = [...qs.options].find(x => x.value.startsWith(`${style}.`) && x.textContent.trim() === feel);
+      if (!o) return false;
+      qs.value = o.value; qs.dispatchEvent(new Event('change'));
+      const ps = q('#partSelect'); ps.value = String(i); ps.dispatchEvent(new Event('change'));
+      return true;
+    };
+    GT.practice.loadProgression({ chords: ['A', 'D', 'E', 'A'], key: 'A' });
+    q('#chartViewGroup .seg-btn[data-value="part"]').click();
+    if (!goTo(withLeads)) bad.push(`could not pick ${withLeads.style}/${withLeads.feel}`);
+    const group = q('#partBlendGroup');
+    if (group.hidden) bad.push('the blend is hidden for a part with lead lines');
+    group.querySelector('[data-value="lead"]').click();
+    let st = GT.practice.partState();
+    const bars = new Set(st.notes.map(n => n.bar));
+    if (st.blend !== 'lead') bad.push(`after pressing Lead the blend is ${st.blend}`);
+    q('#shareBtn').click();                                      // writes the state into the fragment
+    const link = decodeURIComponent(location.hash);
+    if (!/(^|&|\?)p=[^&]*\.l(\.|&|$)/.test(link)) bad.push(`the link does not carry the lead blend (${link})`);
+    group.querySelector('[data-value="rhythm"]').click();
+    st = GT.practice.partState();
+    if (st.blend !== 'rhythm') bad.push(`after pressing Rhythm the blend is ${st.blend}`);
+    if (!goTo(without)) bad.push(`could not pick ${without.style}/${without.feel}`);
+    if (!q('#partBlendGroup').hidden) bad.push('the blend shows for a part with no lead lines');
+    q('#chartViewGroup .seg-btn[data-value="chart"]').click();
+    t.equal(bad.join('; '), '', 'The blend: shown for a part with lead lines, Lead and Rhythm do what they say, the link carries it');
+  }
+
   function testTheLoop(t){
     start();
     const bad = [];
@@ -952,6 +999,7 @@
     ['Practice: the tab follows held bars', testTheTabFollowsHeldBars],
     ['Practice: the tempo presets, the chart edits in place, the picker is grouped', testTheTabsControls],
     ['Practice: the key menu', testTheKeyMenu],
+    ['Practice: rhythm, mixed or lead', testTheBlend],
     ['Practice: the loop', testTheLoop],
     ['Practice: the band has a volume', testTheBandHasAVolume],
     ['Practice: the old tab name still opens it', testTheOldTabNameStillOpensIt],

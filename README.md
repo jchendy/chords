@@ -235,8 +235,11 @@ names the tab you're on.
   settings, so they sit with the page's controls), and a Hide / Show
   controls button. In the Part view the
   controls are one row — the part's name, which is its picker (the real
-  select lies over it, the key's move), a dice for new fills, the
-  lead-roll tag, Easy, a Follow chords / Stay on the I dropdown — with the techniques
+  select lies over it, the key's move), a dice for new fills, a Rhythm /
+  Mixed / Lead switch for a part written with lead lines (comping alone, a
+  lead pass, or the lead lines in about half the fill bars — the way a
+  player does both; hidden for a part with none, and carried by the link as
+  `.r` or `.l`), Easy, a Follow chords / Stay on the I dropdown — with the techniques
   (and Humanize) behind a Techniques menu and the part and band volumes
   behind a Mix menu; on a phone the tab strip comes before that row. While
   it plays, a beat line appears along the top of every bar in the chart and
@@ -864,8 +867,12 @@ hats, rim, ride, a drum fill into the top of the form, the bass approaching
 changes, the comp anticipating them, swung sixteenths, three beats to the
 bar, slapback on the styles that live on it, and humanizing (a checkbox).
 A part is realised from one seed ("New fills" is a new seed), so a link
-holds the exact roll. The review page still works: its left column is the
-base data, what the app played before.
+holds the exact roll. A part with lead lines plays them by a blend —
+rhythm (never), mixed (each fill bar rolled, about half; a part's
+`leadChance` says otherwise), lead (every bar but the turnaround and the
+stop-time bars) — chosen on the practice tab and on each card of the parts
+page. The review page still works: its left column is the base data, what
+the app played before.
 
 **What the fills are made of.** Each style's fills are written from what
 its players actually play between the chords, and the file says so above

@@ -1276,15 +1276,25 @@
       t.equal(never.stopBars.size, 0, 'with stop-time at zero there is none');
     }
     {
-      // lead rolls: the leads take the fill bars, some rolls only
+      // the blend: a part with lead lines is rhythm, lead or both
       const lead = { ...part, leads: [[n(0, 5)]] };
-      const always = realise({ ...lead, leadChance: 1 }, bars, 3, opts, { grid: 16 });
-      t.ok(always.leadRoll && ivs(always, 1) === '5' && ivs(always, 3) === '5', 'a lead roll puts the lead lines in the fill bars');
-      const never = realise({ ...lead, leadChance: 0 }, bars, 3, opts, { grid: 16 });
-      t.ok(!never.leadRoll && ivs(never, 1) !== '5', 'no lead roll, no lead lines');
-      let leads = 0;
-      for (let seed = 1; seed <= 40; seed++) if (realise(lead, bars, seed, opts, { grid: 16 }).leadRoll) leads++;
-      t.ok(leads >= 6 && leads <= 24, `about a third of rolls are lead rolls (${leads} of 40)`);
+      const rhythm = realise(lead, bars, 3, opts, { grid: 16, blend: 'rhythm' });
+      t.ok(!rhythm.leadRoll && rhythm.leadBars.length === 0 && [0, 1, 2, 3, 4, 5].every(b => ivs(rhythm, b) !== '5'), 'pure rhythm: no lead line anywhere');
+      const solo = realise(lead, bars, 3, opts, { grid: 16, blend: 'lead' });
+      t.ok(solo.leadBars.join() === '0,1,2,3,4,5' && [0, 1, 2, 3, 4, 5].every(b => ivs(solo, b) === '5'), 'pure lead: the lead lines in every bar');
+      const withTurn = realise({ ...lead, turnaround: [n(0, 7)] }, bars, 3, opts, { grid: 16, blend: 'lead' });
+      t.ok(ivs(withTurn, 5) === '7' && withTurn.leadBars.join() === '0,1,2,3,4', 'and the turnaround keeps the last bar');
+      let leadFills = 0, figureBars = 0;
+      for (let seed = 1; seed <= 40; seed++){
+        const m = realise(lead, bars, seed, opts, { grid: 16, blend: 'mixed' });
+        leadFills += m.leadBars.length;
+        if (m.leadBars.some(b => b % 2 === 0)) figureBars++;
+      }
+      t.ok(leadFills >= 40 && leadFills <= 80 && figureBars === 0, `mixed: the lead lines in about half the fill bars, never the figure bars (${leadFills} of 120 fill bars)`);
+      const half = realise({ ...lead, leadChance: 1 }, bars, 3, opts, { grid: 16, blend: 'mixed' });
+      t.ok(half.leadBars.join() === '1,3,5' && half.leadRoll, 'a part can say how often (leadChance 1: every fill bar)');
+      t.ok(realise(lead, bars, 3, opts, { grid: 16 }).leadBars.every(b => b % 2 === 1), 'unasked, the blend is mixed');
+      t.ok(realise(part, bars, 3, opts, { grid: 16, blend: 'lead' }).leadBars.length === 0 && !GT.parts.hasLeads(part), 'a part with no lead lines has no blend to speak of');
     }
     {
       // a tail replaces the end of a figure bar

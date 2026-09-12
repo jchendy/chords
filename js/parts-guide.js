@@ -44,7 +44,7 @@
     return entry.progression.map(name => chordFromName(name, tonicPc, 'major'));
   }
 
-  function realiseFor(style, feel, part, entry){
+  function realiseFor(style, feel, part, entry, blend){
     const chords = chordsOf(entry);
     const bars = chords.map(chord => ({ chord }));
     const opts = {
@@ -52,7 +52,9 @@
       stayOnKey: false, key: { tonic: entry.key, mode: 'major' },
       tech: techOn ? null : { double: false, bend: false, hammer: false, pull: false, slide: false },
     };
-    return { chords, notes: realise(part, bars, 1, opts, { grid: feel.grid }) };   // one seed, so the page reads the same each time
+    // one seed, so the page reads the same each time; `blend` is the card's
+    // own choice for a part with lead lines
+    return { chords, notes: realise(part, bars, 1, opts, { grid: feel.grid, blend }) };
   }
 
   // ---- drawing ----
@@ -195,19 +197,24 @@
         if (!blurb) missing.push(`${style}/${feel.label}/${part.name}`);
         const card = document.createElement('article');
         card.className = 'part';
+        // a part written with lead lines can be heard as comping alone, as a
+        // lead pass, or both — the same three ways the practice tab offers
+        const blends = GT.parts.hasLeads(part)
+          ? `<span class="seg blend" role="group" aria-label="Rhythm or lead" title="Comping alone, a lead pass, or both: the lead lines in about half the fill bars">${GT.parts.BLENDS.map(b => `<button type="button" data-value="${b}"${b === 'mixed' ? ' class="active"' : ''}>${b[0].toUpperCase() + b.slice(1)}</button>`).join('')}</span>`
+          : '';
         card.innerHTML = `
           <div class="part-head">
             <h3>${part.name}</h3>
-            <button type="button" class="play">Play</button>
+            <span class="part-btns">${blends}<button type="button" class="play">Play</button></span>
           </div>
           <p class="blurb">${blurb || ''}</p>
           <p class="legend">Bars: figure · fill 1 · variant 1 · fill 2 · variant 2 · fill 3</p>
           <div class="tab"></div>`;
         holder.appendChild(card);
         const tabHost = card.querySelector('.tab');
-        let state = null;
+        let state = null, blend = 'mixed';
         const build = () => {
-          const { chords: cs, notes } = realiseFor(style, feel, part, entry);
+          const { chords: cs, notes } = realiseFor(style, feel, part, entry, blend);
           const metrics = drawTab(tabHost, feel, cs, notes);
           state = { chords: cs, notes, metrics };
         };
@@ -217,6 +224,13 @@
           play(card, style, feel, state.chords, state.notes, entry.tempo, state.metrics);
         });
         card.rebuild = () => { const was = playing && playing.card === card; if (was) stop(); build(); };
+        const blendEl = card.querySelector('.blend');
+        if (blendEl) blendEl.addEventListener('click', e => {
+          const b = e.target.closest('button'); if (!b) return;
+          blend = b.dataset.value;
+          blendEl.querySelectorAll('button').forEach(x => x.classList.toggle('active', x === b));
+          card.rebuild();
+        });
       });
       main.appendChild(sec);
     });

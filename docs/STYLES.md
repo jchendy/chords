@@ -94,8 +94,11 @@ A part has:
 - `tails` (a lick on the end of a figure bar), `pickups` (a lead-in on the
   last beat before a change), `stops` (stop-time: the band out, the guitar
   alone), each with a chance; `turnaround`/`turnarounds` for the last bar
-  of the form; `leads` for the lead rolls — about a third of rolls put them
-  in the fill bars.
+  of the form; `leads` for the lead lines, played by the blend the player
+  chooses (`feat.blend`): never, in about half the fill bars (each rolled;
+  `leadChance` sets the share), or in every bar but the turnaround and the
+  stop-time bars. A part with `leads` gets the Rhythm / Mixed / Lead switch
+  in the app; one without doesn't.
 - `easy` — a hand-written beginner's version, where the rule in
   `parts.js` (`simplify`) can't find it: fewer notes, on the beat.
 - `why` — the reasons, in words. It becomes the part's page in the guide.

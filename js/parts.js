@@ -1685,12 +1685,18 @@
   // a fill knows whether the next bar changes chord and draws from that list
   // and the plain fills together; the last bar of the form is a turnaround
   // where the part has one; tails, pickups and stop-time bars happen by
-  // their chances; a lead roll puts the part's lead lines in the fill bars.
+  // their chances. A part with lead lines plays them by `feat.blend`:
+  // 'rhythm' never, 'mixed' in about half its fill bars (each rolled; the
+  // part's leadChance says otherwise), 'lead' in every bar but the
+  // turnaround and the stop-time bars — the same part as comping, as a
+  // lead pass, or the way a player does both.
   // Then each written bar is placed on the neck: strums through the voicing
   // asked for, double stops by shape, single notes through realiseBar, and
   // the flags applied after — ghost, staccato, palm mute, vibrato, rake,
   // chord slides, colour tones, tremolo.
-  //   feat: { grid, phrase, easy, seed }
+  //   feat: { grid, phrase, easy, blend }
+  const hasLeads = part => !!(part && part.leads && part.leads.length);
+  const BLENDS = ['rhythm', 'mixed', 'lead'];
   function realise(part, bars, seed, opts, feat = {}){
     const grid = feat.grid || 16;
     if (feat.easy){
@@ -1705,7 +1711,9 @@
     const stopBars = new Set();
     const pick = list => list[Math.floor(roll() * list.length)];
     const cells = cellsIn(opts.window);
-    const leadRoll = !!(part.leads && part.leads.length) && roll() < (part.leadChance == null ? 0.35 : part.leadChance);
+    const blend = hasLeads(part) ? (feat.blend || 'mixed') : 'rhythm';
+    const leadShare = part.leadChance == null ? 0.5 : part.leadChance;
+    const leadBars = [];
     let figureTurn = 0;
     bars.forEach((bar, b) => {
       if (!bar.chord) return;
@@ -1720,13 +1728,17 @@
         if (part.stops && part.stops.length && roll() < (part.stopChance == null ? 0.2 : part.stopChance)){
           written = pick(part.stops);
           stopBars.add(b);
-        } else if (leadRoll){
+        } else if (blend === 'lead' || (blend === 'mixed' && roll() < leadShare)){
           written = pick(part.leads);
+          leadBars.push(b);
         } else {
           const situation = (changing ? part.fillsOnChange : part.fillsOnStay) || [];
           const list = situation.concat(part.fills || []);
           written = pick(list.length ? list : (part.fills || [part.figure]));
         }
+      } else if (blend === 'lead'){
+        written = pick(part.leads);
+        leadBars.push(b);
       } else {
         const figures = [part.figure, ...(part.variants || [])];
         written = part.figureMode === 'roll' ? pick(figures) : figures[figureTurn++ % figures.length];
@@ -1809,7 +1821,8 @@
       notes.forEach(n => out.push({ ...n, bar: b }));
     });
     out.stopBars = stopBars;
-    out.leadRoll = leadRoll;
+    out.leadBars = leadBars;               // the bars written from the lead lines
+    out.leadRoll = leadBars.length > 0;
     return out;
   }
 
@@ -1819,5 +1832,5 @@
   GT.parts = { get LIBRARY(){ return LIBRARY_NOW; }, set LIBRARY(v){ LIBRARY_NOW = v; }, LIBRARY_BASE: LIBRARY,
                SIMPLE_FEEL, TECHNIQUES, EASY_TECH, partsFor, palette, snap, realiseBar, realise, rollFills, newSeed, rng, figureFor,
                simplify, easyVersion, placePair, thumbCell, powerVoicing, shellVoicing, placeIv, fingersOffThumb, strokeFor, fineBar,
-               cellsIn, homeMidi, gripIn, triadIn, strumCells, strumStringLevel };
+               cellsIn, homeMidi, gripIn, triadIn, strumCells, strumStringLevel, hasLeads, BLENDS };
 })();

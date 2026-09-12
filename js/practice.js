@@ -1548,7 +1548,8 @@
       const off = Object.keys(partTech).filter(k => !partTech[k]).map(k => TECH_LETTERS[k]).join('');
       const extras = (partVolume !== PART_VOLUME_DEFAULT ? `.v${partVolume}` : '') + (partMuted ? '.m' : '')
         + (off ? `.o${off}` : '');            // the techniques switched off, by letter
-      p.set('p', `${partIdx}.${partScale === 'key' ? 'k' : 'f'}.${partSeed}${extras}${partEasy ? '.e' : ''}`);
+      const blend = partBlend === 'lead' ? '.l' : partBlend === 'rhythm' ? '.r' : '';   // mixed is the default
+      p.set('p', `${partIdx}.${partScale === 'key' ? 'k' : 'f'}.${partSeed}${extras}${partEasy ? '.e' : ''}${blend}`);
     }
     // the band's volume is heard in both views, so it's its own field
     if (bandVolume !== BAND_VOLUME_DEFAULT || bandMuted) p.set('b', `${bandVolume}${bandMuted ? '.m' : ''}`);
@@ -1601,12 +1602,15 @@
       partScale = scale === 'k' ? 'key' : 'follow';
       partSeed = Number(fills) || 0;
       partEasy = false;
+      partBlend = 'mixed';
       partVolume = PART_VOLUME_DEFAULT;
       partMuted = false;
       partTech = { double: true, bend: true, hammer: true, pull: true, slide: true };
       extras.forEach(x => {
         if (x === 'm') partMuted = true;
         else if (x === 'e') partEasy = true;
+        else if (x === 'l') partBlend = 'lead';
+        else if (x === 'r') partBlend = 'rhythm';
         else if (/^v\d+$/.test(x)) partVolume = Math.max(0, Math.min(100, Number(x.slice(1))));
         else if (/^o[dbhps]*$/.test(x)){
           Object.keys(TECH_LETTERS).forEach(k => { if (x.includes(TECH_LETTERS[k])) partTech[k] = false; });
@@ -1680,9 +1684,14 @@
   let partIdx = 0;                  // which of the feel's parts
   let partSeed = 0;                 // the roll the part was realised from; 0 = not rolled yet
   let partEasy = false;             // the beginner's version of the part
+  let partBlend = 'mixed';          // a part with lead lines: 'rhythm', 'mixed' or 'lead'
   let partHumanize = false;         // timing and velocity moved a little
   const partEasyToggle = document.getElementById('partEasy'), partHumanToggle = document.getElementById('partHumanize');
-  const partLeadEl = document.getElementById('partLead');
+  const partBlendGroup = document.getElementById('partBlendGroup');
+  const syncPartBlend = () => {
+    partBlendGroup.hidden = !GT.parts.hasLeads(partNow());
+    partBlendGroup.querySelectorAll('.seg-btn').forEach(b => b.classList.toggle('active', b.dataset.value === partBlend));
+  };
   const syncPartToggles = () => { partEasyToggle.checked = partEasy; partHumanToggle.checked = partHumanize; };
   let partScale = 'follow';         // 'follow' the chords | stay on the 'key'
   let partVolume = 70;              // 0..100, where the slider sits
@@ -1754,7 +1763,7 @@
     // ...but whether a part CAN be shown is in it: a link opens before the
     // neck has worked out its position, and without this the view stayed on
     // "switch to one position" while looking at one.
-    return JSON.stringify([partOn, partIdx, partSeed, partEasy, partScale, partTech, currentMode, currentTonic,
+    return JSON.stringify([partOn, partIdx, partSeed, partEasy, partBlend, partScale, partTech, currentMode, currentTonic,
       feel && feel.label, pv.reading, pv.inPosition, pv.scaleTheory, partAvailable(),
       currentProgression.map((c, i) => `${displayName(c)}.${measuresFor(i)}`)]);
   }
@@ -1790,7 +1799,6 @@
     if (!partOn || !partAvailable()){
       partNotes = [];
       partTab = null;
-      partLeadEl.hidden = true;
       partTabEl.hidden = true;
       partTabEl.innerHTML = '';
       view.lightSounding([]);
@@ -1809,10 +1817,10 @@
     partNotes = GT.parts.realise(part, bars, partSeed, {
       reading: pv.reading, window: partWindow, scaleTheory: pv.scaleTheory, stringSet: pv.stringSet,
       stayOnKey: partScale === 'key', key: { tonic: currentTonic, mode: currentMode }, tech: { ...partTech },
-    }, { grid: feelNow().grid, easy: partEasy });
-    partLeadEl.hidden = !partNotes.leadRoll;
+    }, { grid: feelNow().grid, easy: partEasy, blend: partBlend });
     partNameEl.textContent = part.name;
     syncPartSelect();
+    syncPartBlend();
     drawPartTab(bars);
     // Taken now, after the fills have been rolled, not before: stored before
     // the roll it described a part that no longer existed, so the very next
@@ -1986,6 +1994,10 @@
   partSelect.addEventListener('change', () => { partIdx = Number(partSelect.value) || 0; partSeed = 0; rebuildPart(); writeShareState(); });
   document.getElementById('partReroll').addEventListener('click', () => { partSeed = 0; rebuildPart(); writeShareState(); });
   partEasyToggle.addEventListener('change', () => { partEasy = partEasyToggle.checked; rebuildPart(); writeShareState(); });
+  partBlendGroup.addEventListener('click', e => {
+    const b = e.target.closest('.seg-btn'); if (!b) return;
+    partBlend = b.dataset.value; syncPartBlend(); rebuildPart(); writeShareState();
+  });
   partHumanToggle.addEventListener('change', () => { partHumanize = partHumanToggle.checked; });
 
   // The arrows (and the window on the neck, which forwards to them) are you
@@ -2227,7 +2239,7 @@
     // the realised part and the window it was realised in, so a test can
     // hold it still across the things that must not move it
     partState: () => ({ notes: partNotes.map(n => ({ ...n })), window: partWindow && { ...partWindow },
-                        seed: partSeed, easy: partEasy, signature: partSignature(), tech: { ...partTech },
+                        seed: partSeed, easy: partEasy, blend: partBlend, signature: partSignature(), tech: { ...partTech },
                         named: [...partTabEl.querySelectorAll('.tab-chord.now')].map(el => el.textContent) }),
     showPartBar,
     init(){

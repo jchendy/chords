@@ -550,7 +550,8 @@
   .part-volume{ display:inline-flex; align-items:center; gap:6px; }
   .part-check{ display:inline-flex; align-items:center; gap:4px; font-size:12px; color:var(--muted); }
   .part-check input{ accent-color:var(--a); margin:0; }
-  .part-lead{ font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--a); border:1px solid var(--a); border-radius:999px; padding:1px 7px; }
+  .part-blend .seg-btn{ font-size:.76rem; padding:4px 1px; margin:0 6px; }
+  .part-blend[hidden]{ display:none; }
   .part-volume-label{ font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); }
   .part-volume input{ width:96px; accent-color:var(--a); }
   .part-volume .i-cross{ display:none; }
@@ -811,7 +812,14 @@
           <select id="partSelect" class="key-select" aria-label="Part"></select>
         </span>
         <button type="button" class="ib" id="partReroll" aria-label="New fills: a fresh roll of the same part" title="New fills: a fresh roll of the same part"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="2" y="2" width="16" height="16" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="6.3" cy="6.3" r="1.6"/><circle cx="13.7" cy="6.3" r="1.6"/><circle cx="10" cy="10" r="1.6"/><circle cx="6.3" cy="13.7" r="1.6"/><circle cx="13.7" cy="13.7" r="1.6"/></svg></button>
-        <span class="part-lead" id="partLead" title="This roll puts the part's lead lines in the fill bars" hidden>lead roll</span>
+        <!-- a part written with lead lines can be played as comping alone,
+             as a lead pass, or the way a player does both — lead lines in
+             about half the fill bars; hidden for a part with none -->
+        <span class="segmented part-blend" id="partBlendGroup" role="group" aria-label="Rhythm or lead" title="The part as comping alone, as a lead pass, or both: its lead lines in about half the fill bars" hidden>
+          <button type="button" class="seg-btn" data-value="rhythm">Rhythm</button>
+          <button type="button" class="seg-btn active" data-value="mixed">Mixed</button>
+          <button type="button" class="seg-btn" data-value="lead">Lead</button>
+        </span>
         <label class="part-check" title="The beginner's version: fewer notes, on the beat, no bends or slides"><input type="checkbox" id="partEasy"><span>Easy</span></label>
         <select id="partScaleSelect" class="sel part-scale" title="Which notes the part is built from" aria-label="Which notes the part is built from">
           <option value="follow">Follow chords</option>
