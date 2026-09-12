@@ -276,11 +276,41 @@
       `<optgroup label="${label}">` +
       Object.keys(obj).slice().sort().map(t => `<option value="${mode}:${t}">${t} ${mode}</option>`).join('') +
       `</optgroup>`;
-    // one picker for all 24 keys, major and minor side by side; it always names
-    // the key you're actually in, and the dice beside it picks a new one
+    // one picker for all 24 keys; it always names the key you're actually in,
+    // and the dice beside it picks a new one
     keySelect.innerHTML = grp('Major keys', MAJOR_KEYS, 'major') + grp('Minor keys', MINOR_KEYS, 'minor');
     keySelect.value = `${currentMode}:${currentTonic}`;
+    buildKeyMenu();
   }
+
+  // The list the key's name opens: a row per key signature round the circle
+  // of fifths, the major on the left and its relative minor on the right —
+  // the two keys that share every note — with the key you're in lit. Twelve
+  // rows read at a glance where twenty-four names in one column don't, and
+  // the relative pairing is the one a player reaches for.
+  const keyMenuGrid = document.getElementById('keyMenuGrid');
+  const relativeMinorOf = major => {
+    const pc = (SEMITONE[major] + 9) % 12;
+    return Object.keys(MINOR_KEYS).find(t => SEMITONE[t] % 12 === pc);
+  };
+  function keyMenuRows(){
+    return Object.keys(MAJOR_KEYS).map(major => [major, relativeMinorOf(major)]);
+  }
+  function buildKeyMenu(){
+    if (!keyMenuGrid) return;
+    keyMenuGrid.innerHTML = keyMenuRows().map(([major, minor]) =>
+      `<button type="button" class="key-btn${currentMode === 'major' && currentTonic === major ? ' active' : ''}" data-key="major:${major}">${major} major</button>` +
+      `<button type="button" class="key-btn${currentMode === 'minor' && currentTonic === minor ? ' active' : ''}" data-key="minor:${minor}">${minor} minor</button>`
+    ).join('');
+  }
+  if (keyMenuGrid) keyMenuGrid.addEventListener('click', e => {
+    const b = e.target.closest('.key-btn'); if (!b) return;
+    const [m, t] = b.dataset.key.split(':');
+    transposeToKey(m, t);
+    const menu = document.getElementById('keyMenu');
+    menu.hidden = true;
+    document.querySelectorAll('[data-pop="keyMenu"]').forEach(o => o.setAttribute('aria-expanded', 'false'));
+  });
 
   // ---- ready-made progressions -------------------------------------------
   const presetSelect = document.getElementById('presetSelect');
@@ -1732,7 +1762,7 @@
     const pv = view.positionView();
     const link = (act, value, text) => `<button type="button" class="link" data-act="${act}" data-value="${value}">${text}</button>`;
     if (!PART_READINGS.includes(pv.reading)) return `A part is realised into the notes a reading offers: switch the neck to ${link('mode', 'caged', 'Chords')}, ${link('mode', 'triads3', 'Triads')}, ${link('mode', 'penta', 'Pentatonic')} or ${link('mode', 'scale', 'Scales')}.`;
-    if (!pv.inPosition || !pv.window) return `A part is written into one position: ${link('view', 'position', 'switch the neck to \u201cIn one position\u201d')}.`;
+    if (!pv.inPosition || !pv.window) return `A part is written into one position: ${link('view', 'position', 'switch the neck to \u201cOne position\u201d')}.`;
     return '';
   }
   // ...and the words are the controls: a link in the excuse presses the

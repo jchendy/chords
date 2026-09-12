@@ -28,7 +28,7 @@
   // behaviour worth having.
   const SEG = {
     fretModeGroup: ['roots', 'caged', 'triads3', 'penta', 'scale'],
-    viewGroup: ['neck', 'position'],
+    viewGroup: ['position', 'neck'],
     cagedPosMethodGroup: ['box', 'cluster', 'lead'],
     cagedShapeGroup: ['C', 'A', 'G', 'E', 'D'],
     colorByGroup: ['shape', 'interval'],
@@ -72,13 +72,13 @@
   // its own state from JavaScript and only writes the classes back: a fixture
   // that disagreed would make a test toggling a control do the opposite of
   // what it meant. Every group is a picker whose first option is the default —
-  // except the shapes, which are independent toggles, and which open on all
-  // five because the view starts across the neck — in one position it's A, E
-  // and D, and the buttons are repainted when the reading changes.
-  const SEG_ACTIVE = { cagedShapeGroup: ['C', 'A', 'G', 'E', 'D'] };
+  // except the shapes, which are independent toggles, and which open on A, E
+  // and D because the view starts in one position — all positions has all
+  // five, and the buttons are repainted when the reading changes.
+  const SEG_ACTIVE = { cagedShapeGroup: ['A', 'E', 'D'] };
   // the view rewrites this one's label as the mode changes, so it has to start
   // with the text the page ships rather than empty
-  const SEG_TEXT = { viewGroup: { neck: 'Across the neck', position: 'In one position' } };
+  const SEG_TEXT = { viewGroup: { neck: 'All positions', position: 'One position' } };
   Object.entries(SEG).forEach(([id, values]) => {
     const group = document.createElement('div');
     group.id = id;
@@ -695,10 +695,10 @@
     const bad = [];
     loadProgression(['Am7', 'Dm7', 'E7']);
     const label = () => q('#viewGroup [data-value="position"]').textContent.trim();
-    const WHOLE_PROGRESSION = 'All chords in one position';
+    const WHOLE_PROGRESSION = 'All chords, one position';
     [['caged', WHOLE_PROGRESSION], ['triads3', WHOLE_PROGRESSION],
-     ['roots', 'In one position'], ['penta', 'In one position'],
-     ['scale', 'In one position']].forEach(([mode, want]) => {
+     ['roots', 'One position'], ['penta', 'One position'],
+     ['scale', 'One position']].forEach(([mode, want]) => {
       setMode(mode);
       if (label() !== want) bad.push(`${mode} reads "${label()}", not "${want}"`);
     });
@@ -836,28 +836,28 @@
       bad.push(`the defaults write "${view.viewState()}" rather than nothing`);
     }
 
-    // somewhere worth bookmarking: a pentatonic box, in position, by interval
+    // somewhere worth bookmarking: the pentatonic over all positions, by interval
     seg('fretModeGroup', 'penta');
-    seg('viewGroup', 'position');
+    seg('viewGroup', 'neck');
     seg('colorByGroup', 'interval');
     const there = view.viewState();
-    ['m:penta', 'p:position', 'c:interval'].forEach(part => {
+    ['m:penta', 'p:neck', 'c:interval'].forEach(part => {
       if (there.indexOf(part) < 0) bad.push(`"${part}" went missing from "${there}"`);
     });
 
     // wander off, then follow the string back
     seg('fretModeGroup', 'caged');
-    seg('viewGroup', 'neck');
+    seg('viewGroup', 'position');
     seg('colorByGroup', 'shape');
     view.applyViewState(there);
     if (active('fretModeGroup') !== 'penta') bad.push(`the view came back as ${active('fretModeGroup')}`);
-    if (active('viewGroup') !== 'position') bad.push(`the reading came back as ${active('viewGroup')}`);
+    if (active('viewGroup') !== 'neck') bad.push(`the reading came back as ${active('viewGroup')}`);
     if (active('colorByGroup') !== 'interval') bad.push(`the colouring came back as ${active('colorByGroup')}`);
     if (view.viewState() !== there) bad.push(`the round trip wrote "${view.viewState()}" for "${there}"`);
 
     // a string that mentions one thing still puts everything else back
     view.applyViewState('c:interval');
-    if (active('fretModeGroup') !== 'caged' || active('viewGroup') !== 'neck'){
+    if (active('fretModeGroup') !== 'caged' || active('viewGroup') !== 'position'){
       bad.push('a link that named only the colouring left the rest where it was');
     }
     if (active('colorByGroup') !== 'interval') bad.push('...and did not even set the colouring');

@@ -50,10 +50,16 @@
       if (focus) focus.focus();
       placeHomes();
     };
-    document.querySelectorAll('[data-pop]').forEach(b => b.addEventListener('click', e => {
-      e.stopPropagation();
-      openPop(b.dataset.pop, $(b.dataset.pop).hidden);
-    }));
+    document.querySelectorAll('[data-pop]').forEach(b => {
+      b.addEventListener('click', e => {
+        e.stopPropagation();
+        openPop(b.dataset.pop, $(b.dataset.pop).hidden);
+      });
+      // an opener that isn't a button (the key's name) still opens from the keyboard
+      if (b.tagName !== 'BUTTON') b.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); e.stopPropagation(); openPop(b.dataset.pop, $(b.dataset.pop).hidden); }
+      });
+    });
     document.querySelectorAll('.popover').forEach(p => p.addEventListener('click', e => e.stopPropagation()));
     document.addEventListener('click', () => { closePops(); placeHomes(); });
     document.addEventListener('keydown', e => { if (e.key === 'Escape'){ closePops(); openSheet(false); placeHomes(); } });

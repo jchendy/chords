@@ -34,8 +34,12 @@ names the tab you're on.
   two roll settings. So the things you reach for most while playing are on the
   chart rather than two panels down. They're views on the same state, not a
   second copy of it: change either and both follow
-- One key picker: all 24 keys, major and minor side by side, always naming
-  the key you're actually in, with a dice beside it that picks a new one. In
+- One key picker: the key's name opens a list of its own — twelve rows
+  round the circle of fifths, each a major key and its relative minor side
+  by side, the two keys that share every note, with the key you're in lit —
+  rather than the browser's column of twenty-four; a dice beside it picks a
+  new one. (The native select stays in the page, unseen, as the state the
+  tab reads and the tests drive.) In
   minor, the V is occasionally the harmonic-minor dominant. Changing key —
   by hand or by dice — transposes what's already there rather than rolling
   something new: each chord keeps its scale
@@ -201,9 +205,10 @@ names the tab you're on.
   genre with a count each, a search box, and the last three used at the top;
   the bar's select over the name offers the same list for the keyboard. The
   neck sits under the chart with its controls on it: the five views as tabs
-  above, a toolbar for the reading (across the neck / in one position) and
-  whatever the view needs, and a quieter row for the shapes under the
-  legend. In one position the stretch of frets is drawn on the neck as a
+  above, a toolbar for the reading (one position / all positions — one
+  position first, and where a fresh page opens, since it is the one a hand
+  can hold) and whatever the view needs, and a quieter row for the shapes
+  under the legend. In one position the stretch of frets is drawn on the neck as a
   window you can drag; a joined ‹ › pair at the end of the toolbar and an
   arrow on each edge of the window step it. One transport is pinned to the
   bottom of the tab: Play, then the loop — a switch and the first and last
@@ -295,9 +300,9 @@ already fits and the bar has no space to spare. The style picker chooses the
   them all decides whether you're looking at the whole neck or at one hand
   position, and it stays put when you switch view, so following a chord into
   its scale doesn't throw you back out to the whole neck. The second button is
-  named for what that view actually puts in the position: **All chords in one
+  named for what that view actually puts in the position: **All chords, one
   position** in Chords and Triads, which bring the whole progression with you,
-  and plain **In one position** in Roots, Pentatonic and Scales, which put one
+  and plain **One position** in Roots, Pentatonic and Scales, which put one
   view's notes there rather than every chord. In one position a
   single Position row appears — ◂ ▸ to move the hand — and each view narrows
   to its own notes inside that stretch. It stays where you put it as the chords
@@ -321,9 +326,9 @@ already fits and the bar has no space to spare. The style picker chooses the
   toggle changes how much you see rather than what you're looking at, and the
   Position row works in both: with the grips alone each grip is its own box, so
   one position walks the neck one CAGED shape at a time.
-  This view reads two ways, chosen by **View**. *Across the neck* is one chord
+  This view reads two ways, chosen by **View**. *All positions* is one chord
   at a time, its five shapes everywhere they fall — the view for learning where
-  a chord lives. *All chords in one position* is the whole progression gathered
+  a chord lives. *All chords, one position* is the whole progression gathered
   under one hand, drawn the way it plays —
   each chord in its own colour, labelled by degree, its grip traced faintly
   through, and three tiers of brightness (the chord in front lit, the
@@ -338,7 +343,7 @@ already fits and the bar has no space to spare. The style picker chooses the
   every view, rather than from two pieces of code that have to agree. Colour there means which
   chord a note belongs to, so the legend reads the same way: one entry per chord with its name, numeral, the CAGED shape
   it's sitting in and the frets it spans, each spotlighting its chord when you
-  hover it, and the chord in front marked. Across the neck only one chord is
+  hover it, and the chord in front marked. Over all positions only one chord is
   drawn, so colour is free to say which of its five shapes a note is in
   instead, and the interval colouring stays available there.
   Whole arpeggio applies to both. Everything about *choosing* a
@@ -360,7 +365,7 @@ already fits and the bar has no space to spare. The style picker chooses the
   arrows walk through. Chords, Pentatonic and Scales are three views of the
   same five shapes and share the choice, so following a chord into its scale
   keeps the ones you're on. Each reading keeps its own set, though, since the
-  two are asking different things: across the neck all five are on, because
+  two are asking different things: over all positions all five are on, because
   that picture is the map of where a shape lives, while in one position it
   opens on A, E and D, the three that fall under the hand without a stretch.
   Change one and the other stays as you left it. The last shape standing can't
@@ -374,7 +379,7 @@ already fits and the bar has no space to spare. The style picker chooses the
   Triads — in one position these behave as Chords does: the chord in front
   lit, the rest of the progression's triads behind it in their own colours,
   and the legend naming each chord with the inversion it's sitting in.
-  Across the neck they're close three-note triads on one set of three adjacent
+  Over all positions they're close three-note triads on one set of three adjacent
   strings (e–B–G, B–G–D, G–D–A or D–A–E), every inversion, all the way up
   the neck, each legend entry also naming the CAGED grip its shapes are cut
   from so a triad reads as somewhere you already know. Each shape is outlined

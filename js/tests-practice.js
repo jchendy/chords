@@ -35,7 +35,7 @@
   ['tempoVal', 'keyReadout', 'measureReadout', 'styleLabel']
     .forEach(id => add('span', id));
   ['chords', 'chordSlots', 'presetVariantGroup', 'presetVariantRow',
-   'clickRow', 'rootOnlyRow'].forEach(id => add('div', id));
+   'clickRow', 'rootOnlyRow', 'keyMenu', 'keyMenuGrid'].forEach(id => add('div', id));
   ['quickKeyDice', 'quickRandomChords', 'shareBtn', 'styleProgBtn', 'styleTempoBtn'].forEach(id => add('button', id, { type: 'button' }));
   // the tab reaches for the label wrapping a checkbox to grey it out
   ['commonToggle', 'randomSeventhsToggle', 'clickToggle', 'countInToggle',
@@ -787,14 +787,14 @@
     if (!/Blues shuffle/.test(q('#styleProgBtn').title) || !/A7/.test(q('#styleProgBtn').title)) sb.push(`the progression button's tooltip reads "${q('#styleProgBtn').title}"`);
     t.equal(sb.join('; '), '', 'The buttons by the style load its progression and its tempo');
 
-    // the part's excuse does what it says: across the neck, the words
-    // "switch the neck to In one position" are a button that does
+    // the part's excuse does what it says: over all positions, the words
+    // "switch the neck to One position" are a button that does
     const view = GT.fretboardView;
-    view.applyViewState('m:penta');
+    view.applyViewState('m:penta.p:neck');
     q('#chartViewGroup .seg-btn[data-value="part"]').click();
     const note = q('#partNote');
     const link = note.querySelector('.link[data-act="view"]');
-    t.ok(!note.hidden && link && /In one position/.test(link.textContent), 'the excuse for a neck across the neck carries the link');
+    t.ok(!note.hidden && link && /One position/.test(link.textContent), 'the excuse for a neck over all positions carries the link');
     if (link) link.click();
     t.ok(view.positionView().inPosition && note.hidden, 'pressing it puts the neck in one position and the excuse goes');
     q('#chartViewGroup .seg-btn[data-value="chart"]').click();
@@ -808,6 +808,34 @@
   // the first wrap lands in bars 2 or 3, the wrap lands on bar 2's first
   // beat, and with the loop off the cursor goes round the whole chart. The
   // controls follow the chart, and the link carries the loop.
+  // The key's own list: twelve rows round the circle of fifths, each a
+  // major and the minor that shares its notes, the key you're in lit, and a
+  // press on any of them puts the tab in that key.
+  function testTheKeyMenu(t){
+    start();
+    const bad = [];
+    const { SEMITONE, MAJOR_KEYS, MINOR_KEYS } = GT.theory;
+    GT.practice.loadProgression({ chords: ['C', 'F', 'G'], key: 'C' });
+    const btns = [...q('#keyMenuGrid').querySelectorAll('.key-btn')];
+    if (btns.length !== 24) bad.push(`${btns.length} keys listed, not 24`);
+    for (let i = 0; i + 1 < btns.length; i += 2){
+      const [mm, major] = btns[i].dataset.key.split(':'), [nm, minor] = btns[i + 1].dataset.key.split(':');
+      if (mm !== 'major' || nm !== 'minor') bad.push(`row ${i / 2} is ${btns[i].dataset.key} beside ${btns[i + 1].dataset.key}`);
+      else if ((SEMITONE[major] + 9) % 12 !== SEMITONE[minor] % 12) bad.push(`${minor} minor is not the relative of ${major} major`);
+      if (!MAJOR_KEYS[major] || !MINOR_KEYS[minor]) bad.push(`a key the theory doesn't have: ${major}/${minor}`);
+    }
+    if (btns.slice(0, 2).map(b => b.dataset.key).join(' ') !== 'major:C minor:A') bad.push(`the list starts ${btns.slice(0, 2).map(b => b.dataset.key).join(' ')}, not with C and A minor`);
+    const lit = btns.filter(b => b.classList.contains('active')).map(b => b.dataset.key);
+    if (lit.join() !== 'major:C') bad.push(`in C major the lit key is ${lit.join() || 'none'}`);
+    // a press: the tab goes to E minor, the readout says so, the light moves
+    q('#keyMenuGrid [data-key="minor:E"]').click();
+    if (q('#keyReadout').textContent !== 'Em') bad.push(`after pressing E minor the readout says "${q('#keyReadout').textContent}"`);
+    const litNow = [...q('#keyMenuGrid').querySelectorAll('.key-btn.active')].map(b => b.dataset.key);
+    if (litNow.join() !== 'minor:E') bad.push(`after the press the lit key is ${litNow.join() || 'none'}`);
+    if (q('#keySelect').value !== 'minor:E') bad.push(`the select behind it says ${q('#keySelect').value}`);
+    t.equal(bad.join('; '), '', 'the key menu is twelve relative pairs, lit where you are, and a press moves you');
+  }
+
   function testTheLoop(t){
     start();
     const bad = [];
@@ -923,6 +951,7 @@
     ['Practice: a part stays put until you move it', testThePartStaysPut],
     ['Practice: the tab follows held bars', testTheTabFollowsHeldBars],
     ['Practice: the tempo presets, the chart edits in place, the picker is grouped', testTheTabsControls],
+    ['Practice: the key menu', testTheKeyMenu],
     ['Practice: the loop', testTheLoop],
     ['Practice: the band has a volume', testTheBandHasAVolume],
     ['Practice: the old tab name still opens it', testTheOldTabNameStillOpensIt],

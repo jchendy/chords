@@ -49,7 +49,12 @@
   .segmented{ display:inline-flex; align-items:center; flex-wrap:wrap; }
   .tb-lbl{ font-size:.66rem; text-transform:uppercase; letter-spacing:.1em; color:var(--muted2); font-weight:700; margin-right:6px; }
   .ib{ width:32px; height:32px; border:1px solid var(--line2); border-radius:7px; color:var(--muted); display:inline-flex; align-items:center; justify-content:center; font-size:.9rem; flex:none; }
-  .ib svg{ width:19px; height:19px; fill:currentColor; }
+  /* the filled icons (the gear, the dice) take the button's colour as a fill;
+     the stroked ones say fill="none" themselves and must keep it — a
+     stylesheet fill would paint their outlines solid, and a chain of two
+     open links becomes two blobs */
+  .ib svg{ width:19px; height:19px; }
+  .ib svg:not([fill="none"]){ fill:currentColor; }
   .ib:hover{ color:var(--ink); border-color:var(--muted); }
   /* an icon button that reports back: the tick replaces the icon for a moment */
   .ib .i-tick{ display:none; }
@@ -106,6 +111,16 @@
   .key-caret{ width:18px; height:18px; flex:none; color:var(--muted); }
   .key-edit:hover .key-caret, .key-edit:focus-within .key-caret, .pick-edit:hover .key-caret, .pick-edit:focus-within .key-caret{ color:var(--ink); }
   .key-select{ position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer; font-size:16px; }
+  .key-select[hidden]{ display:none; }
+  /* the key list: a row per key signature, the major on the left and its
+     relative minor on the right, the key you're in lit */
+  .key-menu{ left:0; top:calc(100% + 8px); padding:8px; width:max-content; max-height:calc(100vh - 180px); overflow:auto; }
+  .key-menu-head{ display:grid; grid-template-columns:1fr 1fr; gap:6px; padding:2px 10px 6px; font-size:.66rem; text-transform:uppercase; letter-spacing:.12em; color:var(--muted2); }
+  .key-menu-grid{ display:grid; grid-template-columns:1fr 1fr; gap:2px 6px; }
+  .key-btn{ min-width:104px; padding:5px 10px; text-align:left; border-radius:6px; color:var(--muted); font-size:.92rem; font-variant-numeric:tabular-nums; }
+  .key-btn:hover{ background:var(--panel2); color:var(--ink); }
+  .key-btn.active{ color:var(--ink); background:var(--panel2); font-weight:600; }
+  .key-btn:focus-visible{ outline:2px solid var(--muted); outline-offset:-2px; }
   .quick{ display:inline-flex; align-items:center; gap:6px; margin-left:4px; padding-left:14px; border-left:1px solid var(--line2); }
   /* the style, named rather than laid out: the third thing on the row */
   .quick-style{ display:inline-flex; align-items:center; margin-left:4px; padding-left:14px; border-left:1px solid var(--line2); }
@@ -698,17 +713,28 @@
            start without looking away from the chart; practice.js drives every
            .play-btn together -->
       <button class="play-btn play-sm" type="button" aria-label="Play"></button>
-      <span class="key-edit" title="Change key">
-        <h2 class="keyline" id="keyReadout">—</h2>
-        <svg class="key-caret" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 6l4.5 4.5L12.5 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        <select id="keySelect" class="key-select" aria-label="Key"></select>
+      <!-- the key: its name is the control, and it opens a list of its own —
+           the twelve major keys and their relative minors side by side, a
+           row a key signature, round the circle of fifths — rather than the
+           browser's list of twenty-four. The select stays, unseen, as the
+           state the tab reads and the tests drive. -->
+      <span class="pop-wrap">
+        <span class="key-edit" title="Change key" role="button" tabindex="0" data-pop="keyMenu" aria-expanded="false" aria-haspopup="true">
+          <h2 class="keyline" id="keyReadout">—</h2>
+          <svg class="key-caret" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 6l4.5 4.5L12.5 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+        <select id="keySelect" class="key-select" aria-label="Key" hidden></select>
+        <div class="popover key-menu" id="keyMenu" hidden aria-label="Key">
+          <div class="key-menu-head"><span>Major</span><span>Minor</span></div>
+          <div class="key-menu-grid" id="keyMenuGrid"></div>
+        </div>
       </span>
       <button type="button" class="ib ctl" id="quickKeyDice" aria-label="Random key" title="Random key"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="2" y="2" width="16" height="16" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="6.3" cy="6.3" r="1.6"/><circle cx="13.7" cy="6.3" r="1.6"/><circle cx="10" cy="10" r="1.6"/><circle cx="6.3" cy="13.7" r="1.6"/><circle cx="13.7" cy="13.7" r="1.6"/></svg></button>
       <!-- the progression, beside the key: the two things this chart is -->
       <div class="quick">
         <span class="pick-edit" title="Change progression">
           <span class="progline" id="progLabel">—</span>
-          <svg class="key-caret" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 6l4.5 4.5L12.5 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg class="key-caret" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 6l4.5 4.5L12.5 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
           <select id="presetSelect" class="key-select" aria-label="Progression"></select>
         </span>
         <!-- typing is the fast way in when you already know the progression:
@@ -739,14 +765,14 @@
       <div class="quick-style">
         <span class="pick-edit style-edit" id="stylePickerOpen" title="Change the backing style" role="button" tabindex="0">
           <span class="styleline" id="styleLabel">Simple</span>
-          <svg class="key-caret" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 6l4.5 4.5L12.5 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg class="key-caret" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 6l4.5 4.5L12.5 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
           <select id="quickStyle" class="key-select" aria-label="Backing style"></select>
         </span>
         <!-- what the style is usually played over and at: the progression and
              the tempo its page on the parts guide shows it with, one press each -->
         <span class="style-tools ctl">
           <button type="button" class="ib" id="styleDice" aria-label="Random style" title="Random style"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="2" y="2" width="16" height="16" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="6.3" cy="6.3" r="1.6"/><circle cx="13.7" cy="6.3" r="1.6"/><circle cx="10" cy="10" r="1.6"/><circle cx="6.3" cy="13.7" r="1.6"/><circle cx="13.7" cy="13.7" r="1.6"/></svg></button>
-          <button type="button" class="ib" id="styleProgBtn" aria-label="Use a progression for this style" title="Use a progression for this style"><svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 4.5v11M8.7 4.5v11M14.3 4.5v11M3 10h11.3"/><path d="M17 4.5v11" stroke-width="2.6"/></svg></button>
+          <button type="button" class="ib" id="styleProgBtn" aria-label="Use a progression for this style" title="Use a progression for this style"><svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 4.5v11M8.7 4.5v11M14.3 4.5v11M3 10h11.3"/><path d="M17 4.5v11" stroke-width="2"/></svg></button>
           <button type="button" class="ib" id="styleTempoBtn" aria-label="Use the tempo for this style" title="Use the tempo for this style"><svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7.2 3h5.6l2.7 14H4.5z"/><path d="M10 12.5L14.8 5"/><circle cx="10" cy="12.8" r="1.1" fill="currentColor" stroke="none"/></svg></button>
         </span>
       </div>
@@ -780,7 +806,7 @@
         <!-- the part's name is the picker, the key's move: the real select lies over it -->
         <span class="pick-edit part-edit" title="Change the part">
           <span class="part-name" id="partName"></span>
-          <svg class="key-caret" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 6l4.5 4.5L12.5 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg class="key-caret" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 6l4.5 4.5L12.5 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
           <select id="partSelect" class="key-select" aria-label="Part"></select>
         </span>
         <button type="button" class="ib" id="partReroll" aria-label="New fills: a fresh roll of the same part" title="New fills: a fresh roll of the same part"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="2" y="2" width="16" height="16" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="6.3" cy="6.3" r="1.6"/><circle cx="13.7" cy="6.3" r="1.6"/><circle cx="10" cy="10" r="1.6"/><circle cx="6.3" cy="13.7" r="1.6"/><circle cx="13.7" cy="13.7" r="1.6"/></svg></button>
@@ -852,8 +878,8 @@
       <!-- secondary: the reading, and the things each view needs -->
       <div class="toolbar ctl">
         <div class="tb-group" id="viewGroup" aria-label="Reading">
-          <button type="button" class="seg-btn active" data-value="neck">Across the neck</button>
-          <button type="button" class="seg-btn" data-value="position">In one position</button>
+          <button type="button" class="seg-btn active" data-value="position">One position</button>
+          <button type="button" class="seg-btn" data-value="neck">All positions</button>
         </div>
         <div class="tb-group" id="cagedChordRow" hidden>
           <span class="tb-lbl">Chord</span>
@@ -917,9 +943,9 @@
           <span class="tb-group" id="cagedViewRow" hidden>
             <span class="tb-lbl">Shapes</span>
             <span class="segmented shapes" id="cagedShapeGroup" aria-label="Which CAGED shapes to show">
-              <button type="button" class="seg-btn active" data-value="C">C</button>
+              <button type="button" class="seg-btn" data-value="C">C</button>
               <button type="button" class="seg-btn active" data-value="A">A</button>
-              <button type="button" class="seg-btn active" data-value="G">G</button>
+              <button type="button" class="seg-btn" data-value="G">G</button>
               <button type="button" class="seg-btn active" data-value="E">E</button>
               <button type="button" class="seg-btn active" data-value="D">D</button>
             </span>
@@ -968,14 +994,14 @@
     <!-- a link to everything as it stands — key, chords, style, tempo, the
          neck's view, the part's roll — so it belongs with the page's own
          controls, not the progression's -->
-    <button type="button" class="ib" id="quickShare" aria-label="Copy a link to all of this" title="Copy a link to all of this: the key, the chords, the style and tempo, the neck as it is shown and the part as it was rolled"><svg class="i-link" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8.2 11.8a3.4 3.4 0 0 0 5 .3l2.6-2.6a3.4 3.4 0 0 0-4.8-4.8l-1.5 1.5"/><path d="M11.8 8.2a3.4 3.4 0 0 0-5-.3L4.2 10.5a3.4 3.4 0 0 0 4.8 4.8l1.5-1.5"/></svg><svg class="i-tick" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 10.5l3.5 3.5 7.5-8"/></svg></button>
+    <button type="button" class="ib" id="quickShare" aria-label="Copy a link to all of this" title="Copy a link to all of this: the key, the chords, the style and tempo, the neck as it is shown and the part as it was rolled"><svg class="i-link" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8.2 11.8a3.4 3.4 0 0 0 5 .3l2.6-2.6a3.4 3.4 0 0 0-4.8-4.8l-1.5 1.5"/><path d="M11.8 8.2a3.4 3.4 0 0 0-5-.3L4.2 10.5a3.4 3.4 0 0 0 4.8 4.8l1.5-1.5"/></svg><svg class="i-tick" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 10.5l3.5 3.5 7.5-8"/></svg></button>
     <!-- the settings set once and left — voice, click, count-in, what the dice
          may use, colour, frets, the link — belong to the page, so their gear
          sits here with the page's own controls -->
     <button type="button" class="ib" id="setupOpenQuick" aria-label="Settings" title="Settings" data-pop="settingsMenu" aria-expanded="false"><svg viewBox="0 0 20 20" aria-hidden="true"><path fill-rule="evenodd" d="M16.46,8.63 L19.23,8.87 L19.23,11.13 L16.46,11.37 L15.54,13.59 L17.33,15.73 L15.73,17.33 L13.59,15.54 L11.37,16.46 L11.13,19.23 L8.87,19.23 L8.63,16.46 L6.41,15.54 L4.27,17.33 L2.67,15.73 L4.46,13.59 L3.54,11.37 L0.77,11.13 L0.77,8.87 L3.54,8.63 L4.46,6.41 L2.67,4.27 L4.27,2.67 L6.41,4.46 L8.63,3.54 L8.87,0.77 L11.13,0.77 L11.37,3.54 L13.59,4.46 L15.73,2.67 L17.33,4.27 L15.54,6.41 Z M10,7 a3,3 0 1,0 0.01,0 Z"/></svg></button>
     <button type="button" class="tbtn" id="controlsToggle" aria-pressed="true" title="Show or hide the controls: the neck's, the progression's and the part's">Hide controls</button>
     <button type="button" class="ib" id="transportCollapse" aria-label="Collapse the playback bar" title="Collapse the playback bar">
-      <svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 8.5L10 13l4.5-4.5"/></svg>
+      <svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 8.5L10 13l4.5-4.5"/></svg>
     </button>
   </footer>
 
@@ -984,7 +1010,7 @@
        drives it along with the others without knowing it exists. -->
   <div class="mini-transport" id="miniTransport" hidden>
     <button type="button" class="ib" id="transportExpand" aria-label="Show the playback bar" title="Show the playback bar">
-      <svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 11.5L10 7l-4.5 4.5"/></svg>
+      <svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 11.5L10 7l-4.5 4.5"/></svg>
     </button>
     <button class="play-btn play-mini" type="button" aria-label="Play"></button>
   </div>

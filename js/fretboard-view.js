@@ -42,11 +42,11 @@
   let cagedChordIdx = 0;
   let cagedShapesShown = [];
   // Which of the five CAGED shapes Chords is working on — one set per reading,
-  // because the two are asking different questions. Across the neck the point
-  // is where a chord lives, so all five are on: that picture is the map. In one
-  // position the point is a stretch of frets you can actually hold, so it opens
-  // on A, E and D, the three that fall under the hand without a stretch. Each
-  // reading keeps whatever you set it to while the other stays as it was.
+  // because the two are asking different questions. All positions: the point
+  // is where a chord lives, so all five are on: that picture is the map. One
+  // position: the point is a stretch of frets you can actually hold, so it
+  // opens on A, E and D, the three that fall under the hand without a stretch.
+  // Each reading keeps whatever you set it to while the other stays as it was.
   const shapesByReading = {
     neck: new Set(['C', 'A', 'G', 'E', 'D']),
     position: new Set(['A', 'E', 'D']),
@@ -60,10 +60,11 @@
   let activeRootPc = null;       // pitch class of the currently-playing chord's root, for Root notes mode
   let scaleTheory = 'parallel';  // 'parallel' (chord's own major/minor) | 'modal' (key's mode)
   // Every view reads one of two ways, and the choice is shared: you're either
-  // looking at the whole neck or at one hand position, whichever mode you're
-  // in. Switching mode keeps the reading, so moving from a chord to its scale
-  // doesn't throw you back out to the whole neck.
-  let inPosition = false;
+  // looking at one hand position or at every position on the neck, whichever
+  // mode you're in. Switching mode keeps the reading, so moving from a chord
+  // to its scale doesn't throw you back out to the whole neck. One position
+  // is where the page opens: it is the one a hand can hold.
+  let inPosition = true;
   let boxIndex = 0;              // which box, low to high, when showing one
   let shownWindow = null;        // what the legend reports
   let shownBoxName = '';         // ...and which CAGED shape that box is
@@ -240,7 +241,7 @@
   function paintViewButton(){
     const btn = viewGroup.querySelector('[data-value="position"]');
     const wholeProgression = ['caged', 'triads3'].includes(fretMode);
-    btn.textContent = wholeProgression ? 'All chords in one position' : 'In one position';
+    btn.textContent = wholeProgression ? 'All chords, one position' : 'One position';
   }
 
   // the buttons show the set belonging to the reading you're in
@@ -1429,7 +1430,7 @@
   // control of its own, only arrows.
   const VIEW_FIELDS = [
     { key: 'm', get: () => fretMode,      def: 'caged',     set: v => segClick('#fretModeGroup', v) },
-    { key: 'p', get: () => inPosition ? 'position' : 'neck', def: 'neck', set: v => segClick('#viewGroup', v) },
+    { key: 'p', get: () => inPosition ? 'position' : 'neck', def: 'position', set: v => segClick('#viewGroup', v) },
     { key: 'c', get: () => colorBy,       def: 'shape',     set: v => segClick('#colorByGroup', v) },
     { key: 't', get: () => scaleTheory,   def: 'parallel',  set: v => segClick('#scaleTheoryGroup', v) },
     { key: 'q', get: () => cagedPosMethod, def: 'box',      set: v => segClick('#cagedPosMethodGroup', v) },
