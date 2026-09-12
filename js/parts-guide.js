@@ -83,7 +83,7 @@
         card.innerHTML = `
           <div class="part-head">
             <h3>${part.name}</h3>
-            <span class="part-btns">${blends}<button type="button" class="play">Play</button></span>
+            <span class="part-btns">${blends}<button type="button" class="play">Play</button><button type="button" class="print" title="Just the tab, with its title, in a new tab for printing">Print</button></span>
           </div>
           <p class="blurb">${blurb || ''}</p>
           <p class="legend">Bars: figure · fill 1 · variant 1 · fill 2 · variant 2 · fill 3</p>
@@ -102,6 +102,7 @@
           play(card, style, feel, state.chords, state.notes, entry.tempo, state.metrics);
         });
         card.rebuild = () => { const was = playing() && playing().card === card; if (was) stop(); build(); };
+        card.querySelector('.print').addEventListener('click', () => GT.tabPrint.open({ title: part.name, meta: `${feel.label} · ${entry.progression.join(' · ')} · in ${entry.key} · ${entry.tempo} BPM`, example: tabHost._tabExample }));
         seekable(card, () => ({ feel, chords: state.chords, notes: state.notes, metrics: state.metrics }));
         const blendEl = card.querySelector('.blend');
         if (blendEl) blendEl.addEventListener('click', e => {

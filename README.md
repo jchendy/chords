@@ -176,7 +176,10 @@ names the tab you're on.
   to see — scrolling a row at a time as the bar moves down, with room under
   the last row so it too gets the top; narrower than that it's one long strip
   that scrolls sideways a bar at a time, since a wrapped tab on a phone
-  holds one bar a row. See **Suggested parts** below for how a part written
+  holds one bar a row. A print button by the part's name opens the tab
+  alone in a new browser tab, with the part's name, the style, the key and
+  the tempo over it, one row an SVG so no row splits across pages
+  (`js/tab-print.js`). See **Suggested parts** below for how a part written
   once ends up in four readings
 - "Type it" — a button by the progression name opening a field that takes the progression as chord
   names, one per bar: `E E E E A7 A7 E E Bm7 Bm7` is four chords held for
@@ -843,7 +846,8 @@ hides the neck (`nk=0`); **Fingering** (`fg=1`) puts a chord diagram over
 each bar whose grip changes — the whole hand, fingered by the chord
 finder's model in `js/fingering.js` (a plain barre here; the thumb over
 the neck is the Hendrix page's rule), the strings the bar strikes filled
-and the ones it only holds hollow. The
+and the ones it only holds hollow; **Print** opens the tab alone in a new
+browser tab, with the drill's name and brief over it, for printing. The
 state rides in the fragment (`#drills?d=scale&k=major:E&sc=blues&b=E@12…`)
 and a link restores every field, the ones it leaves out to their defaults.
 The Hendrix deep dive's scale drills and chord changes open here; its
@@ -924,7 +928,9 @@ rhythm and notes are made of, the players and records the idiom comes from
 (reference points for the style, never sources of lines), and a Play button:
 the style's own band under the part on the guitar, from a small player of
 its own in `js/parts-guide.js`. A switch shows the same parts in the Chords,
-Pentatonic or Scales reading, and another plays the techniques plain. The
+Pentatonic or Scales reading, and another plays the techniques plain; a
+Print button on each part opens its tab alone in a new browser tab, titled,
+for printing. The
 text lives in `js/parts-guide-data.js`, and a test holds every feel and
 every part to having its page there. Its player — six bars looped over the
 style's band, the tab following — is `js/example-player.js`, shared with
@@ -970,7 +976,8 @@ The page opens on a **Start here** path of eight lessons through the cards
 in the order a student would take them (the exercises follow the scales);
 every card carries a difficulty chip (beginner, intermediate, advanced,
 from what the part asks of the hands), its tempo with a practice tempo at
-70% that its links open at, and whether its sixteenths swing. A
+70% beside it to slow down to (its links open at the card's own tempo, what
+its Play plays), and whether its sixteenths swing. A
 chord-change card gives the hand a position for each chord (Em at the nut,
 G at the 3rd, Am at the 5th), so the engine realises each bar in its own
 window, and the tab names over every bar the grip it is played in — the
@@ -992,8 +999,10 @@ on an E-shape barre, the strings the bar strikes filled and the ones it
 only holds hollow — while single notes are left to the neck's box, since
 a rule for every fill would be wrong as often as right; an **Expand** that
 opens the example in a full-window view, the tab drawn to the window's
-width and the neck beside it; and an "Open in jam" or "Open in drills"
-link — parts to the jam tab in the share format (key, chords or preset,
+width and the neck beside it; a **Print** that opens the tab alone in a
+new browser tab with the card's title and its line of facts over it, one
+row an SVG so no row splits across a page; and an "Open in jam" or "Open
+in drills" link — parts to the jam tab in the share format (key, chords or preset,
 tempo, feel, part, roll, blend, the neck's reading and box), scales and
 chord changes to the drills with the pattern, the positions and the
 practice tempo. The chord-change drills are the chords alone, whole and
@@ -1014,7 +1023,7 @@ should become: every existing style beside a proposed revision of it — the
 band pattern and every guitar part, both playable — plus proposed new
 styles and a list of engine changes, with a decision to record on each
 (keep / take the proposal / mix / drop; add / skip; do / later / no) and a
-box for notes. Nothing on it touches the app: `review/proposals*.js` hold
+box for notes — and a Print button on every part for its tab alone. Nothing on it touches the app: `review/proposals*.js` hold
 the proposed patterns and parts, `review/review.js` a player and realiser
 of its own that understands the proposed engine features (change-aware
 fills, turnarounds, ghost notes, rakes, tremolo, chord slides, colour
@@ -1598,11 +1607,12 @@ by what each part does:
 | `fretboard.js` | Tuning, CAGED and pentatonic shape templates, the maths that places them on the neck, CAGED shape matching, and the two pieces of box drawing every view shares — `boxColouredNotes`, which colours a note by the box that owns it, and `gripOutlines`, which traces the chord shape underneath. Also pure. |
 | `neck.js` | Draws a full 15-fret neck as SVG from markers and shape outlines — shared by the jam fretboard, the chord finder's CAGED overview and the reverse finder, so all three necks are one drawing. A fret is close to twice as wide as the gap between two strings, near enough the shape of the real thing to read a grip off, and a note sits close up behind its fret wire where the finger goes rather than in the middle of the gap; the inlays and the fret numbers stay centred, since that's where they are on a guitar. The label and the dot are sized against each other: a single character is set as large as the dot will hold without running into a root's ring, and a longer one ("♭3") a size down so it fits — which is what lets the dots be small enough for the strings to sit that close together. A full neck is wide, so it wants most of a laptop's width — hence the wider cap on how large the drawing may render. |
 | `progressions.js` | The preset progressions, written as scale degrees. Pure data. |
-| `tab.js` | Draws guitar tablature from a note list: the strings, the numbers, the techniques, the bar numbers, the chord's name, numeral, grip and role over each bar (and, when the fingering is on, a small chord diagram over a bar whose grip changes), the rhythm under each row (stems, flags, beams within the beat, dots, hollow heads) from each strike's slot length on either grid — a note clipped short is written as its own value with the rest as a gap, unless it is under a slot, when it is the sixteenth its strikes are spaced at. `slotAt` reads the slot under a click, the inverse of the playhead's place. Two bars share a row where a second nearly fits. |
+| `tab.js` | Draws guitar tablature from a note list: the strings, the numbers, the techniques, the bar numbers, the chord's name, numeral, grip and role over each bar (and, when the fingering is on, a small chord diagram over a bar whose grip changes), the rhythm under each row (stems, flags, beams within the beat, dots, hollow heads) from each strike's slot length on either grid — a note clipped short is written as its own value with the rest as a gap, unless it is under a slot, when it is the sixteenth its strikes are spaced at. `slotAt` reads the slot under a click, the inverse of the playhead's place. Two bars share a row where a second nearly fits; `rows` gives the drawing a row at a time for the print view. |
+| `tab-print.js` | The print view every surface with a tab has: the tab drawn again at a page's width, one SVG a row so a row never splits across printed pages, in the tab's own styles set to ink on paper, with a title and a line of facts over it and a Print button the printed page leaves out — opened in a new browser tab. |
 | `css/tab.css` | The tab's look, one sheet for the pages that draw it (jam, drills, parts, review, the deep dives): a 17px string gap, 11px bold numbers, thin strings, the rhythm's stems and beams, and the pane a long tab scrolls in. Each page keeps only its own playing colour and playhead. |
 | `tab-pane.js` | A long tab in a pane: more than two rows scrolls, showing as many rows as were last asked for (kept in localStorage, one setting for every page), with a control beside its bottom corner for more or fewer — in a gutter, so nothing sits between the tab and the neck — and the row being played kept in view. Used by the jam tab, the drills and the example player. |
 | `parts-guide-data.js` | What the parts page says about each style and part: progression, tempo, what the rhythm and notes are made of, where the idiom comes from. Pure data. |
-| `parts-guide.js` | The parts page (`parts.html`): every part written out and playable, in any reading. |
+| `parts-guide.js` | The parts page (`parts.html`): every part written out and playable, in any reading, each with a Print button for its tab alone. |
 | `example-player.js` | The player the parts page and the deep dives share: draws a realised part as tab and loops it over the style's band, the tab following and, where the card has a neck, its dots lit as the notes sound; tells the page when the playhead enters a bar (`onBar`) and when the loop stops. `shapeOfBar` names the grip a bar is played in, `gripFor` fingers the whole hand for the diagrams. |
 | `hendrix-guide.js` | The Hendrix deep dive (`hendrix.html`): the grips drawn, the Start-here path, the examples, exercises and studies realised from the Hendrix genre and played — each with its neck, its fingering switch, its expand and its link into the jam or the drills — the teachers' section, the songs and the sources. |
 | `js/styles-base.js` | The band patterns the app started with: the base `STYLES`, one entry per style with its feels. |
@@ -1612,7 +1622,7 @@ by what each part does:
 | `docs/STYLES-CATALOGUE.md` | What the research found, per genre and part; generated by `tools/styles-doc.js`. |
 | `tools/` | `sweep.js` realises every part every way and reports rule breaks; `reach.js` prints what each key's box holds; `styles-doc.js` writes the catalogue. |
 | `CLAUDE.md` | What an agent working here has to know first. |
-| `review/review.js` | The style review page (`review.html`): existing beside proposed, playable, with decisions. Its own player and realiser, a superset of the app's for the proposed features. |
+| `review/review.js` | The style review page (`review.html`): existing beside proposed, playable, with decisions, each part's tab printable on its own. Its own player and realiser, a superset of the app's for the proposed features. |
 | `review/proposals*.js` | The proposals: revised bands and parts per existing style, new styles, the engine list. Data plus the parts, written with the same helpers parts.js uses and a few more. |
 | `review/proposals-easy.js` | Easy mode's hand-written parts: the beginner's form of a part where the page's simplifying rule can't find it. |
 | `review/proposals-hendrix.js` | The Hendrix genre: eight feels, twenty-three parts with rhythm, lead and mixed forms, the research behind them. Realised by the app's own engine (`engine: true`). |

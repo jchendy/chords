@@ -49,6 +49,7 @@
   add('input', 'drillFingers', { type: 'checkbox' }, card);
   add('input', 'drillNeckToggle', { type: 'checkbox', checked: true }, card);
   add('button', 'drillShare', { type: 'button' }, card);
+  add('button', 'drillPrint', { type: 'button' }, card);
   add('button', 'drillExpand', { type: 'button' }, card);
   add('button', 'drillClose', { type: 'button', hidden: true }, card);
   add('p', 'drillBrief', {}, card);

@@ -77,10 +77,16 @@
 
   function build(example, availableWidth){
     const m = measure(example, availableWidth);
-    const els = [];
+    // every element is kept with the row it belongs to, so the drawing can
+    // come out whole (`markup`) or a row at a time (`rows`, for a print view
+    // that must not split a row across pages)
+    const list = [];
+    let cur = 0;
+    const els = { push: (...xs) => xs.forEach(el => list.push({ row: cur, el })) };
 
     // one set of six strings per row, only as wide as that row's bars
     for (let row = 0; row < m.rows; row++){
+      cur = row;
       const top = row * m.rowSpan + m.rowTop;
       const barsHere = Math.min(m.barsPerRow, m.barCount - row * m.barsPerRow);
       const right = PAD_L + barsHere * m.barW;
@@ -95,6 +101,7 @@
     // a bar line at the start of every bar, with its chord above
     example.bars.forEach((bar, i) => {
       const p = positionOf(bar.startSlot, m);
+      cur = p.row;
       els.push(`<line class="tab-bar" x1="${p.x}" y1="${stringY(p.top, 0)}" x2="${p.x}" y2="${stringY(p.top, 5)}"/>`);
       // the bar's number, small and italic, on the line's left — the way
       // printed tab counts its bars
@@ -135,6 +142,7 @@
     example.notes.forEach(n => {
       if (n.tabHide) return;                       // a trill's repeats: played, not written
       const p = positionOf(n.at, m);
+      cur = p.row;
       const x = p.x + m.slotW / 2, y = stringY(p.top, n.string);
       let label = String(n.fret);
       if (n.slide != null) label = `${n.slide}${n.slide < n.fret ? '/' : '\\'}${n.fret}`;
@@ -166,15 +174,21 @@
       }
     });
 
-    els.push(...rhythm(example, m));
+    rhythm(example, m).forEach(x => list.push(x));
+    cur = null;                                     // the playhead is the whole drawing's, no row's
     els.push(`<rect class="tab-playhead" x="${PAD_L}" y="${m.rowTop - 8}" width="${m.slotW}" height="${5 * ROW_H + RHYTHM_TOP + STEM_H + 12}" rx="3" hidden/>`);
 
+    const rows = [];
+    for (let r = 0; r < m.rows; r++){
+      rows.push(`<g transform="translate(0 ${-r * m.rowSpan})">${list.filter(x => x.row === r).map(x => x.el).join('')}</g>`);
+    }
     return {
-      markup: els.join(''),
+      markup: list.map(x => x.el).join(''),
       width: m.width,
       height: m.height,
       viewBox: `0 0 ${m.width} ${m.height}`,
       metrics: m,
+      rows,                                          // each row's elements, moved up to start at y = 0, for one SVG a row
     };
   }
 
@@ -259,10 +273,13 @@
     return byBar;
   }
   function rhythm(example, m){
-    const els = [];
+    const out = [];                                  // { row, el }: a bar's rhythm is on the bar's row
+    let cur = 0;
+    const els = { push: (...xs) => xs.forEach(el => out.push({ row: cur, el })) };
     const grid = example.grid;
     const perBeat = grid % 3 !== 0 ? 4 : 3;
     onsets(example).forEach((list, bar) => {
+      cur = positionOf(bar * grid, m).row;
       const barEnd = (bar + 1) * grid;
       const struck = [...list.entries()].sort((a, b) => a[0] - b[0]);
       // strokes are marked in a bar that has an upstroke in it — down and
@@ -339,7 +356,7 @@
         }
       });
     });
-    return els;
+    return out;
   }
 
   // where to park the playhead for a given slot — x, and the top of its row

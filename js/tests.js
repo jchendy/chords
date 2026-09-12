@@ -2679,6 +2679,44 @@
     t.equal(bad.join('; '), '', `The tab knows the slot under a click (${bars * grid} slots over ${m.rows} rows)`);
   }
 
+  // The tab comes out a row at a time as well as whole, for a print view
+  // that must not split a row across pages: every row holds its own bars,
+  // numbers, notes and rhythm and nothing of another's, moved up to start
+  // at the top; the playhead belongs to no row. The print page is one SVG
+  // a row, each kept whole on a page, with the title over it.
+  function testTheTabComesOutInRows(t){
+    const grid = 16;
+    const bars = [0, 16, 32, 48].map(startSlot => ({ startSlot, chord: 'G', numeral: 'I' }));
+    const notes = [0, 16, 32, 48].flatMap(at => [{ string: 5, fret: 3, at, dur: 4 }, { string: 2, fret: 0, at: at + 4, dur: 2 }, { string: 1, fret: 3, at: at + 8, dur: 8 }]);
+    const example = { grid, totalSlots: 64, bars, notes };
+    const built = GT.tab.build(example, 480);          // one bar a row: four rows
+    const m = built.metrics;
+    const bad = [];
+    if (m.rows !== 4) bad.push(`${m.rows} rows, not four`);
+    if (!built.rows || built.rows.length !== m.rows) bad.push(`${built.rows ? built.rows.length : 'no'} rows given for ${m.rows} drawn`);
+    const count = (s, re) => (s.match(re) || []).length;
+    (built.rows || []).forEach((row, r) => {
+      const nums = [...row.matchAll(/class="tab-barnum"[^>]*>(\d+)</g)].map(x => Number(x[1]));
+      if (nums.join(',') !== String(r + 1)) bad.push(`row ${r + 1} carries bar numbers ${nums.join(',') || 'none'}`);
+      if (count(row, /class="tab-note/g) !== 3) bad.push(`row ${r + 1} has ${count(row, /class="tab-note/g)} notes, not its three`);
+      if (count(row, /class="tab-stem"/g) !== 3) bad.push(`row ${r + 1} has ${count(row, /class="tab-stem"/g)} stems, not its three`);
+      if (count(row, /class="tab-string"/g) !== 6) bad.push(`row ${r + 1} has ${count(row, /class="tab-string"/g)} strings`);
+      if (!row.startsWith(`<g transform="translate(0 ${-r * m.rowSpan})">`)) bad.push(`row ${r + 1} is not moved up by ${r * m.rowSpan}`);
+      if (/tab-playhead/.test(row)) bad.push(`row ${r + 1} carries the playhead`);
+    });
+    if (count(built.markup, /class="tab-note/g) !== 12) bad.push('the whole drawing lost notes');
+    if (!/tab-playhead/.test(built.markup)) bad.push('the whole drawing lost its playhead');
+    const page = GT.tabPrint.html({ title: 'Fills & runs', meta: 'G major · 80 BPM', example });
+    if (!page.includes('<title>Fills &amp; runs</title>')) bad.push('the print page has no title');
+    if (!page.includes('G major · 80 BPM')) bad.push('the print page has no line under the title');
+    const pm = GT.tab.build(example, GT.tabPrint.PRINT_WIDTH).metrics;
+    if (count(page, /class="row"/g) !== pm.rows) bad.push(`the print page has ${count(page, /class="row"/g)} rows for a tab of ${pm.rows}`);
+    if (!/\.row\{[^}]*break-inside:avoid/.test(page)) bad.push('a row may split across pages');
+    if (!page.includes(`viewBox="0 0 ${pm.width} ${pm.rowSpan}"`)) bad.push('a row\'s SVG is not one row tall');
+    if (/tab-playhead/.test(page)) bad.push('the print page carries the playhead');
+    t.equal(bad.join('; '), '', 'The tab comes out in rows, and the print page keeps each row whole');
+  }
+
   // Two bars share a row when a second nearly fits: the slots squeeze (to
   // 16px at the tightest) rather than leave a bar alone on each row; a
   // width that fits two at full size, or cannot fit two at all, is left as
@@ -2809,6 +2847,7 @@
       ['Chord finder keeps its known shapes', testBaselineShapesSurvive],
       ['The tab writes its rhythm', testTheTabWritesItsRhythm],
       ['The tab knows what is under a click', testTheTabKnowsWhatIsUnderAClick],
+      ['The tab comes out in rows', testTheTabComesOutInRows],
       ['Two bars share a row', testTwoBarsShareARow],
       ['The hand is fingered', testTheHandIsFingered],
       ['The tab shows the fingering', testTheTabShowsTheFingering],

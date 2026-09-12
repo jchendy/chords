@@ -209,7 +209,9 @@
     art.className = 'ex' + (cfg.big ? ' big' : '');
     art.id = ex.id;
     const r = realiseExample(ex);
-    const exForLink = { ...ex, tempo: practiceTempo(ex), seed: r ? r.seed : ex.seed };
+    // the link opens at the card's own tempo — what its Play plays — with
+    // the practice tempo said beside it, to slow down to
+    const exForLink = { ...ex, seed: r ? r.seed : ex.seed };
     const link = openLink(exForLink);
     const kind = ex.build ? 'drill' : ex.blend === 'lead' ? 'lead' : ex.blend === 'rhythm' ? 'rhythm' : 'mixed';
     const mode0 = cfg.neck || neckPref() || ex.neckDefault || 'off';
@@ -219,7 +221,7 @@
     art.innerHTML = `
       <div class="ex-head"><div><h4>${esc(ex.title)}</h4>
         <div class="meta"><span>${esc(ex.feel)}</span>${ex.part ? `<span>${esc(ex.part)}</span>` : ''}<span>${esc(ex.key)} ${ex.mode === 'minor' ? 'minor' : 'major'}</span><span>${ex.tempo} BPM · start at ${practiceTempo(ex)}</span>${swung}<span>${kind}</span>${level ? `<span class="chip ${level}">${level}</span>` : ''}</div></div>
-        <span class="btns"><span class="seg neck-seg" role="group" aria-label="Neck"><span class="lbl">Neck</span>${['off', 'chords', 'scale'].map(v => `<button type="button" data-value="${v}"${v === mode0 ? ' class="active"' : ''}>${v[0].toUpperCase() + v.slice(1)}</button>`).join('')}</span><span class="seg fingers-seg"><button type="button" class="fingers${show.fingers ? ' active' : ''}" aria-pressed="${show.fingers}" title="A chord diagram at each change of grip, a finger number over each note">Fingering</button></span><button type="button" class="play">Play</button><a class="drill" href="${link}">${openText(ex)} →</a>${cfg.big ? '<button type="button" class="drill close-big">Close ✕</button>' : '<button type="button" class="drill expand" title="The example large, tab and neck side by side">Expand ⤢</button>'}</span></div>
+        <span class="btns"><span class="seg neck-seg" role="group" aria-label="Neck"><span class="lbl">Neck</span>${['off', 'chords', 'scale'].map(v => `<button type="button" data-value="${v}"${v === mode0 ? ' class="active"' : ''}>${v[0].toUpperCase() + v.slice(1)}</button>`).join('')}</span><span class="seg fingers-seg"><button type="button" class="fingers${show.fingers ? ' active' : ''}" aria-pressed="${show.fingers}" title="A chord diagram at each change of grip, a finger number over each note">Fingering</button></span><button type="button" class="play">Play</button><a class="drill" href="${link}">${openText(ex)} →</a><button type="button" class="drill print" title="Just the tab, with its title, in a new tab for printing">Print</button>${cfg.big ? '<button type="button" class="drill close-big">Close ✕</button>' : '<button type="button" class="drill expand" title="The example large, tab and neck side by side">Expand ⤢</button>'}</span></div>
       <p class="blurb">${ex.blurb}</p>
       <div class="body"><div class="tab"></div><div class="neck" hidden></div></div>
       ${ex.refs ? `<p class="refs">${ex.refs}</p>` : ''}`;
@@ -296,6 +298,7 @@
       if (playing() && playing().card === art){ stop(); return; }
       play(art, STYLE, r.feel, r.chords, r.notes, ex.tempo, metrics, { onBar: draw, onStop: () => draw(0), countIn: countInOn() ? GT.band.beatsOf(r.feel) : 0 });
     });
+    art.querySelector('.print').addEventListener('click', () => GT.tabPrint.open({ title: ex.title, meta: [...art.querySelectorAll('.meta span')].map(s => s.textContent).join(' · '), example: tabHost._tabExample }));
     if (cfg.big) art.querySelector('.close-big').addEventListener('click', () => big.close());
     else art.querySelector('.expand').addEventListener('click', () => openBig(ex));
     // a click on the tab sets where it plays from, the neck following

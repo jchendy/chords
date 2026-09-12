@@ -2035,6 +2035,7 @@
                                    lead: !n.strum || !partNotes.some(m => m.bar === n.bar && m.at === n.at && m.strum && m.spread > n.spread) })),
       totalSlots: bars.length * grid,
     };
+    partTabEl._tabExample = example;                 // for the print view
     // On a wide screen the tab wraps to as many bars as fit across, and the
     // viewport shows two rows of it, scrolling down to the row being played
     // — a page of tab, turned when the bottom row runs out. On a phone a
@@ -2182,6 +2183,11 @@
   }
   partSelect.addEventListener('change', () => { partIdx = Number(partSelect.value) || 0; partSeed = 0; rebuildPart(); writeShareState(); });
   document.getElementById('partReroll').addEventListener('click', () => { partSeed = 0; rebuildPart(); writeShareState(); });
+  // the part's tab alone, with its name, the style and the key, for printing
+  document.getElementById('partPrint').addEventListener('click', () => {
+    if (!partTabEl._tabExample || partTabEl.hidden) return;
+    GT.tabPrint.open({ title: partNow() ? partNow().name : 'Part', meta: `${styleLabel.textContent} · ${currentTonic} ${currentMode}${loadedLabel ? ' · ' + loadedLabel : ''} · ${getTempo()} BPM`, example: partTabEl._tabExample });
+  });
   partEasyToggle.addEventListener('change', () => { partEasy = partEasyToggle.checked; rebuildPart(); writeShareState(); });
   partBlendGroup.addEventListener('click', e => {
     const b = e.target.closest('.seg-btn'); if (!b) return;

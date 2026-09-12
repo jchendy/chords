@@ -447,7 +447,7 @@
       bars: chords.map((c, i) => ({ startSlot: i * grid, chord: displayName(c), numeral: c.numeral })),
       notes: notes.map(n => ({
         string: n.string, fret: n.fret, at: n.bar * grid + n.at, dur: n.dur,
-        bend: n.bend, slide: n.slide, tech: n.tech, to: n.to, soft: n.soft,
+        bend: n.bend, slide: n.slide, tech: n.tech, to: n.to, soft: n.soft, vib: n.vib, trem: n.trem,
         // an "x" over a muted strum; a muted or ghosted single note is drawn dim
         mute: n.strum ? n.mute : undefined,
         tone: !n.strum && (n.mute || n.ghost) ? 'muted' : undefined,
@@ -457,18 +457,7 @@
     };
     const built = GT.tab.build(example, Math.max(300, host.clientWidth || 600));
     host.innerHTML = `<svg viewBox="${built.viewBox}" width="${built.width}" height="${built.height}" role="img">${built.markup}</svg>`;
-    // marks the tab drawer doesn't know yet: vibrato and tremolo
-    const svg = host.querySelector('svg');
-    notes.forEach(n => {
-      if (!n.vib && !n.trem) return;
-      const g = [...svg.querySelectorAll('.tab-note')].find(x => Number(x.dataset.slot) === n.bar * grid + n.at);
-      if (!g) return;
-      const t = g.querySelector('text');
-      const m = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-      m.setAttribute('class', 'tab-tech'); m.setAttribute('x', t.getAttribute('x')); m.setAttribute('y', Number(t.getAttribute('y')) - 10); m.setAttribute('text-anchor', 'middle');
-      m.textContent = n.vib ? '~' : '≡';
-      svg.appendChild(m);
-    });
+    host._tabExample = example;                      // for the print view
     return built.metrics;
   }
 
@@ -563,7 +552,7 @@
     if (allWritten.some(bar => bar.some(n => n.tech === 'double' && n.up))) flags.push('double-stop bends');
     card.innerHTML = `
       <div class="part-head"><h4>${esc(part.name)}${tag ? ` <span class="tag">${esc(tag)}</span>` : ''}</h4>
-        <span class="btns"><span class="easytag" hidden></span><button type="button" class="reroll" title="Roll the fills again, as New fills does in the app">New fills</button><span class="roll"></span><button type="button" class="play">Play</button></span></div>
+        <span class="btns"><span class="easytag" hidden></span><button type="button" class="reroll" title="Roll the fills again, as New fills does in the app">New fills</button><span class="roll"></span><button type="button" class="play">Play</button><button type="button" class="print" title="Just the tab, with its title, in a new tab for printing">Print</button></span></div>
       ${part.why ? `<p class="why">${part.why}</p>` : ''}
       ${advanced ? `<p class="counts">${(part.variants || []).length + 1} figures · fills ${counts[0]} plain, ${counts[1]} into a change, ${counts[2]} staying put${part.tails ? ` · ${part.tails.length} tails` : ''}${part.pickups ? ` · ${part.pickups.length} pickups` : ''}${part.stops ? ` · ${part.stops.length} stop-time` : ''}${highBars ? ` · ${highBars} up high` : ''}${part.leads ? ` · ${part.leads.length} leads` : ''}</p>` : `<p class="counts">${(part.variants || []).length + 1} figures · ${(part.fills || []).length} fills</p>`}
       ${flags.length ? `<p class="flags">Needs: ${flags.map(f => `<span>${esc(f)}</span>`).join(' ')}</p>` : ''}
@@ -593,6 +582,7 @@
       if (!state) return;
       play(card, btn, { pattern, style, chords: state.chords, tempo: entry.tempo, notes: state.notes, metrics: state.metrics, tabHost });
     });
+    card.querySelector('.print').addEventListener('click', () => { if (state) GT.tabPrint.open({ title: part.name, meta: `${style}${entry.key ? ' · in ' + entry.key : ''} · ${entry.tempo} BPM`, example: tabHost._tabExample }); });
     card.querySelector('.reroll').addEventListener('click', () => {
       // the same roll the app makes on "New fills", with this card's own seed;
       // what was playing starts again on the new roll

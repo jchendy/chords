@@ -863,6 +863,7 @@
           <svg class="key-caret" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 6l4.5 4.5L12.5 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
           <select id="partSelect" class="key-select" aria-label="Part"></select>
         </span>
+        <button type="button" class="ib" id="partPrint" aria-label="Print the tab" title="Just the tab, with its title, in a new tab for printing"><svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 7.5V3.5h8v4"/><rect x="3" y="7.5" width="14" height="6.5" rx="1.5"/><path d="M6.5 12h7v4.5h-7z"/></svg></button>
         <button type="button" class="ib" id="partReroll" aria-label="New fills: a fresh roll of the same part" title="New fills: a fresh roll of the same part"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="2" y="2" width="16" height="16" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="6.3" cy="6.3" r="1.6"/><circle cx="13.7" cy="6.3" r="1.6"/><circle cx="10" cy="10" r="1.6"/><circle cx="6.3" cy="13.7" r="1.6"/><circle cx="13.7" cy="13.7" r="1.6"/></svg></button>
         <!-- a part written with lead lines can be played as comping alone,
              as a lead pass, or the way a player does both — lead lines in
@@ -1423,6 +1424,7 @@
         <label class="check"><input type="checkbox" id="drillFingers" title="A chord diagram at each change of grip, a finger number over each note"><span>Fingering</span></label>
         <label class="check"><input type="checkbox" id="drillNeckToggle" checked><span>Neck</span></label>
         <button type="button" class="tbtn" id="drillShare">Copy link</button>
+        <button type="button" class="tbtn" id="drillPrint" title="Just the tab, with its title, in a new tab for printing">Print</button>
         <button type="button" class="tbtn" id="drillExpand" title="The drill large, tab and neck side by side">Expand ⤢</button>
         <button type="button" class="tbtn" id="drillClose" hidden>Close ✕</button>
         <span class="setup-field" id="drillTempoBig" hidden><span class="tb-lbl">Tempo</span>
@@ -1488,6 +1490,7 @@
 <script src="js/stage.js"></script>
 <script src="js/chord-finder.js"></script>
 <script src="js/tab.js"></script>
+<script src="js/tab-print.js"></script>
 <script src="js/ear-training.js"></script>
 <script src="js/reverse-finder.js"></script>
 <script src="js/tab-pane.js"></script>

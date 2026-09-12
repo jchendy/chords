@@ -582,6 +582,10 @@
     $('drillCount').addEventListener('change', () => { state.count = $('drillCount').checked; writeState(); });
     $('drillNeckToggle').addEventListener('change', () => { state.neck = $('drillNeckToggle').checked; writeState(); drawNeck(playingHere() ? player().playing().shownBar || 0 : 0); });
     $('drillFingers').addEventListener('change', () => { state.fingers = $('drillFingers').checked; writeState(); redraw(); });
+    $('drillPrint').addEventListener('click', () => {
+      if (!drill) return;
+      GT.tabPrint.open({ title: `${KINDS[state.kind].name} — ${state.tonic} ${state.mode}`, meta: `${drill.brief} ${state.tempo} BPM.`, example: $('drillTab')._tabExample });
+    });
     card.querySelector('.play').addEventListener('click', togglePlay);
     // a click on the tab sets where the drill plays from, the neck following
     player().seekable(card, () => drill ? { feel: drill.feel, chords: drill.chords, notes: drill.notes, metrics } : null, { onSeek: bar => drawNeck(bar) });

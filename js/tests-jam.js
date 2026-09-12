@@ -87,6 +87,7 @@
   ['partPanel', 'partControls', 'partTab', 'partNote'].forEach(id => add('div', id));
   add('span', 'partName');
   add('button', 'partReroll', { type: 'button' });
+  add('button', 'partPrint', { type: 'button' });
   // the blend, with its three buttons, as the page has them
   const blend = add('span', 'partBlendGroup');
   ['rhythm', 'mixed', 'lead'].forEach(v => { const b = document.createElement('button'); b.type = 'button'; b.className = 'seg-btn' + (v === 'mixed' ? ' active' : ''); b.dataset.value = v; blend.appendChild(b); });

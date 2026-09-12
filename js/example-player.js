@@ -128,6 +128,7 @@
     // the pane's control takes a gutter, so a tab that gets one is drawn
     // again to the width that leaves
     if (GT.tabPane && GT.tabPane.apply(host, built.metrics)){ built = draw(); GT.tabPane.apply(host, built.metrics); }
+    host._tabExample = example;                      // for the print view: the same drawing, at a page's width
     return built.metrics;
   }
 
