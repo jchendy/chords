@@ -936,9 +936,18 @@
   // release on any record, and `release` asks for that whatever the length.
   // Pure, so the shape can be tested without a sound.
   const BEND_HOLD = 0.6;
+  // ...and a dip: the Bigsby pressed and let go — the note pulled down
+  // `dip` semitones (one unless said) over its first tenth of a second and
+  // brought back over the next, the wobble a rockabilly player puts on a
+  // chord stab
+  const DIP = { down: 0.1, back: 0.22 };
   function pitchPlan(rate, fx, time, duration){
     const plan = [];
-    if (fx && fx.slideFrom){
+    if (fx && fx.dip){
+      const low = rate * Math.pow(2, -(fx.dip === true ? 1 : fx.dip) / 12);
+      const down = time + Math.min(DIP.down, duration * 0.35), back = time + Math.min(DIP.back, duration * 0.8);
+      plan.push({ t: time, rate }, { t: time + 0.015, rate }, { t: down, rate: low }, { t: back, rate });
+    } else if (fx && fx.slideFrom){
       plan.push({ t: time, rate: rate * fx.slideFrom }, { t: time + Math.min(0.08, duration * 0.5), rate });
     } else if (fx && fx.bend){
       const start = time + Math.min(0.06, duration * 0.2), up = rate * Math.pow(2, fx.bend / 12);
@@ -1029,6 +1038,21 @@
     const fade = Math.min(0.35, ring * 0.3);
     env.gain.setValueAtTime(level, time + Math.max(0.02, ring - fade));
     env.gain.exponentialRampToValueAtTime(0.0001, time + ring + 0.02);
+    // the pop: a note snapped by a finger rather than picked (the country
+    // player's chicken pickin', the hybrid picker's pull) — a few
+    // milliseconds of bright click on the front, on the same bus
+    if (fx && fx.pop && !muted){
+      const { src: click, offset: co } = noiseVoice(time, POP.length + 0.01);
+      const hp = audioCtx.createBiquadFilter();
+      hp.type = 'highpass'; hp.frequency.value = POP.tone;
+      const cg = audioCtx.createGain();
+      cg.gain.setValueAtTime(0.0001, time);
+      cg.gain.exponentialRampToValueAtTime(level * POP.level, time + 0.001);
+      cg.gain.exponentialRampToValueAtTime(0.0001, time + POP.length);
+      click.connect(hp).connect(cg).connect(bus === 'part' ? partGain : masterGain);
+      startVoice(click, time, cg, co);
+      click.stop(time + POP.length + 0.01);
+    }
 
     // the string's damp node, for the note that takes the string over
     const damp = audioCtx.createGain();
@@ -1080,6 +1104,7 @@
     return { out, base: freq, pitch: [a.frequency, b.frequency], sources: [a, b], stopper: { stop(t){ a.stop(t); b.stop(t); } }, offset: 0 };
   }
   const MUTE_RING = 0.18, MUTE_LEVEL = 0.75;
+  const POP = { length: 0.008, tone: 2500, level: 1.2 };
   // the wah's sweep: a 12 dB peak from 380 Hz to 1900 Hz over 0.32 s at most, with a lowpass riding above it
   const WAH = { lo: 380, hi: 1900, q: 4, gain: 12, sweep: 0.32 };
   const PLUCK_DETUNE_CENTS = 10;      // ±5 cents, under what an ear hears as out of tune
@@ -1141,6 +1166,8 @@
     if (n.mute) fx.mute = true;
     if (n.vib) fx.vib = true;
     if (n.wah) fx.wah = n.wah;
+    if (n.dip) fx.dip = n.dip;
+    if (n.pop) fx.pop = true;
     return Object.keys(fx).length ? fx : null;
   };
   function playPartNotes(notes, at, slotDur, level, { slapback = false, jit = () => 0 } = {}){
@@ -1498,12 +1525,46 @@
     src.stop(time + duration + 0.06);
   }
 
-  function playBass(freq, time, duration, velocity){
+  // `opts.snap`: the upright's string pulled out and let go against the
+  // fingerboard — the rockabilly and psychobilly bass note: a click on the
+  // front and a shorter ring
+  function playBass(freq, time, duration, velocity, opts = {}){
     const note = bassFold(freq);
+    const dur = opts.snap ? Math.min(duration, SLAP_BASS.ring) : duration;
     const spec = bassSampleReady(midiOf(note), velocity);
-    if (spec){ voiceUse.bassSampled++; return playRecordedBass(spec, note, time, duration, velocity); }
-    voiceUse.bassSynth++;
-    synthBass(note, time, duration, velocity);
+    if (spec){ voiceUse.bassSampled++; playRecordedBass(spec, note, time, dur, velocity); }
+    else { voiceUse.bassSynth++; synthBass(note, time, dur, velocity); }
+    if (opts.snap) bassClick(time, velocity * SLAP_BASS.snapLevel);
+  }
+  // the upright slapped: the hand hitting the strings against the
+  // fingerboard between the notes — no pitch to speak of, a click with a
+  // little wood under it, on the bass bus so it sits where the bass sits
+  const SLAP_BASS = { ring: 0.32, snapLevel: 0.9, click: 2400, clickLength: 0.012, thump: 90, thumpLength: 0.04 };
+  function bassClick(time, level){
+    const { src, offset } = noiseVoice(time, SLAP_BASS.clickLength + 0.01);
+    const bp = audioCtx.createBiquadFilter();
+    bp.type = 'bandpass'; bp.frequency.value = vary(SLAP_BASS.click, 0.08); bp.Q.value = 0.8;
+    const g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.0001, time);
+    g.gain.exponentialRampToValueAtTime(level, time + 0.001);
+    g.gain.exponentialRampToValueAtTime(0.0001, time + SLAP_BASS.clickLength);
+    src.connect(bp).connect(g).connect(bassGain);
+    startVoice(src, time, g, offset);
+    src.stop(time + SLAP_BASS.clickLength + 0.01);
+  }
+  function playSlap(time, velocity = 0.8){
+    bassClick(time, velocity);
+    const osc = audioCtx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(SLAP_BASS.thump * 1.5, time);
+    osc.frequency.exponentialRampToValueAtTime(SLAP_BASS.thump, time + 0.02);
+    const g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.0001, time);
+    g.gain.exponentialRampToValueAtTime(velocity * 0.35, time + 0.003);
+    g.gain.exponentialRampToValueAtTime(0.0001, time + SLAP_BASS.thumpLength);
+    osc.connect(g).connect(bassGain);
+    startVoice(osc, time, g);
+    osc.stop(time + SLAP_BASS.thumpLength + 0.02);
   }
 
   function synthBass(freq, time, duration, velocity){
@@ -1614,9 +1675,27 @@
   }
 
   // `kind`: the snare itself, a 'ghost' (the same stroke, barely, the
-  // noise short and the body faint) or a 'rim' (the stick on the rim: a
-  // knock and a ping, no body, dry)
+  // noise short and the body faint), a 'rim' (the stick on the rim: a
+  // knock and a ping, no body, dry) or a 'brush' (the wire brush swept
+  // across the head: no front to speak of, a swish that rises and falls,
+  // no body — the train beat's sixteenths)
+  const BRUSH = { rise: 0.014, fall: 0.09, tone: 5200 };
   function playSnare(time, velocity = 1, kind = 'snare'){
+    if (kind === 'brush'){
+      const { src, offset } = noiseVoice(time, BRUSH.rise + BRUSH.fall + 0.02);
+      const lp = audioCtx.createBiquadFilter();
+      lp.type = 'lowpass'; lp.frequency.value = vary(BRUSH.tone, 0.08); lp.Q.value = 0.5;
+      const hp = audioCtx.createBiquadFilter();
+      hp.type = 'highpass'; hp.frequency.value = 900;
+      const g = audioCtx.createGain();
+      g.gain.setValueAtTime(0.0001, time);
+      g.gain.exponentialRampToValueAtTime(velocity * 0.5, time + vary(BRUSH.rise, 0.15));
+      g.gain.exponentialRampToValueAtTime(0.0001, time + BRUSH.rise + vary(BRUSH.fall, 0.1));
+      src.connect(hp).connect(lp).connect(g).connect(drumGain);
+      startVoice(src, time, g, offset);
+      src.stop(time + BRUSH.rise + BRUSH.fall + 0.02);
+      return;
+    }
     if (kind === 'rim'){
       const { src, offset } = noiseVoice(time, 0.05);
       const bp = audioCtx.createBiquadFilter();
@@ -1716,7 +1795,7 @@
     renderOffline, buildGraph, roomImpulse, ROOM, GUITAR_COMP, ROOT_ALONE,          // a render through a graph of its own, for measuring
     scheduleAhead, SCHEDULE_AHEAD,
     strum, strumPlan, STRUM_SHARE, SWEEP, SWEEP_TAPER, playPartNotes, PART_LEVEL, partFx,
-    claim, pitchPlan, BEND_HOLD, MUTE_RING, MUTE_LEVEL, SLAP, WAH,
+    claim, pitchPlan, BEND_HOLD, MUTE_RING, MUTE_LEVEL, SLAP, WAH, DIP, POP, SLAP_BASS, BRUSH, playSlap,
     // a graph stood in for the length of a call, for the tests
     _withGraph(g, fn){ const live = G; G = g; try { return fn(); } finally { G = live; } },
     // ...and the guitar bank empty for the length of a call, to hear the fallback

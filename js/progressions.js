@@ -126,6 +126,31 @@
         { name: 'One-chord vamp (Voodoo Child)', mode: 'major', chords: [sh(0, '7♯9', 4)] },
       ],
     },
+    // ---- Psychobilly, and the rockabilly under it: the forms the deep dive
+    // (psychobilly.html) is built on, named for the way of playing they
+    // carry, not for any one song — a twelve-bar is nobody's, and a walk
+    // down a minor key by whole steps is a method-book device
+    {
+      name: 'Psychobilly', numerals: 'the forms the music runs on', numeralsMinor: 'the forms the music runs on',
+      variants: [
+        // the rockabilly twelve: I four bars, IV two, I two, V7, IV, I two
+        { name: 'Rockabilly twelve (the Sun way)', mode: 'major', chords: [d(0, 4), d(3, 2), d(0, 2), sh(4, '7'), d(3), d(0, 2)] },
+        // the swing side's twelve with the 6th on the I and 9ths on the IV and V
+        { name: 'Jump twelve with the 6/9 (the Martini way)', mode: 'major', chords: [sh(0, '6', 4), sh(3, '9', 2), sh(0, '6', 2), sh(4, '9'), sh(3, '9'), sh(0, '6'), sh(4, '9')] },
+        // i–♭VII7–♭VI7–V7: the swung walk-down of a minor key by whole steps
+        { name: 'Stray descent (the Strut way)', mode: 'minor', chords: [d(0), sh(6, '7'), sh(5, '7'), sh(4, '7')] },
+        // the country two-step: I, IV, I, V7, I
+        { name: 'Train two-step (the Cash way)', mode: 'major', chords: [d(0, 2), d(3), d(0), sh(4, '7'), d(0)] },
+        // the minor stomp: i, III, iv, i, V7, i
+        { name: 'Minor stomp (the Meteors way)', mode: 'minor', chords: [d(0, 2), d(2), d(3), d(0), sh(4, '7'), d(0)] },
+        // the twelve at wrecking pace, plain majors
+        { name: 'Wrecking twelve (the second wave)', mode: 'major', chords: [d(0, 4), d(3, 2), d(0, 2), d(4), d(3), d(0, 2)] },
+        // the surf side: I, I, I, IV, V7, IV
+        { name: 'Surf-billy (the Freakout way)', mode: 'major', chords: [d(0, 3), d(3), sh(4, '7'), d(3)] },
+        // the third wave's minor key: i, VI, V7, i, iv, V7
+        { name: 'Horror minor (the third wave)', mode: 'minor', chords: [d(0), d(5), sh(4, '7'), d(0), d(3), sh(4, '7')] },
+      ],
+    },
   ];
 
   // every preset presented the same way, whether or not it has variants

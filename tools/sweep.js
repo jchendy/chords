@@ -8,7 +8,7 @@ const path = require('path');
 process.chdir(path.join(__dirname, '..'));
 global.window = {}; global.console = console;
 const GT = window.GT = {};
-['js/theory.js','js/fretboard.js','js/parts.js','js/parts-guide-data.js','js/styles-base.js','review/proposals.js','review/proposals-2.js','review/proposals-3.js','review/proposals-4.js','review/proposals-more.js','review/proposals-easy.js','review/proposals-hendrix.js','js/styles.js'].forEach(f => new Function('window', fs.readFileSync(f, 'utf8'))(window));
+['js/theory.js','js/fretboard.js','js/parts.js','js/parts-guide-data.js','js/styles-base.js','review/proposals.js','review/proposals-2.js','review/proposals-3.js','review/proposals-4.js','review/proposals-more.js','review/proposals-easy.js','review/proposals-hendrix.js', 'review/proposals-psychobilly.js','js/styles.js'].forEach(f => new Function('window', fs.readFileSync(f, 'utf8'))(window));
 const { STYLES, LIBRARY } = GT.styles;
 const { chordFromName, SEMITONE } = GT.theory;
 const { realise } = GT.parts;

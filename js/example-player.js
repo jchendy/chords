@@ -111,7 +111,7 @@
       notes: notes.map(n => ({
         string: n.string, fret: n.fret, at: n.bar * grid + n.at, dur: n.dur,
         bend: n.bend, slide: n.slide, tech: n.tech, to: n.to, soft: n.soft, mute: n.mute,
-        vib: n.vib, trem: n.trem, rake: n.rake, ghost: n.ghost, trill: n.trill, trillTo: n.trillTo, tabHide: n.tabHide, tabDur: n.tabDur, wah: n.wah, unison: n.unison,
+        vib: n.vib, trem: n.trem, rake: n.rake, ghost: n.ghost, trill: n.trill, trillTo: n.trillTo, tabHide: n.tabHide, tabDur: n.tabDur, wah: n.wah, unison: n.unison, dip: n.dip,
         strum: n.strum, stroke: n.stroke, voicing: n.voicing,
         tone: !n.strum && (n.mute || n.ghost) ? 'muted' : undefined,
         lead: !n.strum || !notes.some(m => m.bar === n.bar && m.at === n.at && m.strum && m.spread > n.spread),

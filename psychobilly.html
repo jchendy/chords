@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Learn psychobilly | Jeff's Guitar Tools</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/tab.css">
+<style>
+  :root{
+    color-scheme: dark;
+    --bg:#0c0b0a; --panel:#141312; --panel2:#1b1a18; --line:#2a2724; --line2:#3a3631;
+    --ink:#ece7dc; --muted:#a49a8a; --muted2:#6f675b; --a:#e0a84a;
+  }
+  *{ box-sizing:border-box; }
+  [hidden]{ display:none !important; }
+  body{ margin:0; background:var(--bg); color:var(--ink); font:14px/1.55 Inter,system-ui,sans-serif; }
+  a{ color:var(--a); }
+  .top{ display:flex; align-items:baseline; gap:18px; padding:14px 22px; border-bottom:1px solid var(--line); }
+  .top .site{ font-family:Fraunces,Georgia,serif; font-weight:600; color:var(--muted); text-decoration:none; }
+  .top .site:hover{ color:var(--ink); }
+  .top .crumb{ color:var(--muted2); font-size:12px; letter-spacing:.08em; text-transform:uppercase; }
+  .top .crumb a{ color:var(--muted); text-decoration:none; }
+  .top .crumb a:hover{ color:var(--ink); }
+  .page{ display:grid; grid-template-columns:210px minmax(0, 1fr); gap:34px; max-width:1560px; margin:0 auto; padding:0 22px; }
+  main{ min-width:0; padding:22px 0 80px; }
+  /* the contents, always in view: a column that sticks on a wide screen, a
+     strip that sticks to the top on a narrow one */
+  .side{ position:sticky; top:0; align-self:start; max-height:100vh; overflow-y:auto; padding:26px 0 20px; }
+  .side .side-title{ font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted2); margin:0 0 8px; }
+  .side a{ display:block; padding:4px 10px; border-left:2px solid var(--line); color:var(--muted); text-decoration:none; font-size:13px; line-height:1.35; }
+  .side a:hover{ color:var(--ink); }
+  .side .entry.active > a{ color:var(--a); border-left-color:var(--a); }
+  .side-head{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .side-head .side-title{ margin:0; }
+  .toc-fold{ width:24px; height:24px; padding:0; border:1px solid var(--line2); border-radius:999px; background:transparent; color:var(--muted); font:600 15px/1 Inter,system-ui,sans-serif; cursor:pointer; }
+  .toc-fold:hover{ border-color:var(--a); color:var(--ink); }
+  .side-opt{ display:flex; align-items:center; gap:6px; margin:14px 0 0 10px; font-size:12px; color:var(--muted); }
+  .side-opt input{ accent-color:var(--a); }
+  /* folded: the column is the button alone, and the page takes the width */
+  .page.toc-folded{ grid-template-columns:28px minmax(0, 1fr); gap:18px; }
+  .page.toc-folded .side .links, .page.toc-folded .side .side-title, .page.toc-folded .side .side-opt{ display:none; }
+  /* start here, and the lessons */
+  .start{ margin:18px 0 8px; padding:14px 18px 12px; border:1px solid var(--a); border-radius:12px; background:var(--panel); max-width:80ch; }
+  .start p{ margin:0 0 8px; }
+  .lessons{ margin:0; padding-left:22px; }
+  .lessons li{ margin:0 0 7px; line-height:1.45; }
+  .lessons i{ color:var(--muted); }
+  /* the cards: how hard, and which fingers */
+  .chip{ padding:1px 8px; border-radius:999px; border:1px solid var(--line2); font-size:11px; letter-spacing:.04em; text-transform:uppercase; }
+  .chip.beginner{ color:#8ec93f; border-color:#3f5a26; }
+  .chip.intermediate{ color:var(--a); border-color:#5a4520; }
+  .chip.advanced{ color:#e069a6; border-color:#5a2a46; }
+  .grip .basis{ margin:4px 0 4px; font-size:.76rem; color:var(--muted2); font-style:italic; }
+  /* the songs: what to listen for */
+  .song .listen-lbl{ margin:6px 0 2px; font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted2); }
+  .song ul.listen{ margin:0 0 8px; padding-left:18px; color:var(--muted); font-size:.88rem; }
+  .song ul.listen li{ margin:0 0 2px; }
+  /* for teachers */
+  table.faults{ font-size:.86rem; max-width:90ch; }
+  table.faults td{ color:var(--muted); }
+  table.faults td:first-child{ color:var(--ink); font-weight:600; white-space:nowrap; }
+  ul.checklist{ padding-left:20px; max-width:80ch; color:var(--muted); }
+  ul.checklist li{ margin:0 0 5px; }
+  /* the open section lists what's in it */
+  .side .subs{ display:none; }
+  .side .entry.active .subs{ display:block; padding:2px 0 6px; }
+  .side .sub{ font-size:12px; padding:2px 10px 2px 22px; color:var(--muted2); border-left-color:var(--a); }
+  .side .sub.head{ color:var(--muted); padding-left:16px; margin-top:3px; }
+  .side .sub:hover{ color:var(--ink); }
+  .side .sub.active{ color:var(--ink); }
+  @media (max-width:900px){
+    .page{ display:block; padding:0 12px; }
+    .side{ max-height:none; overflow:visible; padding:0; background:var(--bg); z-index:5; border-bottom:1px solid var(--line); }
+    .side .side-title{ display:none; }
+    .side .links{ display:flex; gap:2px; overflow-x:auto; white-space:nowrap; padding:8px 0; scrollbar-width:thin; }
+    .side a{ border-left:0; border-bottom:2px solid transparent; padding:4px 8px; font-size:12px; }
+    .side .entry.active > a{ border-bottom-color:var(--a); }
+    .side .entry.active .subs{ display:none; }     /* no room for the list in a strip */
+  }
+  h1{ font:600 2.1rem/1.15 Fraunces,Georgia,serif; margin:0 0 10px; text-wrap:balance; }
+  h2{ font:600 1.5rem/1.2 Fraunces,Georgia,serif; margin:0 0 8px; text-wrap:balance; }
+  h3{ font:600 1.1rem/1.25 Fraunces,Georgia,serif; margin:22px 0 6px; }
+  h4{ font:600 .98rem/1.3 Fraunces,Georgia,serif; margin:0; }
+  p{ max-width:72ch; }
+  .lede{ max-width:68ch; font-size:1.05rem; }
+  .kicker{ font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted2); margin:0 0 4px; }
+  section.part{ margin:0 0 36px; padding-top:22px; border-top:1px solid var(--line); }
+  .note{ max-width:72ch; padding:10px 14px; border-left:3px solid var(--line2); background:var(--panel); color:var(--muted); border-radius:0 8px 8px 0; }
+  .note b{ color:var(--ink); }
+  sup.c{ font-size:.7em; }
+  sup.c a{ text-decoration:none; color:var(--a); }
+  .cite{ color:var(--muted2); font-size:.86rem; }
+  table{ border-collapse:collapse; margin:10px 0 16px; font-size:.9rem; }
+  th, td{ text-align:left; padding:6px 12px 6px 0; border-bottom:1px solid var(--line); vertical-align:top; }
+  th{ color:var(--muted2); font-weight:600; font-size:.72rem; letter-spacing:.08em; text-transform:uppercase; }
+  .wide{ overflow-x:auto; }
+  /* the grips, drawn */
+  .grips{ display:grid; grid-template-columns:repeat(auto-fill, minmax(190px, 1fr)); gap:12px; margin:10px 0 16px; }
+  /* the grips grouped: a core shape, its variations beside it */
+  #grips{ display:block; }
+  .grip-group{ margin:0 0 14px; padding:12px 14px; border:1px solid var(--line2); border-radius:12px; background:var(--panel2); }
+  .grip-group.has-vars{ display:grid; grid-template-columns:200px minmax(0, 1fr); gap:16px; align-items:start; }
+  .grip-group:not(.has-vars) .grip-core{ display:grid; grid-template-columns:200px minmax(0, 1fr); gap:0 16px; }
+  .grip-group:not(.has-vars) .grip-core .grip{ grid-row:2; }
+  .grip-kicker{ font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted2); margin:0 0 6px; }
+  .grip-vars .grips{ margin:0; grid-template-columns:repeat(auto-fill, minmax(170px, 1fr)); }
+  .grip.var{ background:var(--panel); border-style:dashed; }
+  @media (max-width:640px){ .grip-group.has-vars, .grip-group:not(.has-vars) .grip-core{ grid-template-columns:1fr; } }
+  .grip{ border:1px solid var(--line); border-radius:10px; background:var(--panel); padding:10px 12px 8px; }
+  .grip svg{ display:block; width:100%; height:auto; }
+  .grip .name{ font-weight:600; margin:4px 0 2px; }
+  .grip .what{ color:var(--muted); font-size:.85rem; }
+  .grip a{ font-size:.82rem; }
+  /* the examples */
+  .examples{ display:grid; gap:14px; margin:12px 0 4px; }
+  article.ex{ border:1px solid var(--line); border-radius:12px; background:var(--panel); padding:12px 14px 10px; }
+  article.ex.playing{ border-color:var(--a); }
+  .ex-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+  .btns{ display:inline-flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .play{ font:600 13px Inter,system-ui,sans-serif; padding:6px 16px; border-radius:999px; border:1px solid var(--line2); background:var(--panel2); color:var(--ink); cursor:pointer; min-width:74px; }
+  .play:hover{ border-color:var(--a); }
+  .playing .play{ background:var(--a); color:#0c0b0a; border-color:var(--a); }
+  .drill{ font:600 12px Inter,system-ui,sans-serif; padding:6px 12px; border-radius:999px; border:1px solid var(--line2); color:var(--a); text-decoration:none; }
+  .drill:hover{ border-color:var(--a); }
+  .meta{ display:flex; flex-wrap:wrap; gap:4px 14px; margin:2px 0 6px; color:var(--muted2); font-size:12px; font-variant-numeric:tabular-nums; }
+  .blurb{ margin:6px 0 4px; color:var(--muted); max-width:80ch; }
+  .tab{ overflow-x:auto; }
+  .tab svg{ display:block; height:auto; max-width:100%; }
+  .tab-note.now text{ fill:var(--a); }
+  .tab-playhead{ fill:var(--a); opacity:.22; }
+  .seg{ display:inline-flex; gap:2px; align-items:center; }
+  .seg .lbl{ font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted2); margin-right:4px; }
+  .seg button{ font:600 12px Inter,system-ui,sans-serif; padding:5px 9px; border-radius:6px; border:1px solid transparent; background:transparent; color:var(--muted); cursor:pointer; }
+  .seg button.active{ color:var(--ink); border-color:var(--line2); background:var(--panel2); }
+  .neck{ margin:8px 0 4px; }
+  .neck .neck-title{ font-size:12px; color:var(--muted2); margin:0 0 4px; }
+  /* room for both: the tab beside the neck when the screen is wide enough */
+  @media (min-width:1200px){
+    .ex .body.with-neck{ display:grid; grid-template-columns:minmax(0, 3fr) minmax(0, 2fr); gap:16px; align-items:start; }
+    .ex .body.with-neck .neck{ margin:0; position:sticky; top:12px; }
+  }
+  /* an example large: the whole window, the tab and the neck side by side */
+  dialog.big{ width:100vw; height:100vh; max-width:none; max-height:none; margin:0; padding:0; border:0; background:var(--bg); color:var(--ink); overflow:auto; }
+  dialog.big::backdrop{ background:rgba(0,0,0,.65); }
+  dialog.big article.ex{ border:0; border-radius:0; min-height:100vh; padding:22px 30px 40px; }
+  dialog.big .ex-head h4{ font-size:1.5rem; }
+  dialog.big .blurb{ max-width:100ch; }
+  @media (min-width:1000px){
+    dialog.big .body.with-neck{ display:grid; grid-template-columns:minmax(0, 3fr) minmax(0, 2fr); gap:24px; align-items:start; }
+    dialog.big .body.with-neck .neck{ margin:0; position:sticky; top:16px; }
+  }
+  @media (max-width:640px){ dialog.big article.ex{ padding:14px 12px 30px; } }
+  .fret-scroll{ position:relative; overflow-x:auto; overflow-y:hidden; }
+  .fret-scroll svg{ display:block; width:100%; height:auto; margin:0 auto; }
+  /* the neck drawing — the same classes every neck on the site uses */
+  .fret-string{ stroke:#4a453f; stroke-width:1.1; }
+  .fret-wire{ stroke:#3a3631; stroke-width:1.4; }
+  .fret-nut{ stroke:#d8d1c4; stroke-width:5; }
+  .fret-inlay{ fill:#3a3631; }
+  .fret-num, .string-label{ fill:var(--muted); font-size:9.5px; font-family:Inter,sans-serif; font-weight:600; }
+  .note-dot text{ fill:#0c0b0a; font-weight:700; font-family:Inter,sans-serif; }
+  .note-dot.hollow text{ fill:var(--ink); }
+  .dot-ring{ stroke:var(--ink); stroke-width:2.6; }
+  .shape-line{ fill:none; stroke-width:2.2; opacity:.85; stroke-linecap:round; stroke-linejoin:round; }
+  .note-dot.hollow circle{ fill:var(--panel); }
+  .note-dot.passing circle, .note-dot.passing path{ opacity:.32; }
+  .note-dot.passing text{ opacity:.55; }
+  .note-dot.sounding circle, .note-dot.sounding path{ stroke:var(--a); stroke-width:3; opacity:1; }
+  .note-dot.sounding text{ fill:#0c0b0a; opacity:1; }
+  /* the scale diagrams in the text */
+  .necks{ display:grid; gap:14px; margin:10px 0 16px; }
+  .neck-fig{ border:1px solid var(--line); border-radius:10px; background:var(--panel); padding:10px 12px 8px; }
+  .neck-fig h4{ margin:0 0 6px; }
+  .neck-fig .cap{ margin:6px 0 0; color:var(--muted); font-size:.86rem; max-width:80ch; }
+  .neck-fig .cap b{ color:var(--ink); }
+  .refs{ font-size:.86rem; color:var(--muted); margin:4px 0 0; }
+  .refs a{ color:var(--muted); }
+  .refs a:hover{ color:var(--a); }
+  /* the players, wave by wave */
+  table.players{ font-size:.84rem; max-width:none; }
+  table.players td{ color:var(--muted); min-width:120px; }
+  table.players td.wave{ color:var(--a); font-weight:600; white-space:nowrap; }
+  table.players td:nth-child(2){ color:var(--ink); font-weight:600; }
+  table.players td.cite{ color:var(--muted2); white-space:nowrap; }
+  /* the songs */
+  .song{ margin:0 0 14px; padding:12px 14px; border:1px solid var(--line); border-radius:10px; background:var(--panel); }
+  .song h4{ margin-bottom:4px; }
+  .song .facts{ color:var(--muted2); font-size:.85rem; margin:0 0 6px; }
+  .song p{ margin:0 0 6px; }
+  .song .links{ font-size:.85rem; }
+  ol.sources{ padding-left:22px; max-width:80ch; }
+  ol.sources li{ margin:0 0 6px; color:var(--muted); }
+  ol.sources li b{ color:var(--ink); font-weight:600; }
+  ol.sources li a{ word-break:break-all; }
+  .missing{ margin:10px 0; padding:8px 12px; border-radius:8px; background:#3a2020; color:#f0b0b0; }
+  @media (max-width:640px){
+    main{ padding:16px 12px 60px; }
+    h1{ font-size:1.55rem; }
+    .top{ padding:12px 14px; }
+  }
+</style>
+</head>
+<body>
+<div class="top"><a class="site" href="index.html">Jeff's Guitar Tools</a><span class="crumb"><a href="index.html#style-deep-dives">Style Deep Dives</a> · Psychobilly</span></div>
+<div class="page">
+<nav class="side" aria-label="Contents"><div class="side-head"><p class="side-title">Contents</p><button type="button" class="toc-fold" id="tocFold" aria-expanded="true" title="Fold the contents away for a wider tab">‹</button></div><div class="links" id="toc"></div><label class="side-opt"><input type="checkbox" id="countInToggle"> Count in on Play</label></nav>
+<main>
+  <p class="kicker">Style deep dive 2</p>
+  <h1>Learn psychobilly: the rockabilly under it, and what the wrecking crews did with it</h1>
+  <p class="lede">Psychobilly is a music with a foundation — the rockabilly of 1954 to 1958, Sun Records and the Blue Caps and the Tennessee Two — and a history of what was done to that foundation: the Cramps' horror-movie garage, the Meteors and the Klub Foot, a second wave that went to Rotterdam, Berlin and Copenhagen and doubled the tempo, a third that came out of California with echo on its minor keys, and, in Dallas, the Reverend Horton Heat, who took rockabilly to a punk-rock crowd and says the word was never his. This page takes both apart the way a course would — the boom-chicka and its 6th, the pick with the fingers behind it, the slapped upright and its click, the power chords and gallops, the tremolo, the Bigsby, the ♭2 and the ♭5 — and puts them back together as eight feels with rhythm, lead and mixed parts in each, every one playable here and a link away from the Jam and Drills tabs. Because the genre is many bands rather than one player, the players are set out wave by wave, and the Reverend gets his due. The songs are analysed as reference points; the lines are written from the idiom, not copied. Every claim is cited at the foot of the page.</p>
+  <p class="note">The app already had a <b>Psychobilly</b> style with one feel. The eight feels on this page were written for this study and added to that style, so the Jam tab's Psychobilly now runs from the Sun boom-chicka to the horror minor; the presets are under <b>Psychobilly</b> in its list. The slapped upright, the wire brush on the snare, the Bigsby dip and the finger-snapped note were added to the app's engine for this page and are held by tests (see <a href="#s12">How this was made</a>).</p>
+  <div class="start" id="start">
+    <p class="kicker">Start here</p>
+    <p>Eight lessons, in order. Each is a few things on this page: a grip, a figure, an exercise, a drill, an example to play along with, and a study to finish on. Every card says how hard it is and what tempo to start at; <b>Open in jam</b> or <b>Open in drills</b> puts it on the other tabs.</p>
+    <ol class="lessons">
+      <li><b>The boom and the chicka.</b> <a href="#grips">The open E and its 6th</a> · <a href="#x1">exercise 1</a> · <a href="#x2">exercise 2</a> · <a href="#c-sun">the E–A–B7 changes</a> · <a href="#r-boom">the part</a>. <i>Move on when</i> the boom is a thud and the chicka a chick, two strokes a beat apart, at 120 on E, A and B7.</li>
+      <li><b>The thumb, the fingers, and the walk-up.</b> <a href="#x4">exercise 4</a> · <a href="#r-travis">the Travis part</a> · <a href="#x3">exercise 3</a> · <a href="#l-scotty">Scotty's double stops</a> · <a href="#st1">the rockabilly twelve</a>. <i>Move on when</i> the walking line lands on every new root on the beat.</li>
+      <li><b>The swing side.</b> <a href="#grips">The 6/9, the 9th and the 13th</a> · <a href="#x5">exercise 5</a> · <a href="#c-jump">the A6–D9–E9 changes</a> · <a href="#r-four">four to the bar</a> · <a href="#l-gallup">the Gallup lines</a> · <a href="#st2">the jump twelve</a>. <i>Move on when</i> the dip is a semitone and the triplet pull-offs are even.</li>
+      <li><b>The strut.</b> <a href="#scaleNecks">The walk-down on the bass strings</a> · <a href="#c-strut">the Cm–B♭7–A♭7–G7 changes</a> · <a href="#r-stabs">the stabs</a> · <a href="#sc5">the bebop scale</a> · <a href="#l-bebop">the lines</a> · <a href="#st3">the study</a>. <i>Move on when</i> the stabs sit on two and four with the eighths swung.</li>
+      <li><b>The train.</b> <a href="#x6">exercise 6</a> · <a href="#c-train">the G–C–D7 changes</a> · <a href="#r-luther">Luther's boom-chicka</a> · <a href="#sc7">the chicken-pickin' box</a> · <a href="#x7">exercise 7</a> · <a href="#l-chicken">the fills</a> · <a href="#st4">the train study</a>. <i>Move on when</i> the popped notes are louder than the picked ones and just as even.</li>
+      <li><b>The stomp.</b> <a href="#grips">The power chord</a> · <a href="#x8">exercise 8</a> · <a href="#c-stomp">the Em–G–B7 changes</a> · <a href="#r-eighths">the muted eighths</a> · <a href="#r-down">the downstrokes and the stops</a> · <a href="#sc3">the box at the 12th</a> · <a href="#l-horror">the horror lines</a> · <a href="#st5">the stomp study</a>. <i>Move on when</i> the downstrokes are even at 160 with the heel on the strings.</li>
+      <li><b>The wrecking pace and the surf.</b> <a href="#x10">exercise 10</a> · <a href="#r-gallop">the gallop</a> · <a href="#l-twelve">twelve bars at speed</a> · <a href="#x9">exercise 9</a> · <a href="#r-trem">the tremolo riff</a> · <a href="#l-surf">the surf lead</a> · <a href="#st6">the wrecking study</a> · <a href="#st7">the surf study</a>. <i>Move on when</i> the gallops hold at 200 and the tremolo is a pulse, not a stutter.</li>
+      <li><b>The horror minor.</b> <a href="#scaleNecks">E minor with the harmonic 7th</a> · <a href="#sc6">the scale</a> · <a href="#c-horror">the changes</a> · <a href="#r-twang">the twang</a> · <a href="#r-arps">the arpeggios</a> · <a href="#l-minor">the lead with the 7th</a> · <a href="#st8">the study</a>. <i>Move on when</i> you can play any study on this page through twice with the band.</li>
+    </ol>
+  </div>
+
+  <!-- ================================================================== -->
+  <section class="part" id="s1">
+    <h2>1. Where it comes from</h2>
+    <p><b>Rockabilly, 1954–58.</b> The foundation was laid in one room. On 5 July 1954 at Sun Studio, Memphis, Elvis Presley, Scotty Moore and Bill Black cut "That's All Right" in a break between takes, all three parts live to one track with no drums, Arthur Crudup's blues "at least twice as fast as the original" — the bass slapped so hard it was the drum.<sup class="c"><a href="#src-thatsallright">[20]</a> <a href="#src-rockabilly">[21]</a></sup> Moore's hand was Merle Travis and Chet Atkins — a thumbpick and fingers, an alternating bass under chord "chicks", the walking pickup line into every change, 6ths and 9ths — through the Ray Butts EchoSonic amplifier with its built-in tape echo from 1955, the slapback every player on this page uses.<sup class="c"><a href="#src-scottymoore">[7]</a> <a href="#src-mysterytrain">[22]</a></sup> Carl Perkins brought finger picking, pedal-steel imitations, palm muting, bends found by accident round the knots in his re-tied strings, 6th, 9th and 13th chords and crosspicking;<sup class="c"><a href="#src-perkins">[19]</a></sup> Cliff Gallup, in nine Nashville sessions with Gene Vincent in 1956, brought a flatpick with fingerpicks behind it, the Bigsby under his little finger, triplet pull-offs on open strings, octaves climbing by semitones, the major 6th where a blues player would put the ♭7, and the 6/9 chord he ended solos on;<sup class="c"><a href="#src-wyatt">[8]</a> <a href="#src-gallup">[24]</a></sup> Paul Burlison, with a power tube worked loose after a fall, brought the first distorted guitar on a rock record;<sup class="c"><a href="#src-trainkept">[25]</a></sup> and Luther Perkins, behind Johnny Cash, brought the boom-chicka with the heel of the hand on the low strings that the country side of this music still runs on.<sup class="c"><a href="#src-luther">[11]</a> <a href="#src-folsom">[27]</a></sup> Link Wray's "Rumble" (1958) added the power chord and the distortion; Dick Dale, from 1961, the tremolo picking and the reverb.<sup class="c"><a href="#src-wray">[28]</a> <a href="#src-dale">[14]</a></sup></p>
+    <p><b>The word, and the Cramps.</b> "Psychobilly" is Johnny Cash's, from Wayne Kemp's "One Piece at a Time" (1976), a "psychobilly Cadillac" built from stolen parts; the Cramps took it for their New York flyers the same year, alongside "rockabilly voodoo", and Poison Ivy later insisted they "weren't even describing the music … we were just using carny terms to drum up business".<sup class="c"><a href="#src-wiki-psychobilly">[1]</a></sup> What they were describing, on <i>Songs the Lord Taught Us</i> (recorded 1979 at Sam Phillips' later studio in Memphis with Alex Chilton), was rockabilly and garage covers beside originals, played by two guitars and no bass — Ivy's Twin-Reverb twang against Bryan Gregory's fuzz — with Link Wray, Hasil Adkins, Dick Dale and the Ventures under the horror.<sup class="c"><a href="#src-songsthelord">[30]</a> <a href="#src-cramps">[29]</a></sup> Ivy: "to us all the '50s rockabillies were psycho to begin with … a crazed, sped-up hillbilly boogie version of country"; Lux Interior: "one-half hillbilly and one-half punk".<sup class="c"><a href="#src-cramps">[29]</a> <a href="#src-avclub">[2]</a></sup></p>
+    <p><b>The Meteors and the Klub Foot, 1980–88.</b> P. Paul Fenech and Nigel Lewis left a rockabilly band called Raw Deal in south London in 1980 to mix horror and science fiction with punk and rockabilly, and the Meteors — "initially shunned for being too spooky and mean" by the neo-rockabilly clubs — became the first band to call their music psychobilly; <i>In Heaven</i> (1981) and <i>Wreckin' Crew</i> (1983) are the landmarks, their fans the "wrecking crew" who invented the dance, and their apolitical rule became the scene's.<sup class="c"><a href="#src-meteors">[31]</a> <a href="#src-wiki-psychobilly">[1]</a> <a href="#src-meteors-enc">[32]</a></sup> The Klub Foot, in the ballroom of the Clarendon Hotel in Hammersmith from 1982 until the building came down in 1988, was the scene's home — the Meteors, Demented Are Go, Guana Batz, Batmobile, the Sting-rays, the Klingonz, King Kurt with their flour and eggs — and the six volumes of <i>Stomping at the Klub Foot</i> its record.<sup class="c"><a href="#src-klubfoot">[55]</a> <a href="#src-kingkurt">[54]</a> <a href="#src-htf">[3]</a></sup></p>
+    <p><b>The second wave, the third, and Dallas.</b> Demented Are Go's <i>In Sickness &amp; In Health</i> (1986) opened a second wave that crossed the water: Batmobile in Rotterdam (the first non-UK band at the Klub Foot, in 1986 — "We didn't get into psychobilly, but that got into us"), Mad Sin in Berlin ("a sped-up combination of rockabilly, punk, white-trash blues"), the Nekromantix in Copenhagen with Kim Nekroman's coffin-shaped bass and, in Buffalo, the Quakes, who had to move to London to find a scene at all.<sup class="c"><a href="#src-demented">[35]</a> <a href="#src-batmobile">[56]</a> <a href="#src-madsin">[57]</a> <a href="#src-nekromantix">[36]</a> <a href="#src-quakes">[58]</a></sup> The third wave, from the mid-1990s, put the music in southern California — Tiger Army out of 924 Gilman Street in Berkeley, HorrorPops moved from Copenhagen, Hellcat Records — and in Australia, where the Living End's "Prisoner of Society" was the highest-selling Australian single of the decade.<sup class="c"><a href="#src-wiki-psychobilly">[1]</a> <a href="#src-tigerarmy">[39]</a> <a href="#src-prisoner">[40]</a></sup> In Dallas, James C. Heath, from Corpus Christi, was christened Reverend Horton Heat by the owner of the Deep Ellum club he worked at in 1985; he had seen the Cramps around 1980 expecting punk and heard "rockabilly licks — fuzzed-out Duane Eddy-type guitar", and decided to "take rockabilly and express to a punk rock crowd".<sup class="c"><a href="#src-rhh">[44]</a> <a href="#src-styleweekly">[63]</a> <a href="#src-juice">[64]</a></sup> "Psychobilly Freakout" (1990) taught American alternative-rock audiences the word; Heath has said ever since that "We're not really Psychobilly … a rockabilly band that was just a little bit more turned up and more aggressive", and "I've never considered Reverend Horton Heat to be a psychobilly band, because we can do country, we can get bluesy" — which is exactly why he is all over this page: his hand has every one of its feels in it.<sup class="c"><a href="#src-freakout">[15b]</a> <a href="#src-styleweekly">[63]</a></sup> Kimberly Kattari's decade of fieldwork (<i>Psychobilly: Subcultural Survival</i>, 2020) reads the scene as a response to marginalisation and a way to "resist normative expectations and survive"; the music, she says, is "wild energy and a fast tempo".<sup class="c"><a href="#src-kattari">[61]</a></sup></p>
+  </section>
+
+  <!-- ================================================================== -->
+  <section class="part" id="s2">
+    <h2>2. The hands: the boom-chicka, the pick and the fingers, the slapped bass</h2>
+    <p><b>The boom-chicka.</b> One hand, two jobs. The thumb — or the pick, held as a thumb — takes the root on a bass string on the beat and the 5th on the next, palm-muted, while the fingers strike the top three strings on the swung "and": the boom and the chicka, the rhythm of every Sun side and of the country two-step.<sup class="c"><a href="#src-guitarwiz">[4]</a> <a href="#src-truefire">[5]</a></sup> On E the chicka is G♯, B and E; put the pinky on the B string's 2nd fret and it is G♯, C♯, E — E6 — and lift it again: E, E6, E, E6 is the sound of "Blue Suede Shoes" and everything after it, and a fret higher (D, the ♭7) is the chicka on the way to the IV.<sup class="c"><a href="#src-truefire">[5]</a></sup> Luther Perkins played the same figure with the three low strings muted under the heel of his hand and the chord dead on the "and" — a technique "inspired by Merle Travis" — so the boom is a thud and the chick a click; he kept it for "Folsom Prison Blues" and everything Cash cut.<sup class="c"><a href="#src-luther">[11]</a> <a href="#src-folsom">[27]</a></sup> In the app the boom is the strum voicing <em>bass</em> or <em>fifth</em> (the thumb's note), the chicka the top three strings, and the 6th a colour tone marked <em>free</em>, so it stays a 6th in every reading.</p>
+    <p><b>The pick with the fingers behind it.</b> Moore played "with a Merle Travis/Chet Atkins-inspired thumb-pick and fingers technique";<sup class="c"><a href="#src-scottymoore">[7]</a></sup> Gallup held a flatpick between thumb and forefinger with metal fingerpicks on his middle and ring fingers and his little finger on the Bigsby;<sup class="c"><a href="#src-wyatt">[8]</a> <a href="#src-gallup">[24]</a></sup> Setzer's rockabilly is "hybrid picking — a combination of pick and fingers" with economy picking for the arpeggios;<sup class="c"><a href="#src-pg-setzer">[9b]</a></sup> and Heath describes his own as "hybrid style using a flatpick", crosspicked "to emulate Merle Travis and Chet Atkins licks" for "fast, banjo-style 16th notes", with a heavy Dunlop pick on .010s.<sup class="c"><a href="#src-pg-rev">[13]</a> <a href="#src-pg-rev">[13b]</a></sup> The fingers do two things the pick can't: they pluck a treble string while the pick holds the bass, and they snap a note — the chicken-pickin' pop the country side lives on, which the app plays as a note marked <em>pop</em>, a brighter front for a few milliseconds. And Heath's open strings: "I'm a cheater. Sometimes I'll do a chord change and realize that if I let an open string ring out it will become a whole different-sounding chord."<sup class="c"><a href="#src-gw-heath">[48]</a></sup></p>
+    <p><b>The slapped bass, and the kit.</b> The upright is the sound. The string is pulled out and let go so it snaps back against the fingerboard — a note with a click on its front — and between the notes the hand is slapped against the strings for a click with no pitch, landing where the snare lands. Rockabilly plays the single slap: a note on the beat, the slap on the "and"; psychobilly plays double and triple slaps, two clicks on the sixteenths after each note, at tempos that need the "drag triplet" — "for extremely fast slapping, like that in Psychobilly, you will definitely need to learn" it, says Dr. D's column.<sup class="c"><a href="#src-notreble">[17]</a> <a href="#src-slapping">[38]</a></sup> Bill Black is the first name; Lee Rocker taught Scott Owen by his right hand; Wikipedia names Kim Nekroman, Geoff Kresge, Owen and Jimbo Wallace for "rapid triplet slaps combined with walking basslines".<sup class="c"><a href="#src-slapping">[38]</a> <a href="#src-livingend">[41]</a> <a href="#src-jimbo">[60]</a></sup> The kit is small: a swung ride with the kick on all four and the snare on two and four for the shuffle, sixteenths on the snare with brushes for the train beat, a straight backbeat at speed for the stomp, "spooky" tom fills for drama.<sup class="c"><a href="#src-drums">[16]</a> <a href="#src-rockabilly">[21]</a></sup> The app's band now has all of it: every bass note snapped (<em>bassSnap</em>), the slaps where the pattern puts them (<em>slap</em>), the wire brush on the snare (<em>brush</em>) — and the feels below use them.</p>
+    <p><b>The Bigsby.</b> Gallup's little finger was on the bar while the others picked; Setzer's stabs are "embellished in a typical Setzer fashion with dips on the whammy bar"; Heath's signature 6120 has one, and he asked for locking tuners because of it.<sup class="c"><a href="#src-wyatt">[8]</a> <a href="#src-pg-setzer">[9]</a> <a href="#src-pg-rev">[13]</a></sup> The app writes it as <em>dip</em>: the chord or the note pulled a semitone (or two) flat over a tenth of a second and let back, "dip" over the tab.</p>
+    <h3>The grips</h3>
+    <p>Most of these are the open chords of the key of E and A with one finger moved, and the swing side's jazz grips with the root on the A string. Every one is in the <a href="index.html#chord-finder">Chord finder</a>, tagged <b>Psychobilly</b> with the name given here; the E6 and the 9th are tagged <b>Hendrix</b> too, since a grip is a grip. The fingering is in the dots and the number beside a diagram is the fret it starts at; a shape with no number sits at the nut, where a ring above a string is an open string and an <b>x</b> a string left out.</p>
+    <div class="grips" id="grips"></div>
+    <h3>The changes, with the grips</h3>
+    <p>The forms each feel runs on, played with these grips: the chords alone — the boom and the chicka, the stabs, the muted eighths — with no fills or runs, so the hand can learn the changes before the lines between them. <b>Open in drills</b> puts the same changes on the Drills tab with the part's own strumming pattern at any tempo; <b>Neck</b> on any card draws the chord as it's fretted and lights each note as it sounds.</p>
+    <div class="examples" id="changes"></div>
+  </section>
+
+  <!-- ================================================================== -->
+  <section class="part" id="s3">
+    <h2>3. The scales: where the notes live</h2>
+    <p><b>The Sun box.</b> Rockabilly lines are chord-based rather than scalar — Moore "mix[ed] Travis picking with some ear-twisting note choices based on chords, rather than using an obvious scalar approach" — and the box they come from is the major pentatonic of the chord under the hand, with the ♭3 hammered up to the 3rd (TrueFire's "minor-to-major hammer-on") and the 6th leaned on.<sup class="c"><a href="#src-pg-moore">[6]</a> <a href="#src-truefire">[5]</a></sup> Gallup "favored the sweet sound of the major sixth over the bluesier minor seventh"; a half-step bend from the ♭3 was as far as he bent.<sup class="c"><a href="#src-wyatt">[8]</a></sup></p>
+    <p><b>The blues scale and the surf.</b> The stomp's riff and the psychobilly lead are the minor pentatonic with the ♭5 let through — the box at the 12th fret, or the same notes at the nut — and the surf side adds Dick Dale's tremolo and the "chromatic runs" and "dissonant intervals" the guides describe: the ♭2 leaned on against the root, a descent by semitones.<sup class="c"><a href="#src-riffhard">[12]</a> <a href="#src-dale">[14]</a></sup> Dale's family's Arabic music "played a major role in his development of surf music", and "Misirlou" is a folk tune from that world; the ♭2 and the 3rd together are its colour.<sup class="c"><a href="#src-dale">[14]</a></sup></p>
+    <p><b>The swing side: Mixolydian and bebop.</b> Over a 7th chord the scale is the Mixolydian, and Guitar World hears Setzer adding the major 7th "between the root and the ♭7" — the bebop scale — so a line runs by semitones and lands its chord tones on the beat; chromatic passing notes in a pentatonic line do the same job.<sup class="c"><a href="#src-pg-setzer">[9b]</a></sup> The Strut walks a minor key down by whole steps through 7th chords, Cm, B♭7, A♭7, G7, in swung eighths.<sup class="c"><a href="#src-maclennan">[10]</a></sup></p>
+    <p><b>The horror minor.</b> The third wave's minor keys are the natural minor with the V made a 7th, so the major 7th sounds against it: the harmonic minor's pull, the ♭6 beside it. Nick 13 names Duane Eddy first — "I'm mostly attracted to stylists" — and the lines are Eddy's low-string twang with the echo on it.<sup class="c"><a href="#src-nick13">[18]</a></sup> The app writes the 7th and the ♭2 and ♭5 as <em>free</em> notes — exact pitches the reading may not otherwise offer.</p>
+    <h3>The shapes on the neck</h3>
+    <p>Each drawn in the key of the feel it belongs to. The ringed notes are the roots; a hollow note is a colour let in beside the box; a dimmed one is in the scale but not in the chord it's played over.</p>
+    <div class="necks" id="scaleNecks"></div>
+    <h3>Playing them</h3>
+    <p>The scales as drills, over the band: the Sun box up and down and with its ♭3, the box at the 12th with the ♭5, the jump side in triplets, the bebop scale, the horror minor, the chicken-pickin' box in fours. <b>Neck</b> on a card shows where each note is as it sounds; <b>Open in drills</b> puts the same scale, box and tempo on the Drills tab.</p>
+    <div class="examples" id="scales"></div>
+  </section>
+
+  <!-- ================================================================== -->
+  <section class="part" id="s4">
+    <h2>4. Exercises</h2>
+    <p>In order, and before the parts: each is a part or a piece of one, at a tempo to start from. Play it here, then open it in Jam, turn it up as it settles, and change the key. The neck (on the card, or in Jam) lights the notes as they go; <b>Fingering</b> on a card puts a chord diagram over each change of grip.</p>
+    <div class="examples" id="exercises"></div>
+  </section>
+
+  <section class="part" id="s5">
+    <h2>5. Rhythm, in eight feels</h2>
+    <p>Each example below is the app's engine playing a part from the Psychobilly library over its band — the upright snapped and slapped, the brushes where the feel has them — drawn as tab with the rhythm under it. <b>Play</b> loops it here; <b>Open in jam</b> opens the Jam tab with the same key, progression, feel, part and roll. The tab is a rolled realisation: press Play in Jam and roll new fills to hear the part's other bars.</p>
+    <div class="examples" id="rhythm"></div>
+  </section>
+
+  <section class="part" id="s6">
+    <h2>6. Lead</h2>
+    <p>Lead parts in each feel: pure lines, written against the chord they sit on so they follow the changes. The rockabilly and swing parts stay major (the 6th, the 9th, the ♭3 passing); the wrecking and surf parts play the blues scale over the major chords; the stomp and the horror minor stay in their keys with the ♭2, the ♭5 and the harmonic 7th let in.</p>
+    <div class="examples" id="lead"></div>
+  </section>
+
+  <section class="part" id="s7">
+    <h2>7. Both at once</h2>
+    <p>The parts that carry lead lines as well as a figure, heard with the blend on <b>Mixed</b>: rhythm in the figure bars, a lead line in about half the fill bars, the way the one guitarist in a trio does both. In Jam the same switch gives you Rhythm alone or Lead in every bar.</p>
+    <div class="examples" id="mixed"></div>
+  </section>
+
+  <!-- ================================================================== -->
+  <section class="part" id="s8">
+    <h2>8. The players, wave by wave</h2>
+    <p>A genre rather than a player, so the roster matters: who, where, what they played, and the records that show it — the foundation, the precursors and the revival, the first wave at the Klub Foot, the second in Europe, the third in California and beyond. The Reverend has a row of his own; his side of the story is in <a href="#s1">section 1</a>, his gear in <a href="#s2">section 2</a>, and his records in <a href="#s9">the songs</a>.</p>
+    <div id="players"></div>
+  </section>
+
+  <!-- ================================================================== -->
+  <section class="part" id="s9">
+    <h2>9. The songs, as reference points</h2>
+    <p>What happens in each record, with its key and feel where the sources give them, its form and the devices to listen for. The parts on this page draw on the <em>way of playing</em> in each; none copies its lines. Tempos from the tempo sites are given as measured and read as half- or double-time where a fast two is obviously what is meant. Chord progressions are common stock, so the forms are given as they are, under <b>Psychobilly</b> in the Jam tab's preset list.</p>
+    <div id="songs"></div>
+  </section>
+
+  <!-- ================================================================== -->
+  <section class="part" id="s10">
+    <h2>10. Studies</h2>
+    <p>Whole forms to play through: the presets from the Jam tab's Psychobilly list, with a part from the library realised over them, its fills and lead lines rolled. Not the songs — the app's own writing over the forms the music runs on.</p>
+    <div class="examples" id="studies"></div>
+  </section>
+
+  <!-- ================================================================== -->
+  <section class="part" id="s11">
+    <h2>11. For teachers</h2>
+    <p>What each lesson is for, what goes wrong first, and how to tell when it is learned. The lessons are the ones in <a href="#start">Start here</a>; each names its cards. Every fingering on this page says whether the sources describe it or it is the usual way (the tag under each grip), and every claim about the records is cited; the playing itself was never heard by the author (see <a href="#s12">How this was made</a>), so treat the tab as an account of the idiom, not a transcription.</p>
+    <h3>Common faults, and how to hear them</h3>
+    <div class="wide"><table class="faults"><thead><tr><th>Device</th><th>What goes wrong</th><th>What to listen for</th></tr></thead><tbody>
+      <tr><td>The boom-chicka</td><td>The boom rings instead of thudding; the chicka comes early, on the beat, or lands as a full strum of six strings.</td><td>A short bass note under the heel, then three strings only, late, and quieter than the boom.</td></tr>
+      <tr><td>The 6th</td><td>The pinky lands late, so the chicka comes out twice; or it stays down, so every chicka is E6.</td><td>E, E6, E, E6 — the pinky moving with the stroke, the plain E audible in between.</td></tr>
+      <tr><td>The thumb and the fingers</td><td>The thumb stops when the fingers move; the fingers pluck a string the thumb is on.</td><td>Root, 5th, root, 5th unbroken for a whole bar with the fingers playing above them.</td></tr>
+      <tr><td>The walking pickup line</td><td>The line starts on the wrong beat and arrives early or late; the 7 is played as the ♭7.</td><td>5th, 6th, ♭7, 7 in the last two beats, the new root exactly on the One.</td></tr>
+      <tr><td>The Bigsby dip</td><td>The bar goes too far (a tone or more) or comes back late, so the next beat is flat.</td><td>A semitone down and back within the beat; the next chord in tune.</td></tr>
+      <tr><td>The 9th and the 6/9</td><td>The ring-finger bar leaves the top string dead; the 6/9 is played as a plain 6th.</td><td>Three strings under the bar all sounding; the 9th on top of the 6/9 heard against the root.</td></tr>
+      <tr><td>Luther's mute</td><td>The heel is too far from the bridge, so the bass strings die instead of thudding; the chick rings.</td><td>A thud with pitch, a chick with none.</td></tr>
+      <tr><td>Chicken pickin'</td><td>The popped notes are quieter than the picked ones, or the snap comes with a scrape.</td><td>The popped note louder and brighter than the picked one beside it, the same length.</td></tr>
+      <tr><td>The muted eighths and the gallop</td><td>Upstrokes creep in; the gallop's two sixteenths are uneven; the mute lifts as the tempo rises.</td><td>Every stroke down, the sixteenths equal, the heel still on the strings at 200.</td></tr>
+      <tr><td>Tremolo picking</td><td>Played from the elbow, so it tires and slows; the pick too deep, so it catches.</td><td>An even pulse from the wrist for a bar, the pick shallow, the volume steady.</td></tr>
+      <tr><td>The ♭2 and the ♭5</td><td>Landed on and held, so they sound like mistakes rather than menace.</td><td>Leaned on and left: the ♭2 against the root for a beat, the ♭5 slid through.</td></tr>
+      <tr><td>Playing with the slap</td><td>The chord lands on the click instead of the note; the guitar drags behind the drag triplet.</td><td>The downstroke on the bass note, the clicks after it, the guitar ahead of the beat if anything.</td></tr>
+    </tbody></table></div>
+    <h3>When it is learned</h3>
+    <ul class="checklist">
+      <li>The boom-chicka steady at 120 for eight bars on E, A and B7 without looking, then at 176 with the band.</li>
+      <li>The 6th and the ♭7 in the chicka on cue, E–E6–E7–E6, the pinky moving with the stroke.</li>
+      <li>The thumb alternating root and 5th unbroken while the fingers play a melody above it, in two keys.</li>
+      <li>The walking pickup line into every change of a twelve-bar, the new root on the beat, at 176.</li>
+      <li>Four to the bar with the 6/9 and the stab dipped on the "and of 2", at 152, swung.</li>
+      <li>Gallup's triplet pull-offs even at 152, and a run of octaves climbing by semitones.</li>
+      <li>The strut's walk-down with the stabs on two and four and the bar on the way into each change.</li>
+      <li>Luther's figure under the brushes at 168, the boom a thud and the chick dead.</li>
+      <li>Chicken-pickin' pops louder than the picked notes beside them, and the 2nd bent to the 3rd in pitch under a held note.</li>
+      <li>Muted downstroke eighths even at 192, then gallops at 212, the heel never lifting.</li>
+      <li>A bar of tremolo picking at 164 as a pulse, then the riff falling to the ♭3.</li>
+      <li>The twang line clean into the echo, the 5th shaken, the 7th over the V, in E minor and in A minor.</li>
+      <li>Any study on this page played through twice at its tempo with the band.</li>
+    </ul>
+  </section>
+
+  <section class="part" id="s12">
+    <h2>12. How this was made</h2>
+    <p class="note"><b>What was done, and what was not.</b> This page, the eight feels added to the app's Psychobilly style, the Psychobilly presets, the grips tagged in the Chord finder and the engine's new sounds were written by Claude (an AI model, working in Claude Code) at the owner's request, in September 2026. The research was reading: the sources in the list below were fetched and read as text — the Wikipedia articles on the genre, the players, the bands and the records; the A.V. Club's guide and HTF's history; the guitar lessons (Premier Guitar on Scotty Moore and Brian Setzer, TrueFire's twelve licks, Guitar Wiz, Riffhard, Jon MacLennan, scottymoore.net, the Johnny Cash guitar page); Keith Wyatt on Cliff Gallup and Guitar World on Setzer and on Jim Heath, read through a reader proxy because the pages themselves are behind a wall; Dr. D's slap-bass columns for No Treble; the rockabilly drumming pages; Jim Heath's interviews with Premier Guitar (2013), Vintage Guitar (2007/2010), Guitar World (2019), Style Weekly (2016), The Vinyl District (2014), Juice (2002) and Tape Op (2019); P. Paul Fenech's 2026 interview with Louder Than War; Nick 13's with Gretsch and Guitar World; the tempo sites for a few records; and the publisher's description of Kimberly Kattari's book. <b>No recordings were listened to and no videos were watched</b>: the tools used cannot play audio or video, so Premier Guitar's rig rundown, Heath's guitar.com lessons, the slap-bass videos and every YouTube lesson are named but not relied on. Kattari's book and the academic reviews of it were behind walls; the Athens paper downloaded but yielded only its metadata. Where a fact came only from a search engine's summary of a page, the source list says so. The rest is the model's own knowledge of the music, checked against the sources where they overlap.</p>
+    <p>The parts were then written the way every part in this app is written (<code>docs/STYLES.md</code>): from the idiom — where the weight falls, which strings, which notes, how a phrase ends — never from a transcription, and with no signature riff reproduced; the boom-chicka, the walking pickup line, the twelve-bar, the walk-down by whole steps and the gallop are the common property of the music. Each part is a figure with variants, fills that know whether the next bar changes, lead lines, and a beginner's version, in the interval notation the engine realises into notes on the neck. The engine gained what these parts needed — the 6th kept as a 6th in the chicka in every reading (a colour tone marked <em>free</em>, placed on the B string where the chicka has no room above it), the Bigsby dip, the finger-snapped note, and in the band the snapped bass note, the slap between the notes and the wire brush on the snare — and each is held by a test that was broken on purpose and seen to fail. The machinery of this page and the Hendrix page is one module now (<code>js/deep-dive.js</code>). The tabs are realisations of those parts, rolled from a fixed seed so the page reads the same each time; the sound is the app's own recorded guitar and synthesized band. Tempos are approximate; keys are as fingered. Where the page says "as heard in", it means the way of playing on that record, not its notes.</p>
+  </section>
+
+  <!-- ================================================================== -->
+  <section class="part" id="s13">
+    <h2>13. Sources</h2>
+    <p>Numbered as cited above. "Read" means the page was fetched and read as text; "summary" means only a search engine's summary could be read; "through a reader proxy" means the page refused the tools directly and was read through a text-extraction service.</p>
+    <ol class="sources" id="sources"></ol>
+  </section>
+</main>
+</div>
+
+<script src="js/theory.js"></script>
+<script src="js/fretboard.js"></script>
+<script src="js/fingering.js"></script>
+<script src="js/neck.js"></script>
+<script src="js/parts.js"></script>
+<script src="js/parts-guide-data.js"></script>
+<script src="js/styles-base.js"></script>
+<script src="js/progressions.js"></script>
+<script src="review/proposals.js"></script>
+<script src="review/proposals-2.js"></script>
+<script src="review/proposals-3.js"></script>
+<script src="review/proposals-4.js"></script>
+<script src="review/proposals-more.js"></script>
+<script src="review/proposals-easy.js"></script>
+<script src="review/proposals-hendrix.js"></script>
+<script src="review/proposals-psychobilly.js"></script>
+<script src="js/styles.js"></script>
+<script src="js/tab.js"></script>
+<script src="js/tab-print.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/band.js"></script>
+<script src="js/tab-pane.js"></script>
+<script src="js/example-player.js"></script>
+<script src="js/neck-follow.js"></script>
+<script src="js/drills.js"></script>
+<script src="js/deep-dive.js"></script>
+<script src="js/psychobilly-guide.js"></script>
+</body>
+</html>

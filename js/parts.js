@@ -1787,10 +1787,12 @@
     }
     return strumCells(chord, opts, 'high');
   }
-  // One extra note above a grip: a colour tone (the 9th, the 6th) on a strum.
-  function placeIv(chord, opts, iv, above){
+  // One extra note above a grip: a colour tone (the 9th, the 6th) on a strum
+  // — snapped to the reading, or, when the strum is `free`, the exact
+  // interval (the 6th on a rockabilly E6 stays a 6th in every reading)
+  function placeIv(chord, opts, iv, above, free = false){
     const pal = palette(chord, opts);
-    const sn = snap(pal.root, iv, pal.allowed);
+    const sn = free ? { pc: ((pc(chord.note) + iv) % 12 + 12) % 12 } : snap(pal.root, iv, pal.allowed);
     if (!sn) return null;
     const cells = cellsIn(opts.window).filter(c => c.midi % 12 === sn.pc && (above == null || c.midi > above));
     if (!cells.length) return null;
@@ -1949,9 +1951,12 @@
         if (!grip) return;
         grip = grip.slice().sort((a, b) => a.midi - b.midi);
         let colour = null;
-        if (w.add){
+        // (a colour tone on a strum — the 9th on top, the 6th in the chicka —
+        // except in the triads reading, where every strum is the triad the
+        // neck shows and nothing else)
+        if (w.add && !triads){
           const top = grip[grip.length - 1];
-          colour = placeIv(on, opts, w.add, top.midi);
+          colour = placeIv(on, opts, w.add, top.midi, !!w.free);
           // the colour tone sits on the string beside the grip's top one —
           // a 9th on top is x-7-6-7-7-7, not a note a string away with the
           // string between left out of the sweep — reached for past the
@@ -1967,6 +1972,22 @@
               if (frets.length) colour = { string: st, fret: frets[0], midi: STRING_MIDI[st] + frets[0], ...(frets[0] < min || frets[0] > max ? { reach: true } : {}) };
             }
           }
+          // no room above the grip's top string (the E shape at the nut, its
+          // top an open E): a free colour tone takes the place of the grip's
+          // 5th on that string instead — E6's C♯ on the B string where the B
+          // was, the rockabilly "chicka" — or of its lowest chord tone
+          if (!colour && w.free){
+            const want = ((pc(on.note) + w.add) % 12 + 12) % 12, fifth = pc(on.fifth);
+            const swap = grip.find(c => c.midi % 12 === fifth) || grip[0];
+            const { min, max } = opts.window;
+            const frets = [];
+            for (let f = Math.max(0, min - 2); f <= Math.min(FRET_COUNT, max + 2); f++) if ((STRING_MIDI[swap.string] + f) % 12 === want) frets.push(f);
+            frets.sort((a, b) => Math.abs(a - swap.fret) - Math.abs(b - swap.fret));
+            if (frets.length){
+              grip.splice(grip.indexOf(swap), 1, { string: swap.string, fret: frets[0], midi: STRING_MIDI[swap.string] + frets[0], colour: true, swapped: true, ...(frets[0] < min || frets[0] > max ? { reach: true } : {}) });
+              grip.sort((a, b) => a.midi - b.midi);
+            }
+          }
           if (colour) grip.push(colour);
         }
         const each = w.vel * strumStringLevel(grip.length);
@@ -1976,7 +1997,7 @@
         grip.forEach((c, k) => notes.push({ at: w.at, dur: w.dur, vel: each, string: c.string, fret: c.fret, midi: c.midi,
                                              strum: true, voicing: w.voicing, mute: !!w.mute, next: !!w.next, spread: k * STRUM_SPREAD, stroke, ...grips,
                                              ...(c.reach ? { reach: 2 } : {}),           // a power chord's 5th past the window
-                                             ...(c === colour ? { colour: true } : {}) }));
+                                             ...(c === colour || c.colour ? { colour: true } : {}), ...(c.swapped ? { swapped: true } : {}) }));
       });
       if (part.fingers) notes = fingersOffThumb(notes, cells);
       // the flags, matched back to the written note by its moment
@@ -1988,6 +2009,9 @@
           if (w.ghost){ n.vel *= 0.35; n.mute = true; n.ghost = true; }
           if (w.stacc) n.dur = Math.min(n.dur, 0.5);
           if (w.pm) n.mute = true;
+          // the Bigsby dip on a chord or a note, the pop of a finger-snapped note
+          if (w.dip) n.dip = w.dip === true ? 1 : w.dip;
+          if (w.pop && !n.strum) n.pop = true;
           if (w.vib && n.fret > 0) n.vib = true;      // an open string can't be shaken
           if (w.rake) n.rake = true;
           // the wah: the pedal rocking with the pick — toe down on a

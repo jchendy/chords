@@ -13,8 +13,13 @@ records that show it, and why every part is written the way it is — are in
   revised band and parts for every feel the app started with, the added
   feels, and (in `proposals-more.js`) the later passes that layered fills,
   tails, pickups, stop-time, turnarounds, lead lines and the upper register
-  onto them. `proposals-easy.js` holds the hand-written easy versions. This
-  is the source of truth for what the app plays.
+  onto them. `proposals-easy.js` holds the hand-written easy versions;
+  `proposals-hendrix.js` and `proposals-psychobilly.js` are the deep dives'
+  genres, written for the engine (`engine: true`). A genre may add feels to
+  a style that already exists (the psychobilly dive's eight feels join the
+  app's `psychobilly` style): give the genre entry its own `id` and point
+  each feel's `style` at the existing one. This is the source of truth for
+  what the app plays.
 - `js/styles-base.js`, the `LIBRARY` in `js/parts.js`, `js/parts-guide-data.js`
   — the base data the app started with. Kept so the review page can show
   before and after; the proposals are merged over it.
@@ -65,7 +70,10 @@ beat), nine for a jazz waltz (three beats of three). Every event has a slot
   string) and `ninth` (the 9th grip, x-7-6-7-7-7); the two grips may sit a
   fret past the window (`reach: 1`). `sn` strikes the
   next chord early (the "and of 4" push). `add: 14` puts a colour tone (the
-  9th) on top; `chordSlide: 1` slides the chord in from a fret below;
+  9th) on top — and with `free` the tone keeps its note in every reading
+  and, where the grip has no room above its top string (the E shape at
+  the nut), takes the place of the grip's 5th on that string: `add: 9,
+  free: true` on a `high` strum of E is the E6 of the rockabilly chicka; `chordSlide: 1` slides the chord in from a fret below;
   `stroke: 'up'` says which way the pick goes — otherwise the hand's rule
   decides from the slot (`strokeFor` in parts.js: down on the beat and the
   "and", up between, when the bar moves in sixteenths; down on the beat and
@@ -78,7 +86,10 @@ beat), nine for a jazz waltz (three beats of three). Every event has a slot
   string and, on the string below, the note a tone under it bent up to
   meet it. `b(at, iv, up, ...)` a bend, `h`/`p` hammer-on and pull-off,
   `sl(at, from, iv, ...)` a slide. `g` is a ghost strum (a muted scratch).
-- Flags: `pm` palm mute, `stacc` short, `vib` vibrato (dropped where the
+- Flags: `dip: true` (or `dip: n`) the Bigsby pressed and let go on the
+  chord or the note — a semitone (or n) down over a tenth of a second and
+  back, "dip" written over the tab; `pop` a note snapped by a finger
+  rather than picked (the chicken-pickin' front); `pm` palm mute, `stacc` short, `vib` vibrato (dropped where the
   note lands on an open string, which no hand can shake), `rake` a rake into
   the note, `trem: 8` tremolo picking, `ghost` a dead note, `wah` the pedal
   rocked with the stroke (a sweep up or down per note), `trill: iv2` a
@@ -202,10 +213,15 @@ keys reach 24–28. The `tools/reach.js` script prints this per key.
 ## The band
 
 A style's pattern is slot lists for the kit (`kick`, `snare`, `hat`, `ride`,
-`rim`, `ghost`, `hatOpen`), `chord` entries for the comp and `bass` entries
+`rim`, `ghost`, `hatOpen`, and `brush` for the wire brush on the snare — the
+train beat's sixteenths), `chord` entries for the comp and `bass` entries
 (`off` an interval, `walk` a step of a walking line, `next` the next
 chord's root), a `fill` for the last bar of the form, `bassApproach` (a
 semitone below the chord to come, on the last eighth before a change),
+`bassSnap` (the upright snapped on every note: a click on the front, a short
+ring) and `slap` slots (the hand slapped against the strings between the
+notes — rockabilly's single slap on the upbeat, psychobilly's two on the
+sixteenths after each note — with `slapVel`),
 `compAnticipate` (the next chord struck on that last eighth, as an
 upstroke, in place of any strike the pattern has there), an optional `stroke` on a chord entry for the guitar voice (la
 pompe is all downstrokes; otherwise the hand's rule decides), `swing` for

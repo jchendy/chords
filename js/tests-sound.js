@@ -196,6 +196,18 @@
     }
     return sum / Math.max(1, i1 - i0);
   }
+  // ...and the power above it: what is left when that lowpass is taken away
+  function highPower(buf, cutoff, from, to){
+    const d = buf.getChannelData(0), sr = buf.sampleRate;
+    const k = 1 - Math.exp(-2 * Math.PI * cutoff / sr);
+    let y1 = 0, y2 = 0, sum = 0;
+    const i0 = Math.floor(from * sr), i1 = Math.min(d.length, Math.floor(to * sr));
+    for (let i = 0; i < i1; i++){
+      y1 += k * (d[i] - y1); y2 += k * (y1 - y2);
+      if (i >= i0){ const h = d[i] - y2; sum += h * h; }
+    }
+    return sum / Math.max(1, i1 - i0);
+  }
   // how far two stretches of a render differ, sample for sample
   function maxDiff(buf, t0, t1, len){
     const d = buf.getChannelData(0), sr = buf.sampleRate;
@@ -333,6 +345,39 @@
   }
 
   GT.sound = { peak, rms, dB, seeded, withVoices, loudestBar, rockBars, measureDucking };
+  // ---- the upright, slapped ----
+  // A slap is a click with a little wood under it and nothing after; a
+  // snapped bass note has a click on its front and a shorter ring than a
+  // plucked one; a brushed snare rises where a struck one hits, and has no
+  // body; a popped pluck has a brighter front than a picked one
+  async function testTheUprightIsSlapped(t){
+    const v = await withVoices();
+    const bad = [];
+    const high = (buf, from, to) => Math.max(1e-12, highPower(buf, 1500, from, to));
+    const peakAt = buf => { const d = buf.getChannelData(0); let m = 0, at = 0; for (let i = 0; i < d.length; i++) if (Math.abs(d[i]) > m){ m = Math.abs(d[i]); at = i; } return at / buf.sampleRate; };
+    const slap = await audio.renderOffline(0.6, a => a.playSlap(0.05, 0.8), { random: seeded(21), dry: true });
+    if (!(power(slap, 0.05, 0.08) > 1e-7)) bad.push('a slap makes no sound');
+    if (!(power(slap, 0.05, 0.08) > power(slap, 0.25, 0.4) * 50)) bad.push('a slap does not stop');
+    const snapped = await audio.renderOffline(1, a => a.playBass(E3 / 2, 0.05, 0.8, 0.9, { snap: true }), { random: seeded(22), dry: true });
+    const plucked = await audio.renderOffline(1, a => a.playBass(E3 / 2, 0.05, 0.8, 0.9), { random: seeded(22), dry: true });
+    const click = high(snapped, 0.05, 0.06) / high(plucked, 0.05, 0.06);
+    if (!(click > 2.5)) bad.push(`a snapped bass note has no click on its front (${(10 * Math.log10(click)).toFixed(1)} dB over a plucked one above 1.5 kHz)`);
+    if (!(rms(snapped, 0.5, 0.7) < rms(plucked, 0.5, 0.7) * 0.5)) bad.push('a snapped bass note rings as long as a plucked one');
+    const brush = await audio.renderOffline(0.6, a => a.playSnare(0.05, 0.8, 'brush'), { random: seeded(23), dry: true });
+    const snare = await audio.renderOffline(0.6, a => a.playSnare(0.05, 0.8, 'snare'), { random: seeded(23), dry: true });
+    const rise = (peakAt(brush) - 0.05) * 1000, hit = (peakAt(snare) - 0.05) * 1000;
+    if (!(rise > 9)) bad.push(`the brush hits at once (${rise.toFixed(1)} ms to its loudest)`);
+    if (!(rise > hit)) bad.push(`the brush is not slower to its loudest than the snare (${rise.toFixed(1)} against ${hit.toFixed(1)} ms)`);
+    if (!(lowPower(brush, 400, 0.05, 0.2) < lowPower(snare, 400, 0.05, 0.2) * 0.1)) bad.push('the brush has a body');
+    const pop = await audio.renderOffline(0.8, a => a.playPluck(E3, 0.05, 0.5, 0.9, 'part', { pop: true }, {}), { random: seeded(24), dry: true });
+    const plain = await audio.renderOffline(0.8, a => a.playPluck(E3, 0.05, 0.5, 0.9, 'part', null, {}), { random: seeded(24), dry: true });
+    // (the render's dynamics stages put everything about nine milliseconds
+    // late, so the front is read from where the notes arrive)
+    const front = high(pop, 0.058, 0.068) / high(plain, 0.058, 0.068);
+    if (!(front > 1.5)) bad.push(`a popped note has no brighter front (${(10 * Math.log10(front)).toFixed(1)} dB: ${high(pop, 0.058, 0.068).toExponential(2)} against ${high(plain, 0.058, 0.068).toExponential(2)})`);
+    t.equal(bad.join('; '), '', `The upright is slapped (a click ${(10 * Math.log10(click)).toFixed(0)} dB brighter on a snapped note), the snare brushed (${rise.toFixed(0)} ms to its loudest), the note popped (${(10 * Math.log10(front)).toFixed(1)} dB) (${v.label})`);
+  }
+
   GT.soundSuites = [
     ['Sound: the mix stays under full scale', testTheMixStaysUnderFullScale],
     ['Sound: what a six-string strum sums to', testWhatASixStringStrumSumsTo],
@@ -343,5 +388,6 @@
     ['Sound: two levels pinned by measurement', testTheLevelsAreMatched],
     ['Sound: the fallback is a guitar on its own bus', testTheFallbackIsAGuitarOnItsOwnBus],
     ['Sound: the wah sweeps', testTheWahSweeps],
+    ['Sound: the upright is slapped, the snare brushed, the note popped', testTheUprightIsSlapped],
   ];
 })();

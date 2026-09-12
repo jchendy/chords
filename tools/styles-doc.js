@@ -12,7 +12,7 @@ global.window = {}; global.console = console;
 const GT = window.GT = {};
 ['js/theory.js', 'js/fretboard.js', 'js/parts.js', 'js/parts-guide-data.js', 'js/styles-base.js',
  'review/proposals.js', 'review/proposals-2.js', 'review/proposals-3.js', 'review/proposals-4.js',
- 'review/proposals-more.js', 'review/proposals-easy.js', 'review/proposals-hendrix.js', 'js/styles.js']
+ 'review/proposals-more.js', 'review/proposals-easy.js', 'review/proposals-hendrix.js', 'review/proposals-psychobilly.js', 'js/styles.js']
   .forEach(f => new Function('window', fs.readFileSync(path.join(root, f), 'utf8'))(window));
 
 const text = html => String(html || '').replace(/<\/p>\s*<p>/g, '\n\n').replace(/<[^>]+>/g, '').replace(/[ \t]+/g, ' ').replace(/\n /g, '\n').trim();

@@ -476,6 +476,23 @@
     });
     t.equal(bad.join('; '), '', `The grips Hendrix played are in the finder and say so (${GT.chordFinder.HENDRIX_SHAPES.length} shapes)`);
   }
+  // ---- 3a''. the grips rockabilly and psychobilly are played with, tagged ----
+  function testPsychobillyShapesInTheFinder(t){
+    const bad = [];
+    const shown = name => {
+      const p = parseChordName(name);
+      return p ? findChordVoicings(p.rootPc, p.formula).map(v => ({ g: grip(v.cells), v })) : [];
+    };
+    [['E6', '0-2-2-1-2-0', 'chicka'], ['A6', 'x-0-2-2-2-2', 'top string'], ['C6/9', 'x-3-2-2-3-3', 'Gallup'], ['B9', 'x-2-1-2-2-2', 'jump-blues'],
+     ['C13', 'x-3-2-3-5-5', '13th'], ['D#dim7', 'x-x-1-2-1-2', 'diminished'], ['B7', 'x-2-1-2-0-2', 'open B7'], ['E7', '0-2-0-1-0-0', 'open E7'],
+     ['A7', 'x-0-2-0-2-0', 'open A7']].forEach(([name, want, tag]) => {
+      const list = shown(name);
+      const hit = list.find(x => x.g === want);
+      if (!hit){ bad.push(`${name}: ${want} is not in the finder (${list.slice(0, 6).map(x => x.g).join(' ')} …)`); return; }
+      if (!hit.v.genres.includes('Psychobilly') || !hit.v.psychobilly || !hit.v.psychobilly.includes(tag)) bad.push(`${name} ${want} is not tagged Psychobilly (${hit.v.genres.join(', ')} / ${hit.v.psychobilly})`);
+    });
+    t.equal(bad.join('; '), '', `The grips rockabilly and psychobilly are played with are in the finder and say so (${GT.chordFinder.PSYCHOBILLY_SHAPES.length} shapes)`);
+  }
 
   // ---- 3b. every shape says what kind of grip it is, and the common ones
   // read first ----
@@ -1179,7 +1196,7 @@
     const { scheduleSlot, lastEighth, swingOffset } = GT.band;
     const calls = [];
     const fake = {
-      playKick: (at, v) => calls.push(['kick', at, v]), playSnare: (at, v) => calls.push(['snare', at, v]),
+      playKick: (at, v) => calls.push(['kick', at, v]), playSnare: (at, v, kind) => calls.push([kind === 'brush' ? 'brush' : 'snare', at, v, kind]),
       playHiHat: (at, v, decay) => calls.push(['hat', at, v, decay]), playRide: (at, v) => calls.push(['ride', at, v]),
       playStyleVoice: (sv, chord, at, dur, vel, voice, o) => calls.push(['comp', at, chord.note, dur, vel, o && o.stroke]),
       playBass: (freq, at, dur, vel) => calls.push(['bass', at, freq, dur, vel]),
@@ -1215,6 +1232,20 @@
     t.ok(hats.find(c => c[1] === 0)[2] > hats.find(c => c[1] === 2)[2], 'the hat accents the beat');
     t.equal(of(rc, 'snare').map(c => c[1]).join(','), '4,12,13', 'a ghost note is a quiet snare');
     t.ok(of(rc, 'snare').find(c => c[1] === 13)[2] < 0.3, 'quiet');
+    // the upright slapped: the click between the notes, the brush on the
+    // snare, and every bass note snapped when the pattern says so
+    const billy = { grid: 16, kick: [0, 8], snare: [4, 12], brush: [2, 6, 10, 14], bassSnap: true, slap: [4, 12], slapVel: 0.8,
+                    bass: [{ slot: 0, off: 0, dur: 3, vel: 0.9 }, { slot: 8, off: 7, dur: 3, vel: 0.85 }], chord: [{ slot: 4, dur: 1, vel: 0.6 }] };
+    const fakeBilly = { ...fake, playSlap: (at, v) => calls.push(['slap', at, v]), playBass: (freq, at, dur, vel, o) => calls.push(['bass', at, freq, dur, vel, o && o.snap]) };
+    calls.length = 0;
+    for (let sl = 0; sl < 16; sl++) scheduleSlot(billy, sl, sl, 1, { audio: fakeBilly, chord: A, next: D, changing: false });
+    const bc = calls.slice();
+    t.equal(of(bc, 'slap').map(c => c[1]).join(','), '4,12', 'the slap lands where the pattern puts it');
+    t.equal(of(bc, 'snare').filter(c => c[2] > 0.3 && c[1] % 4 !== 0).length, 0, 'the brush is not a snare hit');
+    t.equal(bc.filter(c => c[0] === 'snare').length, 2, 'the snare keeps its own slots');
+    t.equal(of(bc, 'bass').map(c => c[5]).join(','), 'true,true', 'every bass note is snapped');
+    const plainBass = bar(shuffle, { changing: false });
+    t.equal(of(plainBass, 'bass').every(c => c[5] === undefined), true, 'a pattern without bassSnap snaps nothing');
 
     // the last bar of the form: the fill, not the pattern
     const fill = bar(rock, { changing: true, fillNow: true });
@@ -1673,7 +1704,7 @@
             // two strums can share a moment (the batida's thumb under its chord): one group a voicing
             const k = `${n.bar}:${n.at}:${n.voicing}`;
             strumsAt[k] = strumsAt[k] || { count: 0, voicing: n.voicing, low: n };
-            if (!n.colour) strumsAt[k].count++;          // a colour tone rides on top of the grip
+            if (!n.colour || n.swapped) strumsAt[k].count++;   // a colour tone rides on top of the grip — or takes the place of its 5th, and counts
             if (n.midi < strumsAt[k].low.midi) strumsAt[k].low = n;
           });
           Object.entries(strumsAt).forEach(([k, { count, voicing, low }]) => {
@@ -2764,6 +2795,62 @@
     t.equal(bad.join('; '), '', `The print view packs its bars (${firstRow} bars of quarters a row, sixteenths ${Math.round(m.widths[7])}px against ${Math.round(m.widths[0])}px)`);
   }
 
+  // The Bigsby dip: the note pulled a semitone flat over its first tenth of
+  // a second and let back up over the next — a plan that goes down and
+  // comes home; a note without the flag holds its pitch
+  function testTheBigsbyDips(t){
+    const { pitchPlan, DIP } = GT.audio;
+    const plan = pitchPlan(1, { dip: true }, 2, 1);
+    const rates = plan.map(p => p.rate);
+    const bad = [];
+    const low = Math.min(...rates);
+    if (Math.abs(low - Math.pow(2, -1 / 12)) > 1e-9) bad.push(`the dip goes to ${low.toFixed(4)}, not a semitone flat`);
+    const bottom = plan.find(p => p.rate === low);
+    if (!(bottom.t > 2 && bottom.t <= 2 + DIP.down + 1e-9)) bad.push(`the bottom of the dip is at ${bottom.t}`);
+    const last = plan[plan.length - 1];
+    if (last.rate !== 1 || !(last.t > bottom.t && last.t <= 2 + DIP.back + 1e-9)) bad.push(`the dip does not come home (${last.rate} at ${last.t})`);
+    const two = pitchPlan(1, { dip: 2 }, 0, 1);
+    if (Math.abs(Math.min(...two.map(p => p.rate)) - Math.pow(2, -2 / 12)) > 1e-9) bad.push('a two-semitone dip is not two semitones');
+    if (pitchPlan(1, null, 0, 1).some(p => p.rate !== 1)) bad.push('a plain note moves');
+    const short = pitchPlan(1, { dip: true }, 0, 0.1);
+    if (short[short.length - 1].t > 0.1 + 1e-9) bad.push('a short note dips past its end');
+    t.equal(bad.join('; '), '', `The Bigsby dips: a semitone down over ${DIP.down * 1000} ms and back by ${DIP.back * 1000} ms`);
+  }
+
+  // A colour tone marked free is the interval it says in every reading:
+  // the 6th on a rockabilly E6 stays a 6th in Chords, where an unmarked one
+  // is snapped to a chord tone
+  function testAFreeColourToneKeepsItsNote(t){
+    const { realise } = GT.parts;
+    const { chordFromName } = GT.theory;
+    const E = chordFromName('E');
+    const opts = { reading: 'caged', window: { min: 0, max: 3 }, scaleTheory: 'parallel', stayOnKey: false, key: { tonic: 'E', mode: 'major' }, tech: null };
+    const part = strum => ({ name: 't', figure: [strum], variants: [], fills: [[strum]] });
+    const notesOf = strum => realise(part(strum), [{ chord: E }, { chord: E }], 1, opts, { grid: 16 });
+    const sixth = (4 + 9) % 12;                                   // C♯ over E
+    const free = notesOf({ at: 0, dur: 4, vel: 0.9, strum: true, voicing: 'high', add: 9, free: true });
+    const plain = notesOf({ at: 0, dur: 4, vel: 0.9, strum: true, voicing: 'high', add: 9 });
+    const bad = [];
+    const hasSixth = ns => ns.some(n => n.strum && n.midi % 12 === sixth);
+    if (!hasSixth(free)) bad.push(`the free 6th is not in the strum (${free.filter(n => n.strum).map(n => n.midi % 12).join(',')})`);
+    if (hasSixth(plain)) bad.push('the unmarked 6th survived the Chords reading');
+    const strings = new Set(free.filter(n => n.strum && n.bar === 0).map(n => n.string));
+    if (strings.size !== 3) bad.push(`the E6 chicka is ${strings.size} strings, not the top three with the 6th among them`);
+    // and where there is room above the grip, the tone is placed as written
+    // rather than snapped to the reading: A6's F♯ on top of the mid grip in
+    // a blues reading (the minor pentatonic, which has no 6th) — the
+    // unmarked 6th snaps to the G beside it
+    const A = chordFromName('A');
+    const bluesPart = strum => ({ name: 't', blues: true, figure: [strum], variants: [], fills: [[strum]] });
+    const bluesOpts = { ...opts, reading: 'penta', key: { tonic: 'A', mode: 'major' } };
+    const topOf = strum => { const ns = realise(bluesPart(strum), [{ chord: A }, { chord: A }], 1, bluesOpts, { grid: 16 }).filter(n => n.strum && n.bar === 0); return ns.length ? Math.max(...ns.map(n => n.midi)) % 12 : null; };
+    const freeTop = topOf({ at: 0, dur: 4, vel: 0.9, strum: true, voicing: 'mid', add: 9, free: true });
+    const plainTop = topOf({ at: 0, dur: 4, vel: 0.9, strum: true, voicing: 'mid', add: 9 });
+    if (freeTop !== 6) bad.push(`the free 6th over A in the blues reading is pitch class ${freeTop}, not F♯`);
+    if (plainTop !== 7) bad.push(`the unmarked 6th over A in the blues reading is pitch class ${plainTop}, not snapped to G`);
+    t.equal(bad.join('; '), '', 'A free colour tone keeps its note: the 6th on E6 in the Chords reading, and on A6 in the blues reading');
+  }
+
   // Two bars share a row when a second nearly fits: the slots squeeze (to
   // 16px at the tightest) rather than leave a bar alone on each row; a
   // width that fits two at full size, or cannot fit two at all, is left as
@@ -2896,6 +2983,8 @@
       ['The tab knows what is under a click', testTheTabKnowsWhatIsUnderAClick],
       ['The tab comes out in rows', testTheTabComesOutInRows],
       ['The print view packs its bars', testThePrintViewPacksItsBars],
+      ['The Bigsby dips', testTheBigsbyDips],
+      ['A free colour tone keeps its note', testAFreeColourToneKeepsItsNote],
       ['Two bars share a row', testTwoBarsShareARow],
       ['The hand is fingered', testTheHandIsFingered],
       ['The tab shows the fingering', testTheTabShowsTheFingering],
@@ -2903,6 +2992,7 @@
       ['Chord finder output is identifiable in reverse', testFinderOutputIsIdentifiable],
       ['Chord finder shows the everyday grips', testCanonicalGrips],
       ['Chord finder has the grips Hendrix played, tagged', testHendrixShapesInTheFinder],
+      ['Chord finder has the grips psychobilly is played with, tagged', testPsychobillyShapesInTheFinder],
       ['Chord finder sorts common first and names the kind', testShapesAreSortedAndNamed],
       ['Chord finder tells open shapes from movable ones', testTheShapeFilter],
       ['Every chord name the app writes parses back', testEveryChordNameParsesBack],

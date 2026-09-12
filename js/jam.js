@@ -2028,7 +2028,7 @@
       })),
       notes: partNotes.map(n => ({ string: n.string, fret: n.fret, at: n.bar * grid + n.at, dur: n.dur,
                                    bend: n.bend, slide: n.slide, tech: n.tech, to: n.to, soft: n.soft, mute: n.mute,
-                                   vib: n.vib, trem: n.trem, rake: n.rake, ghost: n.ghost, tone: !n.strum && (n.mute || n.ghost) ? 'muted' : undefined,
+                                   vib: n.vib, trem: n.trem, rake: n.rake, ghost: n.ghost, dip: n.dip, tone: !n.strum && (n.mute || n.ghost) ? 'muted' : undefined,
                                    // a trill is written once, with the fret it goes to; its repeats are played, not drawn
                                    trill: n.trill, trillTo: n.trillTo, tabHide: n.tabHide, tabDur: n.tabDur, wah: n.wah, unison: n.unison,
                                    // the top string of a strum carries its marks, over the tab

@@ -427,6 +427,25 @@
     { pattern: '0-3-2-0-1-0', name: 'the C shape with its 3rd in the bass' },
     { pattern: 'x-x-0-2-5-x', name: 'stacked fifths, slid along the neck (Castles Made of Sand)' },
   ];
+  // ...and the grips rockabilly and psychobilly are played with, tagged
+  // Psychobilly the same way (a grip may carry both tags: the E6 is the
+  // Wind Cries Mary embellishment and the boom-chicka's chicka alike)
+  const PSYCHOBILLY_SHAPES = [
+    { pattern: '0-2-2-1-2-0', name: 'E6: the 6th on the B string — the boom-chicka\'s chicka' },
+    { pattern: 'x-0-2-2-2-2', name: 'A6: the 6th on the top string' },
+    { pattern: 'x-x-1-0-1-1', name: 'the 6/9 without its 5th, root on the D string' },
+    { pattern: 'x-1-0-0-1-1', name: 'the 6/9 with the root on the A string: Gallup\'s ending chord' },
+    { pattern: 'x-1-0-1-1-1', name: 'the 9th with the root on the A string: the jump-blues comp' },
+    { pattern: 'x-1-0-1-3-3', name: 'the 13th with the root on the A string: the swing side' },
+    { pattern: 'x-x-0-1-1-1', name: 'a m7♭5 grip as a rootless 9th (the Setzer substitution)' },
+    { pattern: 'x-x-0-1-0-1', name: 'the diminished 7th: the horror chord, moved in threes' },
+    { pattern: '0-2-2-x-x-x', name: 'the power chord with the root on the low E: the stomp' },
+    { pattern: 'x-0-2-2-x-x', name: 'the power chord with the root on the A string' },
+    { pattern: 'x-2-1-2-0-2', name: 'the open B7: the rockabilly V' },
+    { pattern: '0-2-0-1-0-0', name: 'the open E7: the rockabilly I with its ♭7' },
+    { pattern: 'x-0-2-0-2-0', name: 'the open A7: the rockabilly IV with its ♭7' },
+  ];
+  const psychobillyShape = cells => PSYCHOBILLY_SHAPES.find(s => s.pattern === relativePattern(cells)) || null;
   // a shape's grip, low string to high, relative to its lowest fret
   function relativePattern(cells){
     const byString = Array(6).fill('x');
@@ -500,9 +519,9 @@
 
     // a rootless voicing belongs to the styles that leave the root to the bass;
     // one of Hendrix's grips says so first, and says which
-    const hendrix = hendrixShape(cells);
-    const genres = [...new Set([...(hendrix ? ['Hendrix'] : []), ...(v.rootless ? ['jazz', 'funk'] : []), ...FAMILIES[family].genres, ...typeGenres(formula)])].slice(0, 5);
-    return { family, common, genres, hendrix: hendrix ? hendrix.name : null };
+    const hendrix = hendrixShape(cells), psychobilly = psychobillyShape(cells);
+    const genres = [...new Set([...(hendrix ? ['Hendrix'] : []), ...(psychobilly ? ['Psychobilly'] : []), ...(v.rootless ? ['jazz', 'funk'] : []), ...FAMILIES[family].genres, ...typeGenres(formula)])].slice(0, 5);
+    return { family, common, genres, hendrix: hendrix ? hendrix.name : null, psychobilly: psychobilly ? psychobilly.name : null };
   }
 
   // What to call an interval above the root, in the context of this chord —
@@ -1005,7 +1024,7 @@
   }
 
   GT.chordFinder = {
-    HENDRIX_SHAPES, hendrixShape, relativePattern,
+    HENDRIX_SHAPES, hendrixShape, PSYCHOBILLY_SHAPES, psychobillyShape, relativePattern,
     init(){
       chordFinderInput.addEventListener('input', runChordFinder);
       // the examples fill the field rather than being prose about it

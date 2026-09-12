@@ -226,6 +226,8 @@
       else if (n.trill) els.push(`<text class="tab-tech" x="${x + 4}" y="${y - 7}" text-anchor="start">tr${n.trillTo != null ? n.trillTo : '~~'}</text>`);
       else if (n.vib) els.push(`<text class="tab-tech" x="${x}" y="${y - 7}" text-anchor="middle">~</text>`);
       else if (n.trem) els.push(`<text class="tab-tech" x="${x}" y="${y - 7}" text-anchor="middle">≡</text>`);
+      // the Bigsby dip, once over a strum (on its top string) or over a note
+      else if (n.dip && n.lead !== false) els.push(`<text class="tab-tech" x="${x}" y="${y - 7}" text-anchor="middle">dip</text>`);
       // "wah" once a bar, over the first note the pedal is on
       const barOf = Math.floor(n.at / m.grid);
       if (n.wah && !wahBars.has(barOf) && n.lead !== false){ wahBars.add(barOf); els.push(`<text class="tab-tech" x="${x}" y="${p.top - 2}" text-anchor="middle">wah</text>`); }

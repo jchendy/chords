@@ -19,12 +19,16 @@ A single-page, dependency-free site with six tabs under one header:
   tempo, scale, shapes and position you choose, drawn as tab with the neck
   following note by note, and played over a click. Every setting is in the
   link, so a drill can be bookmarked or handed to someone.
-- **Style Deep Dives** — one player's whole way of playing, taken apart and
-  put back together as parts you can practise. The first is Hendrix
-  (`hendrix.html`): the hands and the grips, the scales, eight feels with
-  rhythm, lead and mixed parts, the songs as reference points, exercises,
-  studies, how the page was made, and its sources — every example playable
-  and a link away from the Jam tab.
+- **Style Deep Dives** — one player's, or one genre's, whole way of playing,
+  taken apart and put back together as parts you can practise. The first
+  is Hendrix (`hendrix.html`): the hands and the grips, the scales, eight
+  feels with rhythm, lead and mixed parts, the songs as reference points,
+  exercises, studies, how the page was made, and its sources — every
+  example playable and a link away from the Jam tab. The second is
+  psychobilly (`psychobilly.html`): the rockabilly it is built on, the
+  waves that made it, the players wave by wave, eight feels from the Sun
+  boom-chicka to the horror minor, and plenty of the Reverend Horton Heat.
+  Both pages run on one module (`js/deep-dive.js`).
 
 The site's name in the header is the way home: it opens the jam tab as a
 fresh page does, a preset showing, the default feel and tempo, no part,
@@ -1018,6 +1022,56 @@ the songs analysed as reference points with their tabs linked at Ultimate
 Guitar and Songsterr, a section saying how the page was made — by reading,
 with no recording listened to — and a numbered list of every source.
 
+**The Psychobilly genre, and the deep dive.** `review/proposals-psychobilly.js`
+is a second genre written as a course would write it, for a music that is
+many bands rather than one player: eight feels — the Sun boom-chicka (swung,
+the 6th in the chicka), the jump and swing side (6/9s and 9ths, four to the
+bar), the Stray Cat Strut walk-down (a minor key down by whole steps
+through 7th chords, the Bigsby on the stabs), the train two-step (Luther
+Perkins' palm-muted boom-chicka under brushes, chicken pickin'), the
+psychobilly stomp (the Meteors way: straight eighths in a minor key, the ♭2
+and the ♭5), the wrecking pace (the second wave at 212: downstrokes,
+gallops, the twelve bars at speed), the surf side (tremolo picking and the
+bar) and the horror-minor twang (the third wave: echo on the low strings,
+the harmonic minor 7th) — twenty parts in all, written from what the sources
+say the hands do (Scotty Moore, Cliff Gallup, Carl Perkins, Paul Burlison,
+Luther Perkins, Link Wray, Dick Dale; the Cramps, the Meteors and the Klub
+Foot bands, Batmobile, Mad Sin, the Nekromantix, Tiger Army, the Living
+End; Brian Setzer; and Jim Heath in seven interviews), never from a
+recording, and carrying a `research` text with the reasons. The genre
+entry's id is `psychobilly-dive` because the app already had a
+`psychobilly` style with one feel: the eight feels join that style as
+variants, so the Jam tab's Psychobilly runs from the Sun rhythm to the horror
+minor. The engine grew what these parts needed, each held by a test: a
+Bigsby `dip` on a chord or a note (a semitone down over a tenth of a second
+and back; "dip" over the tab), a finger-snapped `pop` (the chicken-pickin'
+front), a colour tone marked `free` that keeps its note in every reading and
+takes the place of the grip's 5th when there is no room above the top string
+(E6's C♯ on the B string — the boom-chicka's chicka), and in the band the
+upright snapped on every note (`bassSnap`), the hand slapped against the
+strings between them (`slap`, the psychobilly click) and the wire brush on
+the snare (`brush`, the train beat). The Chord finder tags the grips
+(`PSYCHOBILLY_SHAPES`: E6 and A6, the 6/9 and the 9th and the 13th, a m7♭5
+as a rootless 9th, the diminished 7th, the power chords, the open B7, E7
+and A7) **Psychobilly**; the Jam tab's preset list has the forms under
+**Psychobilly** (the rockabilly twelve, the jump twelve with the 6/9, the
+Strut's descent, the train two-step, the minor stomp, the wrecking twelve,
+the surf side, the horror minor). `psychobilly.html` and
+`js/psychobilly-guide.js` are the deep dive, on the same machinery as the
+Hendrix page (`js/deep-dive.js`: the links, the cards with their neck,
+fingering, count-in, expand and print, the grips, the figures and drills,
+the songs, the sources, the contents and its fold): where it comes from
+(rockabilly, the Cramps, the Meteors and the Klub Foot, the waves, Dallas),
+the hands (the boom-chicka, the pick with the fingers behind it, the
+slapped bass and the kit, the Bigsby), the grips grouped under their core
+shapes, the changes with the grips, the scales drawn (the Sun box with the
+♭3, the blues box at the 12th, the jump side, the bebop scale, the horror
+minor, the chicken-pickin' box, the Strut's walk-down, the surf colour) and
+played as drills, exercises, the eight feels' rhythm, lead and mixed parts,
+a table of the players wave by wave, nineteen records as reference points,
+eight studies over the presets, a teachers' section, how the page was made,
+and sixty-six numbered sources.
+
 **The style review.** `review.html` is a page for deciding what the styles
 should become: every existing style beside a proposed revision of it — the
 band pattern and every guitar part, both playable — plus proposed new
@@ -1433,6 +1487,22 @@ one it replaced — a triangle wave through a lowpass at 850 Hz — is still wha
 plays when the recordings can't be reached, and the two were levelled against
 each other by measurement.
 
+The upright, slapped, is the band's own: with `bassSnap` on a pattern every
+bass note is snapped — a click of bandpassed noise on its front and a ring
+cut to a third of a second — and `slap` slots play the hand hitting the
+strings between the notes, a click with a little wood under it, on the bass
+bus (`playSlap`). A `brush` slot is the wire brush on the snare: noise that
+rises over fourteen milliseconds and falls over ninety, no body — the train
+beat's swish. On the guitar, a note marked `pop` gets eight milliseconds of
+bright click on its front (the chicken-pickin' snap), and `dip` runs the
+Bigsby through `pitchPlan`: a semitone (or the number given) down over a
+tenth of a second and back by a fifth. Measured in `js/tests-sound.js`: the
+snapped note's front some 12 dB brighter above 1.5 kHz than a plucked one
+and its ring under half as long, the brush's loudest moment twenty-odd
+milliseconds after its start where the snare's is within a few, its
+low-band power under a tenth of the snare's, the popped note's front
+brighter than the picked one's; the dip's plan checked note by note.
+
 Where the bass sits is chosen the way a player chooses it. Every root used to
 be taken in one octave, so how far it sat from the bottom of the instrument
 depended on the key — a C at MIDI 36, a B at 47 — and anything built on the
@@ -1606,7 +1676,7 @@ by what each part does:
 | `theory.js` | Keys, scale degrees, chord formulas, chord naming, chord identification. Pure — no DOM, no audio, no app state. |
 | `fretboard.js` | Tuning, CAGED and pentatonic shape templates, the maths that places them on the neck, CAGED shape matching, and the two pieces of box drawing every view shares — `boxColouredNotes`, which colours a note by the box that owns it, and `gripOutlines`, which traces the chord shape underneath. Also pure. |
 | `neck.js` | Draws a full 15-fret neck as SVG from markers and shape outlines — shared by the jam fretboard, the chord finder's CAGED overview and the reverse finder, so all three necks are one drawing. A fret is close to twice as wide as the gap between two strings, near enough the shape of the real thing to read a grip off, and a note sits close up behind its fret wire where the finger goes rather than in the middle of the gap; the inlays and the fret numbers stay centred, since that's where they are on a guitar. The label and the dot are sized against each other: a single character is set as large as the dot will hold without running into a root's ring, and a longer one ("♭3") a size down so it fits — which is what lets the dots be small enough for the strings to sit that close together. A full neck is wide, so it wants most of a laptop's width — hence the wider cap on how large the drawing may render. |
-| `progressions.js` | The preset progressions, written as scale degrees. Pure data. |
+| `progressions.js` | The preset progressions, written as scale degrees, with the Hendrix and Psychobilly groups the deep dives run on. Pure data. |
 | `tab.js` | Draws guitar tablature from a note list: the strings, the numbers, the techniques, the bar numbers, the chord's name, numeral, grip and role over each bar (and, when the fingering is on, a small chord diagram over a bar whose grip changes), the rhythm under each row (stems, flags, beams within the beat, dots, hollow heads) from each strike's slot length on either grid — a note clipped short is written as its own value with the rest as a gap, unless it is under a slot, when it is the sixteenth its strikes are spaced at. `slotAt` reads the slot under a click, the inverse of the playhead's place. Two bars share a row where a second nearly fits; `rows` gives the drawing a row at a time, and `pack` lays the bars out by what is in them, both for the print view. |
 | `tab-print.js` | The print view every surface with a tab has: the tab drawn again for a page, its bars packed the way printed tab is spaced (a slot a note starts in wide, an empty one narrow, so four bars of a rhythm part share a row, five or six of quarter notes, and a bar of sixteenths takes its room — the bar's role left off the line of names, and the shape too where its diagram shows it) with the strings a little closer, one SVG a row so a row never splits across printed pages, in the tab's own styles set to ink on paper, with a title and a line of facts over it and a Print button the printed page leaves out — opened in a new browser tab. |
 | `css/tab.css` | The tab's look, one sheet for the pages that draw it (jam, drills, parts, review, the deep dives): a 17px string gap, 11px bold numbers, thin strings, the rhythm's stems and beams, and the pane a long tab scrolls in. Each page keeps only its own playing colour and playhead. |
@@ -1614,7 +1684,9 @@ by what each part does:
 | `parts-guide-data.js` | What the parts page says about each style and part: progression, tempo, what the rhythm and notes are made of, where the idiom comes from. Pure data. |
 | `parts-guide.js` | The parts page (`parts.html`): every part written out and playable, in any reading, each with a Print button for its tab alone. |
 | `example-player.js` | The player the parts page and the deep dives share: draws a realised part as tab and loops it over the style's band, the tab following and, where the card has a neck, its dots lit as the notes sound; tells the page when the playhead enters a bar (`onBar`) and when the loop stops. `shapeOfBar` names the grip a bar is played in, `gripFor` fingers the whole hand for the diagrams. |
-| `hendrix-guide.js` | The Hendrix deep dive (`hendrix.html`): the grips drawn, the Start-here path, the examples, exercises and studies realised from the Hendrix genre and played — each with its neck, its fingering switch, its expand and its link into the jam or the drills — the teachers' section, the songs and the sources. |
+| `deep-dive.js` | The machinery every style deep dive shares: the links into the jam and drills tabs, the examples realised from a genre's parts and drawn as cards with their neck, fingering, count-in, expand and print, the grips drawn, the scale figures and drills, the songs and sources rendered, the contents in the margin and its fold, the space bar. A page calls `GT.deepDive.create(config)` with its style, its lists and its data. |
+| `hendrix-guide.js` | The Hendrix deep dive's own data (`hendrix.html`): where the hand sits, the grips, the scale figures, the drills, the examples, exercises and studies realised from the Hendrix genre, the songs and the sources — on the shared machinery. |
+| `psychobilly-guide.js` | The psychobilly deep dive's own data (`psychobilly.html`): the grips, the figures, the drills, the examples, exercises and studies realised from the Psychobilly genre, the players wave by wave, the songs and the sources — on the shared machinery. |
 | `js/styles-base.js` | The band patterns the app started with: the base `STYLES`, one entry per style with its feels. |
 | `js/styles.js` | Resolves what the app plays: the proposals merged over the base patterns, parts and guide at load (`GT.styles`), with the base kept for the review page. |
 | `js/band.js` | The band one slot at a time — kit, comp, bass, the approach and the push on the last eighth, the fill on the last bar, stop-time — used by the jam tab, the parts page and the review page alike. |
@@ -1626,11 +1698,12 @@ by what each part does:
 | `review/proposals*.js` | The proposals: revised bands and parts per existing style, new styles, the engine list. Data plus the parts, written with the same helpers parts.js uses and a few more. |
 | `review/proposals-easy.js` | Easy mode's hand-written parts: the beginner's form of a part where the page's simplifying rule can't find it. |
 | `review/proposals-hendrix.js` | The Hendrix genre: eight feels, twenty-three parts with rhythm, lead and mixed forms, the research behind them. Realised by the app's own engine (`engine: true`). |
+| `review/proposals-psychobilly.js` | The Psychobilly genre (id `psychobilly-dive`; its feels join the app's psychobilly style): eight feels from the Sun boom-chicka to the horror minor, twenty parts with rhythm, lead and mixed forms, the research behind them. Realised by the app's own engine (`engine: true`). |
 | `audio.js` | The Web Audio synth voices (piano, bass, drums) and the per-style groove patterns. Owns the `AudioContext` and the queue both players schedule into — how far a stall has put a cursor behind the clock, and calling off notes that haven't sounded — but knows nothing about the UI. |
 | `fretboard-view.js` | The jam tab's fretboard panel: the six views, the legend, the hover spotlight, the follow-playback highlighting. |
 | `jam.js` | The jam tab (once "Practice", and "CAGED practice" before that — both names still open it): progression generation, the chord display and settings, and the playback transport. |
 | `stage.js` | The jam tab's chrome: the style picker, the popover menus, the phone's controls toggle, the progression name in the chart head, the beat line, the draggable position window, and the site menu. Reads what the other modules draw; keeps no state. |
-| `chord-finder.js` | Chord finder tab: voicing search, chord diagrams; the fingering model it uses is `fingering.js`. |
+| `chord-finder.js` | Chord finder tab: voicing search, chord diagrams, the Hendrix and Psychobilly grips tagged; the fingering model it uses is `fingering.js`. |
 | `fingering.js` | The left hand on a grip: the chord finder's model (a unit a finger, barres where the hand would need more than four, each finger the one its fret says) and `handFor`, which puts it under a page's rule — the thumb over the low E on an E-shape barre — for the chord diagrams the tab shows. Shared by the chord finder, ear training and the example player. |
 | `reverse-finder.js` | Reverse chord finder tab: click targets over the shared neck, and the name lookup. |
 | `drills.js` | The drills tab: the five generators (changes, scale, picking, crossing, arpeggio), the page's state and its link, the controls (count-in, a position a chord, the fingering over the tab), the neck and the player wired to them. |
@@ -1641,7 +1714,7 @@ by what each part does:
 | `tabs.js` | Tab switching, plus the URL fragment and page title that go with each tab — including `setState`, which lets a tab write its own state after the slug so an exercise can be bookmarked. |
 | `main.js` | Boots each tab and wires the header together. |
 | `tests.js` | The regression tests, run by `tests.html`. |
-| `js/tests-sound.js` | The measured tests: the mix rendered offline and read as numbers — no clipping, a strum's sum, the part not ducking the band, the techniques heard, the kit's hits, choke, rim and beater, the room's reflections, the two pinned levels, the guitar's own fallback. |
+| `js/tests-sound.js` | The measured tests: the mix rendered offline and read as numbers — no clipping, a strum's sum, the part not ducking the band, the techniques heard, the kit's hits, choke, rim and beater, the room's reflections, the two pinned levels, the guitar's own fallback, the upright slapped and the snare brushed and the note popped. |
 | `tests-jam.js` | The jam tab's own state, pressed: the progression, the pickers, the share link, the part, the loop. Loads before `jam.js`. |
 | `tests-ear.js` | The ear trainer's drill, pressed rather than reasoned about: builds the controls it binds to, then answers questions. Loads before `ear-training.js`. |
 | `tests-fretboard.js` | What the fretboard draws: builds the controls the view binds to, then checks the shapes it renders. Loads before `fretboard-view.js`. |

@@ -447,7 +447,7 @@
       bars: chords.map((c, i) => ({ startSlot: i * grid, chord: displayName(c), numeral: c.numeral })),
       notes: notes.map(n => ({
         string: n.string, fret: n.fret, at: n.bar * grid + n.at, dur: n.dur,
-        bend: n.bend, slide: n.slide, tech: n.tech, to: n.to, soft: n.soft, vib: n.vib, trem: n.trem,
+        bend: n.bend, slide: n.slide, tech: n.tech, to: n.to, soft: n.soft, vib: n.vib, trem: n.trem, dip: n.dip,
         // an "x" over a muted strum; a muted or ghosted single note is drawn dim
         mute: n.strum ? n.mute : undefined,
         tone: !n.strum && (n.mute || n.ghost) ? 'muted' : undefined,
