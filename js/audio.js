@@ -220,33 +220,69 @@
     reverbSends = g.reverbSends; bandGain = g.bandGain; partGain = g.partGain; partSend = g.partSend;
   }
 
+  // The three stages (see buildGraph), and the trims that put each bus back
+  // where it sat before them: a Web Audio compressor adds makeup gain of
+  // its own, set by its threshold and ratio, so the buses are trimmed by
+  // measurement until the band alone and the part alone come out within a
+  // decibel of what they were (tests-sound.js holds the numbers).
+  const BAND_COMP = { threshold: -14, knee: 10, ratio: 3, attack: 0.004, release: 0.15 };
+  const PART_COMP = { threshold: -10, knee: 8, ratio: 3, attack: 0.003, release: 0.12 };
+  // The shared stage is a soft clipper, not a compressor: straight below
+  // the knee, bending to the ceiling above it, no makeup gain and no time
+  // constants — so nothing it does to a peak is heard as a level change
+  // afterwards, which is what a compressor here did.
+  const SOFT_CLIP = { knee: 0.85, ceiling: 0.98 };
+  function softClipCurve(n = 4097){
+    const { knee, ceiling } = SOFT_CLIP, room = ceiling - knee;
+    const curve = new Float32Array(n);
+    for (let i = 0; i < n; i++){
+      const x = (i / (n - 1)) * 2 - 1, a = Math.abs(x);
+      const y = a <= knee ? a : knee + room * Math.tanh((a - knee) / room);
+      curve[i] = Math.sign(x) * y;
+    }
+    return curve;
+  }
+  const BAND_TRIM = 0.89, PART_TRIM = 0.93;
+
   // Every bus, built on a context. `limiter: false` connects the buses to the
   // destination bare, so what goes INTO the limiter can be measured; `mute`
   // names buses ('band', 'part') to leave silent, so one can be measured alone.
-  function buildGraph(ctx, { limiter: withLimiter = true, mute = [] } = {}){
+  // `dynamics: 'shared'` builds the one shared compressor the app had until
+  // the split (kept as the reference the ducking test measures against).
+  function buildGraph(ctx, { limiter: withLimiter = true, mute = [], dynamics = 'split' } = {}){
     const g = { ctx };
-    // Every bus meets at one limiter, so a kick, a bass note and a full
-    // chord landing on the same beat can't add up past what the output
-    // can carry. Gentle enough to be inaudible until it's needed.
-    let out = ctx.destination;
-    if (withLimiter){
-      const limiter = ctx.createDynamicsCompressor();
-      limiter.threshold.value = -10;
-      limiter.knee.value = 12;
-      limiter.ratio.value = 6;
-      limiter.attack.value = 0.003;
-      limiter.release.value = 0.12;
+    // Dynamics in three stages. Each bus holds its own peaks with a gentle
+    // compressor of its own, so a strum on the part is the part's business
+    // and the band under it keeps its level — one compressor for both used
+    // to duck the band 1.5 dB on every strum and let it back over 120 ms,
+    // which is pumping. The one thing still shared is a soft clipper that
+    // only ever meets a true over, so a kick, a bass note and a full chord
+    // landing together can't add up past what the output can carry (T61:
+    // both buses still meet at one final stage).
+    let bandOut = ctx.destination, partOut = ctx.destination, trim = 1;
+    const comp = p => { const c = ctx.createDynamicsCompressor(); Object.entries(p).forEach(([k, v]) => { c[k].value = v; }); return c; };
+    if (withLimiter && dynamics === 'shared'){
+      const limiter = g.limiter = comp({ threshold: -10, knee: 12, ratio: 6, attack: 0.003, release: 0.12 });
       limiter.connect(ctx.destination);
-      out = limiter;
-      g.limiter = limiter;
+      bandOut = partOut = limiter;
+    } else if (withLimiter){
+      const clip = g.limiter = ctx.createWaveShaper();
+      clip.curve = softClipCurve();
+      clip.oversample = '2x';
+      clip.connect(ctx.destination);
+      bandOut = comp(BAND_COMP); bandOut.connect(clip);
+      partOut = comp(PART_COMP); partOut.connect(clip);
+      trim = 0;   // the trims below apply to the split chain only
     }
+    const bandTrim = trim ? 1 : BAND_TRIM, partTrim = trim ? 1 : PART_TRIM;
 
     // The band — comp, bass, drums and the room they share — meets on
-    // one bus before the limiter, so it has one
+    // one bus before its compressor, so it has one
     // volume against the suggested part, which has a bus of its own.
     const bandGain = g.bandGain = ctx.createGain();
-    bandGain.gain.value = mute.includes('band') ? 0 : bandLevelWanted;
-    bandGain.connect(out);
+    g.bandTrim = bandTrim;
+    bandGain.gain.value = mute.includes('band') ? 0 : bandLevelWanted * bandTrim;
+    bandGain.connect(bandOut);
 
     const masterGain = g.masterGain = ctx.createGain();
     masterGain.gain.value = 0.3;
@@ -292,19 +328,19 @@
     // lowpass) and the same room, but its own copies, so turning the band
     // down takes the band's reverb with it and leaves the part's alone.
     const partGain = g.partGain = ctx.createGain();
-    partGain.gain.value = mute.includes('part') ? 0 : 0.3;
+    partGain.gain.value = mute.includes('part') ? 0 : 0.3 * partTrim;
     const partTone = ctx.createBiquadFilter();
     partTone.type = 'lowpass';
     partTone.frequency.value = 4800;
     partTone.Q.value = 0.7;
-    partGain.connect(partTone).connect(out);
+    partGain.connect(partTone).connect(partOut);
     const partRoom = ctx.createConvolver();
     partRoom.buffer = reverb.buffer;
     const partRoomOut = ctx.createGain();
     partRoomOut.gain.value = 0.5;
     const partSend = g.partSend = ctx.createGain();
     partSend.gain.value = mute.includes('part') ? 0 : 0.32;           // the clean guitar's send, the same
-    partSend.connect(partRoom).connect(partRoomOut).connect(out);
+    partSend.connect(partRoom).connect(partRoomOut).connect(partOut);
 
     const bufferSize = Math.floor(ctx.sampleRate * 0.5);
     const noise = g.noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
@@ -322,10 +358,10 @@
   // untouched. `random` seeds the engine's randomness for a render that
   // can be reproduced; sample buffers decoded on the live context play on
   // the offline one.
-  async function renderOffline(seconds, schedule, { sampleRate = 48000, random, limiter = true, mute = [] } = {}){
+  async function renderOffline(seconds, schedule, { sampleRate = 48000, random, limiter = true, mute = [], dynamics } = {}){
     const ctx = new OfflineAudioContext(2, Math.ceil(seconds * sampleRate), sampleRate);
     const live = G, wasOffline = offline, wasRnd = rnd;
-    const g = buildGraph(ctx, { limiter, mute });
+    const g = buildGraph(ctx, { limiter, mute, dynamics });
     applyGraph(g); offline = true; if (random) rnd = random;
     try { schedule(GT.audio, ctx); }
     finally {
@@ -960,7 +996,7 @@
   // dragged doesn't click.
   function setBandLevel(level){
     bandLevelWanted = Math.max(0, Math.min(1, level));
-    if (bandGain) bandGain.gain.setTargetAtTime(bandLevelWanted, audioCtx.currentTime, 0.02);
+    if (bandGain) bandGain.gain.setTargetAtTime(bandLevelWanted * (G ? G.bandTrim : 1), audioCtx.currentTime, 0.02);
   }
   const bandLevel = () => bandLevelWanted;
 

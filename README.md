@@ -1048,6 +1048,17 @@ press came back "not that one" in all three note drills at once while the
 score counted misses. Nothing about it is wrong in isolation. Pressing every
 button and finding that exactly one is accepted is what sees it.
 
+The measured suites are in `js/tests-sound.js`: they render the mix
+offline through a graph of the engine's own (`audio.renderOffline`) and
+read the result as numbers — a peak, an RMS, the power the band loses under
+the part — rather than listening and guessing: the loudest bar the tab can
+play stays under full scale, six strings swept peak no higher than six
+struck together, and the part does not duck the band, measured against the
+old shared compressor kept in the engine as the reference. On `http://` the
+recordings are what is measured; on `file://` the synthesized voices are,
+and each label says which. The runner awaits a suite that returns a
+promise, so these run inside `tests.html` with the rest.
+
 A suite that throws is reported as a failure rather than taking the page down
 with it — a page with no results says less than a red line does, least of all
 when what threw is the thing the suite was written to catch.
@@ -1197,16 +1208,23 @@ too, under Voice, and falls back the same way: the piano is what you get
 until the samples are resident, and all that happens on a page that can't
 reach them is that the fallback is permanent. Its drums stay synthesized.
 
-That loop queues the notes 0.4 s ahead of the sound, and steps over any beat
-whose moment has already passed. Both matter for the same reason: a browser
+That loop queues the notes 0.4 s ahead of the sound while the page is
+visible, and 1.25 s once it is hidden — a hidden page's timers are clamped
+to a second, and a 0.4 s queue emptied once a second was a stutter once a
+second; each scheduler refills to the wider cushion the moment the page
+goes hidden, before the first slow tick — and steps over any beat whose
+moment has already passed. Both matter for the same reason: a browser
 throttles the timers of a page that isn't focused, to a second or more, and a
 beat handed to the audio clock late doesn't play late — every note of it
 starts at the same instant, which is heard as a burst of pops rather than
 music. Stepping over the missed beats makes a stall a slip in the
 progression instead, the way a metronome carries on while you look away. The
 cushion costs nothing at the transport, because stopping calls off the notes
-still queued; the ones already sounding are left to ring out. The counting
-and the calling-off both live in `audio.js`, beside the clock.
+still queued; the ones already sounding are left to ring out. The counting,
+the calling-off and the two cushions all live in `audio.js`, beside the
+clock. The count-in and the Simple click sit at the band's own hat level
+with a downbeat accent (they used to play at 1.0, five decibels over the
+loudest hat the band ever plays).
 
 Two things keep a practice session alive on a phone propped up on a music
 stand. The screen is held awake while something is playing — and only while
@@ -1254,6 +1272,7 @@ by what each part does:
 | `tabs.js` | Tab switching, plus the URL fragment and page title that go with each tab — including `setState`, which lets a tab write its own state after the slug so an exercise can be bookmarked. |
 | `main.js` | Boots each tab and wires the header together. |
 | `tests.js` | The regression tests, run by `tests.html`. |
+| `js/tests-sound.js` | The measured tests: the mix rendered offline and read as numbers — no clipping, a strum's sum, the part not ducking the band. |
 | `tests-ear.js` | The ear trainer's drill, pressed rather than reasoned about: builds the controls it binds to, then answers questions. Loads before `ear-training.js`. |
 | `tests-fretboard.js` | What the fretboard draws: builds the controls the view binds to, then checks the shapes it renders. Loads before `fretboard-view.js`. |
 

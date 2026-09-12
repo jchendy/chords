@@ -89,9 +89,65 @@
     t.ok(rms(swept, 0.05, 0.5) > 0.005, 'and it sounded');
   }
 
-  GT.sound = { peak, rms, dB, seeded, withVoices, loudestBar };
+  // The part and the band meet at the output. What the band loses when the
+  // part plays over it — the same two bars rendered band only, part only,
+  // and both, the loss read as the power the sum should have had against
+  // the power it has — is the ducking. It should be nothing anyone hears.
+  function rockBars(a, { part = true, band = true } = {}){
+    const style = a.STYLES.rock.variants[1];        // plain Rock: the fresh page's feel
+    const chord = chordFromName('A'), next = chordFromName('D');
+    const spb = 0.5, slotDur = spb * 4 / style.grid;
+    for (let bar = 0; bar < 2; bar++){
+      const t0 = 0.05 + bar * spb * 4;
+      if (band) for (let slot = 0; slot < style.grid; slot++){
+        GT.band.scheduleSlot(style, slot, t0 + slot * slotDur, slotDur, { audio: a, chord, next, voice: 'piano', changing: bar === 1, fillNow: false, stopped: false });
+      }
+      // the part on a chord a tritone from the band's, so the two share no
+      // pitches and the power of their sum is the sum of their powers —
+      // what is measured is the dynamics, not the harmony
+      if (part) [0, 4, 8, 12].forEach(slot => {
+        const grip = [51, 58, 63, 67, 70].map(m => 440 * Math.pow(2, (m - 69) / 12));   // an E♭ shape, five strings
+        a.strum(grip, t0 + slot * slotDur, slotDur * 3.6, 0.9 * a.PART_LEVEL, { bus: 'part' });
+      });
+    }
+  }
+  const power = (buf, from, to) => Math.pow(rms(buf, from, to), 2);
+  // ...through a chain: 'split' (each bus its own compressor, a soft clipper
+  // shared) or 'shared' (the one compressor both buses met at until the
+  // split — the reference)
+  async function measureDucking(dynamics){
+    const opts = seed => ({ random: seeded(seed), dynamics });
+    const band = await audio.renderOffline(4.2, a => rockBars(a, { part: false }), opts(5));
+    const part = await audio.renderOffline(4.2, a => rockBars(a, { band: false }), opts(5));
+    const both = await audio.renderOffline(4.2, a => rockBars(a), opts(5));
+    const from = 0.2, to = 4.0;
+    const lossOver = (a, b) => 10 * Math.log10((power(band, a, b) + power(part, a, b)) / power(both, a, b));
+    // over the whole stretch; at each strum's attack (the first 40 ms,
+    // where a clipper bends the peak — instantaneous, not heard as a level);
+    // and after it (40 to 150 ms), where a shared compressor's gain stays
+    // down and lets go — the pumping
+    const mean = lossOver(from, to);
+    const onsets = []; for (let bar = 0; bar < 2; bar++) [0, 4, 8, 12].forEach(slot => onsets.push(0.05 + bar * 2 + slot * 0.125));
+    const atPeak = Math.max(...onsets.map(o => lossOver(o, o + 0.04)));
+    const pump = Math.max(...onsets.map(o => lossOver(o + 0.04, o + 0.15)));
+    return { duck: mean, pump, atPeak, peak: peak(both), bandRms: rms(band, from, to), partRms: rms(part, from, to) };
+  }
+  async function testThePartDoesNotDuckTheBand(t){
+    const v = await withVoices();
+    const was = await measureDucking('shared');
+    const m = await measureDucking('split');
+    t.ok(m.pump < 0.5, `after a strum lands the band loses at most ${m.pump.toFixed(2)} dB (40 to 150 ms on) — it was ${was.pump.toFixed(2)} dB with the one shared compressor; at the peak itself ${m.atPeak.toFixed(2)} dB (was ${was.atPeak.toFixed(2)}), over the whole ${m.duck.toFixed(2)} (was ${was.duck.toFixed(2)}) (${v.label})`);
+    t.ok(m.pump < was.pump, 'and less than it was');
+    t.ok(m.peak < 0.99, `and together they peak at ${m.peak.toFixed(3)}`);
+    // ...and each bus alone sits within a decibel of where the old chain put it
+    t.ok(Math.abs(dB(m.bandRms) - dB(was.bandRms)) < 1, `the band alone is within a decibel of where it was (${fmt(m.bandRms)} against ${fmt(was.bandRms)})`);
+    t.ok(Math.abs(dB(m.partRms) - dB(was.partRms)) < 1, `the part alone too (${fmt(m.partRms)} against ${fmt(was.partRms)})`);
+  }
+
+  GT.sound = { peak, rms, dB, seeded, withVoices, loudestBar, rockBars, measureDucking };
   GT.soundSuites = [
     ['Sound: the mix stays under full scale', testTheMixStaysUnderFullScale],
     ['Sound: what a six-string strum sums to', testWhatASixStringStrumSumsTo],
+    ['Sound: the part does not duck the band', testThePartDoesNotDuckTheBand],
   ];
 })();
