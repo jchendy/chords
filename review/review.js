@@ -408,19 +408,9 @@
         const bctx = { chord, next, audio, voice: 'piano', changing, fillNow: lastBar && !!p.fill, stopped, jit: jitter };
         for (let slot = 0; slot < grid; slot++) GT.band.scheduleSlot(p, slot, t0 + slot * slotDur + swingOf(slot) + jitter(0.006), slotDur, bctx);
       }
-      notes.filter(n => n.bar === bar).forEach(n => {
-        const t = t0 + n.at * slotDur + swingOf(Math.floor(n.at)) + (n.spread || 0) + jitter(0.008), dur = n.dur * slotDur;
-        const vel = (n.vel + jitter(0.08)) * 2.4;
-        const fx = n.bend ? { bend: n.bend } : n.slide != null ? { slideFrom: hz(n.midi + (n.slide - n.fret)) }
-                 : n.soft ? { soft: true } : n.mute ? { mute: true } : null;
-        if (n.rake){
-          // two muted strings swept into the note, the way a pick rakes
-          [2, 1].forEach((k, i) => audio.playPluck(hz(n.midi - 5 * k), t - 0.028 + i * 0.012, 0.06, 0.22, 'part', { mute: true }));
-        }
-        audio.playPluck(hz(n.midi), t, dur, vel, 'part', fx);
-        if (opt.slapback && p.slapback) audio.playPluck(hz(n.midi), t + 0.11, Math.min(dur, 0.25), vel * 0.35, 'part', fx && fx.mute ? fx : null);
-        log.push({ time: t, until: t + dur, slot: bar * grid + n.at });
-      });
+      // the part through the engine's one player, at the practice tab's default level
+      audio.playPartNotes(notes.filter(n => n.bar === bar), n => t0 + n.at * slotDur + swingOf(Math.floor(n.at)), slotDur, audio.PART_LEVEL, { slapback: !!(opt.slapback && p.slapback), jit: jitter })
+        .forEach(({ note: n, time, until }) => log.push({ time, until, slot: bar * grid + Math.floor(n.at) }));
       for (let slot = 0; slot < grid; slot++) log.push({ time: t0 + slot * slotDur, slot: bar * grid + slot, head: true });
       nextBarTime += barLen;
       bar = (bar + 1) % chords.length;

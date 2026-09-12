@@ -61,7 +61,14 @@ beat), nine for a jazz waltz (three beats of three). Every event has a slot
   `fifth` (the 5th alone — the other note an alternating thumb goes to),
   `power` (root, 5th, octave), `shell` (root, 3rd, 7th). `sn` strikes the
   next chord early (the "and of 4" push). `add: 14` puts a colour tone (the
-  9th) on top; `chordSlide: 1` slides the chord in from a fret below.
+  9th) on top; `chordSlide: 1` slides the chord in from a fret below;
+  `stroke: 'up'` says which way the pick goes — otherwise the hand's rule
+  decides from the slot (`strokeFor` in parts.js: down on the beat and the
+  "and", up between, when the bar moves in sixteenths; down on the beat and
+  up on the rest otherwise). The engine sweeps a strum the way a pick
+  crosses the strings (audio.js `strumPlan`): 32 ms low to high on a
+  downstroke, 22 ms high to low on an upstroke, the later strings a shade
+  lighter, the whole strum weighing what `strumStringLevel` says.
 - `d(at, iv, iv2, ...)` a double stop; `up: 2` bends its lower note.
   `b(at, iv, up, ...)` a bend, `h`/`p` hammer-on and pull-off, `sl(at,
   from, iv, ...)` a slide. `g` is a ghost strum (a muted scratch).
@@ -134,7 +141,9 @@ A style's pattern is slot lists for the kit (`kick`, `snare`, `hat`, `ride`,
 (`off` an interval, `walk` a step of a walking line, `next` the next
 chord's root), a `fill` for the last bar of the form, `bassApproach` (a
 semitone below the chord to come, on the last eighth before a change),
-`compAnticipate` (the next chord struck on that last eighth), `swing` for
+`compAnticipate` (the next chord struck on that last eighth, as an
+upstroke), an optional `stroke` on a chord entry for the guitar voice (la
+pompe is all downstrokes; otherwise the hand's rule decides), `swing` for
 sixteen-slot grids, `beats` when not four, `slapback` where the style lives
 on it, and `voice` (`triad`, `dom7` or `jazz`). `js/band.js` has the rules
 and the list.

@@ -72,8 +72,26 @@
     t.ok(rms(buf, 0.2, 4) > 0.01, 'and it made a sound');
   }
 
+  // T70's third question: what does a six-string strum sum to on the bus?
+  // Six strings struck together and the same six swept, rendered bare (no
+  // limiter) to read what would go into it, and through the limiter to
+  // read what comes out.
+  async function testWhatASixStringStrumSumsTo(t){
+    const v = await withVoices();
+    const grip = [40, 45, 50, 55, 59, 64].map(m => 440 * Math.pow(2, (m - 69) / 12));   // an open E-shape, low to high
+    const one = (a, sweep) => [0, 0.6, 1.2].forEach(at => a.strum(grip, 0.05 + at, 0.5, 0.9 * a.PART_LEVEL, { bus: 'part', sweep }));
+    const flat = await audio.renderOffline(2, a => one(a, 0), { limiter: false, random: seeded(3) });
+    const swept = await audio.renderOffline(2, a => one(a), { limiter: false, random: seeded(3) });
+    const out = await audio.renderOffline(2, a => one(a), { random: seeded(3) });
+    const pf = peak(flat), ps = peak(swept), po = peak(out);
+    t.ok(ps <= pf * 1.02, `six strings swept peak at ${ps.toFixed(3)} into the limiter, struck together ${pf.toFixed(3)} — the sweep does not add to the peak (${v.label})`);
+    t.ok(po < 0.99, `and out of the limiter the strum peaks at ${po.toFixed(3)} (${fmt(po)})`);
+    t.ok(rms(swept, 0.05, 0.5) > 0.005, 'and it sounded');
+  }
+
   GT.sound = { peak, rms, dB, seeded, withVoices, loudestBar };
   GT.soundSuites = [
     ['Sound: the mix stays under full scale', testTheMixStaysUnderFullScale],
+    ['Sound: what a six-string strum sums to', testWhatASixStringStrumSumsTo],
   ];
 })();

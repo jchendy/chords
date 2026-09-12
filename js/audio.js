@@ -787,7 +787,10 @@
   //   mute:      palm-muted: short, and the top rolled off
   // Pitch is moved by the sample's playback rate, which is what a bend or a
   // slide does to a string — the same recording, faster.
-  function playPluck(freq, time, duration, velocity = 1, bus = 'band', fx = null){
+  // `who` says what the pluck is beyond its sound: { string } names the
+  // string it is on (the part's realised notes know theirs; a strum's k-th
+  // note from the bottom is 'strum:k'), for the players and the tests.
+  function playPluck(freq, time, duration, velocity = 1, bus = 'band', fx = null, who = {}){
     const spec = sampleFor(midiOf(freq));
     const buffer = guitarBank.buffers.get(spec.file);
     if (!buffer){
@@ -797,9 +800,14 @@
     voiceUse.guitarSampled++;
     const src = audioCtx.createBufferSource();
     src.buffer = buffer;
-    // the sample's own pitch, moved to the note asked for
-    const rateFor = f => f / (440 * Math.pow(2, (spec.key - 69) / 12));
+    // the sample's own pitch, moved to the note asked for — and a hair off
+    // it, with a hair of the recording's front skipped, so no two plucks of
+    // a string are the same waveform and two voices on one pitch never
+    // start in phase (the comp and the part share these recordings)
+    const cents = (rnd() - 0.5) * PLUCK_DETUNE_CENTS;
+    const rateFor = f => f / (440 * Math.pow(2, (spec.key - 69) / 12)) * Math.pow(2, cents / 1200);
     const rate = rateFor(freq);
+    const skip = rnd() * PLUCK_SKIP;
     if (fx && fx.slideFrom){
       src.playbackRate.setValueAtTime(rateFor(fx.slideFrom), time);
       src.playbackRate.linearRampToValueAtTime(rate, time + Math.min(0.08, duration * 0.5));
@@ -841,8 +849,101 @@
       env.connect(masterGain);
       env.connect(reverbSends.clean);
     }
-    startVoice(src, time, env);
+    startVoice(src, time, env, skip);
     src.stop(time + duration + 0.06);
+  }
+  const PLUCK_DETUNE_CENTS = 10;      // ±5 cents, under what an ear hears as out of tune
+  const PLUCK_SKIP = 0.004;           // up to 4 ms of the recording's front
+
+  // ---- a strum -------------------------------------------------------------
+  // A strum is the strings one after another the way a pick crosses them:
+  // down is the low string first and the whole sweep SWEEP.down wide, up is
+  // the high string first and quicker; the strings struck later are a shade
+  // lighter (SWEEP_TAPER from first to last); and the whole strum carries
+  // the weight one and a half notes would whatever its size — STRUM_SHARE
+  // is parts.js's strumStringLevel (B49), held equal by a test — with the
+  // taper renormalised so the sweep changes the shape and not the level.
+  const SWEEP = { down: 0.032, up: 0.022 };
+  const SWEEP_TAPER = 0.22;
+  const STRUM_SHARE = n => Math.min(1, 1.45 / Math.sqrt(n));
+
+  // The plan: [{ freq, at, level, string }] in the order they sound. `vel`
+  // is one level for the strum, or a level a string low to high (the
+  // part's realised strings carry their own).
+  function strumPlan(freqs, time, vel, { stroke = 'down', sweep, strings } = {}){
+    const n = freqs.length;
+    const order = freqs.map((f, i) => i);
+    if (stroke === 'up') order.reverse();
+    const width = sweep != null ? sweep : (SWEEP[stroke] != null ? SWEEP[stroke] : SWEEP.down);
+    const gap = n > 1 ? width / (n - 1) : 0;
+    const base = Array.isArray(vel) ? vel : freqs.map(() => vel * STRUM_SHARE(n));
+    const shaped = order.map((i, k) => base[i] * (1 - SWEEP_TAPER * (n > 1 ? k / (n - 1) : 0)));
+    const was = Math.sqrt(base.reduce((s, v) => s + v * v, 0));
+    const is = Math.sqrt(shaped.reduce((s, v) => s + v * v, 0)) || 1;
+    return order.map((i, k) => ({ freq: freqs[i], at: time + k * gap, level: shaped[k] * was / is,
+                                 string: strings ? strings[i] : `strum:${i}` }));
+  }
+
+  function strum(freqs, time, duration, vel, opts = {}){
+    strumPlan(freqs, time, vel, opts).forEach(s =>
+      playPluck(s.freq, s.at, duration, s.level, opts.bus || 'band', opts.fx || null, { string: s.string }));
+  }
+
+  // ---- the part, played --------------------------------------------------
+  // The practice tab, the parts page and the review page all play a
+  // realised part; this is the one place it is turned into sound. `notes`
+  // are realised notes (parts.js), `at(n)` the audio time of a note's own
+  // `at` (the caller knows its grid, its swing and its humanising), `level`
+  // the part's gain over the realised velocity (PART_LEVEL at the default
+  // slider, B48). Strums are grouped by their moment and swept; a rake is
+  // two muted strings ahead of the note; a slapback is a second, quieter
+  // pluck a moment on where the style lives on it. Returns what it played,
+  // for the followers.
+  const PART_LEVEL = 2.4;
+  const hz = m => 440 * Math.pow(2, (m - 69) / 12);
+  // what a realised note asks of the engine — all of it, not the first
+  // flag that matches: a hammered note can be muted, a bend can shake
+  const partFx = n => {
+    const fx = {};
+    if (n.bend) fx.bend = n.bend;
+    if (n.slide != null) fx.slideFrom = hz(n.midi + (n.slide - n.fret));
+    if (n.soft) fx.soft = true;
+    if (n.mute) fx.mute = true;
+    if (n.vib) fx.vib = true;
+    return Object.keys(fx).length ? fx : null;
+  };
+  function playPartNotes(notes, at, slotDur, level, { slapback = false, jit = () => 0 } = {}){
+    const played = [], strums = new Map();
+    const slap = (freq, t, dur, vel, fx) => {
+      if (slapback) playPluck(freq, t + 0.11, Math.min(dur, 0.25), vel * 0.35, 'part', fx && fx.mute ? { mute: true } : null);
+    };
+    notes.forEach(n => {
+      if (n.strum){
+        const key = `${n.at}|${n.voicing || 'full'}|${n.next ? 'n' : ''}`;
+        if (!strums.has(key)) strums.set(key, []);
+        strums.get(key).push(n);
+        return;
+      }
+      const t = at(n) + jit(0.008), dur = n.dur * slotDur, vel = n.vel * level * (1 + jit(0.08));
+      const fx = partFx(n);
+      if (n.rake) [2, 1].forEach((k, i) => playPluck(hz(n.midi - 5 * k), t - 0.028 + i * 0.012, 0.06, 0.22 * level, 'part', { mute: true }, { string: `part:${n.string + k}` }));
+      playPluck(hz(n.midi), t, dur, vel, 'part', fx, { string: `part:${n.string}` });
+      slap(hz(n.midi), t, dur, vel, fx);
+      played.push({ note: n, time: t, until: t + dur });
+    });
+    strums.forEach(group => {
+      group.sort((a, b) => a.midi - b.midi);
+      const first = group[0], t = at(first) + jit(0.008), dur = first.dur * slotDur;
+      const fx = partFx(first);
+      const plan = strumPlan(group.map(n => hz(n.midi)), t, group.map(n => n.vel * level * (1 + jit(0.08))),
+                             { stroke: first.stroke || 'down', strings: group.map(n => `part:${n.string}`) });
+      plan.forEach(s => {
+        playPluck(s.freq, s.at, dur, s.level, 'part', fx, { string: s.string });
+        slap(s.freq, s.at, dur, s.level, fx);
+        played.push({ note: group.find(n => `part:${n.string}` === s.string), time: s.at, until: s.at + dur });
+      });
+    });
+    return played;
   }
 
   // The band's volume, 0..1, as one gain on its bus — the comp, the bass,
@@ -963,7 +1064,7 @@
   // hasn't arrived plays as piano, which is a chord in the wrong voice
   // instead of a hole in the beat. warmGuitar() before playback makes that
   // rare — the practice tab calls it when you press Play.
-  const STRUM_GAP = 0.016;
+  const PIANO_ROLL = 0.003;           // two hands never land dead together
 
   // Whatever the notes are, played the way the chosen voice plays them. Every
   // chord in the app comes through here — the plain triad, the styles' 7ths,
@@ -981,17 +1082,17 @@
   };
   const resetVoiceUse = () => Object.keys(voiceUse).forEach(k => { voiceUse[k] = 0; });
 
-  function playVoicedNotes(freqs, time, duration, velocity, voice){
+  function playVoicedNotes(freqs, time, duration, velocity, voice, opts = {}){
     lastVoiceAsked = voice || 'piano';
     if (voice === 'guitar' && freqs.every(pluckReady)){
-      freqs.forEach((freq, i) => playPluck(freq, time + i * STRUM_GAP, duration, velocity));
+      strum(freqs, time, duration, velocity, { stroke: opts.stroke || 'down', bus: 'band' });
       return;
     }
-    freqs.forEach(freq => playNote(freq, time, duration, velocity));
+    freqs.forEach((freq, i) => playNote(freq, time + i * PIANO_ROLL, duration, velocity));
   }
 
-  function playChord(chord, time, duration, velocity, voice){
-    playVoicedNotes(chordFrequencies(chord), time, duration, velocity, voice);
+  function playChord(chord, time, duration, velocity, voice, opts){
+    playVoicedNotes(chordFrequencies(chord), time, duration, velocity, voice, opts);
   }
 
   // Every recording at once, for a tab that plays to a clock and can't wait
@@ -1077,8 +1178,8 @@
     }));
   }
 
-  function playChord7(chord, time, duration, velocity, rootless, voice){
-    playVoicedNotes(chord7Frequencies(chord, rootless), time, duration, velocity, voice);
+  function playChord7(chord, time, duration, velocity, rootless, voice, opts){
+    playVoicedNotes(chord7Frequencies(chord, rootless), time, duration, velocity, voice, opts);
   }
 
   // Which band a velocity asks for, and which sample inside it. Our velocity
@@ -1251,19 +1352,21 @@
   // a voice added here can't quietly start playing notes nothing warmed.
   const STYLE_VOICES = {
     triad: { freqs: chord => chordFrequencies(chord),
-             play: (chord, t, d, v, voice) => playChord(chord, t, d, v, voice) },
+             play: (chord, t, d, v, voice, o) => playChord(chord, t, d, v, voice, o) },
     dom7:  { freqs: chord => chord7Frequencies(chord, false),
-             play: (chord, t, d, v, voice) => playChord7(chord, t, d, v, false, voice) },
+             play: (chord, t, d, v, voice, o) => playChord7(chord, t, d, v, false, voice, o) },
     jazz:  { freqs: chord => chord7Frequencies(chord, true),
-             play: (chord, t, d, v, voice) => playChord7(chord, t, d, v, true, voice) },
+             play: (chord, t, d, v, voice, o) => playChord7(chord, t, d, v, true, voice, o) },
   };
 
   // `styleVoice` is how the style spells a chord — triad, 7th, jazz shell.
   // `voice` is what plays it, piano or guitar, and it has to be carried the
   // whole way down: a style that drops it leaves the Voice control doing
   // nothing whenever that style is playing.
-  function playStyleVoice(styleVoice, chord, time, duration, velocity, voice){
-    (STYLE_VOICES[styleVoice] || STYLE_VOICES.triad).play(chord, time, duration, velocity, voice);
+  // `opts.stroke` — 'down' or 'up' — is which way the pick goes when the
+  // voice is the guitar; the piano has no use for it.
+  function playStyleVoice(styleVoice, chord, time, duration, velocity, voice, opts){
+    (STYLE_VOICES[styleVoice] || STYLE_VOICES.triad).play(chord, time, duration, velocity, voice, opts);
   }
 
   // ---- style rhythm patterns (one bar of 4/4) --------------------------------
@@ -1290,6 +1393,7 @@
   GT.audio = {
     ctx: () => audioCtx,               // live handle; null until ensureAudio() runs
     renderOffline, buildGraph,          // a render through a graph of its own, for measuring
+    strum, strumPlan, STRUM_SHARE, SWEEP, SWEEP_TAPER, playPartNotes, PART_LEVEL, partFx,
     pianoWaveFor, PIANO_PARTIALS,      // exposed so the tests can render a note offline
     GUITAR_SAMPLES, sampleFor,         // ...and to check every note has a recording behind it
     ensureAudio, keepAwake, planSleep, sleepDelay, IDLE_SLEEP_SEC, HIDDEN_SLEEP_SEC, cancelScheduled, stepsToSkip, noteFreq, chordFrequencies, pcFreq, bassFreqAt, walkBassFreq, ROOT_OCTAVE,

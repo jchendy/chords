@@ -6,8 +6,11 @@
 //   kick / snare / hat / ride / rim / ghost / hatOpen — slot lists; the hat
 //     accents the beat, an open hat rings longer, ghost and rim are quiet snares
 //   kickVel / snareVel, kickVels / snareVels — one level, or a level per slot
-//   chord: [{ slot, dur, vel }] — the comp; compAnticipate strikes the NEXT
-//     chord on the last eighth of a bar before a change (the "and of 4" push)
+//   chord: [{ slot, dur, vel, stroke? }] — the comp; `stroke` ('down'/'up')
+//     says which way the pick goes on the guitar voice, else the hand's
+//     rule (parts.js strokeFor) decides from the slot; compAnticipate
+//     strikes the NEXT chord on the last eighth of a bar before a change
+//     (the "and of 4" push), as an upstroke
 //   bass: [{ slot, off | walk | next, dur, vel }] — the bass: an interval off
 //     the root, a step of a walking line, or the next chord's root; with
 //     bassApproach the last eighth before a change is a semitone below the
@@ -53,10 +56,15 @@
     const vk = (style.kickVels && style.kickVels[slot]) || style.kickVel || 0.9;
     const vs = (style.snareVels && style.snareVels[slot]) || style.snareVel || 0.85;
 
+    // which way the pick goes on the guitar voice: the pattern's own word
+    // for the entry, else the hand's rule for the slot (parts.js); a bar
+    // with comp strikes off the eighths is a hand moving in sixteenths
+    const fine = per === 4 && (style.chord || []).some(e => e.slot % 2 === 1);
+    const strokeAt = s => GT.parts.strokeFor(per, s, fine);
     if (ctx.stopped){
       if (slot === 0 && chord){
         if (style.kick && style.kick.length) audio.playKick(at, vk);
-        if (style.chord && style.chord.length) audio.playStyleVoice(style.voice, chord, at, slotDur * 2, 0.7, voice);
+        if (style.chord && style.chord.length) audio.playStyleVoice(style.voice, chord, at, slotDur * 2, 0.7, voice, { stroke: 'down' });
         if (style.bass && style.bass.length) audio.playBass(audio.bassNote(SEMITONE[chord.note] % 12, 0), at, slotDur * 2, 0.9);
       }
       return;
@@ -80,9 +88,9 @@
 
     if (!chord) return;
     const ce = style.chord && style.chord.find(e => e.slot === slot);
-    if (ce) audio.playStyleVoice(style.voice, chord, at, ce.dur * slotDur, ce.vel + jit(0.06), voice);
+    if (ce) audio.playStyleVoice(style.voice, chord, at, ce.dur * slotDur, ce.vel + jit(0.06), voice, { stroke: ce.stroke || strokeAt(slot) });
     if (style.compAnticipate && ctx.changing && slot === last && next){
-      audio.playStyleVoice(style.voice, next, at, slotDur * (per / 2), 0.6, voice);
+      audio.playStyleVoice(style.voice, next, at, slotDur * (per / 2), 0.6, voice, { stroke: 'up' });   // the push is an upstroke
     }
     const be = style.bass && style.bass.find(e => e.slot === slot);
     if (be){

@@ -139,16 +139,9 @@
           GT.band.scheduleSlot(feel, slot, t0 + slot * slotDur + GT.band.swingOffset(feel, slot, slotDur), slotDur, bctx);
         }
       }
-      notes.filter(n => n.bar === bar).forEach(n => {
-        const t = t0 + n.at * slotDur + GT.band.swingOffset(feel, Math.floor(n.at), slotDur) + (n.spread || 0), dur = n.dur * slotDur;
-        const fx = n.bend ? { bend: n.bend } : n.slide != null ? { slideFrom: hz(n.midi + (n.slide - n.fret)) }
-                 : n.soft ? { soft: true } : n.mute ? { mute: true } : null;
-        // a rake: two muted strings swept into the note
-        if (n.rake) [2, 1].forEach((k, i) => audio.playPluck(hz(n.midi - 5 * k), t - 0.028 + i * 0.012, 0.06, 0.22, 'part', { mute: true }));
-        audio.playPluck(hz(n.midi), t, dur, n.vel * 2.4, 'part', fx);
-        if (feel.slapback) audio.playPluck(hz(n.midi), t + 0.11, Math.min(dur, 0.25), n.vel * 2.4 * 0.35, 'part', fx && fx.mute ? fx : null);
-        log.push({ time: t, until: t + dur, slot: bar * grid + Math.floor(n.at) });
-      });
+      // the part through the engine's one player, at the practice tab's default level
+      audio.playPartNotes(notes.filter(n => n.bar === bar), n => t0 + n.at * slotDur + GT.band.swingOffset(feel, Math.floor(n.at), slotDur), slotDur, audio.PART_LEVEL, { slapback: !!feel.slapback })
+        .forEach(({ note: n, time, until }) => log.push({ time, until, slot: bar * grid + Math.floor(n.at) }));
       for (let slot = 0; slot < grid; slot++) log.push({ time: t0 + slot * slotDur, slot: bar * grid + slot, head: true });
       nextBarTime += barLen;
       bar = (bar + 1) % chords.length;

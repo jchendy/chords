@@ -1361,8 +1361,22 @@
     }
   }
 
-  // The order a pick sweeps, low string first, this far apart.
+  // The order a pick sweeps, low string first, this far apart — the tab's
+  // ordering of a strum's strings; the sound's sweep is audio.js's.
   const STRUM_SPREAD = 0.016;
+  // Which way the pick goes: the hand keeps moving in the smallest division
+  // the bar uses. In fours — down on the beat and the "and", up on the "e"
+  // and the "a" when the bar has sixteenths in it (fine); otherwise down on
+  // the beat, up on the "and". In threes (swung eighths, 12/8): down on the
+  // beat, up on the rest. `per` is slots to a beat.
+  function strokeFor(per, slot, fine){
+    const k = ((slot % per) + per) % per;
+    if (per === 4) return fine ? (k % 2 === 0 ? 'down' : 'up') : (k === 0 ? 'down' : 'up');
+    return k === 0 ? 'down' : 'up';
+  }
+  // whether a written bar has strums off the eighths — then its pick hand
+  // is moving in sixteenths
+  const fineBar = (written, per) => per === 4 && (written || []).some(w => w.strum && ((w.at % 2) + 2) % 2 === 1);
 
   // A strum's strings share the strum's weight rather than each carrying it.
   // Six strings each at a single note's level summed to 1.27 going into the
@@ -1379,6 +1393,10 @@
   // point at it; without one, the next chord is this one.
   function realiseBar(written, chord, opts, nextChord){
     const { root, allowed } = palette(chord, opts);
+    // the pick hand's rule for this bar: slots a beat from the grid (four
+    // on sixteen, three on twelve), and whether it moves in sixteenths
+    const per = (opts.grid || 16) % 3 === 0 ? 3 : 4;
+    const fine = opts.fine != null ? opts.fine : fineBar(written, per);
     const cells = cellsIn(opts.window);
     const home = homeMidi(cells, root);
     // the notes written against the next chord are placed from its root,
@@ -1394,9 +1412,10 @@
         const grip = strumCells(chord, opts, w.voicing || 'full');
         if (!grip) return;
         const each = w.vel * strumStringLevel(grip.length);
+        const stroke = w.stroke || strokeFor(per, w.at, fine);
         grip.forEach((c, k) => {
           out.push({ at: w.at, dur: w.dur, vel: each, string: c.string, fret: c.fret, midi: c.midi,
-                     strum: true, voicing: w.voicing || 'full', mute: !!w.mute, spread: k * STRUM_SPREAD });
+                     strum: true, voicing: w.voicing || 'full', mute: !!w.mute, spread: k * STRUM_SPREAD, stroke });
         });
         prev = grip[grip.length - 1];
         return;
@@ -1722,17 +1741,21 @@
       // colour tone, and double stops, are placed here; the rest goes
       // through realiseBar
       const plain = [], extra = [], pairs = [];
+      // the pick hand's rule for this bar, for the strums placed here and in realiseBar alike
+      const per = grid % 3 === 0 ? 3 : 4;
+      const fine = fineBar(written, per);
+      const barOpts = { ...opts, grid, fine };
       const doubleOk = !(opts.tech && opts.tech.double === false);
       written.forEach(w => {
         if (w.strum && (w.voicing === 'shell' || w.voicing === 'power' || w.voicing === 'bass' || w.voicing === 'fifth' || w.add || w.next)) extra.push(w);
         else if (w.tech === 'double' && doubleOk) pairs.push(w);
         else plain.push(w);
       });
-      let notes = realiseBar(plain, bar.chord, opts, next);
+      let notes = realiseBar(plain, bar.chord, barOpts, next);
       const pal = palette(bar.chord, opts), nextPal = palette(next, opts);
       pairs.forEach(w => {
         const placed = placePair(w, cells, w.next ? nextPal : pal, homeMidi(cells, (w.next ? nextPal : pal).root));
-        if (!placed){ notes = notes.concat(realiseBar([w], w.next ? next : bar.chord, opts, next)); return; }
+        if (!placed){ notes = notes.concat(realiseBar([w], w.next ? next : bar.chord, barOpts, next)); return; }
         const mk = (c, more) => ({ at: w.at, dur: w.dur, vel: w.vel, string: c.string, fret: c.fret, midi: c.midi, iv: w.iv, next: !!w.next, tech: 'double', ...more });
         notes.push(mk(placed.c1, {}), mk(placed.c2, { pair: true, iv: w.iv2 }));
       });
@@ -1754,8 +1777,9 @@
           if (colour) grip.push(colour);
         }
         const each = w.vel * strumStringLevel(grip.length);
+        const stroke = w.stroke || strokeFor(per, w.at, fine);
         grip.forEach((c, k) => notes.push({ at: w.at, dur: w.dur, vel: each, string: c.string, fret: c.fret, midi: c.midi,
-                                             strum: true, voicing: w.voicing, mute: !!w.mute, next: !!w.next, spread: k * STRUM_SPREAD,
+                                             strum: true, voicing: w.voicing, mute: !!w.mute, next: !!w.next, spread: k * STRUM_SPREAD, stroke,
                                              ...(c === colour ? { colour: true } : {}) }));
       });
       if (part.fingers) notes = fingersOffThumb(notes, cells);
@@ -1794,6 +1818,6 @@
 
   GT.parts = { get LIBRARY(){ return LIBRARY_NOW; }, set LIBRARY(v){ LIBRARY_NOW = v; }, LIBRARY_BASE: LIBRARY,
                SIMPLE_FEEL, TECHNIQUES, EASY_TECH, partsFor, palette, snap, realiseBar, realise, rollFills, newSeed, rng, figureFor,
-               simplify, easyVersion, placePair, thumbCell, powerVoicing, shellVoicing, placeIv, fingersOffThumb,
+               simplify, easyVersion, placePair, thumbCell, powerVoicing, shellVoicing, placeIv, fingersOffThumb, strokeFor, fineBar,
                cellsIn, homeMidi, gripIn, triadIn, strumCells, strumStringLevel };
 })();

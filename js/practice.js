@@ -1573,7 +1573,7 @@
   // it added half a decibel to the mix, which is to say nobody could hear
   // it — the reason "New fills" seemed to do nothing. 2.4 is where the
   // slider's default lands; there's room above it.
-  const PART_LEVEL_AT_DEFAULT = 2.4, PART_VOLUME_DEFAULT = 70;
+  const PART_LEVEL_AT_DEFAULT = audio.PART_LEVEL, PART_VOLUME_DEFAULT = 70;   // 2.4: B48
   const partLevel = () => partMuted ? 0 : PART_LEVEL_AT_DEFAULT * (partVolume / PART_VOLUME_DEFAULT);
   const BAND_VOLUME_DEFAULT = 100;
   const bandLevel = () => bandMuted ? 0 : bandVolume / BAND_VOLUME_DEFAULT;
@@ -1758,26 +1758,16 @@
   // style scheduler, which already walks the grid slot by slot.
   function schedulePartSlot(barIdx, slot, t, slotDur, style){
     if (!partOn || !partNotes.length) return;
-    const hz = m => 440 * Math.pow(2, (m - 69) / 12);
-    partNotes.forEach(n => {
-      if (n.bar !== barIdx || Math.floor(n.at) !== slot) return;
-      const dur = n.dur * slotDur;
-      // a tremolo pick sits between slots; a strum's strings arrive one after another
-      const at = t + (n.at - slot) * slotDur + (n.spread || 0) + jit(0.008);
-      const vel = n.vel * partLevel() * (1 + jit(0.08));
-      // what the note's technique asks of the engine, if anything
-      const fx = n.bend ? { bend: n.bend }
-               : n.slide != null ? { slideFrom: hz(n.midi + (n.slide - n.fret)) }
-               : n.soft ? { soft: true }
-               : n.mute ? { mute: true } : null;
-      if (partLevel() > 0){
-        // a rake: two muted strings swept into the note, the way a pick does
-        if (n.rake) [2, 1].forEach((k, i) => audio.playPluck(hz(n.midi - 5 * k), at - 0.028 + i * 0.012, 0.06, 0.22 * partLevel(), 'part', { mute: true }));
-        audio.playPluck(hz(n.midi), at, dur, vel, 'part', fx);
-        // slapback echo, on the styles that live on it
-        if (style && style.slapback) audio.playPluck(hz(n.midi), at + 0.11, Math.min(dur, 0.25), vel * 0.35, 'part', fx && fx.mute ? fx : null);
-      }
-      partLog.push({ time: at, until: at + dur, string: n.string, fret: n.fret, slot: barIdx * feelNow().grid + Math.floor(n.at) });
+    // this slot's notes, played by the engine's one part player (a strum
+    // swept, a rake ahead of its note, the slapback where the style lives
+    // on it); a tremolo pick sits between slots, so the note's own `at`
+    const mine = partNotes.filter(n => n.bar === barIdx && Math.floor(n.at) === slot);
+    if (!mine.length) return;
+    const played = partLevel() > 0
+      ? audio.playPartNotes(mine, n => t + (n.at - slot) * slotDur, slotDur, partLevel(), { slapback: !!(style && style.slapback), jit })
+      : mine.map(n => ({ note: n, time: t + (n.at - slot) * slotDur, until: t + (n.at - slot + n.dur) * slotDur }));
+    played.forEach(({ note: n, time, until }) => {
+      partLog.push({ time, until, string: n.string, fret: n.fret, slot: barIdx * feelNow().grid + Math.floor(n.at) });
     });
     if (partLog.length > 256) partLog = partLog.filter(e => e.until > audio.ctx().currentTime);
   }

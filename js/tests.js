@@ -1017,6 +1017,51 @@
   // fills pooled with them), the turnaround on the last bar, stop-time, lead
   // rolls, tails, the seed, double stops placed by shape, the thumb on the
   // bass strings, the power chord, and easy mode.
+
+  // A strum is a sweep: the strings one after another in the pick's
+  // direction, the sweep the width of a real one, the later strings a shade
+  // lighter, and the whole thing weighing what strumStringLevel says a
+  // strum weighs (B49) — the shape changes, the level doesn't.
+  function testAStrumIsASweep(t){
+    const { strumPlan, STRUM_SHARE, SWEEP } = GT.audio;
+    const freqs = [82.4, 110, 146.8, 196, 246.9, 329.6];
+    const down = strumPlan(freqs, 10, 0.9);
+    const up = strumPlan(freqs, 10, 0.9, { stroke: 'up' });
+    t.equal(down.map(s => s.freq).join(','), freqs.join(','), 'a downstroke is the low string first');
+    t.equal(up.map(s => s.freq).join(','), freqs.slice().reverse().join(','), 'an upstroke is the high string first');
+    const width = plan => plan[plan.length - 1].at - plan[0].at;
+    t.ok(width(down) >= 0.01 && width(down) <= 0.04, `a downstroke crosses six strings in ${(width(down) * 1000).toFixed(0)} ms — between 10 and 40`);
+    t.ok(width(up) < width(down) && width(up) >= 0.01, `an upstroke is quicker (${(width(up) * 1000).toFixed(0)} ms)`);
+    t.ok(down.every((s, k) => k === 0 || s.at > down[k - 1].at), 'the strings sound in order, none together');
+    t.ok(down.every((s, k) => k === 0 || s.level < down[k - 1].level), 'the strings struck later are lighter on a downstroke');
+    t.ok(up.every((s, k) => k === 0 || s.level < up[k - 1].level), '...and on an upstroke, so the treble leads');
+    const power = plan => plan.reduce((s, x) => s + x.level * x.level, 0);
+    const flat = 6 * Math.pow(0.9 * STRUM_SHARE(6), 2);
+    t.ok(Math.abs(power(down) - flat) / flat < 0.01, 'the taper is renormalised: the strum weighs what it did');
+    t.ok([1, 2, 3, 4, 5, 6].every(n => STRUM_SHARE(n) === GT.parts.strumStringLevel(n)), 'the engine shares a strum the way the realiser does');
+    const one = strumPlan([220], 3, 0.8);
+    t.ok(one.length === 1 && one[0].at === 3 && Math.abs(one[0].level - 0.8) < 1e-9, 'one string is one note at its own moment and level');
+    const given = strumPlan([110, 220, 330], 0, [0.5, 0.6, 0.7]);
+    t.ok(Math.abs(power(given) - (0.25 + 0.36 + 0.49)) < 1e-6, 'levels given a string keep their weight too');
+    t.ok(given.every(s => /^strum:\d$/.test(s.string)), 'a strum names its strings');
+    t.ok(SWEEP.down > SWEEP.up, 'the down sweep is the wider');
+  }
+
+  // Which way the pick goes follows the grid: down on the beat, up on the
+  // offbeat, and when a bar moves in sixteenths, down on every eighth and
+  // up between them.
+  function testTheStrokeFollowsTheGrid(t){
+    const { strokeFor, fineBar } = GT.parts;
+    const s4 = fine => [0, 1, 2, 3].map(k => strokeFor(4, k, fine)[0]).join('');
+    t.equal(s4(true), 'dudu', 'in sixteenths: down on the eighths, up between');
+    t.equal(s4(false), 'duuu', 'in eighths: down on the beat, up on the rest');
+    t.equal([0, 1, 2].map(k => strokeFor(3, k, false)[0]).join(''), 'duu', 'in threes: down on the beat, up on the rest');
+    t.equal(strokeFor(4, 14, false), 'up', 'the and of four is an upstroke');
+    t.equal(strokeFor(4, 12, true), 'down', 'the fourth beat is a downstroke');
+    const s = (at) => ({ at, strum: true });
+    t.ok(fineBar([s(0), s(2), s(4)], 4) === false && fineBar([s(0), s(3)], 4) === true && fineBar([s(0), s(1)], 3) === false, 'a bar is in sixteenths when a strum sits off the eighths, on a four-slot beat');
+  }
+
   // The band, one slot at a time, on a stand-in that records what it was
   // asked to play: the approach and the push land on the last eighth of the
   // bar on every grid, a stop-time bar is the One and nothing after, the last
@@ -1027,7 +1072,7 @@
     const fake = {
       playKick: (at, v) => calls.push(['kick', at, v]), playSnare: (at, v) => calls.push(['snare', at, v]),
       playHiHat: (at, v, decay) => calls.push(['hat', at, v, decay]), playRide: (at, v) => calls.push(['ride', at, v]),
-      playStyleVoice: (sv, chord, at, dur, vel) => calls.push(['comp', at, chord.note, dur, vel]),
+      playStyleVoice: (sv, chord, at, dur, vel, voice, o) => calls.push(['comp', at, chord.note, dur, vel, o && o.stroke]),
       playBass: (freq, at, dur, vel) => calls.push(['bass', at, freq, dur, vel]),
       bassNote: (pc, off = 0) => 100 + pc + off / 100, walkBassFreq: (chord, next, pos, approach) => 200 + pos + (approach ? 0.5 : 0),
     };
@@ -1067,6 +1112,16 @@
     t.equal(of(fill, 'snare').map(c => c[1]).join(','), '8,10,12,14', 'the fill takes the kit on the last bar');
     t.equal(of(fill, 'kick').map(c => c[1]).join(','), '0', 'the kick too');
     t.equal(of(fill, 'comp').length + of(fill, 'bass').length, 3, 'the comp and the bass keep playing under the fill');
+    // the pick's direction rides along: the rock pattern's comp on the beat
+    // is a downstroke, the push into the change an upstroke, and a pattern
+    // with strikes off the eighths moves in sixteenths
+    t.equal(of(rc, 'comp').map(c => `${c[1]}:${c[5]}`).join(','), '0:down', 'a comp on the beat is a downstroke');
+    const pushed = bar({ ...rock, compAnticipate: true }, { changing: true });
+    t.equal(of(pushed, 'comp').map(c => `${c[1]}:${c[5]}`).join(','), '0:down,14:up', 'the push is an upstroke');
+    const chuck = bar({ ...rock, chord: [{ slot: 0, dur: 1, vel: 0.8 }, { slot: 3, dur: 1, vel: 0.6 }, { slot: 6, dur: 1, vel: 0.7 }] }, { changing: false });
+    t.equal(of(chuck, 'comp').map(c => `${c[1]}:${c[5]}`).join(','), '0:down,3:up,6:down', 'a bar in sixteenths: down on the eighths, up between');
+    const said = bar({ ...rock, chord: [{ slot: 0, dur: 1, vel: 0.8, stroke: 'up' }] }, { changing: false });
+    t.equal(of(said, 'comp')[0][5], 'up', "a pattern's own word for the stroke is kept");
 
     // stop-time: the One and nothing else
     const stop = bar(rock, { changing: false, stopped: true });
@@ -2344,6 +2399,8 @@
       ['Every note the neck can play has a recording near it', testEveryNoteHasARecording],
       ['Every chord the practice tab plays has recordings for it', testEveryChordFitsTheRecordings],
       ['The piano map covers both layers end to end', testThePianoMapIsWhole],
+      ['A strum is a sweep', testAStrumIsASweep],
+      ['The stroke follows the grid', testTheStrokeFollowsTheGrid],
       ['The band plays each slot by the pattern', testTheBandBySlot],
       ['The engine mixes a part the ways the styles ask', testTheEngineFeatures],
       ['The suggested parts realise inside the reading', testTheSuggestedParts],
