@@ -182,15 +182,17 @@ names the tab you're on.
   name beside it, both directly editable (the real pickers lie over the text)
   with a dice for each, a
   gear that opens the Settings menu, a Type it button (a popover with the
-  progression as chord names, one per bar), and the style as *genre › feel* with two buttons beside it that load the
-  progression the style is usually played over and set the tempo it is
-  usually played at (the ones its page in the parts guide shows it with) —
+  progression as chord names, one per bar), and the style as *genre › feel* with three buttons beside it: a dice for
+  a random style, and two that load the progression the style is usually
+  played over and set the tempo it is usually played at (the ones its page
+  in the parts guide shows it with) —
   and a Play at the head of the row, so playback starts without looking away
   from the chart. When the chosen preset has variants (the blues: 12-bar,
   quick change, jazz blues…) they show as a row under the title. The chart's
   bars are the editor: tap a bar to hear it and to change its chord or its
   quality, type a name for it, or remove it; "+" on the last bar adds a bar
-  of the same chord. Editing one bar of a chord held for several splits that
+  of the same chord. A progression loaded any other way — typed, from a
+  link, from the style's button — is no preset, and the name says so. Editing one bar of a chord held for several splits that
   bar off, so nothing else moves. The things set once and left — the voice,
   the click, roots only, the count-in, what the dice may use, the dot colour,
   the fret range, the share link — are in the **Settings** menu under the
@@ -204,12 +206,18 @@ names the tab you're on.
   legend. In one position the stretch of frets is drawn on the neck as a
   window you can drag; a joined ‹ › pair at the end of the toolbar and an
   arrow on each edge of the window step it. One transport is pinned to the
-  bottom of the tab: Play, the tempo slider with its BPM readout and five one-tap tempos under it, the
-  click, a button that copies a link to all of it — key, chords, style,
-  tempo, the neck's view, the part's roll — and a Hide / Show controls
-  button. In the Part view the
-  controls are one row — the part's arrows and name, New fills, the
-  lead-roll tag, Easy, Follow chords / Stay on the I — with the techniques
+  bottom of the tab: Play, then the loop — a switch and the first and last
+  bar of a stretch to play round, the chart dimming the bars outside it,
+  the link carrying it (`r=3-4`) — the tempo slider with its BPM readout
+  and five one-tap tempos under it, the click, a button that copies a link
+  to all of it — key, chords, style, tempo, the neck's view, the part's
+  roll, the loop — the gear that opens the Settings menu (voice, click,
+  count-in, what the dice may use, colour, frets, the link: the page's
+  settings, so they sit with the page's controls), and a Hide / Show
+  controls button. In the Part view the
+  controls are one row — the part's name, which is its picker (the real
+  select lies over it, the key's move), a dice for new fills, the
+  lead-roll tag, Easy, a Follow chords / Stay on the I dropdown — with the techniques
   (and Humanize) behind a Techniques menu and the part and band volumes
   behind a Mix menu; on a phone the tab strip comes before that row. While
   it plays, a beat line appears along the top of every bar in the chart and
@@ -736,7 +744,7 @@ playback rate ramped, which is what a bend does to a string; a hammered
 note is the same recording without its pick, eased in over 25 ms; a
 palm-muted strum has its top rolled off. A strum is the chord itself: the CAGED grip the box is built on,
 the strings of it that sit in the window (three at the least, or it isn't
-a chord), swept low to high 16 ms a string the way a pick does, with a 7th
+a chord), swept the way a pick crosses the strings — see the strum below — with a 7th
 chord getting its 7th the way the chords reading draws it. A strum says how
 much of the grip it wants, as the style does: the whole thing, the bottom
 three strings where a shuffle keeps its weight, the top three for a stab or
@@ -1089,6 +1097,32 @@ drops quickly then sustains quietly, a few milliseconds of filtered noise on
 the front for the hammer, and a level that eases off up the keyboard the way
 a real piano's does — and its level was matched to the recordings by
 measurement, so nothing jumps when the samples finish arriving.
+A strum is a sweep, not a chord struck at once: the strings one after
+another the way a pick crosses them — 32 ms low to high on a downstroke,
+22 ms high to low on an upstroke, the strings struck later a shade lighter,
+the whole strum weighing what `strumStringLevel` says a strum weighs, the
+taper renormalised so the sweep changes the shape and not the level
+(`strumPlan` in `js/audio.js`; every player strums through it, the comp's
+guitar voice included, which used to strike 16 ms a string, every string
+at full level, always downward). Which way the pick goes follows the grid
+(`strokeFor` in `js/parts.js`: down on the beat and the "and", up between,
+when a bar moves in sixteenths; down on the beat and up on the rest
+otherwise); a pattern or a written strum can say otherwise, and the "and
+of 4" push into a change is an upstroke, taking its slot in place of any
+strike the pattern has there. Every pluck is a hair detuned (±5 cents) and
+skips a hair of the recording's front (up to 4 ms), so no two hits of a
+string are the same waveform and the comp and the part never start a
+shared pitch in phase. Measured, six strings swept peak at 0.70 into the
+limiter against 0.74 struck together. Recorded strums were looked for and
+not taken: no CC0 strum bank exists with a grant readable at the source
+(the "CC0" strum loops on offer are fixed-key performances screened by
+aggregators, not dedications by the recordist), and a strum pitch-shifted
+more than two semitones sounds wrong anyway; the sweep over the fifteen
+Martin notes is the answer. One part player (`playPartNotes`) turns a
+realised part into sound for the practice tab, the parts page and the
+review page alike, taking every technique a note asks for rather than the
+first that matches.
+
 There's a reverb too — a convolver fed by a synthesized room, decaying noise
 whose top end rolls off over the tail — with a send from each voice at its
 own level. Drums are the classic recipes: a pitched-down
@@ -1106,10 +1140,22 @@ takes the lowest root they have: roots from E up take the low octave and C,
 C♯, D and D♯ take the one above, so every root lands inside E1–D♯2 whatever
 the key. The walking line's third is in position rather than an octave up.
 Across every style, variant, root and next chord, the bass now spans D♯1–D♯3,
-and only the punk and disco octave figures reach the top of that. Every bus
-meets at one gentle limiter before the
-output, so a kick, a bass note and a full chord landing together can't add
-up past what the output can carry. The style voices play a chord's own
+and only the punk and disco octave figures reach the top of that. Dynamics
+are in three stages: the band's bus and the part's bus each hold their own
+peaks with a gentle compressor of their own, and the one thing they share
+is a soft clipper at the output — straight below its knee, bending to a
+ceiling above it, with no makeup gain and no time constants — so a kick, a
+bass note and a full chord landing together can't add up past what the
+output can carry, and a strum on the part is the part's business: one
+compressor for both used to duck the band under every strum and let it
+back over 120 ms, which is pumping (a compressor as the shared stage,
+however set, brought its own makeup gain and the pumping back, which is
+why the clipper). Measured on the same two bars through both chains
+(`js/tests-sound.js`, a seeded render so it is the same render twice), the
+band's loss after a strum fell from 1.34 dB to 0.24 dB, its loss at the
+peak from 2.01 dB to 1.49 dB, and each bus alone sits within half a decibel
+of where the old chain put it; the loudest bar the tab can play peaks at
+0.96. The style voices play a chord's own
 seventh when it has one (a `D7` set on the ii is a real dominant) and only
 fall back to the style's implied seventh for a plain triad. A voicing is
 built upward from its lowest note, so where it ends up depends on the key —

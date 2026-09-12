@@ -772,6 +772,7 @@
     document.getElementById('keyReadout').textContent =
       loadedLabel || (currentMode === 'major' ? `${currentTonic} major` : `${currentTonic}m`);
     renderChordDisplay();
+    syncLoop();
     renderChordSlots();
     buildPresetSelect();          // the list follows whichever mode the key is in
     renderPresetVariants();
@@ -1074,7 +1075,15 @@
   }
   if (styleProgBtn) styleProgBtn.addEventListener('click', () => {
     const g = guideNow();
-    if (g && g.progression) loadProgression({ chords: g.progression, key: g.key });
+    if (!g || !g.progression) return;
+    loadProgression({ chords: g.progression, key: g.key });
+  });
+  // a random style: any feel but the one playing
+  const styleDice = document.getElementById('styleDice');
+  if (styleDice) styleDice.addEventListener('click', () => {
+    const others = STYLE_LIST.filter(e => e.value !== feelValue());
+    setFeel(others[Math.floor(Math.random() * others.length)].value);
+    writeShareState();
   });
   if (styleTempoBtn) styleTempoBtn.addEventListener('click', () => {
     const g = guideNow();
@@ -1159,8 +1168,9 @@
   }
 
   function resetPlaybackCursor(){
-    chordIdx = 0;
-    beatInChord = 0;
+    const start = loop.on ? cursorAtBar(Math.min(loop.from, Math.max(0, totalBars() - 1))) : { chordIdx: 0, beatInChord: 0 };
+    chordIdx = start.chordIdx;
+    beatInChord = start.beatInChord;
     scheduledLog = [];
     view.resetFollow();
     document.querySelectorAll('#chords .bar').forEach(el => el.classList.remove('dim', 'active'));
@@ -1275,13 +1285,78 @@
   }
 
   // Move the cursor on to the next beat of the progression.
+  // ---- the loop's controls: on or off, and its first and last bar ----
+  const loopWrap = document.getElementById('loopWrap'), loopToggle = document.getElementById('loopToggle');
+  const loopFrom = document.getElementById('loopFrom'), loopTo = document.getElementById('loopTo');
+  // an end moved past the other drags it along, so the stretch is never inside out
+  function setLoop(next){
+    const n = Math.max(1, totalBars());
+    let from = next.from == null ? loop.from : next.from, to = next.to == null ? loop.to : next.to;
+    if (next.to != null && next.from == null && to < from) from = to;
+    if (next.from != null && next.to == null && from > to) to = from;
+    from = Math.max(0, Math.min(n - 1, from)); to = Math.max(from, Math.min(n - 1, to));
+    loop = { on: next.on == null ? loop.on : !!next.on, from, to };
+    syncLoop();
+    writeShareState();
+  }
+  // the lists follow the chart's bars; the chart dims the bars outside the loop
+  function syncLoop(){
+    const n = Math.max(1, totalBars());
+    if (loop.to >= n || loop.from >= n) loop = { ...loop, from: Math.min(loop.from, n - 1), to: Math.min(loop.to, n - 1) };
+    [loopFrom, loopTo].forEach(sel => {
+      if (sel.options.length !== n) sel.innerHTML = Array.from({ length: n }, (_, i) => `<option value="${i}">${i + 1}</option>`).join('');
+    });
+    loopFrom.value = String(loop.from); loopTo.value = String(loop.to);
+    loopWrap.classList.toggle('on', loop.on);
+    loopToggle.setAttribute('aria-pressed', String(loop.on));
+    document.querySelectorAll('#chords .bar').forEach(el => {
+      const b = Number(el.dataset.bar);
+      el.classList.toggle('outside', loop.on && (b < loop.from || b > loop.to));
+    });
+  }
+  loopToggle.addEventListener('click', () => { setLoop({ on: !loop.on }); if (!isPlaying) resetPlaybackCursor(); });
+  loopFrom.addEventListener('change', () => setLoop({ from: Number(loopFrom.value) }));
+  loopTo.addEventListener('change', () => setLoop({ to: Number(loopTo.value) }));
+
+  // ---- the loop: a stretch of bars played round ----
+  // `from` and `to` are bars of the chart, counted from 0, both included.
+  let loop = { on: false, from: 0, to: 0 };
+  const totalBars = () => currentProgression.reduce((n, c, i) => n + measuresFor(i), 0);
+  // the cursor a bar starts at
+  function cursorAtBar(bar){
+    let at = 0;
+    for (let i = 0; i < currentProgression.length; i++){
+      const m = measuresFor(i);
+      if (bar < at + m) return { chordIdx: i, beatInChord: (bar - at) * beatsPerBar() };
+      at += m;
+    }
+    return { chordIdx: 0, beatInChord: 0 };
+  }
+  // One beat on from a cursor, over a progression whose chords last
+  // `measures` bars each at `beats` a bar, wrapping at the end — or, with a
+  // loop on, back to its first bar the moment the cursor would leave its
+  // last. Pure, so the wrap can be tested without a clock.
+  function stepCursor(cur, measures, beats, lp){
+    let { chordIdx: c, beatInChord: b } = cur;
+    b++;
+    if (b >= measures[c] * beats){ b = 0; c = (c + 1) % measures.length; }
+    if (lp && lp.on){
+      let at = 0; for (let i = 0; i < c; i++) at += measures[i];
+      const bar = at + Math.floor(b / beats);
+      if (bar > lp.to || bar < lp.from){
+        let start = 0, i = 0;
+        for (; i < measures.length; i++){ if (lp.from < start + measures[i]) break; start += measures[i]; }
+        if (i >= measures.length){ i = 0; start = 0; }
+        return { chordIdx: i, beatInChord: (lp.from - start) * beats };
+      }
+    }
+    return { chordIdx: c, beatInChord: b };
+  }
   function advanceBeat(secondsPerBeat){
     nextNoteTime += secondsPerBeat;
-    beatInChord++;
-    if (beatInChord >= beatsForChord(chordIdx)){
-      beatInChord = 0;
-      chordIdx = (chordIdx + 1) % currentProgression.length;
-    }
+    const next = stepCursor({ chordIdx, beatInChord }, currentProgression.map((c, i) => measuresFor(i)), beatsPerBar(), loop);
+    chordIdx = next.chordIdx;
+    beatInChord = next.beatInChord;
   }
 
   function scheduler(){
@@ -1444,6 +1519,7 @@
     }
     // the band's volume is heard in both views, so it's its own field
     if (bandVolume !== BAND_VOLUME_DEFAULT || bandMuted) p.set('b', `${bandVolume}${bandMuted ? '.m' : ''}`);
+    if (loop.on) p.set('r', `${loop.from + 1}-${loop.to + 1}`);   // the loop, in the bars the chart shows
     return p;
   }
 
@@ -1508,13 +1584,17 @@
     }
     bandVolume = BAND_VOLUME_DEFAULT;
     bandMuted = false;
+    {
+      const m = (p.get('r') || '').match(/^(\d+)-(\d+)$/);
+      loop = m ? { on: true, from: Number(m[1]) - 1, to: Number(m[2]) - 1 } : { on: false, from: 0, to: 0 };
+    }
     if (p.get('b')){
       const [vol, m] = p.get('b').split('.');
       bandVolume = Math.max(0, Math.min(100, Number(vol) || 0));
       bandMuted = m === 'm';
     }
     syncPartVolume();
-    partScaleGroup.querySelectorAll('.seg-btn').forEach(b => b.classList.toggle('active', b.dataset.value === (partScale === 'key' ? 'key' : 'follow')));
+    partScaleSelect.value = partScale === 'key' ? 'key' : 'follow';
 
     if (p.get('n')){
       const entries = p.get('n').split(',').map(e => e.split('.'));
@@ -1603,7 +1683,7 @@
   const partNoteEl = document.getElementById('partNote');
   const partNameEl = document.getElementById('partName');
   const partTabEl = document.getElementById('partTab');
-  const partScaleGroup = document.getElementById('partScaleGroup');
+  const partScaleSelect = document.getElementById('partScaleSelect');
 
   // Simple has no feels; its parts are written for a stand-in of the same shape
   const feelNow = () => currentStyle === 'simple' ? GT.parts.SIMPLE_FEEL : STYLES[currentStyle].variants[currentVariant];
@@ -1699,6 +1779,7 @@
     }, { grid: feelNow().grid, easy: partEasy });
     partLeadEl.hidden = !partNotes.leadRoll;
     partNameEl.textContent = part.name;
+    syncPartSelect();
     drawPartTab(bars);
     // Taken now, after the fills have been rolled, not before: stored before
     // the roll it described a part that no longer existed, so the very next
@@ -1857,8 +1938,19 @@
     rebuildPart();
     writeShareState();
   }));
-  document.getElementById('partPrev').addEventListener('click', () => { partIdx--; partSeed = 0; rebuildPart(); writeShareState(); });
-  document.getElementById('partNext').addEventListener('click', () => { partIdx++; partSeed = 0; rebuildPart(); writeShareState(); });
+  // the part's picker: the feel's parts, the current one chosen; rebuilt
+  // with the part view since the list is the feel's
+  const partSelect = document.getElementById('partSelect');
+  function syncPartSelect(){
+    const ps = partsNow();
+    const want = ps.length ? ((partIdx % ps.length) + ps.length) % ps.length : 0;
+    const have = [...partSelect.options].map(o => o.text).join('|');
+    if (have !== ps.map(p => p.name).join('|')){
+      partSelect.innerHTML = ps.map((p, i) => `<option value="${i}">${p.name}</option>`).join('');
+    }
+    partSelect.value = String(want);
+  }
+  partSelect.addEventListener('change', () => { partIdx = Number(partSelect.value) || 0; partSeed = 0; rebuildPart(); writeShareState(); });
   document.getElementById('partReroll').addEventListener('click', () => { partSeed = 0; rebuildPart(); writeShareState(); });
   partEasyToggle.addEventListener('change', () => { partEasy = partEasyToggle.checked; rebuildPart(); writeShareState(); });
   partHumanToggle.addEventListener('change', () => { partHumanize = partHumanToggle.checked; });
@@ -1917,12 +2009,11 @@
     writeShareState();
   }));
   syncPartTech();
-  partScaleGroup.querySelectorAll('.seg-btn').forEach(btn => btn.addEventListener('click', () => {
-    partScale = btn.dataset.value;
-    partScaleGroup.querySelectorAll('.seg-btn').forEach(b => b.classList.toggle('active', b === btn));
+  partScaleSelect.addEventListener('change', () => {
+    partScale = partScaleSelect.value === 'key' ? 'key' : 'follow';
     rebuildPart();
     writeShareState();
-  }));
+  });
 
   const voiceGroup = document.getElementById('voiceGroup');
   voiceGroup.querySelectorAll('.seg-btn').forEach(btn => {
@@ -1966,6 +2057,7 @@
   function loadProgression({ chords, label, tempo, key }){
     if (!chords || !chords.length) return;
     stopPlayback();
+    clearPreset();                 // whatever preset was showing, this isn't it — typed, linked or the style's
 
     const runs = [];
     chords.forEach(name => {
@@ -2098,6 +2190,7 @@
     copyShareLink,
     simpleHitSeconds, SIMPLE_ACCENT, CLICK, DEFAULT_FEEL,
     setTempo, getTempo,
+    stepCursor, setLoop, loopState: () => ({ ...loop }), cursor: () => ({ chordIdx, beatInChord }),
     // the realised part and the window it was realised in, so a test can
     // hold it still across the things that must not move it
     partState: () => ({ notes: partNotes.map(n => ({ ...n })), window: partWindow && { ...partWindow },

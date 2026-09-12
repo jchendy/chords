@@ -72,7 +72,7 @@
       let lp = 0;
       for (let i = 0; i < n; i++){
         const t = i / n;
-        const white = Math.random() * 2 - 1;
+        const white = rnd() * 2 - 1;
         lp += (white - lp) * (0.6 - 0.45 * t);   // a one-pole lowpass that closes over the tail
         d[i] = lp * Math.pow(1 - t, 2.2) * (i < 200 ? i / 200 : 1);
       }
@@ -346,7 +346,7 @@
     const noise = g.noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
     const data = noise.getChannelData(0);
     for (let i = 0; i < bufferSize; i++){
-      data[i] = Math.random() * 2 - 1;
+      data[i] = rnd() * 2 - 1;                 // seedable, so a render is the same render twice
     }
     return g;
   }
@@ -361,8 +361,9 @@
   async function renderOffline(seconds, schedule, { sampleRate = 48000, random, limiter = true, mute = [], dynamics } = {}){
     const ctx = new OfflineAudioContext(2, Math.ceil(seconds * sampleRate), sampleRate);
     const live = G, wasOffline = offline, wasRnd = rnd;
+    if (random) rnd = random;                 // before the graph: its room and its noise draw from it too
     const g = buildGraph(ctx, { limiter, mute, dynamics });
-    applyGraph(g); offline = true; if (random) rnd = random;
+    applyGraph(g); offline = true;
     try { schedule(GT.audio, ctx); }
     finally {
       offline = wasOffline; rnd = wasRnd;

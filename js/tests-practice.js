@@ -70,7 +70,8 @@
   };
   segGroup('voiceGroup', ['piano', 'guitar'], 'seg-btn');
   segGroup('chartViewGroup', ['chart', 'part'], 'seg-btn');
-  segGroup('partScaleGroup', ['follow', 'key'], 'seg-btn');
+  { const s = add('select', 'partScaleSelect'); s.innerHTML = '<option value="follow">Follow chords</option><option value="key">Stay on the I</option>'; }
+  add('select', 'partSelect');
   add('input', 'partVolume', { type: 'range', min: '0', max: '100', value: '70' });
   add('button', 'partMute', { type: 'button' });
   add('input', 'bandVolume', { type: 'range', min: '0', max: '100', value: '100' });
@@ -85,7 +86,9 @@
   }
   ['partPanel', 'partControls', 'partTab', 'partNote'].forEach(id => add('div', id));
   add('span', 'partName');
-  ['partPrev', 'partNext', 'partReroll'].forEach(id => add('button', id, { type: 'button' }));
+  add('button', 'partReroll', { type: 'button' });
+  add('button', 'styleDice', { type: 'button' });
+  add('span', 'loopWrap'); add('button', 'loopToggle', { type: 'button' }); add('select', 'loopFrom'); add('select', 'loopTo');
   add('input', 'partEasy', { type: 'checkbox' });
   add('input', 'partHumanize', { type: 'checkbox' });
   add('span', 'partLead');
@@ -798,6 +801,54 @@
     view.applyViewState('');
   }
 
+
+  // The loop: a stretch of bars played round. The cursor's step is pure
+  // (stepCursor), so the wrap is walked without a clock: over a chart of
+  // three chords two bars each with bars 2 and 3 looped, every beat after
+  // the first wrap lands in bars 2 or 3, the wrap lands on bar 2's first
+  // beat, and with the loop off the cursor goes round the whole chart. The
+  // controls follow the chart, and the link carries the loop.
+  function testTheLoop(t){
+    start();
+    const bad = [];
+    const { stepCursor, setLoop, loopState } = GT.practice;
+    const measures = [2, 2, 2], beats = 4;
+    const barOf = cur => { let at = 0; for (let i = 0; i < cur.chordIdx; i++) at += measures[i]; return at + Math.floor(cur.beatInChord / beats); };
+    let cur = { chordIdx: 0, beatInChord: 0 };
+    const seen = [];
+    for (let k = 0; k < 40; k++){ cur = stepCursor(cur, measures, beats, { on: true, from: 1, to: 2 }); seen.push(barOf(cur)); }
+    if (seen.slice(4).some(b => b < 1 || b > 2)) bad.push(`with bars 2-3 looped the cursor visited bars ${[...new Set(seen.slice(4))].map(b => b + 1).join(',')}`);
+    // the wrap: from the last beat of bar 3 to the first beat of bar 2
+    const last = stepCursor({ chordIdx: 1, beatInChord: 2 }, measures, beats, { on: true, from: 1, to: 2 });   // bar 3's last beat
+    const wrapped = stepCursor(last, measures, beats, { on: true, from: 1, to: 2 });
+    if (!(wrapped.chordIdx === 0 && wrapped.beatInChord === 4)) bad.push(`the wrap landed on chord ${wrapped.chordIdx} beat ${wrapped.beatInChord}, not bar 2's first beat`);
+    // off: round the whole chart
+    cur = { chordIdx: 0, beatInChord: 0 }; const all = new Set();
+    for (let k = 0; k < 24; k++){ cur = stepCursor(cur, measures, beats, { on: false, from: 1, to: 2 }); all.add(barOf(cur)); }
+    if (all.size !== 6) bad.push(`with the loop off the cursor visited ${all.size} bars of 6`);
+    // the controls and the link
+    GT.practice.loadProgression({ chords: ['A', 'A', 'D', 'D', 'E', 'A'], key: 'A' });
+    setLoop({ on: true, from: 2, to: 3 });
+    if (q('#loopFrom').value !== '2' || q('#loopTo').value !== '3') bad.push(`the lists show ${q('#loopFrom').value}-${q('#loopTo').value}`);
+    if (q('#loopFrom').options.length !== 6) bad.push(`the lists offer ${q('#loopFrom').options.length} bars of 6`);
+    const outside = [...document.querySelectorAll('#chords .bar')].map(b => b.classList.contains('outside') ? 'o' : '.').join('');
+    if (outside !== 'oo..oo') bad.push(`the chart dims ${outside}`);
+    q('#shareBtn').click();                                      // writes the state into the fragment
+    if (!/(^|&|\?)r=3-4(&|$)/.test(decodeURIComponent(location.hash))) bad.push(`the link carries ${location.hash}`);
+    // ...and it comes back: the loop disturbed, then the link followed
+    const link = location.hash;
+    setLoop({ on: false, from: 0, to: 0 });
+    location.hash = '#practice-elsewhere';
+    location.hash = link;
+    const back = loopState();
+    if (!(back.on && back.from === 2 && back.to === 3)) bad.push(`the link brought back ${JSON.stringify(back)}`);
+    setLoop({ to: 1 });                                          // to below from: from follows
+    const st = loopState();
+    if (!(st.from === 1 && st.to === 1)) bad.push(`to under from left ${st.from}-${st.to}`);
+    setLoop({ on: false });
+    t.equal(bad.join('; '), '', 'The loop plays a stretch of bars round, from the controls beside Play');
+  }
+
   // The band has a volume of its own — one gain on its bus in the engine —
   // beside the part's, and it travels in the link like the rest.
   function testTheBandHasAVolume(t){
@@ -872,6 +923,7 @@
     ['Practice: a part stays put until you move it', testThePartStaysPut],
     ['Practice: the tab follows held bars', testTheTabFollowsHeldBars],
     ['Practice: the tempo presets, the chart edits in place, the picker is grouped', testTheTabsControls],
+    ['Practice: the loop', testTheLoop],
     ['Practice: the band has a volume', testTheBandHasAVolume],
     ['Practice: the old tab name still opens it', testTheOldTabNameStillOpensIt],
   ];
