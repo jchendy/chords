@@ -8,6 +8,9 @@
   'use strict';
   const GT = (window.GT = window.GT || {});
   const STYLES = {
+    // Hendrix: no base feels — every one of his is an addition in
+    // review/proposals-hendrix.js, merged in by styles.js
+    hendrix: { label: 'Hendrix', variants: [] },
     rock: {
       label: 'Rock',
       variants: [

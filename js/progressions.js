@@ -26,6 +26,11 @@
   const dom7 = (deg, bars) => ({ deg, bars: bars || 1, dom: true, maj: true });
   // takes whatever seventh the key's own scale puts on that degree
   const dia = (deg, bars) => ({ deg, bars: bars || 1, dia: true });
+  // a root the key doesn't own, that many semitones above the tonic — a
+  // major triad there unless a shape says otherwise
+  const c = (semis, bars, shape) => ({ deg: 'c' + semis, bars: bars || 1, dom: false, ...(shape ? { shape } : {}) });
+  // a degree in a named shape: '7♯9', '9', 'maj' on a minor degree
+  const sh = (deg, shape, bars) => ({ deg, bars: bars || 1, dom: false, shape });
 
   // `name` is what the picker shows; `numerals` spells the progression out
   // beside it. Where a progression has a name people use, it gets it.
@@ -79,6 +84,48 @@
     { name: 'Minor rock', numerals: 'i–VII–VI–VII', mode: 'minor', chords: [d(0), d(6), d(5), d(6)] },
     // the Andalusian cadence, with the major V a minor key borrows for it
     { name: 'Andalusian', numerals: 'i–VII–VI–V', mode: 'minor', chords: [d(0), d(6), d(5), d(7)] },
+    // ---- Hendrix: the changes his songs are built on, named for where they
+    // are heard. A chord progression is common stock — the US Copyright
+    // Office's practice and the Second Circuit in Structured Asset Sales v.
+    // Sheeran (2024) both put chord progressions outside copyright — so
+    // these are given as they are, the way a method book would; the songs'
+    // melodies and lines are not here (see hendrix.html, "How this was
+    // made"). A chromatic root is 'c' + semitones above the tonic, as the
+    // chart stores it; `shape` names the chord's quality outright.
+    {
+      name: 'Hendrix', numerals: 'the changes his songs run on', numeralsMinor: 'the changes his songs run on',
+      variants: [
+        // C–G–D–A–E: each chord a 4th below the last (a 5th above), the cycle
+        // Hey Joe runs round, in E with the two bars of E at the end
+        { name: 'Cycle of fourths (Hey Joe)', mode: 'major', chords: [c(8), c(3), c(10), d(3), d(0, 2)] },
+        // Little Wing's twelve bars: the minor key's own chords with a ♭II
+        // (F in E minor) and a chord a tritone from the tonic (B♭) slid in
+        { name: 'Soul ballad (Little Wing)', mode: 'minor',
+          chords: [d(0), d(2), d(3), d(0), d(4), c(6), d(3), d(5), d(2), c(1), d(5), d(6)] },
+        // the Hendrix chord as home, with the ♭III and the IV — Purple Haze,
+        // and the E–G–A of Wait Until Tomorrow's chorus without the ♯9
+        { name: 'Fuzz vamp (Purple Haze)', mode: 'major', chords: [sh(0, '7♯9', 2), c(3), d(3)] },
+        // I–V–♭VII–IV, the Mixolydian chorus of Castles Made of Sand
+        { name: 'Mixolydian ballad (Castles Made of Sand)', mode: 'major', chords: [d(0), d(4), c(10), d(3)] },
+        // Red House: the slow twelve in 12/8, the IV as a 9th chord
+        { name: 'Slow blues in 12/8 (Red House)', mode: 'major',
+          chords: [sh(0, '7', 4), sh(3, '9', 2), sh(0, '7', 2), sh(4, '7'), sh(3, '9'), sh(0, '7'), sh(4, '7')] },
+        // The Wind Cries Mary's verse: C–B♭–F, with the II major and the ♭VI
+        { name: 'Chromatic soul (The Wind Cries Mary)', mode: 'major',
+          chords: [d(4), d(3), d(0, 2), sh(1, 'maj'), d(3), c(8), d(0)] },
+        // Bold as Love: the verse and the chorus with its VI major and ♭VII
+        { name: 'R&B ballad (Bold as Love)', mode: 'major',
+          chords: [d(0), d(4), d(5), d(3), d(4), sh(5, 'maj'), c(10), d(0)] },
+        // All Along the Watchtower: i–VII–VI–VII (also "Minor rock" above)
+        { name: 'Minor rock (All Along the Watchtower)', mode: 'minor', chords: [d(0), d(6), d(5), d(6)] },
+        // Freedom: C, E♭, C7, F7 — the funk of the last year
+        { name: 'Funk (Freedom)', mode: 'major', chords: [d(0), c(3), sh(0, '7'), sh(3, '7')] },
+        // Manic Depression's waltz: A–G–D–D♯–E, the chromatic climb to the V
+        { name: 'Waltz riff (Manic Depression)', mode: 'major', chords: [d(0), c(10), d(3), c(6), d(4)] },
+        // the one chord Voodoo Child and Machine Gun sit on
+        { name: 'One-chord vamp (Voodoo Child)', mode: 'major', chords: [sh(0, '7♯9', 4)] },
+      ],
+    },
   ];
 
   // every preset presented the same way, whether or not it has variants

@@ -303,6 +303,24 @@
   }
   const zeroCrossings = (buf, from, to) => { const d = buf.getChannelData(0), sr = buf.sampleRate; let n = 0; for (let i = Math.floor(from * sr) + 1; i < Math.floor(to * sr); i++) if ((d[i] >= 0) !== (d[i - 1] >= 0)) n++; return n; };
 
+  // ---- the wah ----
+  // A note with the wah on it: a resonant peak sweeping up (or down) through
+  // it, so the balance of high to low moves over the note — read as the
+  // share of power above 1 kHz in its first 60 ms against its last, up for
+  // a toe-down sweep and the other way for heel-down.
+  async function testTheWahSweeps(t){
+    const v = await withVoices();
+    const share = (buf, from, to) => { const all = rms(buf, from, to) ** 2; const low = lowPower(buf, 1000, from, to); return all > 0 ? (all - low) / all : 0; };
+    const one = wah => a => a.playPluck(E3 * 2, 0.05, 0.5, 0.9, 'part', wah ? { wah } : null, {});
+    const up = await audio.renderOffline(0.8, one('up'), { random: seeded(71), dry: true, mute: ['band'] });
+    const down = await audio.renderOffline(0.8, one('down'), { random: seeded(71), dry: true, mute: ['band'] });
+    const plain = await audio.renderOffline(0.8, one(null), { random: seeded(71), dry: true, mute: ['band'] });
+    const early = b => share(b, 0.06, 0.12), late = b => share(b, 0.3, 0.4);
+    t.ok(late(up) > early(up) * 1.5, `toe down: the top end grows through the note (${(100 * early(up)).toFixed(0)}% above 1 kHz early, ${(100 * late(up)).toFixed(0)}% late; ${v.label})`);
+    t.ok(early(down) > late(down) * 1.5, `heel down: it falls (${(100 * early(down)).toFixed(0)}% early, ${(100 * late(down)).toFixed(0)}% late)`);
+    t.ok(Math.abs(early(plain) - late(plain)) < Math.abs(early(up) - late(up)), 'and a plain note moves less than either');
+  }
+
   GT.sound = { peak, rms, dB, seeded, withVoices, loudestBar, rockBars, measureDucking };
   GT.soundSuites = [
     ['Sound: the mix stays under full scale', testTheMixStaysUnderFullScale],
@@ -313,5 +331,6 @@
     ['Sound: the room has walls', testTheRoomHasWalls],
     ['Sound: two levels pinned by measurement', testTheLevelsAreMatched],
     ['Sound: the fallback is a guitar on its own bus', testTheFallbackIsAGuitarOnItsOwnBus],
+    ['Sound: the wah sweeps', testTheWahSweeps],
   ];
 })();

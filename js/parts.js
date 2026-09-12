@@ -1217,10 +1217,16 @@
 
   const MAJOR_PENTA = [0, 2, 4, 7, 9], MINOR_PENTA = [0, 3, 5, 7, 10];
   const MAJOR = [0, 2, 4, 5, 7, 9, 11], MIXO = [0, 2, 4, 5, 7, 9, 10], MINOR = [0, 2, 3, 5, 7, 8, 10];
+  // the blues way with a major or dominant chord: the minor pentatonic over
+  // it (Voodoo Child's E minor pentatonic over E7♯9), and in the scale
+  // reading the Mixolydian with the ♭3 and ♭5 let in — the blues scale and
+  // the major 3rd side by side, which is what the ♯9 chord already says
+  const BLUES_SCALE = [0, 2, 3, 4, 5, 6, 7, 9, 10];
 
   function chordTones(chord){
     const tones = [chord.note, chord.third, chord.fifth].map(pc);
     if (chord.seventh) tones.push(pc(chord.seventh));
+    (chord.ext || []).forEach(iv => tones.push((pc(chord.note) + iv) % 12));   // the colour a 9th or a ♯9 adds
     return new Set(tones);
   }
 
@@ -1240,15 +1246,19 @@
         : chordTones(chord);
       return { root: chordRoot, allowed: tones };
     }
+    // a part that plays the blues way (part.blues) takes the minor pentatonic
+    // over a major chord, and the blues scale in the scale reading
+    const blues = !!opts.blues;
     if (reading === 'penta'){
       return stayOnKey
-        ? { root: keyRoot, allowed: setOf(keyRoot, keyMinor ? MINOR_PENTA : MAJOR_PENTA) }
-        : { root: chordRoot, allowed: setOf(chordRoot, isMinor ? MINOR_PENTA : MAJOR_PENTA) };
+        ? { root: keyRoot, allowed: setOf(keyRoot, keyMinor || blues ? MINOR_PENTA : MAJOR_PENTA) }
+        : { root: chordRoot, allowed: setOf(chordRoot, isMinor || blues ? MINOR_PENTA : MAJOR_PENTA) };
     }
     // scales
     if (stayOnKey){
-      return { root: keyRoot, allowed: setOf(keyRoot, keyMinor ? MINOR : MAJOR) };
+      return { root: keyRoot, allowed: setOf(keyRoot, keyMinor ? MINOR : blues ? BLUES_SCALE : MAJOR) };
     }
+    if (blues && !isMinor) return { root: chordRoot, allowed: setOf(chordRoot, BLUES_SCALE) };
     if (scaleTheory === 'modal'){
       // the key's notes, plus the chord's own tones, centred on the chord
       const allowed = setOf(keyRoot, keyMinor ? MINOR : MAJOR);
@@ -1310,7 +1320,8 @@
     const inWin = c => c.fret >= window.min && c.fret <= window.max;
     let best = null, bestIn = 0;
     F.cagedPlacements(rootPc, isMinor ? F.CAGED_MINOR : F.CAGED_MAJOR).forEach(p => {
-      const cells = chord.seventh ? F.seventhCells(p, rootPc, pc(chord.seventh)) : p.cells;
+      let cells = chord.seventh ? F.seventhCells(p, rootPc, pc(chord.seventh)) : p.cells;
+      if (chord.sus) cells = F.susCells(cells, rootPc, chord.sus);
       const inside = cells.filter(inWin).length;
       if (inside > bestIn || (inside === bestIn && best && cells.length === inside && best.cells.length !== best.inside)){
         best = { cells, inside }; bestIn = inside;
@@ -1357,6 +1368,9 @@
       case 'fifth': return [low.find(c => c.midi % 12 === fifthPc) || low.find(c => c.midi % 12 === rootPc) || low[0]];
       case 'low':  return low.slice(0, 3);
       case 'high': return low.slice(-3);
+      // the D, G and B strings: the triad inside an E-shape barre, the part
+      // a thumb-over hand strikes after the bass note (the "split chord")
+      case 'mid':  { const mid = low.filter(c => c.string >= 1 && c.string <= 3); return mid.length >= 3 ? mid : low.slice().sort((a, b) => Math.abs(a.string - 2) - Math.abs(b.string - 2) || a.midi - b.midi).slice(0, 3).sort((a, b) => b.string - a.string); }
       default:     return low;
     }
   }
@@ -1388,6 +1402,7 @@
   // of a fill bar, where 1.25 left the strums understated.
   const strumStringLevel = strings => Math.min(1, 1.45 / Math.sqrt(strings));
 
+  const techOn = (opts, k) => !(opts.tech && opts.tech[k] === false);
   // Realise one written bar against one chord: a list of playable notes.
   // `nextChord` is what the bar after this one holds, for the notes that
   // point at it; without one, the next chord is this one.
@@ -1405,6 +1420,11 @@
     const nextHome = homeMidi(cells, nextPal.root);
     const out = [];
     let prev = null;
+    // a note may reach past the position: `reach` frets above the window
+    // (below when negative) — the hand jumping into the next box for a
+    // phrase and coming back, the way a line climbs out of a shape
+    const win = opts.window;
+    const cellsFor = w => w.reach ? cellsIn({ min: Math.max(0, Math.min(win.min, win.min + w.reach)), max: Math.min(FRET_COUNT, Math.max(win.max, win.max + w.reach)) }) : cells;
     written.forEach(w => {
       if (w.strum){
         // the strings the strum asked for, low to high, spread the way a
@@ -1422,25 +1442,44 @@
       }
       const pal = w.next ? nextPal : { root, allowed };
       const base = w.next ? nextHome : home;
+      const reachable = cellsFor(w);
       // where an interval lands: snapped to the palette, placed nearest the
       // pitch it asks for and, between two places for one pitch, on the
-      // string nearest the note before, so the line stays under one hand
+      // string nearest the note before, so the line stays under one hand.
+      // A `free` note is not snapped: it is the chromatic note it was
+      // written as (the ♭5 between the 4th and the 5th, the major 3rd over
+      // a minor pentatonic line) wherever the reading would have moved it.
       const place = (iv, keep) => {
-        const sn = snap(pal.root, iv, pal.allowed);
+        const sn = w.free ? { pc: (((pal.root + iv) % 12) + 12) % 12, shift: 0 } : snap(pal.root, iv, pal.allowed);
         if (!sn) return null;
         const wantMidi = base + iv + sn.shift;
-        const cands = cells.filter(c => c.midi % 12 === sn.pc && (!keep || keep(c)));
+        const cands = reachable.filter(c => c.midi % 12 === sn.pc && (!keep || keep(c)));
         if (!cands.length) return null;
         cands.sort((a, b) => Math.abs(a.midi - wantMidi) - Math.abs(b.midi - wantMidi)
           || (prev ? Math.abs(a.string - prev.string) - Math.abs(b.string - prev.string) : 0));
         return cands[0];
       };
       const note = (c, extra) => ({ at: w.at, dur: w.dur, vel: w.vel, string: c.string, fret: c.fret, midi: c.midi,
-                                    iv: w.iv, next: !!w.next, ...extra });
+                                    iv: w.iv, next: !!w.next, ...(w.reach ? { reach: w.reach } : {}), ...(w.free ? { free: true } : {}), ...extra });
       const allowedTech = !w.tech || !opts.tech || opts.tech[w.tech] !== false;
       const c = place(w.iv);
       if (!c) return;
 
+      if (w.tech === 'double' && w.unison){
+        // the unison bend: the note on one string, and the same pitch
+        // reached by bending a tone up on the next string down — one
+        // fretted, one bent, the rough dissonance smoothing into a unison
+        // (the tuning between the strings: a 4th, a 3rd from G to B)
+        const top = reachable.filter(x => x.midi === c.midi && x.string < 5).sort((a, b) => a.string - b.string)[0] || c;
+        const gap = top.string === 1 ? 4 : 5;                              // B to G is a major 3rd
+        const below = reachable.find(x => x.string === top.string + 1 && x.fret === top.fret + gap - 2);
+        if (allowedTech && techOn(opts, 'bend') && below && below.fret > 0){
+          out.push(note(top, { tech: 'double', unison: true }));
+          out.push(note(below, { tech: 'double', pair: true, unison: true, bend: 2 }));
+          prev = top; return;
+        }
+        out.push(note(c)); prev = c; return;
+      }
       if (w.tech === 'double' && allowedTech){
         // the second note on another string, at the same moment
         const c2 = place(w.iv2, x => x.string !== c.string && x.midi !== c.midi);
@@ -1549,10 +1588,13 @@
   }
   function easyVersion(part, grid){
     const off = { tailChance: 0, pickupChance: 0, stopChance: 0 };
-    if (part.easy) return { ...part, ...off, turnarounds: null, turnaround: null, ...part.easy, easyKind: 'written' };
     const lists = {};
     ['figure', 'turnaround'].forEach(k => { if (part[k]) lists[k] = simplify(part[k], grid); });
-    ['variants', 'fills', 'fillsOnChange', 'fillsOnStay', 'turnarounds', 'leads'].forEach(k => { if (part[k]) lists[k] = part[k].map(bar => simplify(bar, grid)); });
+    ['variants', 'fills', 'fillsOnChange', 'fillsOnStay', 'turnarounds', 'leads', 'stops'].forEach(k => { if (part[k]) lists[k] = part[k].map(bar => simplify(bar, grid)); });
+    // a written easy version replaces what it names (the figure, its
+    // variants, its fills); the lists it leaves out — the leads, the stops —
+    // are simplified by rule, so no rake or bend slips in beside it
+    if (part.easy) return { ...part, ...lists, ...off, turnarounds: null, turnaround: null, ...part.easy, easyKind: 'written' };
     return { ...part, ...lists, ...off, easyKind: 'auto' };
   }
 
@@ -1637,6 +1679,37 @@
     }
     return out;
   }
+  // The Hendrix chord: root, 3rd, ♭7 and ♯9 on four strings in a row — the
+  // grip a hand holds at x-7-6-7-8-x for E — built from the chord's root on
+  // a bass string, each next tone on the next string up and higher in
+  // pitch, inside the position (a fret over its edge allowed, since the
+  // grip is three frets wide and a box at its edge would lose the top).
+  // A minor chord has no ♯9 to speak of: it takes its m7 shell instead.
+  // ...and the 9th chord the same way, the 9th where the ♯9 was and the 5th
+  // above it on the top string (x-7-6-7-7-7 for E9) — the T-Bone and
+  // B.B. King grip Red House is comped with
+  function sharp9Voicing(chord, opts, ninth = false){
+    if (chord.quality !== 'maj') return shellVoicing(chord, opts);
+    const win = opts.window;
+    const cells = cellsIn({ min: Math.max(0, win.min - 1), max: Math.min(FRET_COUNT, win.max + 1) });
+    const r = pc(chord.note);
+    const pcs = ninth ? [r, (r + 4) % 12, (r + 10) % 12, (r + 2) % 12, (r + 7) % 12] : [r, (r + 4) % 12, (r + 10) % 12, (r + 3) % 12];
+    const roots = cells.filter(c => c.midi % 12 === r && (c.string === 4 || c.string === 5) && c.fret >= win.min && c.fret <= win.max)
+      .sort((a, b) => b.string - a.string || a.midi - b.midi);
+    for (const root of roots){
+      const out = [root];
+      let ok = true;
+      for (let k = 1; k < pcs.length; k++){
+        const want = pcs[k], string = out[k - 1].string - 1;
+        const c = cells.find(x => x.string === string && x.midi % 12 === want && x.midi > out[k - 1].midi);
+        if (!c){ ok = false; break; }
+        out.push(c);
+      }
+      if (ok) return out;
+      if (out.length >= 3) return out;                 // root, 3rd, ♭7: the shell of it
+    }
+    return shellVoicing(chord, opts);
+  }
   // One extra note above a grip: a colour tone (the 9th, the 6th) on a strum.
   function placeIv(chord, opts, iv, above){
     const pal = palette(chord, opts);
@@ -1707,6 +1780,7 @@
     }
     const roll = rng(Number(seed) || 1);
     const phrase = feat.phrase || 2;
+    opts = { ...opts, blues: !!part.blues };          // the palette the part asks for
     const out = [];
     const stopBars = new Set();
     const pick = list => list[Math.floor(roll() * list.length)];
@@ -1759,16 +1833,17 @@
       const barOpts = { ...opts, grid, fine };
       const doubleOk = !(opts.tech && opts.tech.double === false);
       written.forEach(w => {
-        if (w.strum && (w.voicing === 'shell' || w.voicing === 'power' || w.voicing === 'bass' || w.voicing === 'fifth' || w.add || w.next)) extra.push(w);
-        else if (w.tech === 'double' && doubleOk) pairs.push(w);
+        if (w.strum && (w.voicing === 'shell' || w.voicing === 'power' || w.voicing === 'sharp9' || w.voicing === 'ninth' || w.voicing === 'bass' || w.voicing === 'fifth' || w.add || w.next)) extra.push(w);
+        else if (w.tech === 'double' && doubleOk && !w.unison) pairs.push(w);   // a unison bend is placed by realiseBar
         else plain.push(w);
       });
       let notes = realiseBar(plain, bar.chord, barOpts, next);
       const pal = palette(bar.chord, opts), nextPal = palette(next, opts);
       pairs.forEach(w => {
-        const placed = placePair(w, cells, w.next ? nextPal : pal, homeMidi(cells, (w.next ? nextPal : pal).root));
+        const reachCells = w.reach ? cellsIn({ min: Math.max(0, Math.min(opts.window.min, opts.window.min + w.reach)), max: Math.min(FRET_COUNT, Math.max(opts.window.max, opts.window.max + w.reach)) }) : cells;
+        const placed = placePair(w, reachCells, w.next ? nextPal : pal, homeMidi(cells, (w.next ? nextPal : pal).root));
         if (!placed){ notes = notes.concat(realiseBar([w], w.next ? next : bar.chord, barOpts, next)); return; }
-        const mk = (c, more) => ({ at: w.at, dur: w.dur, vel: w.vel, string: c.string, fret: c.fret, midi: c.midi, iv: w.iv, next: !!w.next, tech: 'double', ...more });
+        const mk = (c, more) => ({ at: w.at, dur: w.dur, vel: w.vel, string: c.string, fret: c.fret, midi: c.midi, iv: w.iv, next: !!w.next, tech: 'double', ...(w.reach ? { reach: w.reach } : {}), ...more });
         notes.push(mk(placed.c1, {}), mk(placed.c2, { pair: true, iv: w.iv2 }));
       });
       extra.forEach(w => {
@@ -1776,8 +1851,8 @@
         // in the triads reading every strum is the triad the neck shows,
         // whatever voicing was asked for; elsewhere the voicing is built
         const triads = opts.reading === 'triads3';
-        let grip = triads ? strumCells(on, opts, ['shell', 'power'].includes(w.voicing) ? 'full' : (w.voicing || 'full'))
-                 : w.voicing === 'shell' ? shellVoicing(on, opts) : w.voicing === 'power' ? powerVoicing(on, opts)
+        let grip = triads ? strumCells(on, opts, ['shell', 'power', 'sharp9', 'ninth'].includes(w.voicing) ? 'full' : (w.voicing || 'full'))
+                 : w.voicing === 'shell' ? shellVoicing(on, opts) : w.voicing === 'power' ? powerVoicing(on, opts) : w.voicing === 'sharp9' ? sharp9Voicing(on, opts) : w.voicing === 'ninth' ? sharp9Voicing(on, opts, true)
                  : (w.voicing === 'bass' || w.voicing === 'fifth') ? (thumbCell(on, opts, w.voicing) || strumCells(on, opts, w.voicing))
                  : strumCells(on, opts, w.voicing || 'full');
         if (!grip) return;
@@ -1790,8 +1865,10 @@
         }
         const each = w.vel * strumStringLevel(grip.length);
         const stroke = w.stroke || strokeFor(per, w.at, fine);
+        // the ♯9 and 9th grips may put their top note a fret past the position
+        const grips = w.voicing === 'sharp9' || w.voicing === 'ninth' ? { reach: 1 } : {};
         grip.forEach((c, k) => notes.push({ at: w.at, dur: w.dur, vel: each, string: c.string, fret: c.fret, midi: c.midi,
-                                             strum: true, voicing: w.voicing, mute: !!w.mute, next: !!w.next, spread: k * STRUM_SPREAD, stroke,
+                                             strum: true, voicing: w.voicing, mute: !!w.mute, next: !!w.next, spread: k * STRUM_SPREAD, stroke, ...grips,
                                              ...(c === colour ? { colour: true } : {}) }));
       });
       if (part.fingers) notes = fingersOffThumb(notes, cells);
@@ -1806,6 +1883,10 @@
           if (w.pm) n.mute = true;
           if (w.vib) n.vib = true;
           if (w.rake) n.rake = true;
+          // the wah: the pedal rocking with the pick — toe down on a
+          // downstroke and on a single note (the filter opening), heel on
+          // an upstroke — the wacka of a scratch rhythm, or one note's cry
+          if (w.wah) n.wah = n.strum && n.stroke === 'up' ? 'down' : 'up';
           // a chord slid in, and the lower note of a double stop bent — only to
           // a note the reading offers, and only with the technique switched on
           if (w.chordSlide && n.strum && techOn('slide')){ const from = n.fret - w.chordSlide; if (from >= 1 && from <= FRET_COUNT) n.slide = from; }
@@ -1816,6 +1897,25 @@
           const reps = w.trem, step = n.dur / reps;
           notes = notes.filter(x => x !== n);
           for (let k = 0; k < reps; k++) notes.push({ ...n, at: n.at + k * step, dur: step * 0.9, vel: n.vel * (k % 2 ? 0.75 : 1), trem: true });
+        }
+        // a trill: the note picked once, then hammered on and pulled off
+        // against the note above it (w.trill, an interval) in thirty-seconds
+        // for as long as it was written — one stem in the tab, "tr" over it
+        if (w.trill != null && !w.strum && mine[0] && !mine[0].strum && techOn('hammer')){
+          const n = mine[0];
+          const pal2 = w.next ? nextPal : pal;
+          const sn = snap(pal2.root, w.trill, pal2.allowed);
+          const up = sn && cells.find(c => c.string === n.string && c.fret > n.fret && c.fret <= n.fret + 4 && c.midi % 12 === sn.pc);
+          if (up){
+            const events = Math.max(2, Math.round(n.dur * 2)), step = n.dur / events;
+            notes = notes.filter(x => x !== n);
+            for (let k = 0; k < events; k++){
+              const c = k % 2 ? up : n;
+              notes.push({ ...n, string: c.string, fret: c.fret, midi: c.midi, at: n.at + k * step, dur: step * 0.95,
+                           vel: n.vel * (k === 0 ? 1 : 0.7), soft: k > 0, iv: k % 2 ? w.trill : w.iv,
+                           ...(k === 0 ? { trill: true, tabDur: n.dur } : k === 1 ? {} : { tabHide: true }) });
+            }
+          }
         }
       });
       notes.forEach(n => out.push({ ...n, bar: b }));

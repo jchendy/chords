@@ -744,14 +744,14 @@
         const isNext = name === nextName;
         const rootPc = SEMITONE[chord.note] % 12;
         // the grip itself — the CAGED shape, or its 7th-chord voicing
-        const gripCells = chord.seventh
+        let gripCells = chord.seventh
           ? seventhCells(placement, rootPc, SEMITONE[chord.seventh] % 12)
           : placement.cells.slice();
+        if (chord.sus) gripCells = GT.fretboard.susCells(gripCells, rootPc, chord.sus);
         // The grip, or — with "Whole arpeggio" on — every chord tone a hand
         // sitting on that grip can reach, the grip still traced through the
         // middle so you can see the shape inside its arpeggio.
-        const tonePcs = new Set([chord.note, chord.third, chord.fifth, chord.seventh]
-          .filter(Boolean).map(n => SEMITONE[n] % 12));
+        const tonePcs = new Set(GT.theory.chordPcs(chord));
         const cells = wholeArpeggio
           ? arpeggioCells(placement.fretMin, Math.max(placement.fretMax, placement.fretMin + 3), tonePcs)
           : gripCells;
@@ -897,7 +897,7 @@
       // The grips, and the outlines tracing them. A chord carrying a 7th gets
       // its 7th-chord voicings, so what's traced is a shape you'd actually
       // finger rather than the plain triad underneath it.
-      const board = cagedTriadBoard(rootPc, isMinor, chord.note, seventhPc, enabledShapes());
+      const board = cagedTriadBoard(rootPc, isMinor, chord.note, seventhPc, enabledShapes(), chord.sus || null);
       board.markers = withTagColors(board.markers, n => CAGED_COLORS[n]);
       if (!wholeArpeggio){
         cagedShapesShown = board.shapesShown;
@@ -1232,7 +1232,7 @@
     if (!chord) return [];
     const rootPc = SEMITONE[chord.note] % 12;
     return cagedTriadBoard(rootPc, chord.quality === 'min', chord.note,
-      chord.seventh ? SEMITONE[chord.seventh] % 12 : null, enabledShapes()).lines.map(l => ({
+      chord.seventh ? SEMITONE[chord.seventh] % 12 : null, enabledShapes(), chord.sus || null).lines.map(l => ({
         name: l.shape, anchor: Math.min(...l.cells.map(c => c.fret)), cells: l.cells,
       }));
   }

@@ -1,6 +1,6 @@
 # Jeff's Guitar Tools
 
-A single-page, dependency-free site with four tabs under one header:
+A single-page, dependency-free site with five tabs under one header:
 
 - **Practice** — generates random diatonic chord progressions and
   plays them back on a recorded piano or a recorded guitar, over a recorded
@@ -14,6 +14,12 @@ A single-page, dependency-free site with four tabs under one header:
   chord shape, a pentatonic box or a scale box on the neck and sound a note
   from inside it for you to place; the fourth plays a whole chord, shows you
   only its root, and asks what kind of chord it is.
+- **Style Deep Dives** — one player's whole way of playing, taken apart and
+  put back together as parts you can practise. The first is Hendrix
+  (`hendrix.html`): the hands and the grips, the scales, eight feels with
+  rhythm, lead and mixed parts, the songs as reference points, exercises,
+  studies, how the page was made, and its sources — every example playable
+  and a link away from the Practice tab.
 
 Switching tabs stops any playback that was running. Each tab has its own URL
 fragment (`#chord-finder`, `#reverse-chord-finder`), so a tab can be
@@ -89,8 +95,13 @@ names the tab you're on.
 - Per-slot chord quality — the degree picker names the degree and nothing
   else (`Dm · ii`); a second picker beside it sets the shape, and offers
   Major, Minor, 7, maj7 and m7 on any degree, with dim, m7♭5 and dim7 added
-  on the one degree whose own chord is diminished — and every shape at once on
-  a root outside the key, which the key says nothing about. A **✓** marks the two
+  on the one degree whose own chord is diminished, and the colours — 9, m9,
+  7♯9, add9, m(add9), 6, sus2, sus4, 7sus4 — on any degree at all (a chord
+  carries its colour as the semitones beyond its triad and 7th, and as the
+  sus note in place of its 3rd, and the neck, the comp, the parts and the
+  tab all read it: a strum of E7♯9 has its G against the G♯) — and every
+  shape at once on a root outside the key, which the key says nothing
+  about. A **✓** marks the two
   shapes the key itself gives that degree, so leaving the key is a choice you
   can see yourself making — a secondary dominant on the ii, a borrowed minor
   iv, a major III. The numeral follows: pick Major on the ii and it reads
@@ -203,7 +214,9 @@ names the tab you're on.
   in the parts guide shows it with) —
   and a Play at the head of the row, so playback starts without looking away
   from the chart. When the chosen preset has variants (the blues: 12-bar,
-  quick change, jazz blues…) they show as a row under the title. The chart's
+  quick change, jazz blues…; the Hendrix set: the changes his songs run on,
+  each named for where it is heard, a chord progression being common stock
+  that no one owns) they show as a row under the title. The chart's
   bars are the editor: tap a bar to hear it and to change its chord or its
   quality, type a name for it, or throw it away (a red bin, since an × on
   the end of an editor row reads as "close"); "+" on the last bar adds a bar
@@ -503,7 +516,10 @@ played. Hover a shape for a tooltip naming the kind and the styles it's at
 home in — the family's own (folk, country and pop for an open chord; jazz,
 blues and bossa nova for a grip; funk, R&B and reggae for a top-string
 voicing) plus the chord type's (a dominant 7th belongs to the blues in any
-shape, a 9th to funk and soul, a maj7 to jazz).
+shape, a 9th to funk and soul, a maj7 to jazz) — and, for a grip Hendrix
+used (the thumb-over E shape and its split chord, the hammered sus4, 6 and
+add9, the 7♯9 and the 9th, the A and C shapes, stacked fifths), the name
+the Hendrix deep dive gives it, with Hendrix first among the styles.
 
 Choosing and ordering are separate judgements: a score decides which shapes
 make the cut (fuller chords, small stretches, root in the bass), and a
@@ -806,11 +822,11 @@ using only the five, and in the scales reading using the scale; a note the
 reading can't offer within a tone is dropped rather than forced, so a sparse
 reading gives a sparser part, not a wrong one.
 
-Written that way because parts belong to feels — twenty-two of them, and
+Written that way because parts belong to feels — sixty-nine of them, and
 Simple — and appear in four readings. Written per reading they'd be
-twenty-three times four times several examples, hundreds of hand-written
+seventy times four times several examples, thousands of hand-written
 parts none of which could be given real attention. Written once and
-snapped, they're twenty-three times a few. Every feel the picker offers has two, and a test holds it to that.
+snapped, they're seventy times a few. Every feel the picker offers has two, and a test holds it to that.
 Simple has no feels of its own — quarter, half and
 whole notes are one hit at three spacings — so its parts are written for a
 stand-in on a sixteenth grid: the chord struck whole on one and nowhere
@@ -826,7 +842,43 @@ the style's own band under the part on the guitar, from a small player of
 its own in `js/parts-guide.js`. A switch shows the same parts in the Chords,
 Pentatonic or Scales reading, and another plays the techniques plain. The
 text lives in `js/parts-guide-data.js`, and a test holds every feel and
-every part to having its page there.
+every part to having its page there. Its player — six bars looped over the
+style's band, the tab following — is `js/example-player.js`, shared with
+the deep dives.
+
+**The Hendrix genre, and the deep dive.** `review/proposals-hendrix.js` is
+a genre written as a course would write it: eight feels (the soul ballad's
+chord melody, the fuzz riff on the 7♯9, the slow blues in 12/8, the funk of
+Band of Gypsys, the cycle of fourths, the one-chord vamp under the wah, the
+rhythm and blues of the Isley and Stax years, the rolling waltz), each with
+rhythm, lead and mixed parts — twenty-three in all — written from what the
+sources say the hands do, never from a recording, and carrying a
+`research` text with the reasons. Marked `engine: true`, so the review page
+realises it with the app's own engine, since the engine grew what the parts
+needed and each feature is held by a test: `free` notes played as written
+whatever the reading offers (the Dorian 6th, the major 3rd against a minor
+pentatonic), `reach` past the position window (the slide into the box
+above and back), a `blues` palette (the minor pentatonic over a major
+chord, the blues scale in Scales), the `mid` voicing (the D, G and B
+strings — the split chord a thumb-over hand strikes after its bass note),
+the `sharp9` and `ninth` grips, unison bends, trills written as 32nds, and
+the wah (a peaking filter swept with each stroke in `audio.js`). The Chord
+finder knows the grips (`HENDRIX_SHAPES` in `chord-finder.js`: the
+thumb-over E shape and its split chord, the hammered sus4, 6 and add9, the
+7♯9 and the 9th, the A and C shapes, stacked fifths) and names and tags
+them Hendrix first, so the deep dive's diagrams and the finder agree; the
+Practice tab's preset list has the changes his songs run on; and one part
+(the Hey Joe walk-up, whose 5th is the next chord's root only because every
+chord is a fourth below the last) says `needs` and opens only with that
+preset. `hendrix.html` and `js/hendrix-guide.js` are the deep dive under
+the **Style Deep Dives** tab: the grips drawn and linked to the finder, the
+scales, forty-odd examples, exercises and studies realised from the genre's
+parts and played by the shared player, each with a "Drill it in Practice"
+link in the share format (key, chords or preset, tempo, feel, part, roll,
+blend, the neck's reading and box), the songs analysed as reference points
+with their tabs linked at Ultimate Guitar and Songsterr, a section saying
+how the page was made — by reading, with no recording listened to — and a
+numbered list of every source.
 
 **The style review.** `review.html` is a page for deciding what the styles
 should become: every existing style beside a proposed revision of it — the
@@ -931,6 +983,7 @@ drill or example can be bookmarked or sent to someone:
 | `#ear-training?m=scale&k=Eb&s=dorian&i=2&o=1` | that drill, that box, that octave |
 | `#ear-training?m=quality&q=maj.m.7.9.13` | the quality drill, asking about those five |
 | `#practice?k=major:C&c=0.2.,4.2.&t=120` | the practice tab's own share link (`#caged-practice`, its old name, still opens it) |
+| `#practice?k=major:E&pr=Hendrix\|Cycle of fourths (Hey Joe)&s=hendrix.4&p=0.f.1` | the same, with the preset the chords came from by name — which a part written for one progression needs to open — and a style, a part and its roll |
 
 It's the exercise that's saved, not the question it happens to be asking: a
 bookmark should reopen the drill rather than one moment of it, and Random is
@@ -1081,6 +1134,16 @@ Ab, Gb, C#, A9, E9, C7, D7, Cm7, CM7):
    are in range, a "blues" preset is twelve bars, a preset a mode offers has
    a variant that mode can show, and the harmonic-minor V only appears in a
    minor key.
+15. **The engine's features each do what they say**, on a part written for
+   the purpose: a free note keeps its pitch in a reading that lacks it, a
+   note with reach sits past the window and says so, the blues palette puts
+   the minor pentatonic over a major chord, the 7♯9 and 9th grips voice
+   their colour, a unison bend is two strings meeting, a trill is 32nds
+   with the tab's value on the first, the wah sweeps (measured on the
+   rendered mix). And the finder names every grip the Hendrix deep dive
+   draws, with Hendrix first among its styles; the practice tab opens a
+   part that needs its progression only with that preset, and its link
+   carries the preset (`js/tests-practice.js`).
 
 The snapshot lives in `js/tests.js`. If a change is *meant* to alter the
 shapes, regenerate it deliberately rather than editing it to match.
@@ -1406,7 +1469,9 @@ by what each part does:
 | `tab.js` | Draws guitar tablature from a note list: the strings, the numbers, the techniques, the bar numbers, and the rhythm under each row (stems, flags, beams within the beat, dots, hollow heads) from each strike's slot length on either grid. |
 | `css/tab.css` | The tab's look, one sheet for the three pages that draw it (practice, parts, review): a 17px string gap, 11px bold numbers, thin strings, the rhythm's stems and beams. Each page keeps only its own playing colour and playhead. |
 | `parts-guide-data.js` | What the parts page says about each style and part: progression, tempo, what the rhythm and notes are made of, where the idiom comes from. Pure data. |
-| `parts-guide.js` | The parts page (`parts.html`): every part written out and playable, in any reading. Has a small player of its own. |
+| `parts-guide.js` | The parts page (`parts.html`): every part written out and playable, in any reading. |
+| `example-player.js` | The player the parts page and the deep dives share: draws a realised part as tab and loops it over the style's band, the tab following. |
+| `hendrix-guide.js` | The Hendrix deep dive (`hendrix.html`): the grips drawn, the examples, exercises and studies realised from the Hendrix genre and played, each with its link into Practice, the songs and the sources. |
 | `js/styles-base.js` | The band patterns the app started with: the base `STYLES`, one entry per style with its feels. |
 | `js/styles.js` | Resolves what the app plays: the proposals merged over the base patterns, parts and guide at load (`GT.styles`), with the base kept for the review page. |
 | `js/band.js` | The band one slot at a time — kit, comp, bass, the approach and the push on the last eighth, the fill on the last bar, stop-time — used by the practice tab, the parts page and the review page alike. |
@@ -1417,6 +1482,7 @@ by what each part does:
 | `review/review.js` | The style review page (`review.html`): existing beside proposed, playable, with decisions. Its own player and realiser, a superset of the app's for the proposed features. |
 | `review/proposals*.js` | The proposals: revised bands and parts per existing style, new styles, the engine list. Data plus the parts, written with the same helpers parts.js uses and a few more. |
 | `review/proposals-easy.js` | Easy mode's hand-written parts: the beginner's form of a part where the page's simplifying rule can't find it. |
+| `review/proposals-hendrix.js` | The Hendrix genre: eight feels, twenty-three parts with rhythm, lead and mixed forms, the research behind them. Realised by the app's own engine (`engine: true`). |
 | `audio.js` | The Web Audio synth voices (piano, bass, drums) and the per-style groove patterns. Owns the `AudioContext` and the queue both players schedule into — how far a stall has put a cursor behind the clock, and calling off notes that haven't sounded — but knows nothing about the UI. |
 | `fretboard-view.js` | The practice tab's fretboard panel: the six views, the legend, the hover spotlight, the follow-playback highlighting. |
 | `practice.js` | The practice tab: progression generation, the chord display and settings, and the playback transport. |

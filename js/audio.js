@@ -13,6 +13,7 @@
     return 440 * Math.pow(2, (midi - 69) / 12);
   }
 
+  const COMP_TOP_MIDI = 72;              // the top of the comp's piano range (C5)
   function chordFrequencies(chord){
     // stack root/third/fifth(/seventh) upward in pitch, wrapping octaves as needed
     const rootSemi = SEMITONE[chord.note];
@@ -28,11 +29,23 @@
       noteFreq(chord.fifth, fifthOctave),
     ];
 
+    let topSemi = fifthSemi, topOctave = fifthOctave;
     if (chord.seventh){
       const seventhSemi = SEMITONE[chord.seventh];
       const seventhOctave = fifthOctave + (seventhSemi <= fifthSemi ? 1 : 0);
       freqs.push(noteFreq(chord.seventh, seventhOctave));
+      topSemi = seventhSemi; topOctave = seventhOctave;
     }
+    // the colour on top: a 9th, a ♯9, a 6th, each above what came before —
+    // and inside the comp's range (the piano is warmed to MIDI 72): a colour
+    // tone that would sit above it drops an octave, into the chord
+    (chord.ext || []).forEach(iv => {
+      const semi = (rootSemi + iv) % 12;
+      let octave = topOctave + (semi <= topSemi ? 1 : 0);
+      if (semi + 12 * (octave + 1) > COMP_TOP_MIDI && octave - 1 >= ROOT_OCTAVE) octave -= 1;
+      freqs.push(pcFreq(semi, octave));
+      topSemi = semi; topOctave = octave;
+    });
 
     return freqs;
   }
@@ -967,6 +980,24 @@
       lfo.start(time); lfo.stop(time + duration + 0.06);
     }
 
+    // the wah: a resonant peak swept through the note — up from the heel
+    // to the toe (the vowel opening) or back down — over the first part of
+    // it; the pedal rocking with the pick on a scratch, or a note crying
+    let voiceOut = voice.out;
+    if (fx && fx.wah){
+      const w = audioCtx.createBiquadFilter();
+      w.type = 'peaking'; w.Q.value = WAH.q; w.gain.value = WAH.gain;
+      const [from, to] = fx.wah === 'down' ? [WAH.hi, WAH.lo] : [WAH.lo, WAH.hi];
+      w.frequency.setValueAtTime(from, time);
+      w.frequency.exponentialRampToValueAtTime(to, time + Math.max(0.05, Math.min(WAH.sweep, ring)));
+      const lp = audioCtx.createBiquadFilter();
+      lp.type = 'lowpass'; lp.Q.value = 0.9;
+      lp.frequency.setValueAtTime(from * 1.6, time);
+      lp.frequency.exponentialRampToValueAtTime(to * 1.6, time + Math.max(0.05, Math.min(WAH.sweep, ring)));
+      voiceOut.connect(w).connect(lp);
+      voiceOut = lp;
+    }
+
     // the envelope: open, hammered (no pick on the front), or palm-muted
     // (the heel of the hand: the pick's click comes through, the ring
     // doesn't — over in MUTE_RING whatever was written, darker and a shade
@@ -991,9 +1022,9 @@
       heel.Q.value = 0.5;
       heel.frequency.setValueAtTime(1600, time);
       heel.frequency.exponentialRampToValueAtTime(700, time + 0.04);
-      voice.out.connect(heel).connect(env);
+      voiceOut.connect(heel).connect(env);
     } else {
-      voice.out.connect(env);
+      voiceOut.connect(env);
     }
     env.connect(damp);
     if (bus === 'part'){
@@ -1033,6 +1064,8 @@
     return { out, base: freq, pitch: [a.frequency, b.frequency], sources: [a, b], stopper: { stop(t){ a.stop(t); b.stop(t); } }, offset: 0 };
   }
   const MUTE_RING = 0.18, MUTE_LEVEL = 0.75;
+  // the wah's sweep: a 12 dB peak from 380 Hz to 1900 Hz over 0.32 s at most, with a lowpass riding above it
+  const WAH = { lo: 380, hi: 1900, q: 4, gain: 12, sweep: 0.32 };
   const PLUCK_DETUNE_CENTS = 10;      // ±5 cents, under what an ear hears as out of tune
   const PLUCK_SKIP = 0.004;           // up to 4 ms of the recording's front
 
@@ -1091,6 +1124,7 @@
     if (n.soft) fx.soft = true;
     if (n.mute) fx.mute = true;
     if (n.vib) fx.vib = true;
+    if (n.wah) fx.wah = n.wah;
     return Object.keys(fx).length ? fx : null;
   };
   function playPartNotes(notes, at, slotDur, level, { slapback = false, jit = () => 0 } = {}){
@@ -1356,11 +1390,24 @@
       : (r + (isDom || chord.quality !== 'maj' ? 10 : 11)) % 12;
     const pcs = rootless ? [third, fifth, seventh, r] : [r, third, fifth, seventh];
     let octave = rootless ? 4 : 3, prev = -1;
-    return settleVoicing(pcs.map(pc => {
+    // the four-note stack, settled in the comp's range as it always was...
+    const base = settleVoicing(pcs.map(pc => {
       if (pc <= prev) octave++;
       prev = pc;
       return pcFreq(pc, octave);
-    }));
+    })).map(midiOf);
+    // ...and the colour — a 9th, a ♯9, a 13th — on top of it when the range
+    // has room, else tucked in above the lowest note, inside the chord; the
+    // colour doesn't move the stack, so what settled stays settled
+    const stack = base.slice();
+    (chord.ext || []).forEach(iv => {
+      const pc = (r + iv) % 12;
+      const above = from => { const d = ((pc - from % 12) + 12) % 12; return from + (d || 12); };
+      let midi = above(Math.max(...stack));
+      if (midi > COMP_TOP_MIDI) midi = above(Math.min(...stack));
+      stack.push(midi);
+    });
+    return stack.map(m => pcFreq(m % 12, Math.floor(m / 12) - 1));
   }
 
   function playChord7(chord, time, duration, velocity, rootless, voice, opts){
@@ -1653,7 +1700,7 @@
     renderOffline, buildGraph, roomImpulse, ROOM, GUITAR_COMP, ROOT_ALONE,          // a render through a graph of its own, for measuring
     scheduleAhead, SCHEDULE_AHEAD,
     strum, strumPlan, STRUM_SHARE, SWEEP, SWEEP_TAPER, playPartNotes, PART_LEVEL, partFx,
-    claim, pitchPlan, BEND_HOLD, MUTE_RING, MUTE_LEVEL, SLAP,
+    claim, pitchPlan, BEND_HOLD, MUTE_RING, MUTE_LEVEL, SLAP, WAH,
     // a graph stood in for the length of a call, for the tests
     _withGraph(g, fn){ const live = G; G = g; try { return fn(); } finally { G = live; } },
     // ...and the guitar bank empty for the length of a call, to hear the fallback

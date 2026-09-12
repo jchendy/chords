@@ -59,7 +59,11 @@ beat), nine for a jazz waltz (three beats of three). Every event has a slot
 - `s(at, dur, vel, voicing, 'mute', flags)` a strum of the chord: `full`,
   `low` (bottom three), `high` (top three), `bass` (the root alone),
   `fifth` (the 5th alone — the other note an alternating thumb goes to),
-  `power` (root, 5th, octave), `shell` (root, 3rd, 7th). `sn` strikes the
+  `power` (root, 5th, octave), `shell` (root, 3rd, 7th), `mid` (the D, G
+  and B strings — the split chord a thumb-over hand strikes after its bass
+  note), `sharp9` (the 7♯9 grip, x-7-6-7-8-x with the root on the A
+  string) and `ninth` (the 9th grip, x-7-6-7-7-7); the two grips may sit a
+  fret past the window (`reach: 1`). `sn` strikes the
   next chord early (the "and of 4" push). `add: 14` puts a colour tone (the
   9th) on top; `chordSlide: 1` slides the chord in from a fret below;
   `stroke: 'up'` says which way the pick goes — otherwise the hand's rule
@@ -70,10 +74,19 @@ beat), nine for a jazz waltz (three beats of three). Every event has a slot
   downstroke, 22 ms high to low on an upstroke, the later strings a shade
   lighter, the whole strum weighing what `strumStringLevel` says.
 - `d(at, iv, iv2, ...)` a double stop; `up: 2` bends its lower note.
-  `b(at, iv, up, ...)` a bend, `h`/`p` hammer-on and pull-off, `sl(at,
-  from, iv, ...)` a slide. `g` is a ghost strum (a muted scratch).
+  `d(at, iv, iv, ..., { unison: true })` is a unison bend: the note on one
+  string and, on the string below, the note a tone under it bent up to
+  meet it. `b(at, iv, up, ...)` a bend, `h`/`p` hammer-on and pull-off,
+  `sl(at, from, iv, ...)` a slide. `g` is a ghost strum (a muted scratch).
 - Flags: `pm` palm mute, `stacc` short, `vib` vibrato, `rake` a rake into
-  the note, `trem: 8` tremolo picking, `ghost` a dead note.
+  the note, `trem: 8` tremolo picking, `ghost` a dead note, `wah` the pedal
+  rocked with the stroke (a sweep up or down per note), `trill: iv2` a
+  trill to that interval (written as 32nds, the first note carrying the
+  tab's value), `free` a note played as written whatever the reading
+  offers (the Dorian 6th, the major 3rd against a minor pentatonic, a
+  chromatic step — the pitch is exact and is placed, not snapped), `reach:
+  n` leave to sit up to n frets past the position window (a slide up into
+  the box above and back, a bend at the top of the neck).
 
 Notes are intervals above the chord's root, never pitches: 0 the root, 4
 the 3rd, 7 the 5th, 10 the ♭7, 12 the octave, and above it 14 the 9th, 15
@@ -100,8 +113,23 @@ A part has:
   stop-time bars. A part with `leads` gets the Rhythm / Mixed / Lead switch
   in the app; one without doesn't.
 - `easy` — a hand-written beginner's version, where the rule in
-  `parts.js` (`simplify`) can't find it: fewer notes, on the beat.
+  `parts.js` (`simplify`) can't find it: fewer notes, on the beat. Written
+  as an object (`easy: { figure: [...] }`); the lists it leaves out are the
+  rule's simplification of the part's own, so no rake or bend survives.
+- `blues: true` — the part plays the minor pentatonic over a major chord
+  in the Pentatonic reading and the blues scale (1 2 ♭3 3 4 ♭5 5 6 ♭7) in
+  Scales: the tension a blues or rock player keeps on purpose. Without it
+  a major chord gets the major pentatonic, as the neck draws it.
+- `needs: { preset, variant }` — a part written for one progression and
+  no other (a walk-up whose 5th is the next root because every chord is a
+  fourth below the last): it opens in the app only with that preset
+  loaded, the excuse names it and loads it, and a shared link carries the
+  preset (`pr=`).
 - `why` — the reasons, in words. It becomes the part's page in the guide.
+
+A genre with `engine: true` in its proposal (Hendrix) is realised on the
+review page by the app's own `realise`, not the review page's superset
+realiser, since it was written for features that are in the engine.
 
 ## Register
 
@@ -136,6 +164,10 @@ keys reach 24–28. The `tools/reach.js` script prints this per key.
   triad), the way a big-band rhythm guitar plays.
 - In the Triads reading every strum is the triad the neck shows, whatever
   voicing was asked for.
+- A chord with colour the triad-and-7th model can't spell — 7♯9, 9, add9,
+  6, sus2, sus4, 7sus4 — carries it as `ext` (semitones beyond the triad)
+  and `sus`, and the palette, the strums and the comp voice it: a strum of
+  E7♯9 has its G against the G♯.
 
 ## The band
 
@@ -164,9 +196,12 @@ holds), and on the review page each card exposes its realised state
 
 Every change is held by a test in `js/tests.js` (open `tests.html`): the
 parts are well-formed and realise inside the reading in every key and
-window; the engine's features each do what they say on a part written for
-the purpose; the band lands the approach and the push on the last eighth of
-every grid. Every new test is sabotage-checked: break the thing it holds,
+window (a note with `reach` may sit past it, and says so); the engine's
+features each do what they say on a part written for the purpose — free
+notes, reach, the blues palette, the colour grips, unison bends, trills,
+the wah; the band lands the approach and the push on the last eighth of
+every grid; a part with `needs` opens only with its preset and the link
+carries it. Every new test is sabotage-checked: break the thing it holds,
 see it fail, put it back.
 
 ## Adding a style, in order

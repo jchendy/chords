@@ -669,7 +669,8 @@
         const col = block.querySelector('.col.proposed');
         const entry = { progression: add.progression, key: add.key, tempo: add.tempo, mode: add.mode, scaleTheory: add.scaleTheory };
         bandCard(col.querySelector('.band'), add.band, add.style || genre.id, entry, 'The band');
-        (add.parts || []).forEach(part => partCard(col.querySelector('.parts'), part, entry, add.style || genre.id, add.band, true));
+        // a genre written for the app's engine (genre.engine) is realised by it, features and all
+        (add.parts || []).forEach(part => partCard(col.querySelector('.parts'), part, entry, add.style || genre.id, add.band, !genre.engine));
       });
       main.appendChild(sec);
     });

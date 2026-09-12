@@ -110,6 +110,14 @@
 
   // Name the shape a chord is currently in — the key a slot stores.
   function shapeOf(chord){
+    // the colour beyond the triad and the 7th, where the chord carries it
+    if (chord.sus) return chord.seventh ? '7sus4' : chord.sus === 2 ? 'sus2' : 'sus4';
+    if (chord.ext && chord.ext.length){
+      const has = n => chord.ext.includes(n);
+      if (has(3) && chord.seventh && chord.quality === 'maj') return '7♯9';
+      if (has(9) && !chord.seventh && chord.quality === 'maj') return '6';
+      if (has(2)) return chord.seventh ? (chord.quality === 'min' ? 'm9' : '9') : (chord.quality === 'min' ? 'm(add9)' : 'add9');
+    }
     if (!chord.seventh) return chord.quality === 'min' ? 'min' : chord.quality === 'dim' ? 'dim' : 'maj';
     const iv = ((SEMITONE[chord.seventh] - SEMITONE[chord.note]) % 12 + 12) % 12;
     if (chord.quality === 'dim') return iv === 9 ? 'dim7' : 'm7♭5';
@@ -141,6 +149,18 @@
     m7:     { triad: 'min', seventh: 10,   label: 'm7'    },
     'm7♭5': { triad: 'dim', seventh: 10,   label: 'm7♭5'  },
     dim7:   { triad: 'dim', seventh: 9,    label: 'dim7'  },
+    // the colour beyond the triad and the 7th — `ext` as semitones above the
+    // root, `sus` in place of the 3rd; the key is the suffix the chord is
+    // written with, so a typed "E7♯9" and a picked one are the same chord
+    '9':      { triad: 'maj', seventh: 10,   ext: [2], label: '9'      },
+    m9:       { triad: 'min', seventh: 10,   ext: [2], label: 'm9'     },
+    '7♯9':    { triad: 'maj', seventh: 10,   ext: [3], label: '7♯9'    },
+    add9:     { triad: 'maj', seventh: null, ext: [2], label: 'add9'   },
+    'm(add9)':{ triad: 'min', seventh: null, ext: [2], label: 'm(add9)' },
+    '6':      { triad: 'maj', seventh: null, ext: [9], label: '6'      },
+    sus2:     { triad: 'maj', seventh: null, sus: 2,   label: 'sus2'   },
+    sus4:     { triad: 'maj', seventh: null, sus: 4,   label: 'sus4'   },
+    '7sus4':  { triad: 'maj', seventh: 10,   sus: 4,   label: '7sus4'  },
   };
 
   // The five everyday shapes, plus the diminished ones on the one degree whose
@@ -148,13 +168,16 @@
   function shapeOptions(quality){
     const dim = quality === 'dim';
     return ['maj', 'min', ...(dim ? ['dim'] : []), '7', 'maj7', 'm7',
-            ...(dim ? ['m7♭5', 'dim7'] : [])];
+            ...(dim ? ['m7♭5', 'dim7'] : []),
+            ...COLOUR_SHAPES];
   }
+  // the coloured shapes, offered after the plain ones
+  const COLOUR_SHAPES = ['9', 'm9', '7♯9', 'add9', 'm(add9)', '6', 'sus2', 'sus4', '7sus4'];
 
   // every shape there is, for a root the key has nothing to say about. Written
   // out rather than read off CHORD_SHAPES, whose '7' would come first: an
   // object enumerates its number-like keys ahead of the rest.
-  const ALL_SHAPES = ['maj', 'min', 'dim', '7', 'maj7', 'm7', 'm7♭5', 'dim7'];
+  const ALL_SHAPES = ['maj', 'min', 'dim', '7', 'maj7', 'm7', 'm7♭5', 'dim7', '9', 'm9', '7♯9', 'add9', 'm(add9)', '6', 'sus2', 'sus4', '7sus4'];
 
   const triadShapeOf = quality => quality === 'min' ? 'min' : quality === 'dim' ? 'dim' : 'maj';
 
@@ -212,6 +235,8 @@
     const chord = { ...c, _deg: c.deg, _shape: shape || null };
     const spec = CHORD_SHAPES[shape];
 
+    // the base chord carries no colour of its own
+    delete chord.ext; delete chord.sus; delete chord.suffix;
     if (!spec){ chord.seventh = null; return chord; }
 
     // spell the chord tones the way its root is spelled, so a borrowed Bbm
@@ -226,6 +251,11 @@
       chord.numeral = recaseNumeral(chord.numeral, spec.triad);
     }
     chord.seventh = spec.seventh == null ? null : at(spec.seventh);
+    // the colour: the sus note in the 3rd's place, the extensions on top, and
+    // the suffix that names them
+    if (spec.sus){ chord.third = at(spec.sus === 4 ? 5 : 2); chord.sus = spec.sus; }
+    if (spec.ext) chord.ext = spec.ext.slice();
+    if (spec.sus || spec.ext) chord.suffix = shape;
     return chord;
   }
 
@@ -350,6 +380,7 @@
     // The last two are stored relative to the key, so they follow a change of
     // mode rather than freezing as whatever they were when the preset landed.
     slotShapes = chords.map(c => {
+      if (c.shape) return c.shape;            // a preset that names the shape outright: '7♯9', 'maj' on a minor degree
       if (c.dia) return 'dia7';
       if (!c.dom) return null;
       return c.maj ? '7' : 'flat7';
@@ -1525,7 +1556,10 @@
   // a scale degree or a 'c'-prefixed interval above the tonic (shape blank
   // for the key's own triad); t = tempo; s = style.variant. A progression that
   // came in as chord names (typed in) is written as n = name.bars
-  // instead, since its chords aren't degrees of anything.
+  // instead, since its chords aren't degrees of anything. pr = the preset
+  // the chords came from, as preset|variant by name: a part written for one
+  // progression (`needs`) opens only with that preset loaded, so a link to
+  // it has to say which.
   function shareState(){
     const p = new URLSearchParams();
     p.set('k', `${currentMode}:${currentTonic}`);
@@ -1554,6 +1588,11 @@
     // the band's volume is heard in both views, so it's its own field
     if (bandVolume !== BAND_VOLUME_DEFAULT || bandMuted) p.set('b', `${bandVolume}${bandMuted ? '.m' : ''}`);
     if (loop.on) p.set('r', `${loop.from + 1}-${loop.to + 1}`);   // the loop, in the bars the chart shows
+    if (presetIdx != null){
+      const preset = GT.progressionPresets[presetIdx];
+      const v = preset.variants && preset.variants[variantIdx];
+      p.set('pr', `${preset.name}|${v ? v.name : ''}`);
+    }
     return p;
   }
 
@@ -1574,7 +1613,7 @@
   // Bring a shared link's state in. Returns false if there wasn't one, so the
   // caller can roll a progression as usual.
   function applyShareState(p){
-    if (!p.get('k') || !(p.get('c') || p.get('n'))) return false;
+    if (!p.get('k') || !(p.get('c') || p.get('n') || p.get('pr'))) return false;
     const [mode, tonic] = p.get('k').split(':');
     const table = mode === 'major' ? MAJOR_KEYS : mode === 'minor' ? MINOR_KEYS : null;
     if (!table || !table[tonic]) return false;
@@ -1633,6 +1672,14 @@
     syncPartVolume();
     partScaleSelect.value = partScale === 'key' ? 'key' : 'follow';
 
+    // a link that names the preset its chords came from loads the preset —
+    // the same chords, and the part that needs it can open. The chords in
+    // the link are only fallen back on when the preset has gone.
+    if (p.get('pr')){
+      const [name, variant] = p.get('pr').split('|');
+      if (loadPresetByName(name, variant || null)) return true;
+      if (!(p.get('c') || p.get('n'))) return false;
+    }
     if (p.get('n')){
       const entries = p.get('n').split(',').map(e => e.split('.'));
       const chords = [];
@@ -1744,9 +1791,31 @@
   // Available at all? The style has to have a feel, the feel parts written
   // for it, and the neck has to be in one position on a reading that offers
   // notes to play.
+  // A part written for one progression (part.needs = { preset, variant })
+  // plays only over it: a walk-up written for a cycle of fourths lands on
+  // the wrong note over anything else
+  function partNeedsMet(){
+    const part = partNow();
+    if (!part || !part.needs) return true;
+    if (presetIdx == null) return false;
+    const preset = GT.progressionPresets[presetIdx];
+    if (preset.name !== part.needs.preset) return false;
+    if (part.needs.variant == null) return true;
+    const v = preset.variants && preset.variants[variantIdx];
+    return !!v && v.name === part.needs.variant;
+  }
+  function loadPresetByName(name, variantName){
+    const i = GT.progressionPresets.findIndex(p => p.name === name);
+    if (i < 0) return false;
+    loadPreset(i);
+    const preset = GT.progressionPresets[i];
+    const vi = variantName == null ? -1 : preset.variants.findIndex(v => v.name === variantName);
+    if (vi >= 0 && vi !== variantIdx){ variantIdx = vi; renderPresetVariants(); applyPreset(preset, preset.variants[vi]); }
+    return true;
+  }
   function partAvailable(){
     const pv = view.positionView();
-    return !!partNow() && pv.inPosition && !!pv.window && PART_READINGS.includes(pv.reading);
+    return !!partNow() && pv.inPosition && !!pv.window && PART_READINGS.includes(pv.reading) && partNeedsMet();
   }
 
   // Everything the realised part depends on, so it's rebuilt when any of it
@@ -1763,7 +1832,7 @@
     // ...but whether a part CAN be shown is in it: a link opens before the
     // neck has worked out its position, and without this the view stayed on
     // "switch to one position" while looking at one.
-    return JSON.stringify([partOn, partIdx, partSeed, partEasy, partBlend, partScale, partTech, currentMode, currentTonic,
+    return JSON.stringify([partOn, partIdx, partSeed, partEasy, partBlend, partScale, partTech, currentMode, currentTonic, presetIdx, variantIdx,
       feel && feel.label, pv.reading, pv.inPosition, pv.scaleTheory, partAvailable(),
       currentProgression.map((c, i) => `${displayName(c)}.${measuresFor(i)}`)]);
   }
@@ -1775,6 +1844,8 @@
     const link = (act, value, text) => `<button type="button" class="link" data-act="${act}" data-value="${value}">${text}</button>`;
     if (!PART_READINGS.includes(pv.reading)) return `A part is realised into the notes a reading offers: switch the neck to ${link('mode', 'caged', 'Chords')}, ${link('mode', 'triads3', 'Triads')}, ${link('mode', 'penta', 'Pentatonic')} or ${link('mode', 'scale', 'Scales')}.`;
     if (!pv.inPosition || !pv.window) return `A part is written into one position: ${link('view', 'position', 'switch the neck to \u201cOne position\u201d')}.`;
+    const needs = partNow().needs;
+    if (needs && !partNeedsMet()) return `This part is written for the \u201c${needs.variant || needs.preset}\u201d progression: ${link('preset', `${needs.preset}|${needs.variant || ''}`, 'load it')}.`;
     return '';
   }
   // ...and the words are the controls: a link in the excuse presses the
@@ -1782,6 +1853,11 @@
   partNoteEl.addEventListener('click', e => {
     const b = e.target.closest('.link');
     if (!b) return;
+    if (b.dataset.act === 'preset'){
+      const [name, variant] = b.dataset.value.split('|');
+      loadPresetByName(name, variant || null);
+      return;
+    }
     const group = b.dataset.act === 'view' ? '#viewGroup' : '#fretModeGroup';
     const btn = document.querySelector(`${group} [data-value="${b.dataset.value}"]`);
     if (btn) btn.click();

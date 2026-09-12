@@ -709,6 +709,109 @@ Shown over C · F · G · C · F · G in C at 96 BPM.
 - **Quarter-note run** — A chord, then three quarter notes stepping through the scale. The fills go on up, or come down from the octave and step onto the next chord’s root or 5th. _(2 variants, 3 fills)_
 - **Eighth-note run** — The same idea at twice the speed: a chord, then six eighths. One fill hammers the 4th onto the 5th; another turns round the root and walks to the next chord. _(2 variants, 3 fills)_
 
+## Hendrix
+
+What he actually does. Jimi Hendrix's rhythm playing is the R&amp;B guitar of the chitlin' circuit — Curtis Mayfield's, Steve Cropper's, the Isley Brothers' band he played in — with the chord opened up: the thumb over the neck takes the bass note of an E-shape barre, so the fingers are free to strike the D–G–B triad on its own (the "split chord") and to hammer the 4th onto the 3rd, the 6th onto the 5th and the 9th onto the octave, to slide 6ths on the third and fifth strings and 4ths on the top two, and to answer a chord with a double stop out of the pentatonic box that sits under the same shape (Guitar Player's "Five rules", Premier Guitar's "Hendrix rhythms made easy", Happy Bluesman's three steps, Blackstar's rhythm-and-lead lesson, the Pickup Music CAGED course, the Gresham College lecture by Milton Mermikides). "Little Wing", "Castles Made of Sand", "The Wind Cries Mary", "Bold as Love", "Angel" and "Wait Until Tomorrow" are the records that show it; Billy Cox and Mitch Mitchell both name Mayfield as where it came from. The other side is the fuzz: the E7♯9 — the "Hendrix chord", root on the A string, x-7-6-7-8-x — as a tonic that never resolves ("Purple Haze", "Foxy Lady", "Crosstown Traffic", "Spanish Castle Magic"), single-note riffs in the E minor pentatonic with the ♭5 doubled with the bass and muted between the notes ("Voodoo Child (Slight Return)", "Manic Depression", "Freedom", "Izabella"), and a lead language that is the blues of Albert King, B.B. King and Buddy Guy — the box at the 12th fret and the box above it, bends of a step and a step and a half, the unison bend, B.B. King's wrist vibrato, rakes, trills — with the minor pentatonic played over major and dominant chords, chromatic passing notes and Dorian and Mixolydian colour (the Wikipedia articles on "Red House", "Purple Haze" and the 7♯9 chord; MusicRadar's lead lesson; Jon MacLennan's and Riff Ninja's lessons; Hanford's University of Washington dissertation on Band of Gypsys; Storey's London College of Music analysis).
+
+Where the notes sit. Everything is played in the E shape and the shape above it: a thumb-over barre with its root on the low E string, the pentatonic box that shares that root (the "E shape" box in the app's reading), and the box a fourth up when a phrase climbs (the "D shape"). The 7♯9 and the 9th are 5th-string-root grips. Fills answer the chord from the top three strings of the same position; a lead line goes up a box and comes back. He tuned a half-step down; the parts are written in the fingered key, so what reads as E was heard as E♭.
+
+The feels. The soul ballad at 70 (the chord-melody way, with a swing that moves phrase to phrase); the fuzz riff at 108 (the Hendrix chord as home, the ♭III and the IV); the slow blues in 12/8 (9th chords with the trill, the vocal lead); the funk of the last year (sixteenth scratches with the wah, the muted single-note riff); the cycle of fourths at 82 (thumb chords and the walk-up from root to root); the one-chord voodoo vamp (the wah intro, the pentatonic riff, the machine-gun lead); the R&amp;B up-tempo (hammered double stops between chords); and the rolling waltz (the riff in unison with the bass under a triplet feel).
+
+### Soul ballad (chord melody)
+
+Shown over Em · G · Am · Em · Bm · C in E minor at 70 BPM.
+
+**Inspired by:** "Little Wing", "Castles Made of Sand", "Angel", "The Wind Cries Mary" — the Mayfield way, opened up
+
+The chord is the melody. The thumb takes the root on the low E, the fingers strike the D–G–B triad on the "and", and the hand keeps moving inside the shape: the 3rd hammered up to the 4th on the G string, the 5th to the 6th on the B, the octave to the 9th on the top string; a double stop out of the pentatonic box answering; sixths and fourths slid between chords. The band is soft — a rim click on 2 and 4, the bass on roots, the hat with a little bounce — and the sixteenths swing a shade, the way the record's do.
+
+- **Thumb bass and the split chord** — The thumb-over shape as one hand plays it: the root alone on one, the D–G–B triad on the "and", then the embellishments that live inside the E shape — the 4th hammered on the G string, the 9th on the top string, the 6th on the B — written as the notes they are (free), so a sus4 stays a sus4 whatever the reading. The change fills walk down the pentatonic into the next root; the lead lines are the melody the chord already had. _(2 variants, 1 fills, 2 fillsOnChange, 2 fillsOnStay, 1 tails, 1 pickups, 3 leads, an easy version written for it)_
+- **Sliding 6ths and rolling hammer-ons (the Mayfield way)** — What Mayfield and Cropper play and Hendrix took: 6ths on the D and B strings slid into from a fret below, the 2nd rolling onto the 3rd and the 4th onto the 5th in double stops, a 4th on the top two strings slid up to it. Two notes at a time, restraint between them. In Chords the hammered notes are free, so the roll keeps its sus. _(2 variants, 1 fills, 2 fillsOnChange, 1 fillsOnStay, 2 leads)_
+- **Chord-melody lead (the Leslie lead)** — A lead part, the way the solo on a ballad of his goes: the minor pentatonic on the top three strings with the 9th and the major 3rd let in as passing colour, double stops out of the shape between the phrases, a slide up into the box above and back, wide vibrato on the held note, a unison bend at the top. Every line is written against the chord it sits on, so it follows the changes. _(3 variants, 1 fills, 2 fillsOnChange, 1 fillsOnStay, 1 tails, an easy version written for it)_
+
+### Fuzz riff (the Hendrix chord)
+
+Shown over E7#9 · G · A · E7#9 · G · A in E at 108 BPM.
+
+**Inspired by:** "Purple Haze", "Foxy Lady", "Spanish Castle Magic", "Stone Free"
+
+The E7♯9 as home — major 3rd and ♯9 (the ♭3) in one grip, a tritone inside it, a chord that never resolves, so tension is the state of the song (Mermikides). Around it the ♭III and the IV, and a riff in the E minor pentatonic with the ♭5 let in, doubled with the bass and muted between the notes. The band drives: kick on 1, the "and of 2" and 3, the snare hard, the bass in eighths on the root.
+
+- **7♯9 stabs and the riff** — The Hendrix chord struck on one and left to ring, then the riff on the low strings: root, ♭3, root, the 4th, the ♭5 as a passing note (free, so it stays a ♭5 in every reading) up to the 5th, in eighths, muted between. The variant says the riff in octaves the way the Octavia would. The fills climb the box and land on the next root. _(2 variants, 1 fills, 2 fillsOnChange, 1 fillsOnStay, 1 stops, 3 leads, an easy version written for it)_
+- **Power chords with the open strings** — The other fuzz rhythm: root-and-5th chords hit hard, the low strings ringing open where the shape lets them, the ♭III and the IV slid into from a fret below, the riff between them in the pentatonic with a muted scratch on the "e". What Spanish Castle Magic and Stone Free are built from. _(2 variants, 1 fills, 2 fillsOnChange, 1 fillsOnStay, 2 leads)_
+- **Fuzz lead over the vamp** — A lead part in the language of the fuzz solos: the minor pentatonic from the box at the root, the Dorian 6th and the major 3rd against it as free notes, a run up into the box above, the unison bend on the top two strings, the trill, a rake into the high root, the step-and-a-half bend held with vibrato. Phrases answer each other two bars at a time. _(3 variants, 1 fills, 2 fillsOnChange, 1 fillsOnStay, an easy version written for it)_
+
+### Slow blues in 12/8 (Red House way)
+
+Shown over B7 · E9 · B7 · F#7 · E9 · B7 in B at 60 BPM.
+
+**Inspired by:** "Red House", "Hear My Train A Comin'", Albert King's and B.B. King's slow blues
+
+The twelve-bar in 12/8 he played in B (a half-step down on the record), the IV as a 9th chord. The comp is the T-Bone/B.B. grip — the 9th chord with the root on the A string, slid in from a fret below, the 3rd trilled against the 4th — and the lead is a voice: major and minor pentatonic mixed over the dominant chords, bends of a step and a step and a half, the shake, rakes, triplet pull-offs, and silence. The band lays back: the ride on every triplet, the bass climbing root–3–5–6.
+
+- **9th chords with the trill** — The 9th grip on one, muted on the third triplet, slid in from a fret below on three; the 3rd trilled against the 4th on the way to the change; a chromatic step up under the next root. The turnaround walks the 6ths down over the root the way a blues band does. _(2 variants, 1 fills, 2 fillsOnChange, 1 fillsOnStay, 2 leads, a turnaround, an easy version written for it)_
+- **Vocal blues lead (major and minor mixed)** — The lead as a voice, in the box at the root: the 4th bent a whole step to the 5th and shaken; the ♭3 bent a quarter, then a step and a half from the 4th up to the 6th (Albert King's bend); the major 3rd against the minor pentatonic as a free note; triplet pull-offs from the ♭3 to the root; a rake into the high root; and a whole beat of nothing. The change fills land on the next chord's 3rd or come up under its root; the turnaround is the classic walk-down. _(3 variants, 1 fills, 2 fillsOnChange, 1 fillsOnStay, 1 tails, a turnaround, an easy version written for it)_
+- **Call and answer (stabs and licks)** — Both jobs in one hand, the way he comped his own blues: the 9th chord as a stab on one and three, a lick in the box answering it — the ♭3 hammered to the 3rd, the 5th bent from the 4th, the ♭7 pushed onto the next chord — and room to breathe. With the blend on Lead it is the vocal lead; on Rhythm the stabs alone. _(2 variants, 1 fills, 2 fillsOnChange, 1 fillsOnStay, 1 stops, 2 leads, a turnaround)_
+
+### Funk rock (Band of Gypsys)
+
+Shown over C · Eb · C7 · F7 · C · Eb in C at 104 BPM.
+
+**Inspired by:** "Freedom", "Izabella", "Ezy Ryder", "Who Knows", "Power of Soul"
+
+The funk of the last year: sixteenth-note scratches with the wah rocking under them, the 9th and the 7♯9 punched on the "and of 2", a single-note riff on the low strings with muted ghost notes between the notes, doubled with the bass (Guitar Player's "five rules": syncopations articulated with muting, slurs, trills and bends). The kit is tight — kick on 1 and the "and of 2", ghost snares, the hat in sixteenths with a bark on the "and of 4".
+
+- **Sixteenth scratch with the wah** — The pick moving in sixteenths whether or not the strings ring — the muted scratch with the wah rocking on every stroke — and the chord on the "and of 2" and the "and of 4", the 9th grip on the "and of 4" in the variant. The fills are the pentatonic riff in place of the last two scratches. _(2 variants, 1 fills, 2 fillsOnChange, 1 fillsOnStay, 2 leads, an easy version written for it)_
+- **Single-note funk riff with muted ghosts** — The riff the bass doubles: root and octave, the ♭7 and the 5th on the low strings, sixteenth ghost notes (dead, muted) between the notes so the line has the pick's motion in it, a slide into the ♭3, a trill on the 4th. Syncopated: the second note on the "e", the chord tone on the "and". _(2 variants, 1 fills, 2 fillsOnChange, 1 fillsOnStay, 2 leads, an easy version written for it)_
+- **Funk lead with the wah** — A lead part over the groove: the pedal following the phrase — a sweep on the held note, the pick and the pedal together on the short ones — in the Dorian colour the funk sits in, the 6th and the 9th free against the minor pentatonic, double-stop chucks between phrases, the trill, the octave. Phrases start on the "and" and end on the beat. _(3 variants, 1 fills, 2 fillsOnChange, 1 fillsOnStay, an easy version written for it)_
+
+### Cycle of fourths (Hey Joe way)
+
+Shown over C · G · D · A · E · E in E at 82 BPM.
+
+**Inspired by:** "Hey Joe" — Tim Rose's slow arrangement of Billy Roberts' song, as the Experience played it
+
+Five major chords each a fourth below the last — C, G, D, A, E — and two bars of E to land on. The guitar holds thumb-over chords and walks from root to root on the low strings between them (root, 3rd, 4th, 5th, and the 5th is the next chord's root, which is only true because the chords move in fourths), with double stops out of the E-shape box answering the vocal. The lead is the E minor blues scale at the 12th fret. The band is a slow backbeat, the bass walking up into every change.
+
+- **Thumb chords and the walk-up** — Written for the cycle and only the cycle: the chord on one with the thumb on the bass, the top strings on the "and", then the walk on the low strings — root, 3rd, 4th, 5th — that lands on the next chord's root because the next chord is a fourth below. Over any other progression the walk lands on the wrong note, so this part opens only with the "Cycle of fourths" progression loaded. The chromatic variant walks root, 2nd, ♭3, 3rd, 4th, ♭5, 5th. _(2 variants, 1 fills, 2 fillsOnChange, 1 fillsOnStay, 1 leads, an easy version written for it)_
+- **Double-stop answers between the chords** — The same slow backbeat over any progression: the thumb chord on one, the top strings on the "and" of two, and the answer on the top three strings — 3rds and 4ths out of the pentatonic box under the shape, the 4th hammered onto the 5th, a 6th slid down — the way he answered his own vocal line. _(2 variants, 1 fills, 2 fillsOnChange, 1 fillsOnStay, 2 leads)_
+- **Blues-scale lead at the 12th** — The lead the song is remembered for, as a part: the E minor blues scale from the box at the root, the B string bent a full step and shaken, a quick run up the box and back, the ♭5 as a passing note, phrases that start after the chord lands and rest before the next. Over a major progression the minor pentatonic is the point. _(2 variants, 1 fills, 2 fillsOnChange, 1 fillsOnStay, an easy version written for it)_
+
+### One-chord voodoo (wah and pentatonic)
+
+Shown over E7#9 · E7#9 · E7#9 · E7#9 · E7#9 · E7#9 in E at 88 BPM.
+
+**Inspired by:** "Voodoo Child (Slight Return)", "Machine Gun", "Voodoo Chile"
+
+One chord, and everything happens on it: the intro of muted sixteenths with the wah rocking (the "West African even-before-Bo-Diddley beat", as Wikipedia has it), then the riff in the E minor pentatonic — the 4th bent to the 5th and released, the pull-off to the ♭3, the octave, the 7♯9 stab — and a lead that is the box at the root, the box above it, the machine-gun repeated note, the step-and-a-half bend held with vibrato, feedback-length notes. Straight sixteenths in a heavy pocket, the kick doubling the riff, the hat barking.
+
+- **Wah scratch (the intro)** — Dead strings and the pedal: sixteen muted strokes a bar, the beats a shade harder, the wah rocking with the pick, and every second bar the riff arriving — the bend from the 4th, the pull-off, the 7♯9 stab. The intro, as a rhythm part you can keep playing. _(2 variants, 1 fills, 2 fillsOnChange, 1 fillsOnStay, 1 leads, an easy version written for it)_
+- **Pentatonic riff with the octave drop** — The riff idiom the vamp runs on: the 4th bent a whole step to the 5th and let back, a pull-off down to the ♭3, the root on the low string, the same note an octave up (the Octavia's doubling written as a double stop), the Hendrix chord punched on three. Minor pentatonic over a dominant chord: the ♭3 against the major 3rd is the sound. _(2 variants, 1 fills, 2 fillsOnChange, 1 fillsOnStay, 1 stops, 2 leads, an easy version written for it)_
+- **Machine-gun lead** — A lead part for the long jam: the note repeated like a rifle in staccato sixteenths, the step-and-a-half bend held and shaken, notes that last a whole bar (feedback, on the record), the slide up into the box above for a phrase and the drop back, the trill, the wah opening on the held note. The E minor pentatonic with the ♭5 and the Dorian 6th let in. _(3 variants, 1 fills, 2 fillsOnChange, 1 fillsOnStay, an easy version written for it)_
+
+### Rhythm & blues (Wait Until Tomorrow way)
+
+Shown over E · G · A · E · G · A in E at 118 BPM.
+
+**Inspired by:** "Wait Until Tomorrow", "Remember", the Isley Brothers' "Testify" and the Cropper and Mayfield records behind them
+
+The up-tempo R&amp;B of his sideman years, as he kept playing it: the chord on one, then the licks between the chords — double stops hammered in the E shape (the 2nd rolling onto the 3rd, the 4th onto the 5th), 6ths on the backbeat, a Stax chuck on 2 and 4 — over a bass on the root and octave and a drummer on the backbeat. The chorus changes E–G–A are the ♭III and the IV again, clean this time.
+
+- **Hammered double stops between the chords** — The chord struck on one and left, then the hand rolling through the shape in sixteenths — the 2nd onto the 3rd, the 4th onto the 5th, the 6th onto the 5th coming down — double stops with one note hammered, and a slide up into the next chord's shape. Free notes, so the sus4 and the 6th sound in every reading. _(2 variants, 1 fills, 2 fillsOnChange, 1 fillsOnStay, 1 tails, 1 pickups, 2 leads, an easy version written for it)_
+- **Cropper chucks and 6ths** — The Stax job: a 6th on the D and B strings slid into on one, the chord muted on two, the 6th on three, muted on four — two notes at a time and a chuck between them — and one-note fills outlining the chord. The change fill walks the bass up. _(2 variants, 1 fills, 1 fillsOnChange, 1 fillsOnStay, 1 leads)_
+- **R&B fills in the major pentatonic** — A lead part in the sweet register: the major pentatonic from the shape, the 6th and the 9th on the top strings, double stops in 3rds coming down, a slide up to the octave, the 2nd bent to the 3rd. What a sideman plays between the singer's lines. _(2 variants, 1 fills, 2 fillsOnChange, 1 fillsOnStay, an easy version written for it)_
+
+### Rolling waltz (Manic Depression way)
+
+Shown over A · G · D · D# · E · A in A at 140 BPM.
+
+**Inspired by:** "Manic Depression" — Mitch Mitchell's jazz waltz under a riff in unison with the bass
+
+Three to the bar and three to the beat — the churning triplet feel Mitchell took from a jazz waltz — with the guitar and bass in unison on a riff that climbs to each chord's root by step and half-step, and a chromatic walk from the IV through the ♯IV to the V. The lead rolls in triplets from the pentatonic, alternate-picked, with ghost notes. The kit rolls: ride on every triplet, the snare on two, the kick on one and three.
+
+- **Unison riff with the bass** — The riff on the low strings the bass doubles: the root on one, the ♭7 on two, the root again and the 5th, a chromatic step from below into the next chord — in threes, the middle of the beat left empty so the riff swings. Palm-muted, hard. _(2 variants, 1 fills, 2 fillsOnChange, 1 fillsOnStay, 1 leads, an easy version written for it)_
+- **Rolling lead in triplets** — A lead part that rolls with the kit: pentatonic triplets alternate-picked up and down the box, ghost notes in the middle of the beat, a whole-step bend on the downbeat held through the beat, a run up into the box above, the ♭5 between the 4th and the 5th on the way down. _(2 variants, 1 fills, 2 fillsOnChange, 1 fillsOnStay, an easy version written for it)_
+
 ## The engine proposals
 
 ### Easy mode: a simpler version of every part

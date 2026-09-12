@@ -84,6 +84,19 @@
     return placement.cells.map(c => c === fifth ? { string: c.string, fret: raised } : c);
   }
 
+  // A sus chord's grip: the shape's 3rd cells moved to the sus note on the
+  // same string — up a fret for the 4th, down two for the 2nd — the way a
+  // player turns a barre chord into its sus by lifting or adding a finger.
+  // A cell that would leave the neck keeps the 3rd.
+  function susCells(cells, rootPc, sus){
+    const thirdPc = (rootPc + 4) % 12, shift = sus === 2 ? -2 : 1;
+    return cells.map(c => {
+      if ((STRING_TUNING[c.string] + c.fret) % 12 !== thirdPc) return c;
+      const f = c.fret + shift;
+      return f >= 0 && f <= FRET_COUNT ? { ...c, fret: f } : c;
+    });
+  }
+
   // Every chord tone within one stretch of frets — the arpeggio a hand
   // sitting there can reach. `tonePcs` is the chord's pitch classes.
   function arpeggioCells(fretMin, fretMax, tonePcs){
@@ -385,13 +398,15 @@
   // is what keeps a note two shapes share honest: with one of them switched
   // off it's a plain dot in the other's colour, not a split still half-painted
   // by a shape that isn't on the neck.
-  function cagedTriadBoard(rootPc, isMinor, rootLabel, seventhPc = null, allowed = null){
-    const thirdPc = (rootPc + (isMinor ? 3 : 4)) % 12;
+  // ...and `sus` (4 or 2) turns each shape into its sus voicing: the 3rd's
+  // cells move to the sus note and are labelled for it.
+  function cagedTriadBoard(rootPc, isMinor, rootLabel, seventhPc = null, allowed = null, sus = null){
+    const thirdPc = (rootPc + (sus ? (sus === 4 ? 5 : 2) : isMinor ? 3 : 4)) % 12;
     const fifthPc = (rootPc + 7) % 12;
     const seventhLabel = seventhPc == null ? '' : ((seventhPc - rootPc + 12) % 12 === 11 ? '7' : '♭7');
     const nameOf = pc =>
       pc === rootPc ? rootLabel :
-      pc === thirdPc ? (isMinor ? '♭3' : '3') :
+      pc === thirdPc ? (sus ? String(sus) : isMinor ? '♭3' : '3') :
       pc === fifthPc ? '5' :
       pc === seventhPc ? seventhLabel : '';
     const shapes = isMinor ? CAGED_MINOR : CAGED_MAJOR;
@@ -410,6 +425,7 @@
         let lineCells = [];
         frets.forEach((f, s) => { if (f !== null) lineCells.push({ string: s, fret: f }); });
         if (seventhPc != null) lineCells = seventhCells({ name, cells: lineCells }, rootPc, seventhPc);
+        if (sus) lineCells = susCells(lineCells, rootPc, sus);
         const meanFret = lineCells.reduce((a, c) => a + c.fret, 0) / lineCells.length;
         lineCells.forEach(({ string: s, fret: f }) => {
           const key = s + ':' + f;
@@ -489,7 +505,7 @@
   GT.fretboard = {
     STRING_TUNING, STRING_MIDI, STRING_LABELS, FRET_COUNT,
     CAGED_MAJOR, CAGED_MINOR, CAGED_ORDER, CAGED_COLORS, ROOT_PALETTE,
-    cagedPlacements, seventhCells, arpeggioCells, cagedArpeggioBoxes, stringSetTriads,
+    cagedPlacements, seventhCells, susCells, arpeggioCells, cagedArpeggioBoxes, stringSetTriads,
     pentaBoxPlacements, scaleBoxPlacements, boxColouredNotes, gripOutlines, nearestByAnchor,
     cagedTriadBoard, identifyCagedShape, cagedShapeMatch, closeTriadShape,
   };

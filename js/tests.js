@@ -458,6 +458,25 @@
     });
   }
 
+  // ---- 3a'. the grips Hendrix played are in the finder, tagged ----
+  function testHendrixShapesInTheFinder(t){
+    const bad = [];
+    const shown = name => {
+      const p = parseChordName(name);
+      return p ? findChordVoicings(p.rootPc, p.formula).map(v => ({ g: grip(v.cells), v })) : [];
+    };
+    // chord to ask for, the grip expected, and the words the tag should carry
+    [['E7#9', 'x-7-6-7-8-x', 'Hendrix chord'], ['B9', 'x-2-1-2-2-2', '9th'], ['G', '3-5-5-4-3-3', 'thumb'],
+     ['Em', '0-2-2-0-0-0', 'thumb'], ['Gsus4', '3-5-5-5-3-3', 'sus4'], ['G6', '3-5-5-4-5-3', 'Wind Cries Mary'],
+     ['Gadd9', '3-5-5-4-3-5', 'add9'], ['G', 'x-x-5-4-3-x', 'split chord'], ['Dsus2', 'x-x-0-2-5-x', 'Castles']].forEach(([name, want, tag]) => {
+      const list = shown(name);
+      const hit = list.find(x => x.g === want);
+      if (!hit){ bad.push(`${name}: ${want} is not in the finder (${list.slice(0, 6).map(x => x.g).join(' ')} …)`); return; }
+      if (!hit.v.genres.includes('Hendrix') || !hit.v.hendrix || !hit.v.hendrix.includes(tag)) bad.push(`${name} ${want} is not tagged Hendrix (${hit.v.genres.join(', ')} / ${hit.v.hendrix})`);
+    });
+    t.equal(bad.join('; '), '', `The grips Hendrix played are in the finder and say so (${GT.chordFinder.HENDRIX_SHAPES.length} shapes)`);
+  }
+
   // ---- 3b. every shape says what kind of grip it is, and the common ones
   // read first ----
   // The finder sorts its shapes into the common ways to play a chord and the
@@ -1297,6 +1316,51 @@
       t.ok(realise(part, bars, 3, opts, { grid: 16, blend: 'lead' }).leadBars.length === 0 && !GT.parts.hasLeads(part), 'a part with no lead lines has no blend to speak of');
     }
     {
+      // the Hendrix features: a free note keeps its chromatic pitch, a note
+      // can reach past the position, the blues palette puts the minor
+      // pentatonic over a major chord, the ♯9 grip is four strings in a
+      // row, a unison bend is one fretted note and one bent to it, a trill
+      // is one written strike, the wah rides the pick, the split chord is
+      // the D–G–B strings
+      const chordsOpts = { ...opts, reading: 'caged' };
+      const freeBar = { ...part, figure: [n(0, 5, 2, 0.8, { free: true }), n(4, 5), n(8, 6, 2, 0.8, { free: true })] };
+      const free = realise(freeBar, bars, 1, chordsOpts, { grid: 16 });
+      const b0 = inBar(free, 0);
+      const fourth = b0.find(x => x.at === 0), snapped = b0.find(x => x.at === 4), flat5 = b0.find(x => x.at === 8);
+      t.ok(fourth && fourth.midi % 12 === (SEMITONE.A + 5) % 12 && snapped && snapped.midi % 12 !== (SEMITONE.A + 5) % 12 && flat5 && flat5.midi % 12 === (SEMITONE.A + 6) % 12,
+           'a free note keeps its pitch in the chords reading where the same interval unmarked is snapped to a chord tone');
+      // a note two octaves and a half up from the root of a three-fret box has
+      // no place inside it; with reach it climbs out, without it the nearest
+      // octave of the pitch inside stands in
+      const tight = { ...opts, window: { min: 5, max: 7 } };
+      const reachBar = { ...part, figure: [n(0, 31, 2, 0.8, { reach: 5 }), n(4, 31)] };
+      const reached = realise(reachBar, bars, 1, tight, { grid: 16 });
+      const far = inBar(reached, 0).find(x => x.at === 0), near = inBar(reached, 0).find(x => x.at === 4);
+      t.ok(far && far.fret > tight.window.max && near && near.fret <= tight.window.max, `a note with reach goes past the position (fret ${far && far.fret} for a window to ${tight.window.max}), the same note without stays inside`);
+      const pentaOpts = { ...opts, reading: 'penta' };
+      const bluesPart = { ...part, blues: true, figure: [n(0, 3), n(4, 10)] };
+      const bl = realise(bluesPart, bars, 1, pentaOpts, { grid: 16 }), plainPenta = realise({ ...part, figure: [n(0, 3), n(4, 10)] }, bars, 1, pentaOpts, { grid: 16 });
+      const pc = (notes, at) => { const x = inBar(notes, 0).find(y => y.at === at); return x && (x.midi % 12); };
+      t.ok(pc(bl, 0) === SEMITONE.C % 12 && pc(bl, 4) === SEMITONE.G % 12 && pc(plainPenta, 0) !== SEMITONE.C % 12, 'a blues part plays the minor pentatonic over a major chord (the ♭3 and ♭7 land), where the major pentatonic would have moved them');
+      const hx = realise({ ...part, figure: [s(0, 4, 0.9, 'sharp9')] }, bars, 1, { ...opts, window: { min: 3, max: 7 } }, { grid: 16 });
+      const grip = hx.filter(x => x.bar === 0 && x.strum).sort((a, b) => a.midi - b.midi);
+      const gripPcs = grip.map(x => (x.midi - SEMITONE.A + 12) % 12), strings = grip.map(x => x.string);
+      t.ok(gripPcs.join() === '0,4,10,3' && strings.every((s, k) => k === 0 || s === strings[k - 1] - 1), `the ♯9 grip is root, 3rd, ♭7 and ♯9 on strings in a row (${grip.map(x => `${x.string}:${x.fret}`).join(' ')})`);
+      const un = realise({ ...part, figure: [d(0, 24, 24, 4, 0.9, { unison: true })] }, bars, 1, opts, { grid: 16 });
+      const pair = inBar(un, 0).filter(x => x.unison);
+      const arrives = x => x.midi + (x.bend || 0);
+      t.ok(pair.length === 2 && pair.some(x => x.bend === 2) && pair.every(x => arrives(x) === arrives(pair[0])) && pair[0].string !== pair[1].string && Math.abs(pair[0].string - pair[1].string) === 1, 'a unison bend is the note fretted on one string and bent up a tone to it on the next');
+      const tr = realise({ ...part, figure: [n(0, 7, 4, 0.9, { trill: 9 })] }, bars, 1, opts, { grid: 16 });
+      const trNotes = inBar(tr, 0);
+      t.ok(trNotes.length >= 6 && trNotes.filter(x => x.trill).length === 1 && trNotes.filter(x => x.tabHide).length === trNotes.length - 2 && trNotes[0].tabDur === 4, `a trill is many notes played and one strike written (${trNotes.length} notes)`);
+      const wah = realise({ ...part, figure: [{ ...s(0, 2, 0.8, 'high'), wah: true }, { ...s(2, 2, 0.6, 'high'), wah: true }, n(4, 7, 2, 0.8, { wah: true })] }, bars, 1, opts, { grid: 16 });
+      const wahs = wah.filter(x => x.bar === 0 && x.wah);
+      t.ok(wahs.length >= 4 && wahs.some(x => x.wah === 'up') && wahs.some(x => x.wah === 'down'), 'the wah rides the pick: toe down on the downstroke, heel on the upstroke');
+      const split = realise({ ...part, figure: [s(0, 2, 0.9, 'bass'), s(2, 2, 0.8, 'mid')] }, bars, 1, { ...opts, reading: 'caged' }, { grid: 16 });
+      const mid = split.filter(x => x.bar === 0 && x.strum && x.voicing === 'mid').map(x => x.string).sort().join();
+      t.ok(mid === '1,2,3', `the split chord is the D, G and B strings (${mid})`);
+    }
+    {
       // a tail replaces the end of a figure bar
       const tailed = { ...part, tails: [[n(12, 11)]], tailChance: 1 };
       const out = realise(tailed, bars, 1, opts, { grid: 16 });
@@ -1420,7 +1484,8 @@
             if (!(n.dur > 0)) bad.push(`${where}: a note lasting ${n.dur}`);
             if (!n.strum && !(n.iv >= -5 && n.iv <= 28)) bad.push(`${where}: an interval of ${n.iv}`);
             if (n.tech) techniques[n.tech] = (techniques[n.tech] || 0) + 1;
-            if (n.tech === 'double' && !(n.iv2 > n.iv && n.iv2 - n.iv <= 12)) bad.push(`${where}: a double stop of ${n.iv} and ${n.iv2}`);
+            if (n.tech === 'double' && !n.unison && !(n.iv2 > n.iv && n.iv2 - n.iv <= 12)) bad.push(`${where}: a double stop of ${n.iv} and ${n.iv2}`);
+            if (n.tech === 'double' && n.unison && n.iv2 !== n.iv) bad.push(`${where}: a unison bend of two different notes`);
             if (n.tech === 'bend' && ![1, 2, 3].includes(n.up)) bad.push(`${where}: a bend of ${n.up} semitones`);
             if (n.tech === 'hammer' && !(n.iv2 > n.iv && n.iv2 - n.iv <= 4)) bad.push(`${where}: a hammer-on from ${n.iv} to ${n.iv2}`);
             if (n.tech === 'pull' && !(n.iv2 < n.iv && n.iv - n.iv2 <= 4)) bad.push(`${where}: a pull-off from ${n.iv} to ${n.iv2}`);
@@ -1504,14 +1569,17 @@
             // a note written against the next chord (a fill's last beat, the
             // comp's push) is that chord's note
             const chord = (n.next ? bars[(n.bar + 1) % bars.length] : bars[n.bar]).chord;
-            if (n.fret < window.min || n.fret > window.max) bad.push(`${reading} ${root}: ${part.name} left the window`);
+            // ...unless the note was written with reach: the hand climbing out of the box on purpose
+            if ((n.fret < window.min || n.fret > window.max) && !n.reach) bad.push(`${reading} ${root}: ${part.name} left the window`);
             if (n.strum){
               // a strum is the chord itself, whatever the reading: its notes
               // are chord tones by construction, and that is what's held —
               // and in the triads reading it is the triad the neck shows,
               // on its string set, with no 7th however the chord is spelt
               // ...except a colour tone (the 9th, the 6th) a strum asked for, which is the reading's to allow
-              if (!n.colour && !chordTones(chord).has(midiPc(n.midi))) bad.push(`${reading} ${root}: ${part.name} strums a note that isn't in the chord`);
+              // ...and the ♯9 and 9th grips, which carry their colour by name
+              const colourGrip = n.voicing === 'sharp9' || n.voicing === 'ninth';
+              if (!n.colour && !colourGrip && !chordTones(chord).has(midiPc(n.midi))) bad.push(`${reading} ${root}: ${part.name} strums a note that isn't in the chord`);
               if (reading === 'triads3'){
                 const triad = new Set([chord.note, chord.third, chord.fifth].map(x => GT.theory.SEMITONE[x] % 12));
                 if (!triad.has(midiPc(n.midi))) bad.push(`triads ${root}: ${part.name} strums a note outside the triad`);
@@ -1521,13 +1589,16 @@
             }
             // a note written against the next chord is held to that chord's palette
             const target = n.next ? bars[(n.bar + 1) % bars.length].chord : chord;
-            const { allowed } = palette(target, opts);
-            if (!allowed.has(midiPc(n.midi))) bad.push(`${reading} ${root}: ${part.name} plays a note the reading doesn't offer`);
+            // a part that plays the blues way has the minor pentatonic over a major chord; a free note is outside on purpose
+            const { allowed } = palette(target, { ...opts, blues: !!part.blues });
+            // a unison bend's lower note is heard where it arrives, a tone up
+            const heard = n.unison && n.bend ? n.midi + n.bend : n.midi;
+            if (!n.free && !allowed.has(midiPc(heard))) bad.push(`${reading} ${root}: ${part.name} plays a note the reading doesn't offer`);
             // ...and so is where a bend goes; a bend needs a fretted note,
             // a slide comes from a fret the neck has, a hammer-on's second
             // note is on the same string, above (a pull-off's below)
             if (n.bend){
-              if (!allowed.has(midiPc(n.midi + n.bend))) bad.push(`${reading} ${root}: ${part.name} bends to a note the reading doesn't offer`);
+              if (!n.free && !n.unison && !allowed.has(midiPc(n.midi + n.bend))) bad.push(`${reading} ${root}: ${part.name} bends to a note the reading doesn't offer`);
               if (n.fret < 1) bad.push(`${reading} ${root}: ${part.name} bends an open string`);
             }
             if (n.slide != null && (n.slide < 1 || n.slide === n.fret)) bad.push(`${reading} ${root}: ${part.name} slides from fret ${n.slide} to ${n.fret}`);
@@ -2542,6 +2613,7 @@
       ['The tab writes its rhythm', testTheTabWritesItsRhythm],
       ['Chord finder output is identifiable in reverse', testFinderOutputIsIdentifiable],
       ['Chord finder shows the everyday grips', testCanonicalGrips],
+      ['Chord finder has the grips Hendrix played, tagged', testHendrixShapesInTheFinder],
       ['Chord finder sorts common first and names the kind', testShapesAreSortedAndNamed],
       ['Chord finder tells open shapes from movable ones', testTheShapeFilter],
       ['Every chord name the app writes parses back', testEveryChordNameParsesBack],

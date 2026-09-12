@@ -103,7 +103,9 @@
     // "3/5" (or "7\\5" coming down), a bend as the fret with "b" and how far
     // ("½" a semitone, "1" a tone), a hammer-on or pull-off as "h" or "p"
     // between the two frets, and a palm mute as "x" over the number
+    const wahBars = new Set();
     example.notes.forEach(n => {
+      if (n.tabHide) return;                       // a trill's repeats: played, not written
       const p = positionOf(n.at, m);
       const x = p.x + m.slotW / 2, y = stringY(p.top, n.string);
       let label = String(n.fret);
@@ -119,8 +121,12 @@
       // note the same, dim; vibrato as "~", tremolo picking as "≡", a rake
       // as "r" before the number
       if (n.mute && n.lead !== false) els.push(`<text class="tab-tech" x="${x}" y="${y - 7}" text-anchor="middle">x</text>`);
+      else if (n.trill) els.push(`<text class="tab-tech" x="${x + 4}" y="${y - 7}" text-anchor="start">tr~~</text>`);
       else if (n.vib) els.push(`<text class="tab-tech" x="${x}" y="${y - 7}" text-anchor="middle">~</text>`);
       else if (n.trem) els.push(`<text class="tab-tech" x="${x}" y="${y - 7}" text-anchor="middle">≡</text>`);
+      // "wah" once a bar, over the first note the pedal is on
+      const barOf = Math.floor(n.at / m.grid);
+      if (n.wah && !wahBars.has(barOf) && n.lead !== false){ wahBars.add(barOf); els.push(`<text class="tab-tech" x="${x}" y="${p.top - 2}" text-anchor="middle">wah</text>`); }
       if (n.rake) els.push(`<text class="tab-tech" x="${x - w / 2 - 4}" y="${y + 3.5}" text-anchor="middle">r</text>`);
       if (n.tech === 'h' || n.tech === 'p'){
         // the letter sits over the gap to the note it leads to, which the
@@ -182,10 +188,11 @@
   function onsets(example){
     const byBar = new Map();
     example.notes.forEach(n => {
+      if (n.tabHide) return;                       // a trill is one strike, written once
       const key = Math.round(n.at * 4) / 4;
       const bar = Math.floor(key / example.grid);
       const list = byBar.get(bar) || byBar.set(bar, new Map()).get(bar);
-      const dur = Math.max(list.get(key) || 0, n.dur || 0);
+      const dur = Math.max(list.get(key) || 0, n.tabDur || n.dur || 0);
       list.set(key, dur);
     });
     return byBar;

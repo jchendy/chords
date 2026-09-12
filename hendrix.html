@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Learn Hendrix style | Jeff's Guitar Tools</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/tab.css">
+<style>
+  :root{
+    color-scheme: dark;
+    --bg:#0c0b0a; --panel:#141312; --panel2:#1b1a18; --line:#2a2724; --line2:#3a3631;
+    --ink:#ece7dc; --muted:#a49a8a; --muted2:#6f675b; --a:#e0a84a;
+  }
+  *{ box-sizing:border-box; }
+  [hidden]{ display:none !important; }
+  body{ margin:0; background:var(--bg); color:var(--ink); font:14px/1.55 Inter,system-ui,sans-serif; }
+  a{ color:var(--a); }
+  .top{ display:flex; align-items:baseline; gap:18px; padding:14px 22px; border-bottom:1px solid var(--line); }
+  .top .site{ font-family:Fraunces,Georgia,serif; font-weight:600; color:var(--muted); text-decoration:none; }
+  .top .site:hover{ color:var(--ink); }
+  .top .crumb{ color:var(--muted2); font-size:12px; letter-spacing:.08em; text-transform:uppercase; }
+  .top .crumb a{ color:var(--muted); text-decoration:none; }
+  .top .crumb a:hover{ color:var(--ink); }
+  main{ max-width:1000px; margin:0 auto; padding:22px 22px 80px; }
+  h1{ font:600 2.1rem/1.15 Fraunces,Georgia,serif; margin:0 0 10px; text-wrap:balance; }
+  h2{ font:600 1.5rem/1.2 Fraunces,Georgia,serif; margin:0 0 8px; text-wrap:balance; }
+  h3{ font:600 1.1rem/1.25 Fraunces,Georgia,serif; margin:22px 0 6px; }
+  h4{ font:600 .98rem/1.3 Fraunces,Georgia,serif; margin:0; }
+  p{ max-width:72ch; }
+  .lede{ max-width:68ch; font-size:1.05rem; }
+  .kicker{ font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted2); margin:0 0 4px; }
+  .toc{ display:flex; flex-wrap:wrap; gap:6px 14px; margin:14px 0 26px; font-size:13px; }
+  .toc a{ color:var(--muted); text-decoration:none; }
+  .toc a:hover{ color:var(--a); }
+  section.part{ margin:0 0 36px; padding-top:22px; border-top:1px solid var(--line); }
+  .note{ max-width:72ch; padding:10px 14px; border-left:3px solid var(--line2); background:var(--panel); color:var(--muted); border-radius:0 8px 8px 0; }
+  .note b{ color:var(--ink); }
+  sup.c{ font-size:.7em; }
+  sup.c a{ text-decoration:none; color:var(--a); }
+  .cite{ color:var(--muted2); font-size:.86rem; }
+  table{ border-collapse:collapse; margin:10px 0 16px; font-size:.9rem; }
+  th, td{ text-align:left; padding:6px 12px 6px 0; border-bottom:1px solid var(--line); vertical-align:top; }
+  th{ color:var(--muted2); font-weight:600; font-size:.72rem; letter-spacing:.08em; text-transform:uppercase; }
+  .wide{ overflow-x:auto; }
+  /* the grips, drawn */
+  .grips{ display:grid; grid-template-columns:repeat(auto-fill, minmax(190px, 1fr)); gap:12px; margin:10px 0 16px; }
+  .grip{ border:1px solid var(--line); border-radius:10px; background:var(--panel); padding:10px 12px 8px; }
+  .grip svg{ display:block; width:100%; height:auto; }
+  .grip .name{ font-weight:600; margin:4px 0 2px; }
+  .grip .what{ color:var(--muted); font-size:.85rem; }
+  .grip a{ font-size:.82rem; }
+  /* the examples */
+  .examples{ display:grid; gap:14px; margin:12px 0 4px; }
+  article.ex{ border:1px solid var(--line); border-radius:12px; background:var(--panel); padding:12px 14px 10px; }
+  article.ex.playing{ border-color:var(--a); }
+  .ex-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+  .btns{ display:inline-flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .play{ font:600 13px Inter,system-ui,sans-serif; padding:6px 16px; border-radius:999px; border:1px solid var(--line2); background:var(--panel2); color:var(--ink); cursor:pointer; min-width:74px; }
+  .play:hover{ border-color:var(--a); }
+  .playing .play{ background:var(--a); color:#0c0b0a; border-color:var(--a); }
+  .drill{ font:600 12px Inter,system-ui,sans-serif; padding:6px 12px; border-radius:999px; border:1px solid var(--line2); color:var(--a); text-decoration:none; }
+  .drill:hover{ border-color:var(--a); }
+  .meta{ display:flex; flex-wrap:wrap; gap:4px 14px; margin:2px 0 6px; color:var(--muted2); font-size:12px; font-variant-numeric:tabular-nums; }
+  .blurb{ margin:6px 0 4px; color:var(--muted); max-width:80ch; }
+  .tab{ overflow-x:auto; }
+  .tab svg{ display:block; height:auto; max-width:100%; }
+  .tab-note.now text{ fill:var(--a); }
+  .tab-playhead{ fill:var(--a); opacity:.22; }
+  .refs{ font-size:.86rem; color:var(--muted); margin:4px 0 0; }
+  .refs a{ color:var(--muted); }
+  .refs a:hover{ color:var(--a); }
+  /* the songs */
+  .song{ margin:0 0 14px; padding:12px 14px; border:1px solid var(--line); border-radius:10px; background:var(--panel); }
+  .song h4{ margin-bottom:4px; }
+  .song .facts{ color:var(--muted2); font-size:.85rem; margin:0 0 6px; }
+  .song p{ margin:0 0 6px; }
+  .song .links{ font-size:.85rem; }
+  ol.sources{ padding-left:22px; max-width:80ch; }
+  ol.sources li{ margin:0 0 6px; color:var(--muted); }
+  ol.sources li b{ color:var(--ink); font-weight:600; }
+  ol.sources li a{ word-break:break-all; }
+  .missing{ margin:10px 0; padding:8px 12px; border-radius:8px; background:#3a2020; color:#f0b0b0; }
+  @media (max-width:640px){
+    main{ padding:16px 12px 60px; }
+    h1{ font-size:1.55rem; }
+    .top{ padding:12px 14px; }
+  }
+</style>
+</head>
+<body>
+<div class="top"><a class="site" href="index.html">Jeff's Guitar Tools</a><span class="crumb"><a href="index.html#style-deep-dives">Style Deep Dives</a> · Hendrix</span></div>
+<main>
+  <p class="kicker">Style deep dive 1</p>
+  <h1>Learn Hendrix style: the hands, the shapes, the feels</h1>
+  <p class="lede">What Jimi Hendrix actually does on the guitar, taken apart the way a course would take it apart — the thumb over the neck and the chord it opens up, the pentatonic box under that chord and the box above it, the Hendrix chord, the minor pentatonic against a major chord, the wah rocking with the pick — and put back together as eight feels with rhythm, lead and mixed parts in each, every one of them playable here and a link away from the Practice tab. The songs are analysed as reference points; the lines are written from the idiom, not copied. Every claim is cited at the foot of the page.</p>
+  <p class="note">He tuned a half-step down (E♭ standard) on most of the records, so what is <em>fingered</em> as E <em>sounds</em> as E♭.<sup class="c"><a href="#src-red-house">[6]</a></sup> Everything on this page is written in the fingered key, which is how players talk about it.</p>
+  <nav class="toc" id="toc"></nav>
+
+  <!-- ================================================================== -->
+  <section class="part" id="s1">
+    <h2>1. Where it comes from</h2>
+    <p>Hendrix learned by ear, from records, playing Muddy Waters, B.B. King, Albert King and Freddie King lines off 45s with friends in Seattle.<sup class="c"><a href="#src-obrecht">[25]</a></sup> Then came four years as a sideman on the chitlin' circuit — the Isley Brothers (he is the guitar on their 1964 "Testify"), Little Richard's Upsetters, sessions with Don Covay and King Curtis<sup class="c"><a href="#src-wiki-jimi">[19]</a></sup> — and a run of dates behind Curtis Mayfield and the Impressions with Billy Cox.<sup class="c"><a href="#src-cox">[21]</a></sup> That apprenticeship is the rhythm style: Mitch Mitchell said Jimi was "the first person I ever met who could play all of those incredible Curtis Mayfield rhythm parts right off the top of his head",<sup class="c"><a href="#src-cox">[21]</a></sup> and Cox names "Little Wing", "Castles Made of Sand" and "Drifting" as the Mayfield in him.<sup class="c"><a href="#src-pg-mayfield">[7]</a></sup> The other teachers were Steve Cropper — 6ths slid on the third and fifth strings, muted chords on the backbeat, one-note fills — whose devices a university lesson lays out from "Green Onions" and "Soul Man",<sup class="c"><a href="#src-cropper">[29]</a></sup> and the blues players whose bends and vibrato he made his own: Albert King ("Red House" grew out of King's "Travelin' to California"<sup class="c"><a href="#src-red-house">[6]</a></sup>), B.B. King's wrist vibrato,<sup class="c"><a href="#src-musicradar-lead">[10]</a></sup> Buddy Guy.</p>
+    <p>Two academic readings frame the rest. Milton Mermikides (Gresham College, 2025) treats the guitar as a fretboard with many places for one note, and Hendrix as a player who chose the place for its colour; he shows the chord-melody fluency ("two- to three-note elaborations that extend and connect chords"), the sixteenth-note swing of "Little Wing" moving phrase to phrase between even and heavily swung, and the E7♯9 as one of only four "all-interval tetrachords", a tonic that keeps its dissonance instead of resolving it.<sup class="c"><a href="#src-gresham">[1]</a></sup> John Hanford's University of Washington dissertation on Band of Gypsys reads the late music as "a neotraditional work comprising linked traditional and progressive musical features", blues and R&amp;B and jazz drawn on in the licks, the chord usage and the pitch organisation.<sup class="c"><a href="#src-hanford">[2]</a></sup></p>
+  </section>
+
+  <!-- ================================================================== -->
+  <section class="part" id="s2">
+    <h2>2. The hands: the thumb, the shape, the split chord</h2>
+    <p>Almost everything in the rhythm style follows from one grip. Instead of a first-finger barre, the thumb comes over the top of the neck and frets the root on the low E string; the first finger is then free, and so are the others.<sup class="c"><a href="#src-thumb">[12]</a> <a href="#src-gp-five">[6b]</a></sup> With the bass note under the thumb, the hand strikes the D, G and B strings on their own — the triad inside the E shape, the "split chord" — and the spare fingers hammer onto the shape: the 4th onto the 3rd on the G string (a sus4), the 6th onto the 5th on the B string, the 9th onto the octave on the top string.<sup class="c"><a href="#src-happy">[8]</a> <a href="#src-blackstar">[9]</a></sup> Mermikides notes the choice of exactly those three colours — 4th, 6th, 9th on a major triad; 7th, 9th, 11th on a minor — is not arbitrary: they add colour without a leading-tone pull, "grounded" extensions that keep the chord where it was.<sup class="c"><a href="#src-gresham">[1]</a></sup></p>
+    <p>The same hand converts every barre shape: the E-shape major and minor, the A-shape and C-shape majors with the 3rd often in the bass, the minor-7 shapes with the root on the 5th string, the add9.<sup class="c"><a href="#src-pg-rhythms">[7b]</a></sup> The Pickup Music course goes shape by shape through the CAGED system and pairs each with the records: the E shape and the thumb with "Little Wing" and "Bold as Love", the A shape and the slides that connect two shapes with "Wait Until Tomorrow" and "Castles Made of Sand", the G shape's double stops with "The Wind Cries Mary", the C shape's major-7 colours with "Castles" and "Angel".<sup class="c"><a href="#src-pickup">[11]</a></sup></p>
+    <h3>The grips</h3>
+    <p>Every one of these is in the <a href="index.html#chord-finder">Chord finder</a>, tagged <b>Hendrix</b> with the name given here. The diagrams are relative: the number under each is the fret the shape sits at for the chord named.</p>
+    <div class="grips" id="grips"></div>
+    <p class="note"><b>The Hendrix chord.</b> E7♯9 is E, G♯, D and G: a dominant 7th with the ♭3 on top as a ♯9 — both thirds at once, a tritone between the 3rd and the 7th, a semitone clash between G and G♯. It was jazz and R&amp;B vocabulary long before 1967 (the Beatles had it on "Taxman"; Hendrix himself first recorded it on the Isleys' "Testify"), and "Purple Haze" is where it became a rock tonic.<sup class="c"><a href="#src-wiki-7s9">[5]</a> <a href="#src-fender">[20]</a></sup> On "Foxy Lady" he plays a simpler form of the grip without the major 3rd.<sup class="c"><a href="#src-wiki-foxy">[16]</a></sup></p>
+  </section>
+
+  <!-- ================================================================== -->
+  <section class="part" id="s3">
+    <h2>3. The scales: where the notes live</h2>
+    <p><b>The box under the chord.</b> The E-shape barre and the "E shape" pentatonic box share their root on the low E string, so with the thumb chord under the hand, the box is under the hand too: the fills between chords are the pentatonic of the chord you are holding, played off the top three strings of the same position.<sup class="c"><a href="#src-blackstar">[9]</a> <a href="#src-happy">[8]</a></sup> The Blackstar lesson maps each chord of an A–F♯m–D–E progression to its own major-pentatonic box (shapes 1, 5, 3 and 4) and connects them by descending lines; the app's Practice tab does the same thing in the Chords reading with the position window.</p>
+    <p><b>The minor pentatonic over a major chord.</b> The solos on "Purple Haze", "Voodoo Child (Slight Return)" and "Hey Joe" are the E minor pentatonic — E G A B D — over chords that are major or dominant; "using a minor scale over major chords creates that signature tension".<sup class="c"><a href="#src-ug-voodoo">[17b]</a> <a href="#src-riffninja">[17]</a> <a href="#src-mac-heyjoe">[15]</a></sup> The ♭5 (B♭ in E) turns it into the blues scale, and the major 3rd is let in against it as a passing colour.<sup class="c"><a href="#src-mac-purple">[15b]</a></sup> On the slow blues both pentatonics are mixed — "the B7 chord voicing, B minor pentatonic, and B major pentatonic" layered in "Red House".<sup class="c"><a href="#src-guitarclub-rh">[16b]</a></sup> In the app, a part marked <em>blues</em> plays the minor pentatonic over a major chord in the Pentatonic reading and the blues scale in Scales; the parts below say which.</p>
+    <p><b>The box at the 12th and the box above it.</b> "Hey Joe" is soloed from the E minor blues scale at the 12th fret;<sup class="c"><a href="#src-mac-heyjoe">[15]</a></sup> "The Wind Cries Mary" from the F major pentatonic in 12th position;<sup class="c"><a href="#src-mac-mary">[15c]</a></sup> "All Along the Watchtower" from the C♯ minor blues scale at the 9th with Dorian notes.<sup class="c"><a href="#src-mac-watch">[15d]</a></sup> Mermikides describes the solo on "Purple Haze" as Dorian over E5, F♯5 and D5;<sup class="c"><a href="#src-gresham">[1]</a></sup> Hooktheory's analysis puts the "Crosstown Traffic" verse in C Dorian.<sup class="c"><a href="#src-hooktheory">[33]</a></sup> The app writes the Dorian 6th and the 9th as <em>free</em> notes — exact pitches the reading may not otherwise offer.</p>
+    <p><b>Moving between shapes.</b> The lead lines connect the boxes rather than staying in one: slides along a string, a phrase up in the next box and a drop back, the same slur-and-slide shape moved along the neck.<sup class="c"><a href="#src-musicradar-lead">[10]</a></sup> The unison bend — the B string bent a whole tone up to the note held on the E string — is the sound of "All Along the Watchtower"; the "catch" or exchange bend pushes two strings and sounds them on the way up and down; the vibrato is wrist rotation, B.B. King's, added on top of a bend.<sup class="c"><a href="#src-musicradar-lead">[10]</a></sup> In the parts, a note with <em>reach</em> may sit up to five frets past the position, and comes back.</p>
+  </section>
+
+  <!-- ================================================================== -->
+  <section class="part" id="s4">
+    <h2>4. Rhythm, in eight feels</h2>
+    <p>Each example below is the app's engine playing a part from the Hendrix library over its band, drawn as tab with the rhythm under it. <b>Play</b> loops it here; <b>Drill it in Practice</b> opens the Practice tab with the same key, progression, feel, part and roll, where you can change the position, the reading, the tempo and the blend. The tab is a rolled realisation: press Play in Practice and roll new fills to hear the part's other bars.</p>
+    <div class="examples" id="rhythm"></div>
+  </section>
+
+  <section class="part" id="s5">
+    <h2>5. Lead</h2>
+    <p>Lead parts in each feel: pure lines, written against the chord they sit on so they follow the changes. The blues parts play the minor pentatonic over the major chords; the chord-melody and R&amp;B parts stay major.</p>
+    <div class="examples" id="lead"></div>
+  </section>
+
+  <section class="part" id="s6">
+    <h2>6. Both at once</h2>
+    <p>The parts that carry lead lines as well as a figure, heard with the blend on <b>Mixed</b>: rhythm in the figure bars, a lead line in about half the fill bars, the way a player who is the only guitarist does both. In Practice the same switch gives you Rhythm alone or Lead in every bar.</p>
+    <div class="examples" id="mixed"></div>
+  </section>
+
+  <!-- ================================================================== -->
+  <section class="part" id="s7">
+    <h2>7. The songs, as reference points</h2>
+    <p>What happens in each record, with its key as fingered, its form and the devices to listen for — and where to find a tab of it (Ultimate Guitar and Songsterr are linked; the tab is theirs, the analysis is here). The parts on this page draw on the <em>way of playing</em> in each; none copies its lines. Chord progressions are common stock — the US Copyright Office's practice and the Second Circuit in the Ed Sheeran case both leave them outside copyright<sup class="c"><a href="#src-gwu">[30]</a> <a href="#src-sheeran">[30b]</a></sup> — so the changes are given as they are, and are in the Practice tab's preset list under <b>Hendrix</b>.</p>
+    <div id="songs"></div>
+  </section>
+
+  <!-- ================================================================== -->
+  <section class="part" id="s8">
+    <h2>8. Exercises</h2>
+    <p>In order. Each is a part or a piece of one, at a tempo to start from; play it here, then open it in Practice, turn the tempo down and up, and change the key. The neck in Practice lights the notes as they go.</p>
+    <div class="examples" id="exercises"></div>
+  </section>
+
+  <!-- ================================================================== -->
+  <section class="part" id="s9">
+    <h2>9. Studies</h2>
+    <p>Whole forms to play through: the changes from the songs above, with a part from the library realised over them, its fills and lead lines rolled. Not the songs — the app's own writing over their progressions.</p>
+    <div class="examples" id="studies"></div>
+  </section>
+
+  <!-- ================================================================== -->
+  <section class="part" id="s10">
+    <h2>10. How this was made</h2>
+    <p class="note"><b>What was done, and what was not.</b> This page and the Hendrix genre in the app were written by Claude (an AI model, working in Claude Code) at the owner's request, in September 2026. The research was reading: the sources in the list below were fetched and read as text — a Gresham College lecture transcript, the abstract and description of a University of Washington dissertation, a London College of Music analysis, a university lesson on Steve Cropper, course pages from Berklee and Ohio State, the Wikipedia articles on the songs and on the 7♯9 chord, magazine and web lessons (Guitar Player, Premier Guitar, MusicRadar, Happy Bluesman, Blackstar, Pickup Music, Jon MacLennan, guitarclub.io, Riff Ninja, Guitar Control, Texas Blues Alley), interviews with Billy Cox, Mitch Mitchell (as quoted) and Eddie Kramer, a 1967 interview with Hendrix, and the legal sources on chord progressions. <b>No recordings were listened to and no videos were watched</b>: the tools used cannot play audio or video, and YouTube transcripts could not be retrieved. Several pages could not be read — Guitar World's lessons and Hooktheory's analyses are behind a subscription wall, the Ultimate Guitar tab pages render only in a browser, the dissertation's full text (51 MB, downloaded) had no extractable text layer — and where a fact came only from a search engine's summary of such a page, the source list says so. The rest is the model's own knowledge of the music, checked against the sources where they overlap.</p>
+    <p>The parts were then written the way every part in this app is written (<code>docs/STYLES.md</code>): from the idiom — where the weight falls, which strings, which notes, how a phrase ends — never from a transcription, and with no signature riff of his reproduced. Each part is a figure with variants, fills that know whether the next bar changes, lead lines, and a beginner's version, in the interval notation the engine realises into notes on the neck; the engine gained what these parts needed — free (chromatic) notes, a reach past the position, the blues palette over major chords, the 7♯9 and 9th grips, the split chord, unison bends, trills, the wah — and each feature is held by a test. The Chord finder tags the grips named on this page. The tabs on this page are realisations of those parts, rolled from a fixed seed so the page reads the same each time; the sound is the app's own recorded guitar and synthesized band. Tempos are approximate; keys are the fingered keys. Where the page says "as heard in", it means the way of playing on that record, not its notes.</p>
+  </section>
+
+  <!-- ================================================================== -->
+  <section class="part" id="s11">
+    <h2>11. Sources</h2>
+    <p>Numbered as cited above. "Read" means the page was fetched and read as text; "summary" means only a search engine's summary of the page could be read; "linked" means the page is given for the reader and was not readable by the tools.</p>
+    <ol class="sources" id="sources"></ol>
+  </section>
+</main>
+
+<script src="js/theory.js"></script>
+<script src="js/fretboard.js"></script>
+<script src="js/parts.js"></script>
+<script src="js/parts-guide-data.js"></script>
+<script src="js/styles-base.js"></script>
+<script src="js/progressions.js"></script>
+<script src="review/proposals.js"></script>
+<script src="review/proposals-2.js"></script>
+<script src="review/proposals-3.js"></script>
+<script src="review/proposals-4.js"></script>
+<script src="review/proposals-more.js"></script>
+<script src="review/proposals-easy.js"></script>
+<script src="review/proposals-hendrix.js"></script>
+<script src="js/styles.js"></script>
+<script src="js/tab.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/band.js"></script>
+<script src="js/example-player.js"></script>
+<script src="js/hendrix-guide.js"></script>
+</body>
+</html>

@@ -88,8 +88,11 @@
   }
 
   // What to call a chord: its triad name, or the seventh-chord name when it
-  // carries a 7th. Each chord decides for itself — there's no global switch.
+  // carries a 7th — or the name it was given, when it carries colour the
+  // triad-and-7th model can't spell (a 7♯9, a 9th, an add9, a sus, a 6th).
+  // Each chord decides for itself — there's no global switch.
   function displayName(chord){
+    if (chord.suffix != null) return chord.note + chord.suffix;
     if (!chord.seventh) return chord.name;
     return chord.note + seventhSuffix(chord);
   }
@@ -98,7 +101,7 @@
   // Progression and Chords, which label every other note by
   // degree instead of by note name
   function degreeLabel(chord, role){
-    if (role === 'third') return chord.quality === 'min' ? '♭3' : '3';
+    if (role === 'third') return chord.sus ? String(chord.sus) : chord.quality === 'min' ? '♭3' : '3';
     if (role === 'fifth') return '5';
     if (role === 'seventh'){
       const rootPc = SEMITONE[chord.note] % 12;
@@ -291,36 +294,60 @@
   }
 
   // Build the chord object the rest of the app works with from a written name
-  // like "A7" or "Dm7". The app's model is a triad plus an optional 7th, so
-  // richer chords come through as the nearest triad-and-7th: a 9th keeps its
-  // dominant 7th, a 6th or diminished 7th drops to its triad, and a power
-  // chord (no 3rd at all) is read as major.
+  // like "A7" or "Dm7". The app's model is a triad plus an optional 7th, and
+  // on top of that the colour a name carries beyond them:
+  //   ext  — the extra tones as semitones above the root (2 the 9th, 3 the
+  //          ♯9, 9 the 6th or 13th, 5 the 11th), which the comp voices on
+  //          top and the parts count as chord tones
+  //   sus  — 4 or 2 when the chord has no 3rd but a sus note in its place;
+  //          `third` then holds the sus note, so every place that voices or
+  //          labels the "3rd" voices the 4th (or 2nd) instead
+  //   suffix — the name as written ("7♯9", "sus4", "add9"), kept when the
+  //          model can't spell the chord from its triad and 7th alone
+  // A 6th chord keeps its triad and carries the 6th as colour; a power chord
+  // (no 3rd at all) is read as major.
+  const PLAIN_SUFFIXES = new Set(['', 'm', 'dim', '7', 'maj7', 'm7', 'm7♭5', 'dim7']);
   function chordFromName(name, tonicPc, mode){
     const parsed = parseChordName(name);
     if (!parsed) return null;
     const ivs = parsed.formula.intervals;
-    const thirdIv = [3, 4].find(i => ivs.includes(i));
+    // the major 3rd first: a 7♯9 has both, and its 3 is the ♯9, not the 3rd
+    const thirdIv = ivs.includes(4) ? 4 : ivs.includes(3) ? 3 : undefined;
     const fifthIv = [6, 7, 8].find(i => ivs.includes(i));
-    // only a real 7th counts — the app's model is "triad plus 7th", so a 6th
-    // chord comes through as its plain triad rather than being mislabelled
+    // only a real 7th counts — a 6th chord comes through as its triad with
+    // the 6th as colour rather than being mislabelled
     const seventhIv = [10, 11].find(i => ivs.includes(i));
+    const susIv = thirdIv === undefined ? [5, 2].find(i => ivs.includes(i)) : undefined;
+    const ext = ivs.filter(i => i !== 0 && i !== thirdIv && i !== fifthIv && i !== seventhIv && i !== susIv);
     const quality = thirdIv === 3 ? (fifthIv === 6 ? 'dim' : 'min') : 'maj';
     const at = iv => NOTE_NAMES_SHARP[(parsed.rootPc + iv) % 12];
-    return {
+    const chord = {
       note: parsed.rootName,
-      third: at(thirdIv === undefined ? 4 : thirdIv),
+      third: at(thirdIv !== undefined ? thirdIv : susIv !== undefined ? susIv : 4),
       fifth: at(fifthIv === undefined ? 7 : fifthIv),
       seventh: seventhIv === undefined ? null : at(seventhIv),
       quality,
       name: parsed.rootName + SUFFIX[quality],
       numeral: numeralFor(parsed.rootPc, tonicPc === undefined ? parsed.rootPc : tonicPc, quality, mode),
     };
+    if (ext.length) chord.ext = ext;
+    if (susIv !== undefined) chord.sus = susIv === 5 ? 4 : 2;
+    if (!PLAIN_SUFFIXES.has(parsed.formula.name)) chord.suffix = parsed.formula.name;
+    return chord;
+  }
+  // the pitch classes a chord sounds: root, 3rd (or sus note), 5th, 7th and
+  // whatever colour it carries
+  function chordPcs(chord){
+    const root = SEMITONE[chord.note] % 12;
+    const pcs = [chord.note, chord.third, chord.fifth, chord.seventh].filter(Boolean).map(n => SEMITONE[n] % 12);
+    (chord.ext || []).forEach(iv => pcs.push((root + iv) % 12));
+    return [...new Set(pcs)];
   }
 
   GT.theory = {
     MAJOR_KEYS, MINOR_KEYS, MAJOR_QUALITY, MAJOR_NUMERALS, MINOR_QUALITY, MINOR_NUMERALS,
     SUFFIX, LEADING_TONE, MAJOR_COMMON, MINOR_COMMON, SEMITONE, NOTE_NAMES_SHARP, NOTE_NAMES_FLAT, CHORD_FORMULAS,
     pick, shuffle, buildDiatonicChords, seventhSuffix, displayName, degreeLabel,
-    parseChordName, identifyChords, chordFromName, numeralFor,
+    parseChordName, identifyChords, chordFromName, chordPcs, numeralFor,
   };
 })();

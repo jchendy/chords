@@ -371,7 +371,8 @@
     // nothing about the key narrows a borrowed chord, so it's offered every
     // shape — plain major first, as everywhere else
     const shapes = [...q('#chordSlots .seventh-select').options].map(o => o.textContent);
-    if (shapes.length !== 8 || shapes[0] !== 'Major')
+    // the eight triad-and-7th shapes and the nine coloured ones (9, 7♯9, add9, sus...)
+    if (shapes.length !== 17 || shapes[0] !== 'Major' || !shapes.includes('7♯9') || !shapes.includes('sus4'))
       bad.push(`a borrowed root is offered ${shapes.length} shapes, starting "${shapes[0]}"`);
 
     // the same chord in another key: still the ♭VII, now spelled from D, and
@@ -981,6 +982,62 @@
     t.equal(bad.join('; '), '', 'A link to "CAGED practice" opens Practice with its state intact');
   }
 
+  // A part written for one progression — the Hey Joe walk-up, whose bass
+  // line only works when every chord is a fourth below the last — says so
+  // with `needs`, and opens only with that preset loaded. The excuse names
+  // the progression and its link loads it; and since the link is the only
+  // way to keep a progression, a shared link carries the preset (pr=) so
+  // the part comes back able to open.
+  function testAPartThatNeedsItsPreset(t){
+    start();
+    const bad = [];
+    const view = GT.fretboardView;
+    let found = null;
+    Object.entries(GT.parts.LIBRARY).forEach(([style, feels]) => style !== 'simple' && Object.entries(feels).forEach(([feel, parts]) => parts.forEach((p, i) => {
+      if (!found && p.needs) found = { style, feel, i, needs: p.needs };
+    })));
+    if (!found){ t.ok(false, 'the library has a part that needs a progression'); return; }
+    const goTo = ({ style, feel, i }) => {
+      const qs = q('#quickStyle');
+      const o = [...qs.options].find(x => x.value.startsWith(`${style}.`) && x.textContent.trim() === feel);
+      if (!o) return false;
+      qs.value = o.value; qs.dispatchEvent(new Event('change'));
+      const ps = q('#partSelect'); ps.value = String(i); ps.dispatchEvent(new Event('change'));
+      return true;
+    };
+    const notes = () => GT.practice.partState().notes.length;
+    setKey('major:E');
+    GT.practice.loadProgression({ chords: ['A', 'D', 'E', 'A'], key: 'E' });     // typed: no preset
+    view.applyViewState('m:penta.p:position');
+    q('#chartViewGroup .seg-btn[data-value="part"]').click();
+    if (!goTo(found)) bad.push(`could not pick ${found.style}/${found.feel}`);
+    const note = q('#partNote');
+    if (note.hidden || notes()) bad.push('the part opened over a progression it was not written for');
+    const want = found.needs.variant || found.needs.preset;
+    if (!note.textContent.includes(want)) bad.push(`the excuse does not name the progression (${note.textContent})`);
+    const link = note.querySelector('[data-act="preset"]');
+    if (!link) bad.push('the excuse has no link that loads the preset');
+    else {
+      link.click();
+      if (!note.hidden || !notes()) bad.push('loading the preset from the excuse did not open the part');
+      const chosen = q('#presetSelect').selectedOptions[0];
+      if (!chosen || !chosen.textContent.includes(found.needs.preset)) bad.push('the picker does not show the preset the link loaded');
+    }
+    // the link carries the preset, and brings it back
+    q('#shareBtn').click();
+    const href = location.hash;
+    const plain = decodeURIComponent(href.replace(/\+/g, ' '));         // the fragment's spaces are pluses
+    if (!plain.includes(`pr=${found.needs.preset}|${found.needs.variant || ''}`)) bad.push(`the link does not carry the preset (${plain})`);
+    GT.practice.loadProgression({ chords: ['A', 'D', 'E', 'A'], key: 'E' });
+    if (note.hidden) bad.push('(typing a progression did not take the preset away, so the round trip proves nothing)');
+    location.hash = '#practice-elsewhere';
+    location.hash = href;
+    if (!note.hidden || !notes()) bad.push('following the link did not bring the preset back with the part open');
+    q('#chartViewGroup .seg-btn[data-value="chart"]').click();
+    view.applyViewState('');
+    t.equal(bad.join('; '), '', `A part that needs a progression (${found.feel}: ${want}) opens only with it, the excuse loads it, the link carries it`);
+  }
+
   GT.practiceSuites = [
     ['Practice: a shared link round-trips', testShareLinkRoundTrips],
     ['Practice: the styles are one list', testTheStyleListIsOneList],
@@ -1002,6 +1059,7 @@
     ['Practice: rhythm, mixed or lead', testTheBlend],
     ['Practice: the loop', testTheLoop],
     ['Practice: the band has a volume', testTheBandHasAVolume],
+    ['Practice: a part that needs its progression', testAPartThatNeedsItsPreset],
     ['Practice: the old tab name still opens it', testTheOldTabNameStillOpensIt],
   ];
 })();

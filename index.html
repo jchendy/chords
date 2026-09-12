@@ -244,6 +244,17 @@
   .caged-legend .ghost-entry{ opacity:.6; }
   .pos-shape-tag{ font-size:.66rem; opacity:.6; border:1px solid currentColor; border-radius:3px; padding:0 4px; margin-left:4px; }
 
+  /* ---------- the deep dives shelf ---------- */
+  .dives-title{ font-family:Fraunces,Georgia,serif; font-weight:600; font-size:1.6rem; margin:10px 0 6px; }
+  .dives-lede{ max-width:64ch; color:var(--muted); line-height:1.5; margin:0 0 18px; }
+  .dive-list{ display:grid; grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); gap:16px; }
+  .dive-card{ display:flex; flex-direction:column; gap:8px; padding:18px 20px 16px; border:1px solid var(--line2); border-radius:12px; background:var(--panel); color:var(--ink); text-decoration:none; }
+  .dive-card:hover{ border-color:var(--a); }
+  .dive-kicker{ font-size:.66rem; letter-spacing:.12em; text-transform:uppercase; color:var(--muted2); }
+  .dive-name{ font-family:Fraunces,Georgia,serif; font-weight:600; font-size:1.35rem; }
+  .dive-blurb{ color:var(--muted); line-height:1.5; font-size:.92rem; }
+  .dive-go{ color:var(--a); font-weight:600; margin-top:4px; }
+
   /* ---------- the one transport ---------- */
   .transport{ position:fixed; left:0; right:0; bottom:0; z-index:20; display:flex; align-items:center; gap:22px; padding:12px 22px; padding-bottom:calc(12px + env(safe-area-inset-bottom, 0px)); background:var(--panel); border-top:1px solid var(--line); }
   .play-btn{ flex:none; width:54px; height:54px; border-radius:50%; background:var(--ink); color:var(--bg); display:inline-flex; align-items:center; justify-content:center; }
@@ -686,6 +697,7 @@
     <button type="button" class="seg-btn site-tab" data-tab="finder">Chord finder</button>
     <button type="button" class="seg-btn site-tab" data-tab="reverse">Reverse chord finder</button>
     <button type="button" class="seg-btn site-tab" data-tab="ear">Ear training</button>
+    <button type="button" class="seg-btn site-tab" data-tab="dives">Style Deep Dives</button>
   </nav>
   <span class="sp"></span>
   <!-- the rest of the site: the things that aren't a tool you'd switch to
@@ -1268,6 +1280,25 @@
 </div>
 
 
+<!-- ================= Style Deep Dives ====================================== -->
+<!-- One player's way of playing, studied end to end: the research, the
+     shapes, the scales, playable examples, exercises and studies, each of
+     them a link back into Practice. Each dive is a page of its own; this tab
+     is the shelf. -->
+<div class="tab-page" id="page-dives" hidden>
+  <section class="page dives">
+    <h2 class="dives-title">Style Deep Dives</h2>
+    <p class="dives-lede">A player's whole way of playing, taken apart and put back together as parts you can practise: what the sources say they do, the chord shapes and scale shapes they reach for, how they move between them, and playable examples, exercises and studies — every one of them a link back into the Practice tab to keep drilling.</p>
+    <div class="dive-list">
+      <a class="dive-card" href="hendrix.html">
+        <span class="dive-kicker">Deep dive 1</span>
+        <span class="dive-name">Jimi Hendrix</span>
+        <span class="dive-blurb">The thumb over the neck, the split chord and its hammered colours, the 7♯9, the minor pentatonic over a major chord, the box at the 12th fret and the one above it, the wah. Eight feels — the soul ballad, the fuzz riff, the slow blues, the funk, the cycle of fourths, the one-chord vamp, the rhythm and blues, the waltz — with rhythm, lead and mixed parts in each, the songs analysed, and the sources cited.</span>
+        <span class="dive-go">Open the study →</span>
+      </a>
+    </div>
+  </section>
+</div>
 </main>
 
 <div class="tooltip-bubble" id="tooltipBubble" role="tooltip" hidden></div>
@@ -1287,6 +1318,7 @@
 <script src="review/proposals-4.js"></script>
 <script src="review/proposals-more.js"></script>
 <script src="review/proposals-easy.js"></script>
+<script src="review/proposals-hendrix.js"></script>
 <script src="js/styles.js"></script>
 <script src="js/audio.js"></script>
 <script src="js/band.js"></script>

@@ -8,7 +8,7 @@ const path = require('path');
 process.chdir(path.join(__dirname, '..'));
 global.window = {}; global.console = console;
 const GT = window.GT = {};
-['js/theory.js','js/fretboard.js','js/parts.js','js/parts-guide-data.js','js/styles-base.js','review/proposals.js','review/proposals-2.js','review/proposals-3.js','review/proposals-4.js','review/proposals-more.js','review/proposals-easy.js','js/styles.js'].forEach(f => new Function('window', fs.readFileSync(f, 'utf8'))(window));
+['js/theory.js','js/fretboard.js','js/parts.js','js/parts-guide-data.js','js/styles-base.js','review/proposals.js','review/proposals-2.js','review/proposals-3.js','review/proposals-4.js','review/proposals-more.js','review/proposals-easy.js','review/proposals-hendrix.js','js/styles.js'].forEach(f => new Function('window', fs.readFileSync(f, 'utf8'))(window));
 const { STYLES, LIBRARY } = GT.styles;
 const { chordFromName, SEMITONE } = GT.theory;
 const { realise } = GT.parts;
@@ -32,7 +32,8 @@ Object.keys(LIBRARY).forEach(style => Object.keys(LIBRARY[style]).forEach(feel =
           if (!(n.at >= 0 && n.at < grid)) note('at', `${part.name}: at ${n.at} on ${grid}`);
           if (!(n.dur > 0)) note('dur', `${part.name}: dur ${n.dur}`);
           if (!(n.vel > 0 && n.vel <= 1.01)) note('vel', `${part.name}: vel ${n.vel}`);
-          if (!Number.isFinite(n.midi) || n.fret < window.min || n.fret > window.max) note('window', `${part.name} ${reading} ${root}: fret ${n.fret} outside ${window.min}-${window.max}`);
+          // a note written with reach may sit past the window on purpose
+          if (!Number.isFinite(n.midi) || (!n.reach && (n.fret < window.min || n.fret > window.max))) note('window', `${part.name} ${reading} ${root}: fret ${n.fret} outside ${window.min}-${window.max}`);
           if (n.string < 0 || n.string > 5) note('string', `${part.name}: string ${n.string}`);
           if (n.bend && !(n.fret > 0)) note('bend0', `${part.name}: a bend on an open string`);
           if (n.slide != null && (n.slide < 0 || n.slide > 22)) note('slide', `${part.name}: slide from ${n.slide}`);

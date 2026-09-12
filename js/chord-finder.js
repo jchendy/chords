@@ -532,6 +532,44 @@
   // open C, but the barre Bb), and a tier of their own would overrule it.
   const FAMILY_TIER = { power: 0, open: 1, barre: 1, grip: 2, upper: 3, triad: 4, shell: 5, caged: 6, other: 7 };
 
+  // The grips Hendrix's playing is built from, as the sources describe them
+  // (docs/STYLES-CATALOGUE.md, the Hendrix genre): the E-shape barre with
+  // the thumb over the neck on the bass note, its D–G–B triad struck on its
+  // own (the "split chord"), the E shape with the 6th, the 9th or the 4th
+  // added, the 5th-string-root 9th and 7♯9 grips, the A- and C-shape barres
+  // and the C shape with its 3rd in the bass, and the stacked fifths of
+  // "Castles Made of Sand". Written low string to high, relative to the
+  // lowest fret played, so the open E and the E shape at the 5th fret are
+  // the one grip. A shape that matches is tagged Hendrix in the finder.
+  const HENDRIX_SHAPES = [
+    { pattern: '0-2-2-1-0-0', name: 'the E-shape barre, thumb over the bass' },
+    { pattern: '0-2-2-0-0-0', name: 'the E-shape minor, thumb over the bass' },
+    { pattern: '0-2-0-1-0-0', name: 'the E-shape 7th, thumb over the bass' },
+    { pattern: '0-2-0-0-0-0', name: 'the E-shape m7, thumb over the bass' },
+    { pattern: '0-2-2-2-0-0', name: 'the E shape with the 4th hammered on (sus4)' },
+    { pattern: '0-2-2-1-2-0', name: 'the E shape with the 6th (The Wind Cries Mary)' },
+    { pattern: '0-2-2-1-0-2', name: 'the E shape with the 9th on top (add9)' },
+    { pattern: 'x-x-2-1-0-x', name: 'the split chord: the D–G–B triad of the E shape' },
+    { pattern: 'x-x-2-0-0-x', name: 'the split chord, minor: the D–G–B triad of the Em shape' },
+    { pattern: 'x-1-0-1-2-x', name: 'the Hendrix chord: 7♯9 with the root on the A string' },
+    { pattern: 'x-1-0-1-1-1', name: 'the 9th chord with the root on the A string (Red House)' },
+    { pattern: 'x-0-2-2-2-0', name: 'the A-shape barre' },
+    { pattern: 'x-0-2-2-1-0', name: 'the A-shape minor barre' },
+    { pattern: 'x-0-2-0-2-0', name: 'the A-shape 7th' },
+    { pattern: 'x-0-2-0-1-0', name: 'the A-shape m7' },
+    { pattern: 'x-3-2-0-1-0', name: 'the C shape' },
+    { pattern: '0-3-2-0-1-0', name: 'the C shape with its 3rd in the bass' },
+    { pattern: 'x-x-0-2-5-x', name: 'stacked fifths, slid along the neck (Castles Made of Sand)' },
+  ];
+  // a shape's grip, low string to high, relative to its lowest fret
+  function relativePattern(cells){
+    const byString = Array(6).fill('x');
+    const min = Math.min(...cells.map(c => c.fret));
+    cells.forEach(c => { byString[5 - c.string] = String(c.fret - min); });
+    return byString.join('-');
+  }
+  const hendrixShape = cells => HENDRIX_SHAPES.find(s => s.pattern === relativePattern(cells)) || null;
+
   // the genres a chord type carries with it, whatever the shape
   function typeGenres(formula){
     const n = formula.name;
@@ -594,9 +632,11 @@
       || (family === 'grip' && tones >= 4)
       || (family === 'upper' && tones >= 5);
 
-    // a rootless voicing belongs to the styles that leave the root to the bass
-    const genres = [...new Set([...(v.rootless ? ['jazz', 'funk'] : []), ...FAMILIES[family].genres, ...typeGenres(formula)])].slice(0, 5);
-    return { family, common, genres };
+    // a rootless voicing belongs to the styles that leave the root to the bass;
+    // one of Hendrix's grips says so first, and says which
+    const hendrix = hendrixShape(cells);
+    const genres = [...new Set([...(hendrix ? ['Hendrix'] : []), ...(v.rootless ? ['jazz', 'funk'] : []), ...FAMILIES[family].genres, ...typeGenres(formula)])].slice(0, 5);
+    return { family, common, genres, hendrix: hendrix ? hendrix.name : null };
   }
 
   // What to call an interval above the root, in the context of this chord —
@@ -840,7 +880,7 @@
     const label = FAMILIES[v.family].label;
     const kind = v.rootless ? `Rootless ${label.charAt(0).toLowerCase()}${label.slice(1)}` : label;
     if (!v.genres.length) return `${kind} \u2014 not a shape any style reaches for by habit`;
-    return `${kind} \u2014 common in ${v.genres.join(', ')}`;
+    return `${kind} \u2014 common in ${v.genres.join(', ')}${v.hendrix ? ` \u2014 ${v.hendrix}` : ''}`;
   }
 
   // ---- the search in the address bar --------------------------------------
@@ -1099,6 +1139,7 @@
   }
 
   GT.chordFinder = {
+    HENDRIX_SHAPES, hendrixShape, relativePattern,
     init(){
       chordFinderInput.addEventListener('input', runChordFinder);
       // the examples fill the field rather than being prose about it
