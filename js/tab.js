@@ -151,8 +151,10 @@
   // whole. Eighths and shorter inside one beat are beamed together, a
   // sixteenth beside an eighth taking a stub of second beam. A sixteen-slot
   // bar is four beats of four sixteenths; a twelve-slot (or nine-slot) bar
-  // is three eighths a beat, written the 12/8 way. What is written is each
-  // strike's own length, as the part wrote it — a rest is a gap.
+  // is three eighths a beat, written the 12/8 way. What is written is the
+  // time to the next strike, capped by the strike's own length: a ringing
+  // arpeggio is sixteenths that happen to ring on, not a run of quarters,
+  // and a note that stops short of the next leaves a rest, which is a gap.
   const SIMPLE = [[16, 'whole', 0], [12, 'half', 1], [8, 'half', 0], [6, 'quarter', 1], [4, 'quarter', 0],
                   [3, 'eighth', 1], [2, 'eighth', 0], [1.5, 'sixteenth', 1], [1, 'sixteenth', 0], [0.5, 'thirty', 0]];
   const COMPOUND = [[12, 'whole', 1], [6, 'half', 1], [4, 'half', 0], [3, 'quarter', 1], [2, 'quarter', 0],
@@ -183,9 +185,11 @@
     const perBeat = grid % 3 !== 0 ? 4 : 3;
     onsets(example).forEach((list, bar) => {
       const barEnd = (bar + 1) * grid;
-      const hits = [...list.entries()].sort((a, b) => a[0] - b[0]).map(([at, dur]) => {
+      const struck = [...list.entries()].sort((a, b) => a[0] - b[0]);
+      const hits = struck.map(([at, dur], i) => {
         const p = positionOf(at, m);
-        const v = valueOf(Math.min(dur, barEnd - at), grid);
+        const next = struck[i + 1] ? struck[i + 1][0] : barEnd;
+        const v = valueOf(Math.min(dur, next - at, barEnd - at), grid);
         return { at, x: p.x + m.slotW / 2, y0: stringY(p.top, 5) + RHYTHM_TOP, ...v };
       });
       // beam groups: runs of flagged hits inside one beat

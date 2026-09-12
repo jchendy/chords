@@ -2499,6 +2499,11 @@
     if (count('tab-dot') !== 1) bad.push(`${count('tab-dot')} dots for one dotted quarter`);
     const half = build({ grid: 16, bars: [{ startSlot: 0 }], notes: [{ at: 0, dur: 8, string: 2, fret: 3 }] }, 800).markup;
     if (!/class="tab-head"/.test(half)) bad.push('a half note has no hollow head');
+    // a ringing arpeggio — every note held under the next — is written as
+    // the strikes it is: four sixteenths beamed, not four quarters
+    const ring = build({ grid: 16, bars: [{ startSlot: 0 }], notes: [0, 1, 2, 3].map(k => ({ at: k, dur: 6, string: 5 - k, fret: 3 })) }, 800).markup;
+    const ringBeams = (ring.match(/class="tab-beam"/g) || []).length, ringFlags = (ring.match(/class="tab-flag"/g) || []).length;
+    if (ringBeams < 2 || ringFlags) bad.push(`a ringing arpeggio draws ${ringBeams} beams and ${ringFlags} flags, not four beamed sixteenths`);
     // a sixteenth beside an eighth: the second beam is a stub
     const mixed = build({ grid: 16, bars: [{ startSlot: 0 }], notes: [{ at: 0, dur: 3, string: 2, fret: 3 }, { at: 3, dur: 1, string: 2, fret: 3 }] }, 800).markup;
     const mixedBeams = (mixed.match(/class="tab-beam"/g) || []).length;
