@@ -897,7 +897,11 @@ note such a bass goes to) — or the 5th alone, the note that bass alternates
 to, which is how country's and bluegrass's boom-chick is written. A strum
 can also be palm-muted, for the chug of metal. In the triads reading every strum is the triad
 the neck is showing on its string set and nothing more, the root alone
-being its lowest note. A figure also has **variants** — the same bar with
+being its lowest note — and where the window holds no such triad (A♭
+minor on the top three strings sits at the 4th fret, one past a window at
+the nut) the nearest one a fret or two past it, marked as a reach, as a
+shell that sits past the window is the same shell moved a fret or two
+along: no strum leaves a bar empty. A figure also has **variants** — the same bar with
 its weight moved, a pickup added, a strum opened out — that the phrases
 take in turn, so four bars on one chord aren't the same bar four times
 over; they cycle rather than roll, so the part stays what it was until you

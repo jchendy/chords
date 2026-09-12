@@ -2851,6 +2851,39 @@
     t.equal(bad.join('; '), '', 'A free colour tone keeps its note: the 6th on E6 in the Chords reading, and on A6 in the blues reading');
   }
 
+  // The triads reading never leaves a bar empty: where no close triad on
+  // the reading's string set fits the window (A♭ minor on G-B-e at the nut
+  // sits at the 4th fret), the nearest one a fret or two past it is strummed,
+  // the notes past the window marked as a reach — and where one fits, it is
+  // still the one inside (B80)
+  function testTheTriadsReadingReaches(t){
+    const { realise } = GT.parts;
+    const { chordFromName } = GT.theory;
+    const strum = { at: 0, dur: 4, vel: 0.8, strum: true, voicing: 'high' };
+    const part = { name: 't', figure: [strum], variants: [], fills: [[strum]] };
+    const opts = { reading: 'triads3', stringSet: 2, window: { min: 0, max: 3 }, scaleTheory: 'parallel', stayOnKey: false, key: { tonic: 'Db', mode: 'major' }, tech: null };
+    const bars = [chordFromName('Db'), chordFromName('Abm7')].map(chord => ({ chord }));
+    const notes = realise(part, bars, 1, opts, { grid: 16 });
+    const bad = [];
+    const abm = notes.filter(n => n.bar === 1 && n.strum);
+    if (abm.length !== 3) bad.push(`the A♭m bar has ${abm.length} strummed notes, not a triad`);
+    const pcs = new Set(abm.map(n => n.midi % 12));
+    if (![8, 11, 3].every(x => pcs.has(x))) bad.push(`the A♭m bar strums ${[...pcs].join(',')}, not A♭, C♭, E♭`);
+    // (the nearest A♭ minor on G-B-e is 4-4-4: a fret past, all three)
+    if (!abm.every(n => n.fret === 4 && n.reach)) bad.push(`the A♭m bar is ${abm.map(n => n.fret + (n.reach ? 'R' : '')).join('-')}, not 4-4-4 marked as a reach`);
+    const db = notes.filter(n => n.bar === 0 && n.strum);
+    if (db.length !== 3 || db.some(n => n.fret > 3 || n.reach)) bad.push(`the D♭ bar, which fits, reaches (${db.map(n => n.fret).join('-')})`);
+    // and a shell voicing the same way: G's shell under a window at the 5th
+    // is x-10-9-7-x-x, moved a fret along (not found across a wider stretch,
+    // where it would span six frets), the 10 marked as a reach
+    const shell = GT.parts.shellVoicing(chordFromName('G'), { ...opts, reading: 'caged', window: { min: 5, max: 9 } });
+    const shellStr = shell ? shell.map(c => `${c.string}/${c.fret}${c.reach ? 'R' : ''}`).join(' ') : 'nothing';
+    if (shellStr !== '4/10R 3/9 2/7') bad.push(`G's shell under a window at the 5th is ${shellStr}, not 4/10R 3/9 2/7`);
+    const eb = GT.parts.shellVoicing(chordFromName('Eb'), { ...opts, reading: 'caged' });
+    if (!eb || eb.length < 3) bad.push('E♭ at the nut, whose shell sits at the 6th fret, is given nothing to strum');
+    t.equal(bad.join('; '), '', 'The triads reading and the shell reach a fret past the window rather than leave a bar empty (A♭m on G-B-e at the nut, G\'s shell at the 5th)');
+  }
+
   // Two bars share a row when a second nearly fits: the slots squeeze (to
   // 16px at the tightest) rather than leave a bar alone on each row; a
   // width that fits two at full size, or cannot fit two at all, is left as
@@ -2985,6 +3018,7 @@
       ['The print view packs its bars', testThePrintViewPacksItsBars],
       ['The Bigsby dips', testTheBigsbyDips],
       ['A free colour tone keeps its note', testAFreeColourToneKeepsItsNote],
+      ['The triads reading and the shell reach rather than leave a bar empty', testTheTriadsReadingReaches],
       ['Two bars share a row', testTwoBarsShareARow],
       ['The hand is fingered', testTheHandIsFingered],
       ['The tab shows the fingering', testTheTabShowsTheFingering],

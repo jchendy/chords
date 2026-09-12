@@ -1336,9 +1336,9 @@
   // The triad the neck is showing in this window: the close voicing of the
   // chord's root, 3rd and 5th on the chosen string set (its lowest string,
   // 5 = E-A-D up to 2 = G-B-e) that sits wholly inside the stretch. The
-  // triads reading draws one shape per box, so there is one; if the window
-  // were somewhere no shape fits, there is nothing to strum rather than a
-  // grip from another reading.
+  // triads reading draws one shape per box, so there is usually one; where
+  // the window holds none, `strumCells` asks again a fret or two wider (and
+  // never for a grip from another reading).
   function triadIn(chord, window, stringSet){
     const tones = new Set([chord.note, chord.third, chord.fifth].map(pc));
     const inWin = c => c.fret >= window.min && c.fret <= window.max;
@@ -1354,10 +1354,18 @@
   function strumCells(chord, opts, voicing){
     const rootPc = pc(chord.note), fifthPc = pc(chord.fifth);
     if (opts.reading === 'triads3'){
-      const tri = triadIn(chord, opts.window, opts.stringSet == null ? 2 : opts.stringSet);
-      if (!tri) return null;
-      const low = tri.sort((a, b) => a.midi - b.midi);
-      return voicing === 'bass' || voicing === 'fifth' ? [low[0]] : low;
+      // the close triad on the reading's string set inside the window — or,
+      // where none fits (A♭ minor on the top three strings sits at the 4th
+      // fret, one past a window at the nut), the nearest one a fret or two past it,
+      // those notes marked `reach`, rather than a bar with nothing in it
+      const { min, max } = opts.window, set = opts.stringSet == null ? 2 : opts.stringSet;
+      for (let reach = 0; reach <= 2; reach++){
+        const tri = triadIn(chord, { min: Math.max(0, min - reach), max: max + reach }, set);
+        if (!tri) continue;
+        const low = tri.sort((a, b) => a.midi - b.midi).map(c => (c.fret < min || c.fret > max) ? { ...c, reach: true } : c);
+        return voicing === 'bass' || voicing === 'fifth' ? [low[0]] : low;
+      }
+      return null;
     }
     const pick = grip => {
       const low = grip.sort((a, b) => b.string - a.string);          // string 5 is the low E
@@ -1737,21 +1745,37 @@
   // Root, 3rd and 7th (or 5th for a triad) on three strings, the 5th left
   // out — what a big-band rhythm guitar plays.
   function shellVoicing(chord, opts){
-    const cells = cellsIn(opts.window);
     const pcs = [pc(chord.note), pc(chord.third), chord.seventh ? pc(chord.seventh) : pc(chord.fifth)];
-    const roots = cells.filter(c => c.midi % 12 === pcs[0] && c.string >= 3).sort((a, b) => a.midi - b.midi);
-    if (!roots.length) return null;
-    const root = roots[0];
-    const out = [root];
-    let string = root.string;
-    for (const want of pcs.slice(1)){
-      const cand = cells.filter(c => c.midi % 12 === want && c.string < string && c.string >= string - 2 && c.midi > out[out.length - 1].midi)
-        .sort((a, b) => a.string - b.string);
-      const c = cand[cand.length - 1] || cells.filter(x => x.midi % 12 === want && x.string < string).sort((a, b) => b.string - a.string)[0];
-      if (!c) return null;
-      out.push(c); string = c.string;
+    const shapeFrom = cells => {
+      const roots = cells.filter(c => c.midi % 12 === pcs[0] && c.string >= 3).sort((a, b) => a.midi - b.midi);
+      if (!roots.length) return null;
+      const root = roots[0];
+      const out = [root];
+      let string = root.string;
+      for (const want of pcs.slice(1)){
+        const cand = cells.filter(c => c.midi % 12 === want && c.string < string && c.string >= string - 2 && c.midi > out[out.length - 1].midi)
+          .sort((a, b) => a.string - b.string);
+        const c = cand[cand.length - 1] || cells.filter(x => x.midi % 12 === want && x.string < string).sort((a, b) => b.string - a.string)[0];
+        if (!c) return null;
+        out.push(c); string = c.string;
+      }
+      return out;
+    };
+    // the shell inside the window — or, where the window holds none (G's
+    // shell sits at frets 3 to 5, under a window at the 5th), the one in the
+    // same stretch moved a fret or two along (moved, not widened: a shell
+    // found across a wider stretch can span six frets), those notes marked
+    // `reach`, before the low strings of the grip there is: never a bar
+    // with nothing in it
+    const win = opts.window;
+    const inWindow = shapeFrom(cellsIn(win));
+    if (inWindow) return inWindow;
+    for (const shift of [-1, 1, -2, 2]){
+      if (win.min + shift < 0) continue;
+      const reached = shapeFrom(cellsIn({ min: win.min + shift, max: win.max + shift }));
+      if (reached) return reached.map(c => (c.fret < win.min || c.fret > win.max) ? { ...c, reach: true } : c);
     }
-    return out;
+    return strumCells(chord, opts, 'low');
   }
   // The Hendrix chord: root, 3rd, ♭7 and ♯9 on four strings in a row — the
   // grip a hand holds at x-7-6-7-8-x for E — built from the chord's root on

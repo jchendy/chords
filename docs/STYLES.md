@@ -189,9 +189,15 @@ keys reach 24–28. The `tools/reach.js` script prints this per key.
   (the notes marked `reach`) rather than falling to chord tones on skipped
   strings; only a window with no root falls back to a low strum. `shell` is
   root, 3rd and 7th (or 5th for a triad), the way a big-band rhythm guitar
-  plays.
+  plays; where none sits inside the window (G's shell at frets 3 to 5
+  under a window at the 5th) it is the same stretch moved a fret or two
+  along — moved, not widened, so a shell never spans six frets — with the
+  notes past the window marked `reach`, and the low strum after that.
 - In the Triads reading every strum is the triad the neck shows, whatever
-  voicing was asked for.
+  voicing was asked for; where the window holds no close triad on the
+  reading's string set (A♭ minor on G-B-e sits at the 4th fret, one past a
+  window at the nut) the nearest a fret or two past it is strummed, marked
+  `reach`. No strum ever leaves a bar empty (B80).
 - A 7♯9 or a 9th struck whole (`full`) is its own grip — x-7-6-7-8-x,
   x-7-6-7-7-7, root on the A string — when the grip can be had at the
   position, not a CAGED 7th with the colour left out. `opts.shapes` (a set
