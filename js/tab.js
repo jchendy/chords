@@ -15,6 +15,7 @@
   const SQUEEZE_W = 16;     // ...how tight the slots go to get two bars on a row
   const MIN_SLOT_W = 12;    // ...and how tight they may get before we give up and scroll
   const ROW_H = 17;         // between string lines
+  const ROW_H_PRINT = 14;   // ...closer on paper, the way printed tab sits
   const PAD_L = 26, PAD_R = 14;
   const ROW_TOP = 28;       // room above each row for the chord names
   // ...more when the fingering is shown: room for a chord diagram at each
@@ -28,11 +29,70 @@
   const STEM_H = 20;
   const RHYTHM_H = RHYTHM_TOP + STEM_H + 8;
 
-  // Work out how the example divides into rows for the width available.
-  function measure(example, availableWidth){
+  // the room a bar's line of names takes: the chord, its numeral, the
+  // shape and the role, after the grip's diagram when there is one. On
+  // paper (`packed`) the line is shorter, so more bars share a row: the
+  // role is left off, and the shape too where the diagram shows it.
+  function showShape(bar, fingering, packed){ return !!bar.shape && !(packed && fingering && bar.grip); }
+  function showRole(bar, packed){ return !!bar.role && !packed; }
+  function labelWidth(bar, fingering, packed){
+    let w = 4 + (fingering && bar.grip ? GRIP_W : 0);
+    if (bar.chord){
+      w += bar.chord.length * 7.2 + 5;
+      if (bar.numeral) w += bar.numeral.length * 6.5 + 6;
+      if (showShape(bar, fingering, packed)) w += bar.shape.length * 5 + 8;
+      if (showRole(bar, packed)) w += bar.role.length * 5;
+    }
+    return w;
+  }
+
+  // The print view's layout, the way printed tab is spaced: a slot a note
+  // starts in takes ON_W, an empty one OFF_W, so a bar is as wide as what
+  // is in it — four quarter notes narrow, sixteenths wide — and never
+  // narrower than its line of names; bars go onto a row until the next
+  // would not fit. Slots inside a bar are found through `offs`, the
+  // running width from the bar's start.
+  const ON_W = 18, OFF_W = 4;
+  function packed(example, usable, rowTop, rowSpan){
+    const grid = example.grid, barCount = example.bars.length;
+    const on = example.bars.map(() => new Array(grid).fill(false));
+    example.notes.forEach(n => {
+      if (n.tabHide) return;
+      const b = Math.floor(n.at / grid), k = Math.floor(n.at - b * grid);
+      if (on[b] && k >= 0 && k < grid) on[b][k] = true;
+    });
+    const offs = [], widths = [], rowOf = [], barX = [], rowRight = [];
+    example.bars.forEach((bar, b) => {
+      const ws = on[b].map(x => x ? ON_W : OFF_W);
+      let w = ws.reduce((a, x) => a + x, 0);
+      const need = labelWidth(bar, example.fingering, true) + 16;      // ...and room for the next bar's number
+      if (w < need){ const k = need / w; for (let i = 0; i < ws.length; i++) ws[i] *= k; w = need; }
+      const o = [0];
+      ws.forEach(x => o.push(o[o.length - 1] + x));
+      offs.push(o); widths.push(w);
+    });
+    let row = 0, x = 0;
+    widths.forEach((w, b) => {
+      if (x > 0 && x + w > usable){ rowRight[row] = x; row++; x = 0; }
+      rowOf[b] = row; barX[b] = x; x += w;
+    });
+    rowRight[row] = x;
+    const rows = row + 1;
+    return { grid, packed: true, offs, widths, rowOf, barX, rowRight, rows, rowSpan, rowTop, barCount, slotW: ON_W, barsPerRow: 0,
+             width: PAD_L + Math.max(...rowRight) + PAD_R, height: rows * rowSpan };
+  }
+
+  // Work out how the example divides into rows for the width available —
+  // on the screen's even grid, or packed for print (`opts.pack`).
+  function measure(example, availableWidth, opts = {}){
     const grid = example.grid;
     const barCount = example.bars.length;
     const usable = Math.max(120, (availableWidth || 640) - PAD_L - PAD_R);
+    const grips = example.fingering ? example.bars.filter(b => b.grip) : [];
+    const rowTop = grips.length ? gripBand(Math.max(4, ...grips.map(b => b.grip.rows || 4))) : ROW_TOP;
+    const rowH = opts.pack ? ROW_H_PRINT : ROW_H;
+    const rowSpan = rowTop + 5 * rowH + RHYTHM_H + ROW_GAP;
+    if (opts.pack) return { ...packed(example, usable, rowTop, rowSpan), rowH };
 
     // shrink the slots a little rather than wrap to silly narrow rows
     let slotW = SLOT_W;
@@ -49,19 +109,25 @@
       barsPerRow = 2;
     }
     const rows = Math.ceil(barCount / barsPerRow);
-    const grips = example.fingering ? example.bars.filter(b => b.grip) : [];
-    const rowTop = grips.length ? gripBand(Math.max(4, ...grips.map(b => b.grip.rows || 4))) : ROW_TOP;
-    const rowSpan = rowTop + 5 * ROW_H + RHYTHM_H + ROW_GAP;
+    const rowRight = Array.from({ length: rows }, (_, r) => Math.min(barsPerRow, barCount - r * barsPerRow) * barW);
 
     return {
-      grid, slotW, barW, barsPerRow, rows, rowSpan, rowTop, barCount,
+      grid, slotW, barW, barsPerRow, rows, rowSpan, rowTop, rowH, barCount, rowRight,
       width: PAD_L + Math.min(barCount, barsPerRow) * barW + PAD_R,
       height: rows * rowSpan,
     };
   }
 
-  // where a (possibly fractional) slot sits, once the example is laid out
+  // where a (possibly fractional) slot sits, once the example is laid out —
+  // its row, its x, the top of its row and the width of its slot
   function positionOf(slot, m){
+    if (m.packed){
+      const bar = Math.max(0, Math.min(m.barCount - 1, Math.floor(slot / m.grid)));
+      const within = Math.max(0, Math.min(m.grid, slot - bar * m.grid));
+      const k = Math.min(m.grid - 1, Math.floor(within)), frac = within - k;
+      const o = m.offs[bar], row = m.rowOf[bar];
+      return { row, x: PAD_L + m.barX[bar] + o[k] + frac * (o[k + 1] - o[k]), top: row * m.rowSpan + m.rowTop, slotW: o[k + 1] - o[k] };
+    }
     const bar = Math.floor(slot / m.grid);
     const row = Math.min(m.rows - 1, Math.floor(bar / m.barsPerRow));
     const barInRow = bar - row * m.barsPerRow;
@@ -70,13 +136,14 @@
       row,
       x: PAD_L + (barInRow * m.grid + withinBar) * m.slotW,
       top: row * m.rowSpan + m.rowTop,
+      slotW: m.slotW,
     };
   }
 
-  const stringY = (top, s) => top + s * ROW_H;
+  const stringY = (top, s, h = ROW_H) => top + s * h;
 
-  function build(example, availableWidth){
-    const m = measure(example, availableWidth);
+  function build(example, availableWidth, opts = {}){
+    const m = measure(example, availableWidth, opts);
     // every element is kept with the row it belongs to, so the drawing can
     // come out whole (`markup`) or a row at a time (`rows`, for a print view
     // that must not split a row across pages)
@@ -88,21 +155,20 @@
     for (let row = 0; row < m.rows; row++){
       cur = row;
       const top = row * m.rowSpan + m.rowTop;
-      const barsHere = Math.min(m.barsPerRow, m.barCount - row * m.barsPerRow);
-      const right = PAD_L + barsHere * m.barW;
+      const right = PAD_L + m.rowRight[row];
       for (let s = 0; s < 6; s++){
-        els.push(`<line class="tab-string" x1="${PAD_L}" y1="${stringY(top, s)}" x2="${right}" y2="${stringY(top, s)}"/>`);
-        els.push(`<text class="tab-label" x="${PAD_L - 8}" y="${stringY(top, s) + 3.5}" text-anchor="end">${STRING_LABELS[s]}</text>`);
+        els.push(`<line class="tab-string" x1="${PAD_L}" y1="${stringY(top, s, m.rowH)}" x2="${right}" y2="${stringY(top, s, m.rowH)}"/>`);
+        els.push(`<text class="tab-label" x="${PAD_L - 8}" y="${stringY(top, s, m.rowH) + 3.5}" text-anchor="end">${STRING_LABELS[s]}</text>`);
       }
       // closing bar line for the row
-      els.push(`<line class="tab-bar" x1="${right}" y1="${stringY(top, 0)}" x2="${right}" y2="${stringY(top, 5)}"/>`);
+      els.push(`<line class="tab-bar" x1="${right}" y1="${stringY(top, 0)}" x2="${right}" y2="${stringY(top, 5, m.rowH)}"/>`);
     }
 
     // a bar line at the start of every bar, with its chord above
     example.bars.forEach((bar, i) => {
       const p = positionOf(bar.startSlot, m);
       cur = p.row;
-      els.push(`<line class="tab-bar" x1="${p.x}" y1="${stringY(p.top, 0)}" x2="${p.x}" y2="${stringY(p.top, 5)}"/>`);
+      els.push(`<line class="tab-bar" x1="${p.x}" y1="${stringY(p.top, 0)}" x2="${p.x}" y2="${stringY(p.top, 5, m.rowH)}"/>`);
       // the bar's number, small and italic, on the line's left — the way
       // printed tab counts its bars
       const nameY = p.top - m.rowTop + 16;
@@ -124,12 +190,12 @@
           after += bar.numeral.length * 6.5 + 6;
         }
         // the CAGED shape the bar is played in, where the caller knows one
-        if (bar.shape){
+        if (showShape(bar, example.fingering, m.packed)){
           els.push(`<text class="tab-shape" x="${p.x + after}" y="${nameY}">${bar.shape}</text>`);
           after += bar.shape.length * 5 + 8;
         }
         // what the bar was written from — figure, fill, lead — where the caller says
-        if (bar.role) els.push(`<text class="tab-role" x="${p.x + after}" y="${nameY}">${bar.role}</text>`);
+        if (showRole(bar, m.packed)) els.push(`<text class="tab-role" x="${p.x + after}" y="${nameY}">${bar.role}</text>`);
       }
     });
 
@@ -143,7 +209,7 @@
       if (n.tabHide) return;                       // a trill's repeats: played, not written
       const p = positionOf(n.at, m);
       cur = p.row;
-      const x = p.x + m.slotW / 2, y = stringY(p.top, n.string);
+      const x = p.x + p.slotW / 2, y = stringY(p.top, n.string, m.rowH);
       let label = String(n.fret);
       if (n.slide != null) label = `${n.slide}${n.slide < n.fret ? '/' : '\\'}${n.fret}`;
       if (n.bend) label = `${n.fret}b${n.bend === 1 ? '½' : n.bend === 2 ? '1' : n.bend}`;
@@ -168,15 +234,15 @@
         // the letter sits over the gap to the note it leads to, which the
         // realisation put half this note's length later
         const q = positionOf(n.at + n.dur, m);
-        const x2 = q.x + m.slotW / 2;
-        const mid = q.top === p.top ? (x + x2) / 2 : x + m.slotW / 2;
+        const x2 = q.x + q.slotW / 2;
+        const mid = q.top === p.top ? (x + x2) / 2 : x + p.slotW / 2;
         els.push(`<text class="tab-tech" x="${mid}" y="${y - 7}" text-anchor="middle">${n.tech}</text>`);
       }
     });
 
     rhythm(example, m).forEach(x => list.push(x));
     cur = null;                                     // the playhead is the whole drawing's, no row's
-    els.push(`<rect class="tab-playhead" x="${PAD_L}" y="${m.rowTop - 8}" width="${m.slotW}" height="${5 * ROW_H + RHYTHM_TOP + STEM_H + 12}" rx="3" hidden/>`);
+    els.push(`<rect class="tab-playhead" x="${PAD_L}" y="${m.rowTop - 8}" width="${m.slotW}" height="${5 * m.rowH + RHYTHM_TOP + STEM_H + 12}" rx="3" hidden/>`);
 
     const rows = [];
     for (let r = 0; r < m.rows; r++){
@@ -295,7 +361,7 @@
         // more: a staccato note, clipped under a slot, is still the
         // sixteenth (or eighth) its strikes are spaced at, not a thirty-second
         const v = dur >= 1 && dur <= gap / 2 ? valueOf(dur, grid, gap) : valueOf(gap, grid);
-        return { at, x: p.x + m.slotW / 2, y0: stringY(p.top, 5) + RHYTHM_TOP, stroke, ...v };
+        return { at, x: p.x + p.slotW / 2, y0: stringY(p.top, 5, m.rowH) + RHYTHM_TOP, stroke, ...v };
       });
       // the pick's direction, between the strings and the stems: ⊓ down, ∨ up
       hits.forEach(h => {
@@ -369,6 +435,18 @@
   // of positionOf, for a click on the tab
   function slotAt(x, y, m){
     const row = Math.max(0, Math.min(m.rows - 1, Math.floor(y / m.rowSpan)));
+    if (m.packed){
+      // the last bar of the row that starts at or before x, then the last
+      // slot of it that starts at or before x
+      const xr = x - PAD_L;
+      let bar = m.rowOf.indexOf(row);
+      if (bar < 0) bar = 0;
+      for (let b = bar + 1; b < m.barCount && m.rowOf[b] === row; b++){ if (m.barX[b] <= xr) bar = b; }
+      const o = m.offs[bar], within = xr - m.barX[bar];
+      let k = 0;
+      while (k < m.grid - 1 && within >= o[k + 1]) k++;
+      return Math.max(0, Math.min(m.barCount * m.grid - 1, bar * m.grid + k));
+    }
     const perRow = m.barsPerRow * m.grid;
     const inRow = Math.max(0, Math.min(perRow - 1, Math.floor((x - PAD_L) / m.slotW)));
     return Math.max(0, Math.min(m.barCount * m.grid - 1, row * perRow + inRow));

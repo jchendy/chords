@@ -2709,12 +2709,59 @@
     const page = GT.tabPrint.html({ title: 'Fills & runs', meta: 'G major · 80 BPM', example });
     if (!page.includes('<title>Fills &amp; runs</title>')) bad.push('the print page has no title');
     if (!page.includes('G major · 80 BPM')) bad.push('the print page has no line under the title');
-    const pm = GT.tab.build(example, GT.tabPrint.PRINT_WIDTH).metrics;
+    const pm = GT.tab.build(example, GT.tabPrint.PRINT_WIDTH, { pack: true }).metrics;
     if (count(page, /class="row"/g) !== pm.rows) bad.push(`the print page has ${count(page, /class="row"/g)} rows for a tab of ${pm.rows}`);
     if (!/\.row\{[^}]*break-inside:avoid/.test(page)) bad.push('a row may split across pages');
     if (!page.includes(`viewBox="0 0 ${pm.width} ${pm.rowSpan}"`)) bad.push('a row\'s SVG is not one row tall');
     if (/tab-playhead/.test(page)) bad.push('the print page carries the playhead');
     t.equal(bad.join('; '), '', 'The tab comes out in rows, and the print page keeps each row whole');
+  }
+
+  // The print view packs its bars the way printed tab is spaced: a slot a
+  // note starts in is wide, an empty one narrow, so a bar of quarter notes
+  // is narrow and a bar of sixteenths wide, four or five plain bars share
+  // a row, every note still sits inside its bar, a bar is never narrower
+  // than its line of names, and a click still finds its slot
+  function testThePrintViewPacksItsBars(t){
+    const grid = 16;
+    const bars = Array.from({ length: 8 }, (_, i) => ({ startSlot: i * grid, chord: i % 2 ? 'C' : 'G', numeral: i % 2 ? 'IV' : 'I' }));
+    const notes = bars.flatMap((b, i) => i === 7
+      ? Array.from({ length: 16 }, (_, k) => ({ string: 2, fret: 5, at: b.startSlot + k, dur: 1 }))          // the last bar: sixteenths
+      : [0, 4, 8, 12].map(k => ({ string: 5, fret: 3, at: b.startSlot + k, dur: 4 })));                     // the rest: quarter notes
+    const example = { grid, totalSlots: 8 * grid, bars, notes };
+    const width = GT.tabPrint.PRINT_WIDTH;
+    const built = GT.tab.build(example, width, { pack: true });
+    const m = built.metrics;
+    const bad = [];
+    if (!m.packed) bad.push('the layout is not the packed one');
+    if (!(m.rowH < GT.tab.build(example, width).metrics.rowH)) bad.push('the strings are no closer on paper than on the screen');
+    const firstRow = m.rowOf.filter(r => r === 0).length;
+    if (firstRow < 4) bad.push(`${firstRow} bars of quarter notes on the first row, not four or more`);
+    if (!(m.widths[7] > 2 * m.widths[0])) bad.push(`a bar of sixteenths (${m.widths[7]}px) is not well wider than a bar of quarters (${m.widths[0]}px)`);
+    const even = GT.tab.build(example, width).metrics;
+    if (!(m.rows < even.rows)) bad.push(`packed takes ${m.rows} rows where the even grid takes ${even.rows}`);
+    // every note inside its bar, and the bars in order along a row
+    notes.forEach(n => {
+      const b = Math.floor(n.at / grid);
+      const p = GT.tab.playheadPos(n.at, m), start = GT.tab.playheadPos(b * grid, m);
+      const end = PAD(m, b);
+      if (p.x < start.x || p.x + 1 > end) bad.push(`slot ${n.at} drawn at ${p.x}, outside bar ${b + 1} (${start.x}–${end})`);
+    });
+    function PAD(m, b){ return GT.tab.playheadPos(b * grid, m).x + m.widths[b]; }
+    for (let b = 1; b < 8; b++) if (m.rowOf[b] === m.rowOf[b - 1] && !(m.barX[b] > m.barX[b - 1])) bad.push(`bar ${b + 1} is not after bar ${b} on its row`);
+    // a bar with a long line of names is at least as wide as the line
+    const named = { ...example, bars: bars.map(b => ({ ...b, shape: 'E shape, split', role: 'turnaround' })) };
+    const nm = GT.tab.build(named, width, { pack: true }).metrics;
+    if (nm.widths[0] < 120) bad.push(`a bar named "G I E shape, split" is ${nm.widths[0]}px wide, narrower than its names`);
+    if (/tab-role/.test(GT.tab.build(named, width, { pack: true }).markup)) bad.push('the roles are written on paper, where the room is for bars');
+    // a click on a packed tab lands on its slot
+    let miss = 0;
+    for (let slot = 0; slot < 8 * grid; slot++){
+      const p = GT.tab.playheadPos(slot, m);
+      if (GT.tab.slotAt(p.x + 1, p.y + 20, m) !== slot) miss++;
+    }
+    if (miss) bad.push(`${miss} slots read back wrong from a click`);
+    t.equal(bad.join('; '), '', `The print view packs its bars (${firstRow} bars of quarters a row, sixteenths ${Math.round(m.widths[7])}px against ${Math.round(m.widths[0])}px)`);
   }
 
   // Two bars share a row when a second nearly fits: the slots squeeze (to
@@ -2848,6 +2895,7 @@
       ['The tab writes its rhythm', testTheTabWritesItsRhythm],
       ['The tab knows what is under a click', testTheTabKnowsWhatIsUnderAClick],
       ['The tab comes out in rows', testTheTabComesOutInRows],
+      ['The print view packs its bars', testThePrintViewPacksItsBars],
       ['Two bars share a row', testTwoBarsShareARow],
       ['The hand is fingered', testTheHandIsFingered],
       ['The tab shows the fingering', testTheTabShowsTheFingering],

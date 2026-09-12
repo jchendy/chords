@@ -10,14 +10,15 @@
   'use strict';
   const GT = (window.GT = window.GT || {});
   const esc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
-  // near a portrait page's printable width: two bars a row in 4/4, the
-  // slots squeezed a little, and the page scales the row to its width
-  const PRINT_WIDTH = 680;
+  // the drawing's width, scaled down a little to the page's: the bars
+  // packed as printed tab packs them (js/tab.js `pack`), four to a row of
+  // a rhythm part, five or six of quarter notes, two of sixteenths
+  const PRINT_WIDTH = 820;
   const FONTS = 'https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap';
 
   // the page, as a string — pure, so a test can read it
   function html({ title, meta, example, width = PRINT_WIDTH, css = '' }){
-    const built = GT.tab.build(example, width);
+    const built = GT.tab.build(example, width, { pack: true });
     const m = built.metrics;
     const rows = built.rows.map((g, i) => `<div class="row"><svg viewBox="0 0 ${m.width} ${m.rowSpan}" width="${m.width}" height="${m.rowSpan}" role="img" aria-label="Row ${i + 1} of ${built.rows.length}">${g}</svg></div>`).join('\n');
     return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
