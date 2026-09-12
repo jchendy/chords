@@ -92,7 +92,6 @@
   add('span', 'styleGroup');          // practice.js fills the list itself
   add('input', 'styleSearch', { type: 'search' });
   add('div', 'styleRecentRow'); add('span', 'styleRecent');
-  ['tempoDown', 'tempoUp', 'tempoTap'].forEach(id => add('button', id, { type: 'button' }));
   add('div', 'barEditor').appendChild(root.querySelector('#chordSlots'));   // the rows live inside the editor, as on the page
   document.body.appendChild(root);
 
@@ -699,21 +698,15 @@
   function testTheTabsControls(t){
     start();
     const bad = [];
-    const { tapTempo, setTempo, getTempo } = GT.practice;
+    const { setTempo, getTempo } = GT.practice;
     setTempo(100);
     if (getTempo() !== 100) bad.push(`set to 100, read ${getTempo()}`);
-    // three taps half a second apart: 120 BPM, whatever it was
-    tapTempo(1000); tapTempo(1500); tapTempo(2000);
-    if (getTempo() !== 120) bad.push(`three taps at 500ms gave ${getTempo()} BPM`);
-    // a long pause starts a new count: one tap after it changes nothing
-    tapTempo(9000);
-    if (getTempo() !== 120) bad.push(`a lone tap after a pause changed the tempo to ${getTempo()}`);
-    tapTempo(9400);
-    if (getTempo() !== 150) bad.push(`taps 400ms apart gave ${getTempo()} BPM, not 150`);
-    q('#tempoUp').click();
-    if (getTempo() !== 155) bad.push(`+ gave ${getTempo()}`);
-    q('#tempoDown').click(); q('#tempoDown').click();
-    if (getTempo() !== 145) bad.push(`− − gave ${getTempo()}`);
+    // a preset is one tap, and lights while the slider agrees with it
+    q('.bpm-preset[data-bpm="150"]').click();
+    if (getTempo() !== 150) bad.push(`the 150 preset gave ${getTempo()}`);
+    if (!q('.bpm-preset[data-bpm="150"]').classList.contains('active')) bad.push('the preset pressed is not lit');
+    setTempo(151);
+    if (q('.bpm-preset[data-bpm="150"]').classList.contains('active')) bad.push('a preset stays lit when the slider has moved off it');
     setTempo(5000);
     if (getTempo() > Number(q('#tempo').max)) bad.push(`the tempo went past the slider's top: ${getTempo()}`);
 
@@ -773,7 +766,7 @@
     if ([...document.querySelectorAll('#styleGroup .style-genre')].filter(g => !g.hidden).some(g => !g.querySelector('.genre-btn:not([hidden])'))) bad.push('an empty group stayed after the search');
     search.value = ''; search.dispatchEvent(new Event('input'));
     if ([...document.querySelectorAll('#styleGroup .genre-btn')].some(b => b.hidden)) bad.push('clearing the search left a feel hidden');
-    t.equal(bad.join('; '), '', 'The tempo taps in, the chart edits in place, the picker is grouped and searchable');
+    t.equal(bad.join('; '), '', 'The tempo presets work, the chart edits in place, the picker is grouped and searchable');
 
     // the part's excuse does what it says: across the neck, the words
     // "switch the neck to In one position" are a button that does
@@ -862,7 +855,7 @@
     ['Practice: typing a progression', testTypingAProgression],
     ['Practice: a part stays put until you move it', testThePartStaysPut],
     ['Practice: the tab follows held bars', testTheTabFollowsHeldBars],
-    ['Practice: the tempo taps in, the chart edits in place, the picker is grouped', testTheTabsControls],
+    ['Practice: the tempo presets, the chart edits in place, the picker is grouped', testTheTabsControls],
     ['Practice: the band has a volume', testTheBandHasAVolume],
     ['Practice: the old tab name still opens it', testTheOldTabNameStillOpensIt],
   ];

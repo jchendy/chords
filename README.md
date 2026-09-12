@@ -202,9 +202,8 @@ names the tab you're on.
   legend. In one position the stretch of frets is drawn on the neck as a
   window you can drag; a joined ‹ › pair at the end of the toolbar and an
   arrow on each edge of the window step it. One transport is pinned to the
-  bottom of the tab: Play, the tempo slider with its BPM readout and −, tap
-  and + under it (tap the beat and the tempo follows the average gap between
-  the taps), the click and Neck controls. In the Part view the
+  bottom of the tab: Play, the tempo slider with its BPM readout and five one-tap tempos under it, the
+  click and Neck controls. In the Part view the
   controls are one row — the part's arrows and name, New fills, the
   lead-roll tag, Easy, Follow chords / Stay on the I — with the techniques
   (and Humanize) behind a Techniques menu and the part and band volumes

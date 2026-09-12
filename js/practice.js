@@ -1089,29 +1089,16 @@
 
   tempoInput.addEventListener('input', () => {
     tempoVal.textContent = `${getTempo()} BPM`;
+    document.querySelectorAll('.bpm-preset')
+      .forEach(b => b.classList.toggle('active', Number(b.dataset.bpm) === getTempo()));
   });
   function setTempo(bpm){
     tempoInput.value = String(Math.max(Number(tempoInput.min) || 40, Math.min(Number(tempoInput.max) || 200, Math.round(bpm))));
     tempoInput.dispatchEvent(new Event('input'));
   }
-  // nudge it by five, or tap the beat: the tempo is the average gap between
-  // the last taps, and a pause of two seconds starts a new count
-  const TAP_STEP = 5, TAP_RESET_MS = 2000;
-  let taps = [];
-  function tapTempo(now = performance.now()){
-    if (taps.length && now - taps[taps.length - 1] > TAP_RESET_MS) taps = [];
-    taps.push(now);
-    if (taps.length > 8) taps.shift();
-    if (taps.length < 2) return null;
-    const gap = (taps[taps.length - 1] - taps[0]) / (taps.length - 1);
-    const bpm = 60000 / gap;
-    setTempo(bpm);
-    return getTempo();
-  }
-  const tempoDown = document.getElementById('tempoDown'), tempoUp = document.getElementById('tempoUp'), tempoTap = document.getElementById('tempoTap');
-  if (tempoDown) tempoDown.addEventListener('click', () => setTempo(getTempo() - TAP_STEP));
-  if (tempoUp) tempoUp.addEventListener('click', () => setTempo(getTempo() + TAP_STEP));
-  if (tempoTap) tempoTap.addEventListener('click', () => tapTempo());
+  document.querySelectorAll('.bpm-preset').forEach(btn => {
+    btn.addEventListener('click', () => setTempo(Number(btn.dataset.bpm)));
+  });
 
   let isPlaying = false;
   let schedulerId = null;
@@ -2071,7 +2058,7 @@
     loadProgression,
     copyShareLink,
     simpleHitSeconds, SIMPLE_ACCENT, DEFAULT_FEEL,
-    tapTempo, setTempo, getTempo,      // the tempo controls, so a test can tap with times of its own
+    setTempo, getTempo,
     // the realised part and the window it was realised in, so a test can
     // hold it still across the things that must not move it
     partState: () => ({ notes: partNotes.map(n => ({ ...n })), window: partWindow && { ...partWindow },

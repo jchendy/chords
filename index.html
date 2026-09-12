@@ -333,7 +333,6 @@
   .style-edit:focus-visible #quickStyle{ pointer-events:auto; }
   /* on a phone the strip comes before its controls, so the tab is the first thing you see */
   @media (max-width:760px){ .part-view{ display:flex; flex-direction:column; } .part-controls{ order:2; margin:8px 0 0; } .part-note{ order:1; } .part-tab{ order:1; } }
-  .tempo-btn{ font-size:.72rem; padding:2px 6px; margin:0 6px 0 0; }
 
   /* ---------- chord finder ---------- */
   .finder-head{ display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; }
@@ -556,7 +555,6 @@
     .arrow{ width:44px; height:36px; }
     .fret-scroll svg{ min-width:520px; }
     .transport{ gap:10px; padding:10px 12px; padding-bottom:calc(10px + env(safe-area-inset-bottom, 0px)); }
-    .tempo .tb-lbl{ display:none; }
     .tempo{ flex:1 1 auto; gap:8px; }
     .tempo #tempo{ min-width:60px; }
     .tempo .val{ min-width:0; font-size:.78rem; }
@@ -897,17 +895,19 @@
   <footer class="transport">
     <button class="play-btn" type="button" aria-label="Play"></button>
     <div class="tempo">
-      <span class="tb-lbl">Tempo</span>
       <div class="tempo-stack">
         <div class="tempo-row">
           <input type="range" id="tempo" min="40" max="200" value="120" aria-label="Tempo">
           <span class="val" id="tempoVal">120 BPM</span>
         </div>
-        <!-- nudge it, or tap it in: practice.js reads the taps -->
-        <span class="segmented bpm-row" aria-label="Tempo controls">
-          <button type="button" class="seg-btn tempo-btn" id="tempoDown" aria-label="Slower">−</button>
-          <button type="button" class="seg-btn tempo-btn" id="tempoTap" title="Tap the beat">tap</button>
-          <button type="button" class="seg-btn tempo-btn" id="tempoUp" aria-label="Faster">+</button>
+        <!-- the tempos worth one tap; practice.js binds every .bpm-preset
+             and lights whichever matches the slider -->
+        <span class="segmented bpm-row" aria-label="Tempo shortcuts">
+          <button type="button" class="seg-btn bpm-preset" data-bpm="60">60</button>
+          <button type="button" class="seg-btn bpm-preset" data-bpm="90">90</button>
+          <button type="button" class="seg-btn bpm-preset active" data-bpm="120">120</button>
+          <button type="button" class="seg-btn bpm-preset" data-bpm="150">150</button>
+          <button type="button" class="seg-btn bpm-preset" data-bpm="180">180</button>
         </span>
       </div>
     </div>
