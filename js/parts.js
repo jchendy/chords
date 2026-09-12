@@ -1786,11 +1786,17 @@
   // ...and the 9th chord the same way, the 9th where the ♯9 was and the 5th
   // above it on the top string (x-7-6-7-7-7 for E9) — the T-Bone and
   // B.B. King grip Red House is comped with
+  // The Hendrix chord is a dominant's colour: a chord that already has its
+  // ♯9, or a ♭7 to put it over. A `sharp9` strum on a plain major chord —
+  // the G and the A round Purple Haze's E7♯9 — is that chord's own grip
+  // struck whole, not a 7♯9 made of it (B82).
+  const sharp9Applies = chord => chord.quality === 'maj' && !!((chord.ext && chord.ext.includes(3)) || (chord.seventh && (pc(chord.seventh) - pc(chord.note) + 12) % 12 === 10));
   function sharp9Voicing(chord, opts, ninth = false){
     // on a chord that isn't major (the part's changes moved to a minor
     // one) the top of the grip the window has: neighbouring strings, as a
     // sweep wants, where a shell would mute the string between
     if (chord.quality !== 'maj') return strumCells(chord, opts, 'high');
+    if (!ninth && !sharp9Applies(chord)) return strumCells(chord, opts, 'full');
     const win = opts.window;
     const cells = cellsIn({ min: Math.max(0, win.min - 1), max: Math.min(FRET_COUNT, win.max + 1) });
     const r = pc(chord.note);
@@ -2019,7 +2025,7 @@
         // the ♯9 and 9th grips may put their top note a fret past the position
         const grips = w.voicing === 'sharp9' || w.voicing === 'ninth' ? { reach: 1 } : {};
         grip.forEach((c, k) => notes.push({ at: w.at, dur: w.dur, vel: each, string: c.string, fret: c.fret, midi: c.midi,
-                                             strum: true, voicing: w.voicing, mute: !!w.mute, next: !!w.next, spread: k * STRUM_SPREAD, stroke, ...grips,
+                                             strum: true, voicing: w.voicing === 'sharp9' && !sharp9Applies(on) ? 'full' : w.voicing, mute: !!w.mute, next: !!w.next, spread: k * STRUM_SPREAD, stroke, ...grips,
                                              ...(c.reach ? { reach: 2 } : {}),           // a power chord's 5th past the window
                                              ...(c === colour || c.colour ? { colour: true } : {}), ...(c.swapped ? { swapped: true } : {}) }));
       });
@@ -2089,6 +2095,6 @@
 
   GT.parts = { get LIBRARY(){ return LIBRARY_NOW; }, set LIBRARY(v){ LIBRARY_NOW = v; }, LIBRARY_BASE: LIBRARY,
                SIMPLE_FEEL, TECHNIQUES, EASY_TECH, partsFor, palette, snap, realiseBar, realise, rollFills, newSeed, rng, figureFor,
-               simplify, easyVersion, placePair, thumbCell, powerVoicing, shellVoicing, sharp9Voicing, placeIv, fingersOffThumb, strokeFor, fineBar,
+               simplify, easyVersion, placePair, thumbCell, powerVoicing, shellVoicing, sharp9Voicing, sharp9Applies, placeIv, fingersOffThumb, strokeFor, fineBar,
                cellsIn, homeMidi, gripIn, triadIn, strumCells, strumStringLevel, hasLeads, BLENDS };
 })();

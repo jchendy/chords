@@ -6,7 +6,8 @@
 // and sources rendered, the contents in the margin and its fold, the space
 // bar. A page calls GT.deepDive.create(config) with its style, its lists and
 // its data; the helpers a page's figures and drills are written with come
-// back on the api. Nothing here is played from a recording: every tab on a
+// back on the api, and so do the card builder and the examples by id, which
+// the course view (js/course.js) draws its pieces with. Nothing here is played from a recording: every tab on a
 // deep dive is the engine realising a part of the library.
 (function(){
   'use strict';
@@ -133,6 +134,21 @@
     p.set('k', `${d.k || `${ex.mode || 'major'}:${ex.key}`}`);
     p.set('t', String(ex.tempo));
     Object.entries(d).forEach(([k, v]) => { if (k !== 'd' && k !== 'k' && v != null) p.set(k, String(v)); });
+    // the hand moving with the chords goes along: an example with `positions`
+    // sends the drills tab one position for each chord of the drill (the
+    // thumb barre walking Em open, G at the 3rd, Am at the 5th), which it
+    // reads as `pos=0,3,5,0` — not the one position the drill was written
+    // with (B81)
+    if (d.d === 'changes' && ex.positions && d.ch){
+      const tonicPc = SEMITONE[ex.key] % 12;
+      const list = String(d.ch).split(',').map(raw => {
+        const n = raw.trim();
+        let at = positionOf(ex, displayName(chordFromName(n, tonicPc, ex.mode || 'major')));
+        if (at == null) at = positionOf(ex, n);
+        return at != null ? at : (d.pos != null ? d.pos : (ex.window || homeWindow(ex.key)).min);
+      });
+      p.set('pos', list.every(x => x === list[0]) ? String(list[0]) : list.join(','));
+    }
     // the changes keep the part's rhythm: its figure's strums — the thumb's
     // bass note, the split chord, the stabs — go along as the pattern
     if (d.d === 'changes' && ex.part && GT.drills){
@@ -158,11 +174,19 @@
   // The hand moving with the chords: an example's `positions` give the fret
   // the hand sits at for each chord (the thumb barre walking Em open, G at
   // the 3rd, Am at the 5th), and each bar is realised in its own window;
-  // a lead part stays in its box.
+  // a lead part stays in its box. A position is looked up by the chord's
+  // name with its accidentals read either way (B♭7 and Bb7 are one chord).
+  const plainName = n => String(n).replace(/♭/g, 'b').replace(/♯/g, '#');
+  function positionOf(ex, name){
+    if (!ex.positions) return null;
+    const want = plainName(name);
+    const key = Object.keys(ex.positions).find(k => plainName(k) === want);
+    return key == null ? null : ex.positions[key];
+  }
   function barsOf(ex, chords){
     const moving = ex.positions && ex.blend !== 'lead' && !ex.build;
     return chords.map(chord => {
-      const at = moving ? ex.positions[displayName(chord)] : null;
+      const at = moving ? positionOf(ex, displayName(chord)) : null;
       return at != null ? { chord, window: windowAt(at) } : { chord };
     });
   }
@@ -363,11 +387,12 @@
   // ---- the count-in, for every example on the page ----
   const COUNT_KEY = prefKey('countIn');
   const countInOn = () => { try { return localStorage.getItem(COUNT_KEY) === '1'; } catch (e) { return false; } };
+  const setCountIn = v => { try { localStorage.setItem(COUNT_KEY, v ? '1' : '0'); } catch (e) { /* no storage */ } const box = document.getElementById('countInToggle'); if (box) box.checked = !!v; };
   function bindCountIn(){
     const box = document.getElementById('countInToggle');
     if (!box) return;
     box.checked = countInOn();
-    box.addEventListener('change', () => { try { localStorage.setItem(COUNT_KEY, box.checked ? '1' : '0'); } catch (e) { /* no storage */ } });
+    box.addEventListener('change', () => setCountIn(box.checked));
   }
 
   function gripSVG(pattern, at, fingers){
@@ -445,8 +470,13 @@
 
   // ---- the page ----
   const LISTS = config.lists;
+  // the examples by id, the same objects each time (an example remembers
+  // the seed it found for its blurb), for the page and for the course
+  const EXAMPLES = new Map();
+  Object.keys(LISTS).forEach(id => LISTS[id]().forEach(ex => EXAMPLES.set(ex.id, ex)));
+  const exampleById = id => EXAMPLES.get(id) || null;
   function renderCards(){
-    Object.keys(LISTS).forEach(id => { $(id).innerHTML = ''; LISTS[id]().forEach(ex => card($(id), ex)); });
+    Object.keys(LISTS).forEach(id => { $(id).innerHTML = ''; LISTS[id]().forEach(ex => card($(id), EXAMPLES.get(ex.id) || ex)); });
   }
   // The contents, in the margin. The section on screen is marked as you
   // go, and opens to list what's in it — its sub-headings and the names of
@@ -545,7 +575,8 @@
 
 
   return { helpers, jamLink, drillsLink, openLink, realiseExample, chordNeck, scaleNeck, gripSVG, feelByLabel, feelIndex,
-           windowAt, init(){ render(); renderToc(); bindTocFold(); bindCountIn(); } };
+           windowAt, card, exampleById, renderCards, countInOn, setCountIn, prefKey,
+           init(){ render(); renderToc(); bindTocFold(); bindCountIn(); } };
   }
 
   GT.deepDive = { create, helpers };

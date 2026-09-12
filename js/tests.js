@@ -1373,10 +1373,17 @@
       const bl = realise(bluesPart, bars, 1, pentaOpts, { grid: 16 }), plainPenta = realise({ ...part, figure: [n(0, 3), n(4, 10)] }, bars, 1, pentaOpts, { grid: 16 });
       const pc = (notes, at) => { const x = inBar(notes, 0).find(y => y.at === at); return x && (x.midi % 12); };
       t.ok(pc(bl, 0) === SEMITONE.C % 12 && pc(bl, 4) === SEMITONE.G % 12 && pc(plainPenta, 0) !== SEMITONE.C % 12, 'a blues part plays the minor pentatonic over a major chord (the ♭3 and ♭7 land), where the major pentatonic would have moved them');
-      const hx = realise({ ...part, figure: [s(0, 4, 0.9, 'sharp9')] }, bars, 1, { ...opts, window: { min: 3, max: 7 } }, { grid: 16 });
+      const A7 = chordFromName('A7');
+      const hx = realise({ ...part, figure: [s(0, 4, 0.9, 'sharp9')] }, barsOf([A7, A7, A7, A7]), 1, { ...opts, window: { min: 3, max: 7 } }, { grid: 16 });
       const grip = hx.filter(x => x.bar === 0 && x.strum).sort((a, b) => a.midi - b.midi);
       const gripPcs = grip.map(x => (x.midi - SEMITONE.A + 12) % 12), strings = grip.map(x => x.string);
       t.ok(gripPcs.join() === '0,4,10,3' && strings.every((s, k) => k === 0 || s === strings[k - 1] - 1), `the ♯9 grip is root, 3rd, ♭7 and ♯9 on strings in a row (${grip.map(x => `${x.string}:${x.fret}`).join(' ')})`);
+      // ...on a dominant chord; on a plain major chord (the G and A round
+      // Purple Haze's E7♯9) the same strum is the chord's own grip, whole,
+      // and says so (B82)
+      const plain = realise({ ...part, figure: [s(0, 4, 0.9, 'sharp9')] }, bars, 1, { ...opts, window: { min: 3, max: 7 } }, { grid: 16 }).filter(x => x.bar === 0 && x.strum);
+      const plainPcs = new Set(plain.map(x => (x.midi - SEMITONE.A + 12) % 12));
+      t.ok(plain.length >= 4 && !plainPcs.has(10) && !plainPcs.has(3) && plain.every(x => x.voicing === 'full') && GT.parts.sharp9Applies(A7) && !GT.parts.sharp9Applies(A), `a ♯9 strum on a plain major chord is the chord's grip, whole, with no ♭7 or ♯9 in it (${plain.map(x => `${x.string}:${x.fret}`).join(' ')})`);
       const un = realise({ ...part, figure: [d(0, 24, 24, 4, 0.9, { unison: true })] }, bars, 1, opts, { grid: 16 });
       const pair = inBar(un, 0).filter(x => x.unison);
       const arrives = x => x.midi + (x.bend || 0);
@@ -3001,6 +3008,87 @@
     t.equal(bad.join('; '), '', 'The example player fingers the tab: the whole hand a change, no finger a note, the neck on the shape struck');
   }
 
+  // The deep dives as courses (js/course.js): every piece of both pages is
+  // in a lesson — nothing on the page is left out — every piece points at
+  // something that exists, the place is kept across a read-back of the
+  // state, a lesson opens at its first piece not done, a card piece draws
+  // its card, leaving the course shows the page, and the drills links carry
+  // the hand's positions (B81). Each page is loaded in a frame; on file://
+  // a frame cannot be read, and the check says it was skipped.
+  async function testTheCoursesCoverTheirPages(t){
+    if (location.protocol === 'file:'){ t.ok(true, 'The courses cover their pages: skipped on file:// (a frame cannot be read there; run the tests over http)'); return; }
+    const wait = ms => new Promise(r => setTimeout(r, ms));
+    for (const page of ['hendrix', 'psychobilly']){
+      const frame = document.createElement('iframe');
+      frame.style.cssText = 'position:absolute; width:1200px; height:800px; left:-3000px; top:0';
+      frame.src = `${page}.html?test=${Date.now()}#course`;
+      document.body.appendChild(frame);
+      const bad = [];
+      try {
+        const api = await new Promise((resolve, reject) => {
+          const started = Date.now();
+          const tick = () => {
+            const w = frame.contentWindow;
+            const g = w && w.GT && w.GT[`${page}Guide`];
+            if (g && g.course && g.course.ready) return resolve(g);
+            if (Date.now() - started > 30000) return reject(new Error(`${page}.html did not build its course in 30 s`));
+            setTimeout(tick, 100);
+          };
+          tick();
+        });
+        const c = api.course, w = frame.contentWindow;
+        const cov = c.coverage();
+        if (cov.missing.length) bad.push(`not in any lesson — ${cov.missing.map(m => `${m.kind} "${m.label}"`).join('; ')}`);
+        if (cov.unresolved.length) bad.push(`pieces pointing at nothing — ${cov.unresolved.join('; ')}`);
+        if (cov.lessons !== 8) bad.push(`${cov.lessons} lessons, not eight`);
+        if (cov.pieces < 60) bad.push(`only ${cov.pieces} pieces`);
+        if (!c.lessons.every(l => l.pieces.some(p => p.type === 'card') && l.pieces.some(p => p.type === 'check'))) bad.push('a lesson has no card to play or no check list to close on');
+        // the place is kept: a piece marked complete is complete after the
+        // state is read back, and the summary the front page reads says so
+        const key = c.key, kept = w.localStorage.getItem(key);
+        try {
+          c.reset();
+          const l1 = c.lessons[0], p1 = l1.pieces[0];
+          c.setDone(l1, p1, true);
+          c.load();
+          if (!c.isDone(l1, p1)) bad.push('a piece marked complete was not complete when read back');
+          const s = JSON.parse(w.localStorage.getItem(key)).summary;
+          if (!(s && s.donePieces === 1 && s.next && s.next.lesson === 1 && s.next.piece === 2)) bad.push(`the summary kept for the front page says ${JSON.stringify(s && { donePieces: s.donePieces, next: s.next })}`);
+          w.location.hash = '#course/1';
+          await wait(400);
+          const cur = c.current();
+          if (!cur || cur.lesson !== 1 || cur.piece !== 2) bad.push(`lesson 1 opened at ${JSON.stringify(cur)}, not its first piece not done (2)`);
+          const firstCard = l1.pieces.findIndex(x => x.type === 'card') + 1;
+          w.location.hash = `#course/1/${firstCard}`;
+          await wait(800);
+          if (!w.document.querySelector('#course .piece article.ex .tab svg')) bad.push('the card piece drew no tab');
+          if (!w.document.querySelector('.page').hidden) bad.push('the full page is still shown in the course');
+          w.location.hash = '#s1';
+          await wait(400);
+          if (w.document.querySelector('.page').hidden || !w.document.getElementById('course').hidden) bad.push('leaving the course did not show the page');
+        } finally {
+          if (kept == null) w.localStorage.removeItem(key); else w.localStorage.setItem(key, kept);
+        }
+        // B81: the drills link carries one position for each chord of the drill
+        const { displayName, chordFromName, SEMITONE } = w.GT.theory;
+        api.CHANGES.filter(ex => ex.positions && ex.drills && ex.drills.d === 'changes').forEach(ex => {
+          const pos = new URLSearchParams(api.drillsLink(ex).split('?')[1]).get('pos') || '';
+          // (a position is looked up with the accidentals read either way: B♭7 and Bb7 are one chord)
+          const plain = x => String(x).replace(/♭/g, 'b').replace(/♯/g, '#');
+          const posOf = name => { const k = Object.keys(ex.positions).find(k => plain(k) === plain(name)); return k == null ? null : ex.positions[k]; };
+          const lookup = n => { let at = posOf(displayName(chordFromName(n, SEMITONE[ex.key] % 12, ex.mode || 'major'))); if (at == null) at = posOf(n); return at; };
+          const unmatched = ex.drills.ch.split(',').filter(n => lookup(n) == null);
+          if (unmatched.length) bad.push(`${ex.id}: no position for ${unmatched.join(', ')} among ${Object.keys(ex.positions).join(', ')}`);
+          const want = ex.drills.ch.split(',').map(n => { const at = lookup(n); return at != null ? at : ex.drills.pos; });
+          const got = pos.includes(',') ? pos.split(',').map(Number) : want.map(() => Number(pos));
+          if (got.join() !== want.join()) bad.push(`${ex.id}: the drills link carries pos=${pos}, not ${want.join(',')}`);
+        });
+      } catch (e){ bad.push(String(e && e.message || e)); }
+      finally { frame.remove(); }
+      t.equal(bad.join(' | '), '', `The ${page} course covers its page (${page === 'hendrix' ? 'every paragraph, grip, figure, card, song, fault, check line and the sources' : 'the same, and the players wave by wave'}), keeps the place, and its drills links carry the positions`);
+    }
+  }
+
   async function run(){
     const results = [];
     const t = {
@@ -3023,6 +3111,7 @@
       ['The hand is fingered', testTheHandIsFingered],
       ['The tab shows the fingering', testTheTabShowsTheFingering],
       ['The example player fingers the tab', testTheExampleIsFingered],
+      ['The deep dives as courses', testTheCoursesCoverTheirPages],
       ['Chord finder output is identifiable in reverse', testFinderOutputIsIdentifiable],
       ['Chord finder shows the everyday grips', testCanonicalGrips],
       ['Chord finder has the grips Hendrix played, tagged', testHendrixShapesInTheFinder],

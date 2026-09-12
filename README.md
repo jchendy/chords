@@ -28,7 +28,10 @@ A single-page, dependency-free site with six tabs under one header:
   psychobilly (`psychobilly.html`): the rockabilly it is built on, the
   waves that made it, the players wave by wave, eight feels from the Sun
   boom-chicka to the horror minor, and plenty of the Reverend Horton Heat.
-  Both pages run on one module (`js/deep-dive.js`).
+  Both pages run on one module (`js/deep-dive.js`), and each is also a
+  course (**Course** in its top bar): the same page as eight lessons, one
+  piece at a time, marked complete as you go, your place kept in the
+  browser and a Continue button to pick it up.
 
 The site's name in the header is the way home: it opens the jam tab as a
 fresh page does, a preset showing, the default feel and tempo, no part,
@@ -1076,6 +1079,52 @@ a table of the players wave by wave, nineteen records as reference points,
 eight studies over the presets, a teachers' section, how the page was made,
 and sixty-six numbered sources.
 
+**The deep dives as courses.** Each dive page has a second view
+(`js/course.js`, `css/course.css`; **Read** and **Course** in the top
+bar, `#course` in the address): the lessons of its Start-here list, each
+split into pieces small enough to do in one sitting and shown one at a
+time. Nothing in the course is new content — every piece points at
+something the page already shows: a paragraph to read (the bold lead is
+its title), a grip group or a figure to look at, a card to play (drawn
+again by the page's own card builder, so Play, Neck, Fingering, Expand,
+Print and the links all work), the records to hear it in, the players of
+a wave, the faults to watch for, a check-yourself list made of the
+teachers' checklist, and the sources to close on — plus one piece written
+for the course, "How the cards work", which says once what the page's
+section intros say about the controls. The lessons are written in the
+guide files (`LESSONS` in `js/hendrix-guide.js` and
+`js/psychobilly-guide.js`) as lists of what each piece names, and a card
+piece can carry a practice note; the cards Start here does not name are
+placed with the feel they belong to, so both courses hold every card,
+every paragraph, every grip, figure, song, fault row and checklist line
+on their page — `coverage()` on the course api counts what is in no
+lesson, and a test holds that nothing is (123 pieces on the Hendrix page,
+124 on the psychobilly one, each about seven hours of playing by the
+pieces' own estimates). A piece is marked complete with the one button
+(**Mark complete and continue**), or the **Done** box beside it to change
+your mind, or, for the check list, by ticking every line; the state —
+what is done, the ticks, the piece last seen — is kept in localStorage
+under `gt.<dive>Course`, nothing is sent anywhere, and **Reset progress**
+on the dashboard forgets it. The dashboard is the way back in: a Continue
+card that names the lesson and the piece to pick up at (the one last
+seen if it is not done, else the first not done after it), the lessons as
+a numbered path with a progress ring each, a strip of their pieces by
+kind, the time each will take, and a status; a lesson opens at its first
+piece not done, keeps its pieces in a rail beside the one on the screen
+(a strip above it on a narrow screen), and closes with a lesson-complete
+screen that names the next lesson and the "move on when" from Start
+here. The front page's dive cards show the same progress with a link
+straight to the next piece, and the Read view's Start-here list gets a
+mark per lesson and a Continue line. The arrow keys move between pieces
+and Enter marks one complete; the space bar plays the card on the screen
+as it does on the page. The shape of it borrows from courses people
+already know — the Continue card and one-thing-at-a-time of Fender Play
+and Duolingo, Coursera's Resume and its time estimate on every item,
+JustinGuitar's module rings and Mark as complete, Khan Academy's unit
+pages with an icon and a tick per item, Brilliant's one idea a screen —
+and the course's cards are the page's cards, so a piece practised in the
+course is the same realisation, at the same tempo, as on the page.
+
 **The style review.** `review.html` is a page for deciding what the styles
 should become: every existing style beside a proposed revision of it — the
 band pattern and every guitar part, both playable — plus proposed new
@@ -1180,6 +1229,7 @@ drill or example can be bookmarked or sent to someone:
 | `#ear-training?m=quality&q=maj.m.7.9.13` | the quality drill, asking about those five |
 | `#jam?k=major:C&c=0.2.,4.2.&t=120` | the jam tab's own share link (`#caged-practice`, its old name, still opens it) |
 | `#jam?k=major:E&pr=Hendrix\|Cycle of fourths (Hey Joe)&s=hendrix.4&p=0.f.1` | the same, with the preset the chords came from by name — which a part written for one progression needs to open — and a style, a part and its roll |
+| `hendrix.html#course/3/4` | the Hendrix course at lesson 3, piece 4 (`#course` alone is the dashboard; `#course/3` opens the lesson at its first piece not done) |
 
 It's the exercise that's saved, not the question it happens to be asking: a
 bookmark should reopen the drill rather than one moment of it, and Random is
@@ -1371,6 +1421,16 @@ recording's level, with the techniques. On `http://` the
 recordings are what is measured; on `file://` the synthesized voices are,
 and each label says which. The runner awaits a suite that returns a
 promise, so these run inside `tests.html` with the rest.
+
+The deep dives' courses are tested the same way, on the real pages: each
+is loaded in a frame at `#course`, and the test reads its `coverage()`
+(nothing on the page in no lesson, no piece pointing at nothing, eight
+lessons, a card and a check list in each), marks a piece complete and
+reads the state back, checks the summary the front page reads, opens a
+lesson at its first piece not done, draws a card piece, leaves the course
+for the page, and checks every changes card's drills link carries the
+hand's positions — restoring whatever progress the browser held before.
+On `file://` a frame cannot be read, and the check says it was skipped.
 
 A suite that throws is reported as a failure rather than taking the page down
 with it — a page with no results says less than a red line does, least of all
@@ -1684,13 +1744,15 @@ by what each part does:
 | `tab.js` | Draws guitar tablature from a note list: the strings, the numbers, the techniques, the bar numbers, the chord's name, numeral, grip and role over each bar (and, when the fingering is on, a small chord diagram over a bar whose grip changes), the rhythm under each row (stems, flags, beams within the beat, dots, hollow heads) from each strike's slot length on either grid — a note clipped short is written as its own value with the rest as a gap, unless it is under a slot, when it is the sixteenth its strikes are spaced at. `slotAt` reads the slot under a click, the inverse of the playhead's place. Two bars share a row where a second nearly fits; `rows` gives the drawing a row at a time, and `pack` lays the bars out by what is in them, both for the print view. |
 | `tab-print.js` | The print view every surface with a tab has: the tab drawn again for a page, its bars packed the way printed tab is spaced (a slot a note starts in wide, an empty one narrow, so four bars of a rhythm part share a row, five or six of quarter notes, and a bar of sixteenths takes its room — the bar's role left off the line of names, and the shape too where its diagram shows it) with the strings a little closer, one SVG a row so a row never splits across printed pages, in the tab's own styles set to ink on paper, with a title and a line of facts over it and a Print button the printed page leaves out — opened in a new browser tab. |
 | `css/tab.css` | The tab's look, one sheet for the pages that draw it (jam, drills, parts, review, the deep dives): a 17px string gap, 11px bold numbers, thin strings, the rhythm's stems and beams, and the pane a long tab scrolls in. Each page keeps only its own playing colour and playhead. |
+| `css/course.css` | The course view's look on both deep dives: the dashboard, the lesson bar, the rail and the piece, the switch in the top bar and the marks in Start here, in the pages' own colours and type. |
 | `tab-pane.js` | A long tab in a pane: more than two rows scrolls, showing as many rows as were last asked for (kept in localStorage, one setting for every page), with a control beside its bottom corner for more or fewer — in a gutter, so nothing sits between the tab and the neck — and the row being played kept in view. Used by the jam tab, the drills and the example player. |
 | `parts-guide-data.js` | What the parts page says about each style and part: progression, tempo, what the rhythm and notes are made of, where the idiom comes from. Pure data. |
 | `parts-guide.js` | The parts page (`parts.html`): every part written out and playable, in any reading, each with a Print button for its tab alone. |
 | `example-player.js` | The player the parts page and the deep dives share: draws a realised part as tab and loops it over the style's band, the tab following and, where the card has a neck, its dots lit as the notes sound; tells the page when the playhead enters a bar (`onBar`) and when the loop stops. `shapeOfBar` names the grip a bar is played in, `gripFor` fingers the whole hand for the diagrams. |
-| `deep-dive.js` | The machinery every style deep dive shares: the links into the jam and drills tabs, the examples realised from a genre's parts and drawn as cards with their neck, fingering, count-in, expand and print, the grips drawn, the scale figures and drills, the songs and sources rendered, the contents in the margin and its fold, the space bar. A page calls `GT.deepDive.create(config)` with its style, its lists and its data. |
-| `hendrix-guide.js` | The Hendrix deep dive's own data (`hendrix.html`): where the hand sits, the grips, the scale figures, the drills, the examples, exercises and studies realised from the Hendrix genre, the songs and the sources — on the shared machinery. |
-| `psychobilly-guide.js` | The psychobilly deep dive's own data (`psychobilly.html`): the grips, the figures, the drills, the examples, exercises and studies realised from the Psychobilly genre, the players wave by wave, the songs and the sources — on the shared machinery. |
+| `deep-dive.js` | The machinery every style deep dive shares: the links into the jam and drills tabs, the examples realised from a genre's parts and drawn as cards with their neck, fingering, count-in, expand and print, the grips drawn, the scale figures and drills, the songs and sources rendered, the contents in the margin and its fold, the space bar. A page calls `GT.deepDive.create(config)` with its style, its lists and its data; the card builder and the examples by id come back on the api for the course view. |
+| `course.js` | A deep dive as a course: the Start-here lessons as lists of pieces resolved against the page (a paragraph, a grip group, a figure, a card, songs, players, fault rows, checklist lines, the sources), the dashboard with its Continue card and lesson rings, a lesson with its rail and one piece at a time, the marks kept in localStorage with the place, the switch in the top bar and the marks in Start here, `coverage()` for what is in no lesson. `GT.course.create({ dive, prefix, name, lessons })`. |
+| `hendrix-guide.js` | The Hendrix deep dive's own data (`hendrix.html`): where the hand sits, the grips, the scale figures, the drills, the examples, exercises and studies realised from the Hendrix genre, the songs, the sources, and the eight lessons of its course — on the shared machinery. |
+| `psychobilly-guide.js` | The psychobilly deep dive's own data (`psychobilly.html`): the grips, the figures, the drills, the examples, exercises and studies realised from the Psychobilly genre, the players wave by wave, the songs, the sources, and the eight lessons of its course — on the shared machinery. |
 | `js/styles-base.js` | The band patterns the app started with: the base `STYLES`, one entry per style with its feels. |
 | `js/styles.js` | Resolves what the app plays: the proposals merged over the base patterns, parts and guide at load (`GT.styles`), with the base kept for the review page. |
 | `js/band.js` | The band one slot at a time — kit, comp, bass, the approach and the push on the last eighth, the fill on the last bar, stop-time — used by the jam tab, the parts page and the review page alike. |
@@ -1716,7 +1778,7 @@ by what each part does:
 | `ear-training.js` | Ear training tab: what's on the neck — a chord shape, a pentatonic box or a scale box — and the drill over its notes. Draws and sounds chords from the chord finder's own code and boxes from the jam tab's, so no tab can drift from another. |
 | `tooltips.js` | The (i) info bubbles. |
 | `tabs.js` | Tab switching, plus the URL fragment and page title that go with each tab — including `setState`, which lets a tab write its own state after the slug so an exercise can be bookmarked. |
-| `main.js` | Boots each tab and wires the header together. |
+| `main.js` | Boots each tab and wires the header together; puts each course's progress on its dive card, from the summary the course keeps. |
 | `tests.js` | The regression tests, run by `tests.html`. |
 | `js/tests-sound.js` | The measured tests: the mix rendered offline and read as numbers — no clipping, a strum's sum, the part not ducking the band, the techniques heard, the kit's hits, choke, rim and beater, the room's reflections, the two pinned levels, the guitar's own fallback, the upright slapped and the snare brushed and the note popped. |
 | `tests-jam.js` | The jam tab's own state, pressed: the progression, the pickers, the share link, the part, the loop. Loads before `jam.js`. |
