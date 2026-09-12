@@ -550,6 +550,8 @@
     $('drillComp').addEventListener('change', () => { state.comp = $('drillComp').checked; if (playingHere()) player().playing().hooks.comp = state.comp; writeState(); });
     $('drillNeckToggle').addEventListener('change', () => { state.neck = $('drillNeckToggle').checked; writeState(); drawNeck(playingHere() ? player().playing().shownBar || 0 : 0); });
     card.querySelector('.play').addEventListener('click', togglePlay);
+    // a click on the tab sets where the drill plays from, the neck following
+    player().seekable(card, () => drill ? { feel: drill.feel, chords: drill.chords, notes: drill.notes, metrics } : null, { onSeek: bar => drawNeck(bar) });
     $('drillExpand').addEventListener('click', expand);
     $('drillClose').addEventListener('click', collapse);
     document.addEventListener('keydown', e => {

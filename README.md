@@ -30,6 +30,16 @@ The site's name in the header is the way home: it opens the jam tab as a
 fresh page does, a preset showing, the default feel and tempo, no part,
 no loop, whatever had been done to it.
 
+Wherever a tab is drawn — the jam tab, the drills, the Hendrix page, the
+parts page — a click on it sets the playback position. Playing, the music
+jumps there, picked up from that slot; paused, the playhead moves there,
+the notes at that slot light on the tab and on the neck (the jam tab's
+chart lights the bar and the neck shows the chord), and the next Play
+starts from it. Over each bar the tab names the chord, its numeral, and
+the CAGED shape its strums are played in where they are one. On the jam
+tab the count-in shows its beat by the first bar of the tab, and nothing
+is there before or after it.
+
 Switching tabs stops any playback that was running. Each tab has its own URL
 fragment (`#chord-finder`, `#reverse-chord-finder`), so a tab can be
 bookmarked or linked to, and back/forward move between them; the page title
@@ -1541,7 +1551,7 @@ by what each part does:
 | `fretboard.js` | Tuning, CAGED and pentatonic shape templates, the maths that places them on the neck, CAGED shape matching, and the two pieces of box drawing every view shares — `boxColouredNotes`, which colours a note by the box that owns it, and `gripOutlines`, which traces the chord shape underneath. Also pure. |
 | `neck.js` | Draws a full 15-fret neck as SVG from markers and shape outlines — shared by the jam fretboard, the chord finder's CAGED overview and the reverse finder, so all three necks are one drawing. A fret is close to twice as wide as the gap between two strings, near enough the shape of the real thing to read a grip off, and a note sits close up behind its fret wire where the finger goes rather than in the middle of the gap; the inlays and the fret numbers stay centred, since that's where they are on a guitar. The label and the dot are sized against each other: a single character is set as large as the dot will hold without running into a root's ring, and a longer one ("♭3") a size down so it fits — which is what lets the dots be small enough for the strings to sit that close together. A full neck is wide, so it wants most of a laptop's width — hence the wider cap on how large the drawing may render. |
 | `progressions.js` | The preset progressions, written as scale degrees. Pure data. |
-| `tab.js` | Draws guitar tablature from a note list: the strings, the numbers, the techniques, the bar numbers, and the rhythm under each row (stems, flags, beams within the beat, dots, hollow heads) from each strike's slot length on either grid. |
+| `tab.js` | Draws guitar tablature from a note list: the strings, the numbers, the techniques, the bar numbers, the chord's name, numeral and CAGED shape over each bar, and the rhythm under each row (stems, flags, beams within the beat, dots, hollow heads) from each strike's slot length on either grid. `slotAt` reads the slot under a click, the inverse of the playhead's place. |
 | `css/tab.css` | The tab's look, one sheet for the pages that draw it (jam, drills, parts, review, the deep dives): a 17px string gap, 11px bold numbers, thin strings, the rhythm's stems and beams, and the pane a long tab scrolls in. Each page keeps only its own playing colour and playhead. |
 | `tab-pane.js` | A long tab in a pane: more than two rows scrolls, showing as many rows as were last asked for (kept in localStorage, one setting for every page), with a control beside its bottom corner for more or fewer — in a gutter, so nothing sits between the tab and the neck — and the row being played kept in view. Used by the jam tab, the drills and the example player. |
 | `parts-guide-data.js` | What the parts page says about each style and part: progression, tempo, what the rhythm and notes are made of, where the idiom comes from. Pure data. |

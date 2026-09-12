@@ -82,8 +82,9 @@ beat), nine for a jazz waltz (three beats of three). Every event has a slot
   note lands on an open string, which no hand can shake), `rake` a rake into
   the note, `trem: 8` tremolo picking, `ghost` a dead note, `wah` the pedal
   rocked with the stroke (a sweep up or down per note), `trill: iv2` a
-  trill to that interval (written as 32nds, the first note carrying the
-  tab's value), `free` a note played as written whatever the reading
+  trill to that interval (played as 32nds; written once, the first note
+  carrying the tab's value and `trillTo`, the fret it goes to, the rest
+  `tabHide`), `free` a note played as written whatever the reading
   offers (the Dorian 6th, the major 3rd against a minor pentatonic, a
   chromatic step — the pitch is exact and is placed, not snapped), `reach:
   n` leave to sit up to n frets past the position window (a slide up into

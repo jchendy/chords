@@ -27,7 +27,7 @@
   let reading = 'scale';
   let techOn = true;
 
-  const { windowFor, drawTab, play, stop } = GT.examplePlayer;
+  const { windowFor, drawTab, play, stop, seekable } = GT.examplePlayer;
   const playing = () => GT.examplePlayer.playing();
 
   // The progression as the jam tab would hold it: chord objects with
@@ -102,6 +102,7 @@
           play(card, style, feel, state.chords, state.notes, entry.tempo, state.metrics);
         });
         card.rebuild = () => { const was = playing() && playing().card === card; if (was) stop(); build(); };
+        seekable(card, () => ({ feel, chords: state.chords, notes: state.notes, metrics: state.metrics }));
         const blendEl = card.querySelector('.blend');
         if (blendEl) blendEl.addEventListener('click', e => {
           const b = e.target.closest('button'); if (!b) return;

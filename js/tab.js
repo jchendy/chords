@@ -91,10 +91,13 @@
         els.push(`<text class="tab-chord" data-bar="${i}" x="${p.x + 4}" y="${p.top - 12}">${bar.chord}</text>`);
         // the Nashville numeral after the name, quieter, when the caller has
         // one — a tab drawn without a key passes none
+        let after = 4 + bar.chord.length * 7.2 + 5;
         if (bar.numeral){
-          const dx = 4 + bar.chord.length * 7.2 + 5;
-          els.push(`<text class="tab-numeral" x="${p.x + dx}" y="${p.top - 12}">${bar.numeral}</text>`);
+          els.push(`<text class="tab-numeral" x="${p.x + after}" y="${p.top - 12}">${bar.numeral}</text>`);
+          after += bar.numeral.length * 6.5 + 6;
         }
+        // the CAGED shape the bar is played in, where the caller knows one
+        if (bar.shape) els.push(`<text class="tab-shape" x="${p.x + after}" y="${p.top - 12}">${bar.shape}</text>`);
       }
     });
 
@@ -121,7 +124,7 @@
       // note the same, dim; vibrato as "~", tremolo picking as "≡", a rake
       // as "r" before the number
       if (n.mute && n.lead !== false) els.push(`<text class="tab-tech" x="${x}" y="${y - 7}" text-anchor="middle">x</text>`);
-      else if (n.trill) els.push(`<text class="tab-tech" x="${x + 4}" y="${y - 7}" text-anchor="start">tr~~</text>`);
+      else if (n.trill) els.push(`<text class="tab-tech" x="${x + 4}" y="${y - 7}" text-anchor="start">tr${n.trillTo != null ? n.trillTo : '~~'}</text>`);
       else if (n.vib) els.push(`<text class="tab-tech" x="${x}" y="${y - 7}" text-anchor="middle">~</text>`);
       else if (n.trem) els.push(`<text class="tab-tech" x="${x}" y="${y - 7}" text-anchor="middle">≡</text>`);
       // "wah" once a bar, over the first note the pedal is on
@@ -271,5 +274,14 @@
     return { x: p.x, y: p.top - 8 };
   }
 
-  GT.tab = { build, playheadPos, SLOT_W, valueOf, onsets };
+  // the slot under a point of the drawing (in viewBox units) — the inverse
+  // of positionOf, for a click on the tab
+  function slotAt(x, y, m){
+    const row = Math.max(0, Math.min(m.rows - 1, Math.floor(y / m.rowSpan)));
+    const perRow = m.barsPerRow * m.grid;
+    const inRow = Math.max(0, Math.min(perRow - 1, Math.floor((x - PAD_L) / m.slotW)));
+    return Math.max(0, Math.min(m.barCount * m.grid - 1, row * perRow + inRow));
+  }
+
+  GT.tab = { build, playheadPos, slotAt, SLOT_W, valueOf, onsets };
 })();

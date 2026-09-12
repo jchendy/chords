@@ -26,23 +26,49 @@
   }
 
   // ---- drawing ----
+  // The CAGED shape a bar's chord is played in, from the strings its first
+  // strum strikes — named over the tab after the chord, where it is one
+  // (a lead bar with no chord struck gets nothing)
+  function shapeOfBar(chord, barNotes){
+    const strums = barNotes.filter(n => n.strum && !n.next);
+    if (!strums.length || !chord) return '';
+    // every string the bar's strums touch — the grip the hand holds, whether
+    // a strike is the whole of it or the thumb's bass note alone
+    const cells = [...new Map(strums.map(n => [`${n.string}:${n.fret}`, { string: n.string, fret: n.fret }])).values()];
+    if (cells.length < 3) return '';
+    // a 7♯9 or a 9th on the A, D, G and B strings is its own grip, not a
+    // CAGED shape that happens to share three of its notes
+    if (chord.ext && (chord.ext.includes(3) || chord.ext.includes(2) || chord.ext.includes(14))){
+      const strings = new Set(cells.map(c => c.string));
+      if ([4, 3, 2, 1].every(x => strings.has(x)) && !strings.has(5)) return chord.ext.includes(3) ? '7♯9 grip' : '9th grip';
+    }
+    const name = GT.fretboard.identifyCagedShape(cells, SEMITONE[chord.note] % 12, chord.quality === 'min');
+    return name ? `${name} shape` : '';
+  }
   function drawTab(host, feel, chords, notes){
     const grid = feel.grid;
     const example = {
       grid,
-      bars: chords.map((c, i) => ({ startSlot: i * grid, chord: displayName(c), numeral: c.numeral })),
+      bars: chords.map((c, i) => ({ startSlot: i * grid, chord: displayName(c), numeral: c.numeral, shape: shapeOfBar(c, notes.filter(n => n.bar === i)) })),
       notes: notes.map(n => ({
         string: n.string, fret: n.fret, at: n.bar * grid + n.at, dur: n.dur,
         bend: n.bend, slide: n.slide, tech: n.tech, to: n.to, soft: n.soft, mute: n.mute,
-        vib: n.vib, trem: n.trem, rake: n.rake, ghost: n.ghost, tone: !n.strum && (n.mute || n.ghost) ? 'muted' : undefined,
+        vib: n.vib, trem: n.trem, rake: n.rake, ghost: n.ghost, trill: n.trill, trillTo: n.trillTo, tabHide: n.tabHide, tabDur: n.tabDur, wah: n.wah, unison: n.unison,
+        tone: !n.strum && (n.mute || n.ghost) ? 'muted' : undefined,
         lead: !n.strum || !notes.some(m => m.bar === n.bar && m.at === n.at && m.strum && m.spread > n.spread),
       })),
       totalSlots: chords.length * grid,
     };
-    const built = GT.tab.build(example, Math.max(320, host.clientWidth || 800));
-    host.innerHTML = `<svg viewBox="${built.viewBox}" width="${built.width}" height="${built.height}" role="img">${built.markup}</svg>`;
-    // a long tab scrolls in a pane of as many rows as were last asked for
-    if (GT.tabPane) GT.tabPane.apply(host, built.metrics);
+    const draw = () => {
+      const b = GT.tab.build(example, Math.max(320, host.clientWidth || 800));
+      host.innerHTML = `<svg viewBox="${b.viewBox}" width="${b.width}" height="${b.height}" role="img">${b.markup}</svg>`;
+      return b;
+    };
+    let built = draw();
+    // a long tab scrolls in a pane of as many rows as were last asked for;
+    // the pane's control takes a gutter, so a tab that gets one is drawn
+    // again to the width that leaves
+    if (GT.tabPane && GT.tabPane.apply(host, built.metrics)){ built = draw(); GT.tabPane.apply(host, built.metrics); }
     return built.metrics;
   }
 
@@ -82,11 +108,16 @@
     if (ctx.state === 'suspended') ctx.resume();
     audio.warmGuitar(); audio.warmPiano(); audio.warmBass();
     audio.keepAwake(true);
-    playing = { style, feel, chords, notes, tempo, card, metrics, hooks, shownBar: null };
+    playing = { style, feel, chords, notes, tempo, card, metrics, hooks, shownBar: null, fromSlot: 0 };
     card.classList.add('playing');
     card.querySelector('.play').textContent = 'Stop';
-    bar = 0;
-    nextBarTime = ctx.currentTime + 0.1;
+    // from the start, or from where a click on the tab put the playhead
+    const from = card._seek != null ? card._seek : 0;
+    card._seek = null;
+    bar = Math.floor(from / feel.grid) % chords.length;
+    playing.fromSlot = from - Math.floor(from / feel.grid) * feel.grid;
+    const slotDur0 = (60 / tempo) * GT.band.beatsOf(feel) / feel.grid;
+    nextBarTime = ctx.currentTime + 0.1 - playing.fromSlot * slotDur0;
     log = [];
     tick();
     requestAnimationFrame(follow);
@@ -102,17 +133,22 @@
     for (let skip = audio.stepsToSkip(nextBarTime, ctx.currentTime, barLen); skip > 0; skip--){ nextBarTime += barLen; bar = (bar + 1) % chords.length; }
     while (nextBarTime < ctx.currentTime + ahead()){
       const t0 = nextBarTime;
+      // a bar begun part-way (after a seek): only from that slot on
+      const from = playing.fromSlot || 0;
+      playing.fromSlot = 0;
       const chord = chords[bar], next = chords[(bar + 1) % chords.length];
+      const slotsPerBeat = grid / beats;
       if (style === 'simple'){
         for (let beat = 0; beat < 4; beat++){
+          if (beat * slotsPerBeat < from) continue;
           audio.playChord(chord, t0 + beat * spb, spb, beat === 0 ? 0.86 : 0.68, 'piano');
           audio.playHiHat(t0 + beat * spb, 0.4);
         }
       } else if (style === 'click'){
         // a metronome: the hat on every beat, the first of the bar heavier,
         // and the chord once a bar under it when the page asks (`hooks.comp`)
-        for (let beat = 0; beat < beats; beat++) audio.playHiHat(t0 + beat * spb, beat === 0 ? 0.55 : 0.32);
-        if (playing.hooks.comp) audio.playChord(chord, t0, barLen, 0.6, 'piano');
+        for (let beat = 0; beat < beats; beat++) if (beat * slotsPerBeat >= from) audio.playHiHat(t0 + beat * spb, beat === 0 ? 0.55 : 0.32);
+        if (playing.hooks.comp && from === 0) audio.playChord(chord, t0, barLen, 0.6, 'piano');
       } else {
         // the band as the jam tab plays it: fills, approaches, pushes,
         // stop-time bars and all, through band.js
@@ -120,14 +156,14 @@
                        changing: displayName(next) !== displayName(chord),
                        fillNow: bar === chords.length - 1,
                        stopped: !!(notes.stopBars && notes.stopBars.has(bar)) };
-        for (let slot = 0; slot < grid; slot++){
+        for (let slot = from; slot < grid; slot++){
           GT.band.scheduleSlot(feel, slot, t0 + slot * slotDur + GT.band.swingOffset(feel, slot, slotDur), slotDur, bctx);
         }
       }
       // the part through the engine's one player, at the jam tab's default level
-      audio.playPartNotes(notes.filter(n => n.bar === bar), n => t0 + n.at * slotDur + GT.band.swingOffset(feel, Math.floor(n.at), slotDur), slotDur, audio.PART_LEVEL, { slapback: !!feel.slapback })
+      audio.playPartNotes(notes.filter(n => n.bar === bar && n.at >= from), n => t0 + n.at * slotDur + GT.band.swingOffset(feel, Math.floor(n.at), slotDur), slotDur, audio.PART_LEVEL, { slapback: !!feel.slapback })
         .forEach(({ note: n, time, until }) => log.push({ time, until, slot: bar * grid + Math.floor(n.at), where: `${n.string}:${n.fret}` }));
-      for (let slot = 0; slot < grid; slot++) log.push({ time: t0 + slot * slotDur, slot: bar * grid + slot, head: true });
+      for (let slot = from; slot < grid; slot++) log.push({ time: t0 + slot * slotDur, slot: bar * grid + slot, head: true });
       nextBarTime += barLen;
       bar = (bar + 1) % chords.length;
     }
@@ -163,5 +199,59 @@
     requestAnimationFrame(follow);
   }
 
-  GT.examplePlayer = { windowFor, drawTab, play, stop, playing: () => playing };
+  // ---- seeking: a click on the tab ----
+  // A click on the tab sets the playback position. Playing, the loop jumps
+  // there — what was queued is called off and the bar is picked up from
+  // that slot; paused, the playhead moves there, the notes at that slot
+  // light on the tab and on the card's neck, and the next Play starts from
+  // it. `getState` gives the card's { feel, chords, notes, metrics } as they
+  // are now; `hooks.onSeek(bar, slot)` lets the page draw its neck for the
+  // bar first.
+  function seekable(card, getState, hooks = {}){
+    card.addEventListener('click', e => {
+      const svg = e.target.closest('.tab svg');
+      if (!svg || !svg.getScreenCTM) return;
+      const st = getState();
+      if (!st || !st.metrics) return;
+      const pt = svg.createSVGPoint();
+      pt.x = e.clientX; pt.y = e.clientY;
+      const ctm = svg.getScreenCTM();
+      if (!ctm) return;
+      const p = pt.matrixTransform(ctm.inverse());
+      seekTo(card, GT.tab.slotAt(p.x, p.y, st.metrics), getState, hooks);
+    });
+  }
+  function seekTo(card, slot, getState, hooks = {}){
+    const st = getState();
+    if (!st || !st.metrics) return;
+    const grid = st.feel.grid, inBar = Math.floor(slot / grid), within = slot - inBar * grid;
+    if (playing && playing.card === card){
+      const ctx = audio.ctx();
+      audio.cancelScheduled();
+      log = [];
+      playing.metrics = st.metrics;
+      playing.shownBar = null;
+      bar = inBar % playing.chords.length;
+      playing.fromSlot = within;
+      const slotDur = (60 / playing.tempo) * GT.band.beatsOf(playing.feel) / grid;
+      nextBarTime = ctx.currentTime + 0.05 - within * slotDur;
+      clearTimeout(timer);
+      tick();
+      return;
+    }
+    card._seek = slot;
+    const head = card.querySelector('.tab-playhead');
+    if (head){
+      const pos = GT.tab.playheadPos(slot, st.metrics);
+      head.removeAttribute('hidden');
+      head.setAttribute('x', pos.x); head.setAttribute('y', pos.y);
+      if (GT.tabPane) GT.tabPane.follow(head.closest('.tab-pane'), st.metrics, slot);
+    }
+    card.querySelectorAll('.tab-note').forEach(g => g.classList.toggle('now', Number(g.dataset.slot) === slot));
+    if (hooks.onSeek) hooks.onSeek(inBar, slot);
+    const cells = new Set(st.notes.filter(n => n.bar === inBar && Math.floor(n.at) === within).map(n => `${n.string}:${n.fret}`));
+    card.querySelectorAll('.neck .note-dot').forEach(g => g.classList.toggle('sounding', cells.has(`${g.dataset.string}:${g.dataset.fret}`)));
+  }
+
+  GT.examplePlayer = { windowFor, drawTab, shapeOfBar, play, stop, seekable, seekTo, playing: () => playing };
 })();

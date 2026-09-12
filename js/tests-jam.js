@@ -1070,6 +1070,37 @@
     t.equal(bad.join('; '), '', 'A reset opens the tab as a fresh page does: a preset, the default feel and tempo, no part, no loop');
   }
 
+  // A click on the tab while paused sets where Play begins, and shows it:
+  // the bar lit on the chart, the playhead on the slot
+  function testAClickOnTheTabSeeks(t){
+    start();
+    const bad = [];
+    const view = GT.fretboardView;
+    GT.jam.loadProgression({ chords: ['A', 'A', 'D', 'D', 'E', 'A'], key: 'A' });   // A×2, D×2, E, A
+    q('#styleGroup .genre-btn[data-value="blues.0"]').click();
+    view.applyViewState('m:penta.p:position');
+    q('#chartViewGroup .seg-btn[data-value="part"]').click();
+    const grid = GT.parts.LIBRARY.blues ? 12 : 16;
+    const st = GT.jam.partState();
+    if (!st.notes.length) bad.push('(no part to seek in, so this proves nothing)');
+    const g = Math.max(...st.notes.map(n => n.at)) >= 12 ? 16 : 12;
+    const slot = 2 * g + Math.floor(g / 4);          // bar 3 (the first D), second beat
+    GT.jam.seekTo(slot);
+    const seek = GT.jam.seekState();
+    if (!seek || seek.chordIdx !== 1 || seek.beatInChord !== 1) bad.push(`the seek landed at ${JSON.stringify(seek)}, not the first D bar's second beat`);
+    const lit = q('#chords .bar.active');
+    if (!lit || Number(lit.dataset.bar) !== 2) bad.push(`the chart lights bar ${lit && lit.dataset.bar}, not bar 3`);
+    const head = q('#partTab .tab-playhead');
+    if (!head || head.hasAttribute('hidden')) bad.push('the playhead is not shown at the seek');
+    if (q('#measureReadout').textContent !== '1.2') bad.push(`the readout says ${q('#measureReadout').textContent}`);
+    // a new progression forgets it
+    GT.jam.loadProgression({ chords: ['C', 'F', 'G'], key: 'C' });
+    if (GT.jam.seekState()) bad.push('a seek survived a new progression');
+    q('#chartViewGroup .seg-btn[data-value="chart"]').click();
+    view.applyViewState('');
+    t.equal(bad.join('; '), '', 'A click on the tab while paused sets where Play begins, lights the bar and shows the playhead');
+  }
+
   GT.jamSuites = [
     ['Jam: a shared link round-trips', testShareLinkRoundTrips],
     ['Jam: the styles are one list', testTheStyleListIsOneList],
@@ -1094,5 +1125,8 @@
     ['Jam: a part that needs its progression', testAPartThatNeedsItsPreset],
     ['Jam: the old tab name still opens it', testTheOldTabNameStillOpensIt],
     ['Jam: a reset is a fresh page', testResetToDefaults],
+    // last: it leaves a typed progression behind, which the link round trip
+    // would read as a different key
+    ['Jam: a click on the tab seeks', testAClickOnTheTabSeeks],
   ];
 })();

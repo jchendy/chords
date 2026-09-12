@@ -830,6 +830,7 @@
 
   // render everything from the current progression WITHOUT re-rolling it
   function renderAll(){
+    seekStart = null;                  // the progression changed: a seek into the old one is off
     syncChordText();
     writeShareState();
     rebuildPart();
@@ -1465,9 +1466,11 @@
     if (countInFrom != null && now < playbackStartTime - 0.0005){
       const b = Math.min(beatsPerBar(), Math.max(1, Math.floor((now - countInFrom) / countInSpb) + 1));
       measureReadout.textContent = String(b);
+      showCountIn(b);
       requestAnimationFrame(syncHighlight);
       return;
     }
+    showCountIn(null);
 
     while (scheduledLog.length > 1 && scheduledLog[1].time <= now){
       scheduledLog.shift();
@@ -1494,6 +1497,71 @@
 
   function stopPlayback(){ if (isPlaying) togglePlay(); }
 
+  // ---- seeking: a click on the tab ----
+  // A click on the tab sets the playback position. Playing, the progression
+  // jumps there — what was queued is called off and the beat is picked up
+  // from that bar and beat; paused, the next Play starts there, and the
+  // chart, the neck and the tab show it: the bar lit, the chord's shape, the
+  // playhead on the slot, the notes at it.
+  let seekStart = null;
+  function cursorAtSlot(slot){
+    const grid = feelNow().grid, perBeat = grid / beatsPerBar();
+    const barIdx = Math.max(0, Math.min(totalBars() - 1, Math.floor(slot / grid)));
+    const beat = Math.min(beatsPerBar() - 1, Math.floor((slot - barIdx * grid) / perBeat));
+    let c = 0, at = 0;
+    while (c < currentProgression.length - 1 && at + measuresFor(c) <= barIdx){ at += measuresFor(c); c++; }
+    return { chordIdx: c, beatInChord: (barIdx - at) * beatsPerBar() + beat, barIdx, barInChord: barIdx - at, beat };
+  }
+  function seekTo(slot){
+    if (!partTab || !currentProgression.length) return;
+    const cur = cursorAtSlot(slot);
+    const grid = feelNow().grid;
+    if (isPlaying){
+      audio.cancelScheduled();
+      scheduledLog = [];
+      partLog = [];
+      chordIdx = cur.chordIdx; beatInChord = cur.beatInChord;
+      countInFrom = null;
+      nextNoteTime = audio.ctx().currentTime + 0.05;
+      playbackStartTime = nextNoteTime;
+      clearTimeout(schedulerId);
+      scheduler();
+      return;
+    }
+    seekStart = { chordIdx: cur.chordIdx, beatInChord: cur.beatInChord };
+    document.querySelectorAll('#chords .bar').forEach(el => {
+      const on = Number(el.dataset.bar) === cur.barIdx;
+      el.classList.toggle('active', on); el.classList.toggle('dim', !on);
+    });
+    view.followChord({ idx: cur.chordIdx, measure: cur.barInChord + 1, beat: cur.beat + 1, time: 0 });
+    const head = partTabEl.querySelector('.tab-playhead');
+    if (head){
+      const pos = GT.tab.playheadPos(slot, partTab);
+      head.removeAttribute('hidden');
+      head.setAttribute('x', pos.x); head.setAttribute('y', pos.y);
+    }
+    partTabEl.querySelectorAll('.tab-note').forEach(g => g.classList.toggle('now', Number(g.dataset.slot) === slot));
+    view.lightSounding(partNotes.filter(n => n.bar === cur.barIdx && Math.floor(n.at) === slot - cur.barIdx * grid).map(n => ({ string: n.string, fret: n.fret })));
+    showPartBar(cur.barIdx);
+    measureReadout.textContent = `${cur.barInChord + 1}.${cur.beat + 1}`;
+  }
+  // ---- the count-in, shown at the tab ----
+  // During the count-in the beat number sits at the top-left corner of the
+  // tab, by the first bar; before and after, nothing is there.
+  function showCountIn(beat){
+    let el = document.getElementById('partCountIn');
+    if (beat == null){ if (el) el.hidden = true; return; }
+    if (!el){
+      el = document.createElement('div');
+      el.id = 'partCountIn';
+      el.className = 'count-in';
+      el.setAttribute('aria-live', 'off');
+      partTabEl.parentNode.insertBefore(el, partTabEl);
+    }
+    el.textContent = String(beat);
+    el.hidden = partTabEl.hidden;
+  }
+
   function togglePlay(){
     ensureAudio();
     if (audio.ctx().state === 'suspended') audio.ctx().resume();
@@ -1507,6 +1575,8 @@
     if (!isPlaying){
       isPlaying = true;
       resetPlaybackCursor();
+      // ...or from where a click on the tab put the playhead
+      if (seekStart){ chordIdx = seekStart.chordIdx; beatInChord = seekStart.beatInChord; seekStart = null; }
       nextNoteTime = audio.ctx().currentTime + 0.05;
       countInSpb = 60 / getTempo();
       // null when there's no count-in to show. The first chord is scheduled
@@ -1526,6 +1596,7 @@
       view.onPlaybackStarted();
     } else {
       isPlaying = false;
+      showCountIn(null);
       partStopped();
       clearTimeout(schedulerId);
       // the notes queued ahead of the sound would otherwise play on past the
@@ -1794,6 +1865,17 @@
   const partNoteEl = document.getElementById('partNote');
   const partNameEl = document.getElementById('partName');
   const partTabEl = document.getElementById('partTab');
+  // a click on the tab sets the playback position (seekTo, above)
+  partTabEl.addEventListener('click', e => {
+    const svg = e.target.closest('svg');
+    if (!svg || !partTab || !svg.getScreenCTM) return;
+    const ctm = svg.getScreenCTM();
+    if (!ctm) return;
+    const pt = svg.createSVGPoint();
+    pt.x = e.clientX; pt.y = e.clientY;
+    const p = pt.matrixTransform(ctm.inverse());
+    seekTo(GT.tab.slotAt(p.x, p.y, partTab));
+  });
   const partScaleSelect = document.getElementById('partScaleSelect');
 
   // Simple has no feels; its parts are written for a stand-in of the same shape
@@ -1941,10 +2023,14 @@
         startSlot: i * grid,
         chord: cells[i] && cells[i].held ? '' : displayName(b.chord),
         numeral: cells[i] && cells[i].held ? '' : (b.chord.numeral || ''),
+        // the CAGED shape the bar's strum is, where it is one
+        shape: cells[i] && cells[i].held ? '' : (GT.examplePlayer ? GT.examplePlayer.shapeOfBar(b.chord, partNotes.filter(n => n.bar === i)) : ''),
       })),
       notes: partNotes.map(n => ({ string: n.string, fret: n.fret, at: n.bar * grid + n.at, dur: n.dur,
                                    bend: n.bend, slide: n.slide, tech: n.tech, to: n.to, soft: n.soft, mute: n.mute,
                                    vib: n.vib, trem: n.trem, rake: n.rake, ghost: n.ghost, tone: !n.strum && (n.mute || n.ghost) ? 'muted' : undefined,
+                                   // a trill is written once, with the fret it goes to; its repeats are played, not drawn
+                                   trill: n.trill, trillTo: n.trillTo, tabHide: n.tabHide, tabDur: n.tabDur, wah: n.wah, unison: n.unison,
                                    // the top string of a strum carries its marks, over the tab
                                    lead: !n.strum || !partNotes.some(m => m.bar === n.bar && m.at === n.at && m.strum && m.spread > n.spread) })),
       totalSlots: bars.length * grid,
@@ -1957,16 +2043,23 @@
     // shown before it is measured: hidden, its width reads as nothing and
     // every screen counted as a phone
     partTabEl.hidden = false;
-    const avail = partTabEl.clientWidth || partPanel.clientWidth;
+    let avail = partTabEl.clientWidth || partPanel.clientWidth;
     const wide = avail >= 700;
-    const built = GT.tab.build(example, wide ? avail : Number.MAX_SAFE_INTEGER);
-    partTab = built.metrics;
-    partTabEl.innerHTML = `<svg viewBox="${built.viewBox}" width="${built.width}" height="${built.height}"`
-      + ` role="img" aria-label="${partNow().name}, written out">${built.markup}</svg>`;
+    const draw = () => {
+      avail = partTabEl.clientWidth || partPanel.clientWidth;
+      const b = GT.tab.build(example, wide ? avail : Number.MAX_SAFE_INTEGER);
+      partTabEl.innerHTML = `<svg viewBox="${b.viewBox}" width="${b.width}" height="${b.height}"`
+        + ` role="img" aria-label="${partNow().name}, written out">${b.markup}</svg>`;
+      return b;
+    };
+    let built = draw();
     partTabEl.classList.toggle('wrapped', wide);
     // a wrapped tab of more than two rows scrolls in a pane of as many rows
-    // as were last asked for (js/tab-pane.js), the same on every page
-    GT.tabPane.apply(partTabEl, wide ? built.metrics : null);
+    // as were last asked for (js/tab-pane.js), the same on every page; the
+    // pane's control takes a gutter, and a tab that gets one is drawn again
+    // to the width that leaves
+    if (GT.tabPane.apply(partTabEl, wide ? built.metrics : null)){ built = draw(); GT.tabPane.apply(partTabEl, wide ? built.metrics : null); }
+    partTab = built.metrics;
     partTabEl.dataset.drawnAt = avail;
     partTabEl.scrollLeft = 0;
     partTabEl.scrollTop = 0;
@@ -2325,7 +2418,7 @@
   chordText.addEventListener('input', () => say(''));
 
   GT.jam = {
-    reset,
+    reset, seekTo, seekState: () => seekStart,
     // leaving the tab shouldn't leave a progression playing behind you
     stop(){ if (isPlaying) togglePlay(); },
     loadProgression,

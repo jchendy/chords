@@ -34,3 +34,6 @@
 .tab-pane-ctl button{ width:22px; height:22px; padding:0; border:1px solid var(--line2, #3a3631); border-radius:999px; background:transparent; color:var(--ink, #ece7dc); font:600 13px/1 Inter,system-ui,sans-serif; cursor:pointer; }
 .tab-pane-ctl button:hover{ border-color:var(--a, #e0a84a); }
 .tab-pane-ctl button:disabled{ opacity:.3; cursor:default; }
+
+/* the CAGED shape a bar is played in, after the chord's name and numeral */
+.tab-shape{ font:500 9px Inter,system-ui,sans-serif; fill:var(--muted2, #6f675b); letter-spacing:.02em; }

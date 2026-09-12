@@ -2006,9 +2006,11 @@
             notes = notes.filter(x => x !== n);
             for (let k = 0; k < events; k++){
               const c = k % 2 ? up : n;
+              // written once: the first note with "tr" and the fret it
+              // trills to over it; the rest are played, not written
               notes.push({ ...n, string: c.string, fret: c.fret, midi: c.midi, at: n.at + k * step, dur: step * 0.95,
                            vel: n.vel * (k === 0 ? 1 : 0.7), soft: k > 0, iv: k % 2 ? w.trill : w.iv,
-                           ...(k === 0 ? { trill: true, tabDur: n.dur } : k === 1 ? {} : { tabHide: true }) });
+                           ...(k === 0 ? { trill: true, trillTo: up.fret, tabDur: n.dur } : { tabHide: true }) });
             }
           }
         }

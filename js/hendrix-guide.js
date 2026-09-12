@@ -12,7 +12,7 @@
   const { STRING_MIDI, CAGED_COLORS, arpeggioCells, pentaBoxPlacements, scaleBoxPlacements } = GT.fretboard;
   const { DEG, pcOf, cellKey, pcs, neckGeometry, chordNeck, scaleNeck, boxMarkers, neckSVG, figure } = GT.neckFollow;
   const { STYLES } = GT.audio;
-  const { drawTab, play, stop, playing } = GT.examplePlayer;
+  const { drawTab, play, stop, playing, seekable } = GT.examplePlayer;
   const $ = id => document.getElementById(id);
   const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
 
@@ -208,6 +208,8 @@
     });
     if (cfg.big) art.querySelector('.close-big').addEventListener('click', () => big.close());
     else art.querySelector('.expand').addEventListener('click', () => openBig(ex));
+    // a click on the tab sets where it plays from, the neck following
+    seekable(art, () => ({ feel: r.feel, chords: r.chords, notes: r.notes, metrics }), { onSeek: bar => draw(bar) });
     draw(0);
   }
 
@@ -744,8 +746,17 @@
     if (e.code !== 'Space' || e.repeat || /input|select|textarea/i.test(e.target.tagName)) return;
     e.preventDefault();
     const bigPlay = big.open && big.querySelector('article.ex .play');
-    if (bigPlay) bigPlay.click();
-    else if (playing()) stop();
+    if (bigPlay){ bigPlay.click(); return; }
+    if (playing()){ stop(); return; }
+    // nothing playing: the example with the most of itself on screen
+    const vh = window.innerHeight;
+    let best = null, most = 0;
+    document.querySelectorAll('article.ex').forEach(art => {
+      const r = art.getBoundingClientRect();
+      const seen = Math.max(0, Math.min(r.bottom, vh) - Math.max(r.top, 0));
+      if (seen > most){ most = seen; best = art; }
+    });
+    if (best) best.querySelector('.play').click();
   });
   render();
   renderToc();

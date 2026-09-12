@@ -37,9 +37,14 @@
     wrap.appendChild(host);
     return wrap;
   }
+  // `host` holds the tab's svg; `metrics` is what tab.js measured for it.
+  // A short tab is left alone; a long one gets the pane and its control.
+  // Returns true when the host's width changed — the gutter for the
+  // control came or went — so the caller can draw the tab again to it.
   function apply(host, metrics){
-    if (!host) return;
+    if (!host) return false;
     const wrap = wrapOf(host);
+    const hadGutter = wrap.classList.contains('has-ctl');
     let ctl = host.nextElementSibling && host.nextElementSibling.classList.contains('tab-pane-ctl') ? host.nextElementSibling : null;
     host._tabMetrics = metrics || null;
     if (!metrics || metrics.rows <= DEFAULT){
@@ -47,12 +52,22 @@
       host.style.maxHeight = '';
       wrap.classList.remove('has-ctl');
       if (ctl) ctl.remove();
-      return;
+      return hadGutter;
     }
     host.classList.add('tab-pane');
     wrap.classList.add('has-ctl');
     const shown = Math.min(rows, metrics.rows);
-    host.style.maxHeight = `${Math.ceil(shown * rowHeight(host, metrics)) + 2}px`;
+    if (shown >= metrics.rows){
+      host.style.maxHeight = '';                 // every row: nothing to scroll, no box to cut it off
+      host.scrollTop = 0;
+    } else {
+      const h = rowHeight(host, metrics);
+      host.style.maxHeight = `${Math.ceil(shown * h) + 2}px`;
+      // a scrollbar across the bottom would eat into the last row shown
+      const bar = host.offsetHeight - host.clientHeight;
+      if (bar > 0) host.style.maxHeight = `${Math.ceil(shown * h) + 2 + bar}px`;
+      if (host.scrollTop > host.scrollHeight - host.clientHeight) host.scrollTop = Math.max(0, host.scrollHeight - host.clientHeight);
+    }
     if (!ctl){
       ctl = document.createElement('div');
       ctl.className = 'tab-pane-ctl';
@@ -68,6 +83,7 @@
     ctl.innerHTML = `<button type="button" class="tab-rows-less" aria-label="Fewer rows" title="Show fewer rows"${shown <= 1 ? ' disabled' : ''}>−</button>`
       + `<span class="tab-rows-n" title="${shown} of ${metrics.rows} rows">${shown}/${metrics.rows}</span>`
       + `<button type="button" class="tab-rows-more" aria-label="More rows" title="Show more rows"${shown >= metrics.rows ? ' disabled' : ''}>+</button>`;
+    return !hadGutter;
   }
   // keep the row the playhead is on in view
   function follow(host, metrics, slot){

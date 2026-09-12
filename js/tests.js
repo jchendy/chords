@@ -1352,7 +1352,9 @@
       t.ok(pair.length === 2 && pair.some(x => x.bend === 2) && pair.every(x => arrives(x) === arrives(pair[0])) && pair[0].string !== pair[1].string && Math.abs(pair[0].string - pair[1].string) === 1, 'a unison bend is the note fretted on one string and bent up a tone to it on the next');
       const tr = realise({ ...part, figure: [n(0, 7, 4, 0.9, { trill: 9 })] }, bars, 1, opts, { grid: 16 });
       const trNotes = inBar(tr, 0);
-      t.ok(trNotes.length >= 6 && trNotes.filter(x => x.trill).length === 1 && trNotes.filter(x => x.tabHide).length === trNotes.length - 2 && trNotes[0].tabDur === 4, `a trill is many notes played and one strike written (${trNotes.length} notes)`);
+      // written once — the first note, with the fret it trills to — and the
+      // rest played but hidden from the tab
+      t.ok(trNotes.length >= 6 && trNotes.filter(x => x.trill).length === 1 && trNotes.filter(x => x.tabHide).length === trNotes.length - 1 && trNotes[0].tabDur === 4 && trNotes[0].trillTo === trNotes[1].fret, `a trill is many notes played and one strike written, with the fret it goes to (${trNotes.length} notes)`);
       const wah = realise({ ...part, figure: [{ ...s(0, 2, 0.8, 'high'), wah: true }, { ...s(2, 2, 0.6, 'high'), wah: true }, n(4, 7, 2, 0.8, { wah: true })] }, bars, 1, opts, { grid: 16 });
       const wahs = wah.filter(x => x.bar === 0 && x.wah);
       t.ok(wahs.length >= 4 && wahs.some(x => x.wah === 'up') && wahs.some(x => x.wah === 'down'), 'the wah rides the pick: toe down on the downstroke, heel on the upstroke');
@@ -2640,6 +2642,25 @@
     t.equal(bad.join('; '), '', 'The tab writes its rhythm: values, one stem a strum, beams within the beat');
   }
 
+  // A click on the tab lands on the slot under it: slotAt is the inverse of
+  // playheadPos, on every slot of a tab that wraps to several rows
+  function testTheTabKnowsWhatIsUnderAClick(t){
+    const grid = 16, bars = 6;
+    const example = { grid, totalSlots: bars * grid, bars: Array.from({ length: bars }, (_, i) => ({ startSlot: i * grid, chord: 'C', numeral: 'I' })), notes: [{ string: 5, fret: 3, at: 0, dur: 4 }] };
+    const built = GT.tab.build(example, 520);       // narrow: two bars a row, three rows
+    const m = built.metrics;
+    const bad = [];
+    if (m.rows < 2) bad.push(`the tab did not wrap (${m.rows} rows)`);
+    for (let slot = 0; slot < bars * grid; slot++){
+      const p = GT.tab.playheadPos(slot, m);
+      const got = GT.tab.slotAt(p.x + 1, p.y + 20, m);   // just inside the slot, on the strings
+      if (got !== slot){ bad.push(`slot ${slot} read back as ${got}`); if (bad.length > 3) break; }
+    }
+    if (GT.tab.slotAt(-100, -100, m) !== 0) bad.push('a click before the tab is not the first slot');
+    if (GT.tab.slotAt(10000, 10000, m) !== bars * grid - 1) bad.push('a click past the tab is not the last slot');
+    t.equal(bad.join('; '), '', `The tab knows the slot under a click (${bars * grid} slots over ${m.rows} rows)`);
+  }
+
   async function run(){
     const results = [];
     const t = {
@@ -2652,6 +2673,7 @@
     const suites = [
       ['Chord finder keeps its known shapes', testBaselineShapesSurvive],
       ['The tab writes its rhythm', testTheTabWritesItsRhythm],
+      ['The tab knows what is under a click', testTheTabKnowsWhatIsUnderAClick],
       ['Chord finder output is identifiable in reverse', testFinderOutputIsIdentifiable],
       ['Chord finder shows the everyday grips', testCanonicalGrips],
       ['Chord finder has the grips Hendrix played, tagged', testHendrixShapesInTheFinder],

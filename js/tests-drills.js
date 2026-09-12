@@ -242,6 +242,25 @@
     if (q('#drillCard').parentNode !== home || GT.drills.isExpanded() || (dlg && dlg.open)) bad.push('close did not bring the card back');
     if (!q('#drillTempoBig').hidden) bad.push('the full-window tempo control stayed after closing');
     if (!q('#drillTab svg')) bad.push('the tab was not redrawn after closing');
+    // a click on the tab while paused moves the playhead and lights the slot
+    const { seekTo } = GT.examplePlayer;
+    const cardEl = q('#drillCard');
+    const st = { feel: { grid: 16, beats: 4 }, chords: [], notes: [], metrics: null };
+    const svgHost = q('#drillTab');
+    const drawn = GT.drills.realiseDrill(GT.drills.state);
+    if (drawn){
+      st.feel = drawn.feel; st.chords = drawn.chords; st.notes = drawn.notes;
+      st.metrics = GT.examplePlayer.drawTab(svgHost, drawn.feel, drawn.chords, drawn.notes);
+      let seenBar = null;
+      seekTo(cardEl, drawn.feel.grid + 2, () => st, { onSeek: b => { seenBar = b; } });
+      const head = q('#drillTab .tab-playhead');
+      if (!head || head.hasAttribute('hidden')) bad.push('a seek while paused did not show the playhead');
+      if (cardEl._seek !== drawn.feel.grid + 2) bad.push(`the seek was not kept for Play (${cardEl._seek})`);
+      if (seenBar !== 1) bad.push(`the page was not told the bar (${seenBar})`);
+      const lit = [...document.querySelectorAll('#drillTab .tab-note.now')].map(g => Number(g.dataset.slot));
+      if (lit.some(x => x !== drawn.feel.grid + 2)) bad.push('a note off the slot is lit');
+      cardEl._seek = null;
+    }
     // a link with nothing of ours is left alone
     if (applyState(new URLSearchParams('c=Bb13'))) bad.push('a stranger\'s link was taken as ours');
     t.equal(bad.join('; '), '', 'The drills page draws on init, shows each kind\'s rows, keeps one shape on, and its link round-trips');

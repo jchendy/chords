@@ -589,6 +589,8 @@
      rows, scrolling down to the row being played; on a phone it stays one
      strip that scrolls sideways */
   .part-tab.wrapped{ overflow-x:hidden; overflow-y:auto; }
+  /* the count-in, by the first bar of the tab: the beat number, and nothing before or after */
+  .count-in{ position:absolute; left:0; top:0; z-index:2; width:22px; height:22px; border-radius:50%; background:var(--a); color:#0c0b0a; font:700 13px/22px Inter,system-ui,sans-serif; text-align:center; pointer-events:none; }
   .part-view{ margin:12px 0 4px; }
   .part-controls{ display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-bottom:8px; }
   .part-note{ margin:10px 0; color:var(--muted); font-size:.9rem; max-width:60ch; }
