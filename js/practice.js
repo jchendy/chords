@@ -1917,7 +1917,7 @@
     if (!copied){ shareOut.focus(); shareOut.select(); }
     shareBtn.textContent = copied ? 'Link copied ✓' : 'Copy the link above';
     clearTimeout(shareBtn._reset);
-    shareBtn._reset = setTimeout(() => { shareBtn.textContent = 'Copy link to this progression'; }, 2200);
+    shareBtn._reset = setTimeout(() => { shareBtn.textContent = 'Copy a link to all of this'; }, 2200);
   });
 
   // Take a progression written as chord names — the typed field, a link —

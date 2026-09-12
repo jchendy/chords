@@ -692,9 +692,6 @@
         </span>
         <span class="quick-tools ctl">
         <button type="button" class="ib" id="quickRandomChords" aria-label="Random progression" title="Random progression"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="2" y="2" width="16" height="16" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="6.3" cy="6.3" r="1.6"/><circle cx="13.7" cy="6.3" r="1.6"/><circle cx="10" cy="10" r="1.6"/><circle cx="6.3" cy="13.7" r="1.6"/><circle cx="13.7" cy="13.7" r="1.6"/></svg></button>
-        <!-- sharing is a thing you do to this chart, so it lives on it rather
-             than at the bottom of the Set up sheet -->
-        <button type="button" class="ib" id="quickShare" aria-label="Copy link to this progression" title="Copy link to this progression"><svg class="i-link" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8.2 11.8a3.4 3.4 0 0 0 5 .3l2.6-2.6a3.4 3.4 0 0 0-4.8-4.8l-1.5 1.5"/><path d="M11.8 8.2a3.4 3.4 0 0 0-5-.3L4.2 10.5a3.4 3.4 0 0 0 4.8 4.8l1.5-1.5"/></svg><svg class="i-tick" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 10.5l3.5 3.5 7.5-8"/></svg></button>
         <!-- the rest of the settings, from here as well as from the bar below -->
         <button type="button" class="ib" id="setupOpenQuick" aria-label="Settings" title="Settings" data-pop="settingsMenu" aria-expanded="false"><svg viewBox="0 0 20 20" aria-hidden="true"><path fill-rule="evenodd" d="M16.46,8.63 L19.23,8.87 L19.23,11.13 L16.46,11.37 L15.54,13.59 L17.33,15.73 L15.73,17.33 L13.59,15.54 L11.37,16.46 L11.13,19.23 L8.87,19.23 L8.63,16.46 L6.41,15.54 L4.27,17.33 L2.67,15.73 L4.46,13.59 L3.54,11.37 L0.77,11.13 L0.77,8.87 L3.54,8.63 L4.46,6.41 L2.67,4.27 L4.27,2.67 L6.41,4.46 L8.63,3.54 L8.87,0.77 L11.13,0.77 L11.37,3.54 L13.59,4.46 L15.73,2.67 L17.33,4.27 L15.54,6.41 Z M10,7 a3,3 0 1,0 0.01,0 Z"/></svg></button>
         </span>
@@ -917,6 +914,10 @@
     <span class="counter" id="measureReadout"></span>
     <span class="sp"></span>
     <!-- at every width: a desktop can want the neck on its own too (T62) -->
+    <!-- a link to everything as it stands — key, chords, style, tempo, the
+         neck's view, the part's roll — so it belongs with the page's own
+         controls, not the progression's -->
+    <button type="button" class="ib" id="quickShare" aria-label="Copy a link to all of this" title="Copy a link to all of this: the key, the chords, the style and tempo, the neck as it is shown and the part as it was rolled"><svg class="i-link" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8.2 11.8a3.4 3.4 0 0 0 5 .3l2.6-2.6a3.4 3.4 0 0 0-4.8-4.8l-1.5 1.5"/><path d="M11.8 8.2a3.4 3.4 0 0 0-5-.3L4.2 10.5a3.4 3.4 0 0 0 4.8 4.8l1.5-1.5"/></svg><svg class="i-tick" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 10.5l3.5 3.5 7.5-8"/></svg></button>
     <button type="button" class="tbtn" id="controlsToggle" aria-pressed="true" title="Show or hide the controls: the neck's, the progression's and the part's">Hide controls</button>
     <button type="button" class="ib" id="transportCollapse" aria-label="Collapse the playback bar" title="Collapse the playback bar">
       <svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 8.5L10 13l4.5-4.5"/></svg>
@@ -973,7 +974,7 @@
       <option value="8-15">Frets 8–15</option>
     </select></div>
     <h3>Share</h3>
-    <div class="frow"><button type="button" class="tbtn" id="shareBtn">Copy link to this progression</button><input type="text" class="sel share-out" id="shareOut" readonly hidden aria-label="Link to this progression"></div>
+    <div class="frow"><button type="button" class="tbtn" id="shareBtn">Copy a link to all of this</button><input type="text" class="sel share-out" id="shareOut" readonly hidden aria-label="Link to this progression"></div>
   </div>
 </div>
 

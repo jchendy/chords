@@ -223,7 +223,7 @@
       placeWindow();
     });
 
-    // ---- copy the link from the chart, where there's only room for an icon ----
+    // ---- copy the link from the bar, where there's only room for an icon ----
     const quickShare = $('quickShare');
     quickShare.addEventListener('click', async () => {
       const copied = await GT.practice.copyShareLink();
@@ -239,7 +239,7 @@
       clearTimeout(quickShare._reset);
       quickShare._reset = setTimeout(() => {
         quickShare.classList.remove('copied');
-        quickShare.setAttribute('aria-label', 'Copy link to this progression');
+        quickShare.setAttribute('aria-label', 'Copy a link to all of this');
       }, 1800);
     });
 
