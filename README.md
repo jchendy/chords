@@ -228,7 +228,11 @@ names the tab you're on.
   sideways, and the transport goes to two rows rather than squeezing seven
   controls into one (the slider used to run under its own presets): Play,
   the slider with its number and the controls button on the first; the
-  loop, the one-tap tempos, the link and the gear on the second. The two
+  loop, the link, the gear and the button that folds the bar away on the
+  second. That last one is there at every width — a bar that can't get out
+  of the neck's way is worst on the screen with the least room — and what a
+  narrow bar gives up instead is the one-tap tempos, since the slider still
+  sets the tempo. The two
   rows are flex lines, not grid rows, so neither's columns bind the other's;
   a full-width nothing (`::after`) is the line break and `order` says which
   side of it each control takes, with the tempo's own wrappers lifted out by
