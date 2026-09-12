@@ -102,7 +102,8 @@
     // bass note, the split chord, the stabs — go along as the pattern
     if (d.d === 'changes' && ex.part && GT.drills){
       const part = partsFor(STYLE, ex.feel).find(x => x.name === ex.part);
-      const pt = part ? GT.drills.encodeStrums(part.figure || []) : '';
+      const feel = feelByLabel(ex.feel);
+      const pt = part ? GT.drills.encodeStrums(part.figure || [], feel ? feel.grid : 16) : '';
       if (pt){ p.set('pt', pt); p.delete('st'); }
     }
     return `index.html#drills?${p.toString()}`;
@@ -233,19 +234,28 @@
   // pattern low string to high, relative to the lowest fret; `at` is the
   // fret the pattern's 0 sits at for the chord named; `fingers` the hand,
   // string by string — T the thumb over the neck, 1 to 4 the fingers
-  const GRIPS = [
-    { name: 'E-shape barre, thumb over the bass', chord: 'G', pattern: '0-2-2-1-0-0', at: 3, fingers: 'T-3-4-2-1-1', what: 'The thumb frets the low E; the index lies over the top two strings and the others are free. The chord every ballad is built on.' },
-    { name: 'E-shape minor', chord: 'Em', pattern: '0-2-2-0-0-0', at: 0, fingers: '0-2-3-0-0-0', what: 'The same hand on a minor chord: Little Wing’s Em, Am and Bm. Up the neck the thumb takes the bass and the index the top strings.' },
-    { name: 'The split chord', chord: 'G', pattern: 'x-x-2-1-0-x', at: 3, fingers: 'x-x-4-2-1-x', what: 'The D, G and B strings of the E shape struck on their own after the thumb’s bass note.' },
-    { name: 'The 4th hammered on (sus4)', chord: 'Gsus4', pattern: '0-2-2-2-0-0', at: 3, fingers: 'T-3-3-4-1-1', what: 'The ring finger covers the A and D strings so the pinky is free to hammer the 4th onto the G string and let it go.' },
-    { name: 'The 6th (The Wind Cries Mary)', chord: 'G6', pattern: '0-2-2-1-2-0', at: 3, fingers: 'T-3-3-2-4-1', what: 'The pinky hammers the 6th onto the 5th on the B string — the embellishment that drives that record’s rhythm part.' },
-    { name: 'The 9th on top (add9)', chord: 'Gadd9', pattern: '0-2-2-1-0-2', at: 3, fingers: 'T-3-3-2-1-4', what: 'The pinky hammers the 9th onto the octave on the top string.' },
-    { name: 'The Hendrix chord, 7♯9', chord: 'E7#9', pattern: 'x-1-0-1-2-x', at: 6, fingers: 'x-2-1-3-4-x', what: 'Root on the A string at the 7th fret, 3rd, ♭7, ♯9: x-7-6-7-8-x. Both thirds at once.' },
-    { name: 'The 9th chord (Red House)', chord: 'B9', pattern: 'x-1-0-1-1-1', at: 1, fingers: 'x-2-1-3-3-3', what: 'The same grip with the 9th and the 5th on top, the ring finger laid across three strings: the T-Bone and B.B. King comp chord, slid in from a fret below.' },
-    { name: 'A-shape barre', chord: 'A', pattern: 'x-0-2-2-2-0', at: 5, fingers: 'x-1-2-3-4-1', what: 'The 5th-string-root barre with a finger to each string, so they can hammer; and the slides that connect it to the E shape.' },
-    { name: 'C shape with the 3rd in the bass', chord: 'C/E', pattern: '0-3-2-0-1-0', at: 0, fingers: '0-3-2-0-1-0', what: 'The C shape voiced from its 3rd — the inversions the ballads move through.' },
-    { name: 'Stacked fifths (Castles Made of Sand)', chord: 'Dsus2', pattern: 'x-x-0-2-5-x', at: 0, fingers: 'x-x-0-1-4-x', what: 'Root, 5th and 9th on the D, G and B strings, index and pinky, slid along the neck.' },
+  // Most of the grips are one hand: the thumb-over E shape, and what the
+  // free fingers add to it. So the shapes are grouped — a core shape, and
+  // its variations under it — and the finder tags them all.
+  const E_SHAPE = { name: 'E-shape barre, thumb over the bass', chord: 'G', pattern: '0-2-2-1-0-0', at: 3, fingers: 'T-3-4-2-1-1', what: 'The thumb frets the low E; the index lies over the top two strings and the others are free. The chord every ballad is built on, and the hand every variation below starts from.' };
+  const GRIP_GROUPS = [
+    { core: E_SHAPE, variations: [
+      { name: 'The split chord', chord: 'G', pattern: 'x-x-2-1-0-x', at: 3, fingers: 'x-x-4-2-1-x', what: 'The same hand, striking only the D, G and B strings after the thumb’s bass note.' },
+      { name: 'The 4th hammered on (sus4)', chord: 'Gsus4', pattern: '0-2-2-2-0-0', at: 3, fingers: 'T-3-3-4-1-1', what: 'The ring finger covers the A and D strings so the pinky is free to hammer the 4th onto the G string and let it go.' },
+      { name: 'The 6th (The Wind Cries Mary)', chord: 'G6', pattern: '0-2-2-1-2-0', at: 3, fingers: 'T-3-3-2-4-1', what: 'The pinky hammers the 6th onto the 5th on the B string — the embellishment that drives that record’s rhythm part.' },
+      { name: 'The 9th on top (add9)', chord: 'Gadd9', pattern: '0-2-2-1-0-2', at: 3, fingers: 'T-3-3-2-1-4', what: 'The pinky hammers the 9th onto the octave on the top string.' },
+    ] },
+    { core: { name: 'E-shape minor', chord: 'Em', pattern: '0-2-2-0-0-0', at: 0, fingers: '0-2-3-0-0-0', what: 'The same hand on a minor chord: Little Wing’s Em, Am and Bm. Up the neck the thumb takes the bass and the index the top strings, and the hammered 4th and 9th work here too.' }, variations: [] },
+    { core: { name: 'The Hendrix chord, 7♯9', chord: 'E7#9', pattern: 'x-1-0-1-2-x', at: 6, fingers: 'x-2-1-3-4-x', what: 'Root on the A string at the 7th fret, 3rd, ♭7, ♯9: x-7-6-7-8-x. Both thirds at once.' }, variations: [
+      { name: 'The 9th chord (Red House)', chord: 'B9', pattern: 'x-1-0-1-1-1', at: 1, fingers: 'x-2-1-3-3-3', what: 'The same root, 3rd and ♭7 with the 9th and the 5th on top instead of the ♯9, the ring finger laid across three strings: the T-Bone and B.B. King comp chord, slid in from a fret below.' },
+    ] },
+    { core: { name: 'A-shape barre, the ring finger across D, G and B', chord: 'A', pattern: 'x-0-2-2-2-x', at: 5, fingers: 'x-1-3-3-3-x', what: 'The 5th-string-root barre the way rock players hold it: the index on the root, the ring finger laid across three strings, the top string left out or caught under the index. The everyday grip, and the one to slide into the E shape from.' }, variations: [
+      { name: 'A shape with the fingers freed', chord: 'A', pattern: 'x-0-2-2-2-0', at: 5, fingers: 'x-1-2-3-4-1', what: 'The same chord with a finger to each string, for the hammered 4th on the B string and the 9th on the top string — the embellishments the lessons describe on this shape, which a barred ring finger can’t play.' },
+    ] },
+    { core: { name: 'C shape with the 3rd in the bass', chord: 'C/E', pattern: '0-3-2-0-1-0', at: 0, fingers: '0-3-2-0-1-0', what: 'The C shape voiced from its 3rd — the inversions the ballads move through.' }, variations: [] },
+    { core: { name: 'Stacked fifths (Castles Made of Sand)', chord: 'Dsus2', pattern: 'x-x-0-2-5-x', at: 0, fingers: 'x-x-0-1-4-x', what: 'Root, 5th and 9th on the D, G and B strings, index and pinky, slid along the neck.' }, variations: [] },
   ];
+  const GRIPS = GRIP_GROUPS.flatMap(g => [g.core, ...g.variations]);
   function gripSVG(pattern, at, fingers){
     const frets = pattern.split('-').map(f => f === 'x' ? null : Number(f) + at);
     const hand = (fingers || '').split('-');
@@ -255,14 +265,24 @@
     const parts = [];
     for (let s = 0; s < 6; s++) parts.push(`<line x1="${x0 + s * sx}" y1="${y0}" x2="${x0 + s * sx}" y2="${y0 + n * sy}" stroke="#6f675b" stroke-width="1"/>`);
     for (let f = 0; f <= n; f++) parts.push(`<line x1="${x0}" y1="${y0 + f * sy}" x2="${x0 + 5 * sx}" y2="${y0 + f * sy}" stroke="${f === 0 && start === 0 ? '#ece7dc' : '#3a3631'}" stroke-width="${f === 0 && start === 0 ? 3 : 1}"/>`);
+    // the first row of the grid is fret 1 from the nut, or the fret the
+    // diagram starts at; only an open string sits above the chart
+    const rowY = f => y0 + ((start === 0 ? f : f - start + 1) - 0.5) * sy;
+    // one finger across neighbouring strings at one fret is a barre: a bar
+    // behind the dots
+    for (let a = 0; a < 6; a++){
+      const finger = hand[a];
+      if (!finger || finger === '0' || finger === 'x' || finger === 'T' || !frets[a]) continue;
+      let b = a;
+      while (b + 1 < 6 && hand[b + 1] === finger && frets[b + 1] === frets[a]) b++;
+      if (b > a) parts.push(`<rect x="${x0 + a * sx - 7}" y="${rowY(frets[a]) - 7}" width="${(b - a) * sx + 14}" height="14" rx="7" fill="#e0a84a" opacity=".55"/>`);
+      a = b;
+    }
     frets.forEach((f, s) => {
       const x = x0 + s * sx;
       if (f == null){ parts.push(`<text x="${x}" y="${y0 - 8}" text-anchor="middle" fill="#6f675b" font-size="11">x</text>`); return; }
       if (f === 0){ parts.push(`<circle cx="${x}" cy="${y0 - 10}" r="4" fill="none" stroke="#a49a8a" stroke-width="1.3"/>`); return; }
-      // the first row of the grid is fret 1 from the nut, or the fret the
-      // diagram starts at; only an open string sits above the chart
-      const row = start === 0 ? f : f - start + 1;
-      const cy = y0 + (row - 0.5) * sy;
+      const cy = rowY(f);
       parts.push(`<circle cx="${x}" cy="${cy}" r="7" fill="#e0a84a"/>`);
       const finger = hand[s];
       if (finger && finger !== '0' && finger !== 'x') parts.push(`<text x="${x}" y="${cy + 3.4}" text-anchor="middle" fill="#0c0b0a" font-size="9.5" font-weight="700" font-family="Inter,system-ui,sans-serif">${finger}</text>`);
@@ -270,12 +290,17 @@
     if (start > 0) parts.push(`<text x="${x0 - 8}" y="${y0 + sy * 0.5 + 4}" text-anchor="end" fill="#a49a8a" font-size="11">${start}</text>`);
     return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img">${parts.join('')}</svg>`;
   }
-  function renderGrips(){
-    $('grips').innerHTML = GRIPS.map(g => `
-      <div class="grip">${gripSVG(g.pattern, g.at, g.fingers)}
+  const gripCard = (g, cls = 'grip') => `
+      <div class="${cls}">${gripSVG(g.pattern, g.at, g.fingers)}
         <div class="name">${esc(g.name)}</div>
         <div class="what">${esc(g.what)}</div>
-        <a href="${finderLink(g.chord)}">${esc(g.chord)} in the finder →</a></div>`).join('');
+        <a href="${finderLink(g.chord)}">${esc(g.chord)} in the finder →</a></div>`;
+  function renderGrips(){
+    $('grips').innerHTML = GRIP_GROUPS.map(({ core, variations }) => `
+      <div class="grip-group${variations.length ? ' has-vars' : ''}">
+        <div class="grip-core"><p class="grip-kicker">Core shape</p>${gripCard(core)}</div>
+        ${variations.length ? `<div class="grip-vars"><p class="grip-kicker">Variations — the same hand, one finger moved</p><div class="grips">${variations.map(v => gripCard(v, 'grip var')).join('')}</div></div>` : ''}
+      </div>`).join('');
   }
 
   // ---- the scales, drawn ----
@@ -310,15 +335,18 @@
       'The 2nd, the 3rd and the 6th instead of the ♭3 and the ♭7: the scale of the double stops and hammer-ons between the chords on "Wait Until Tomorrow", and of the Mayfield ballads. The 2nd bends to the 3rd here, where the minor box bends the 4th to the 5th.'));
     const bMin = boxAt(pentaBoxPlacements(B, true), 'E', 7), bMaj = boxAt(pentaBoxPlacements(B, false), 'E', 7);
     const minSet = pcs(B, PENTA_MINOR), majSet = pcs(B, PENTA_MAJOR);
+    // both boxes are the E shape, so both are blue elsewhere on the page;
+    // here the major side is drawn light, only to tell the two apart
+    const LIGHT = '#d8d1c4';
     const mixed = new Map();
     [...bMin.cells, ...bMaj.cells].forEach(c => {
       const pc = pcOf(c), inMin = minSet.has(pc), inMaj = majSet.has(pc);
       mixed.set(cellKey(c), { string: c.string, fret: c.fret, label: DEG[(pc - B + 12) % 12], isRoot: pc === B,
-        ...(inMin && inMaj ? { split: [CAGED_COLORS.E, CAGED_COLORS.A] } : { color: inMin ? CAGED_COLORS.E : CAGED_COLORS.A }) });
+        ...(inMin && inMaj ? { split: [CAGED_COLORS.E, LIGHT] } : { color: inMin ? CAGED_COLORS.E : LIGHT }) });
     });
     figs.push(figure('B: the minor and the major pentatonic at the 7th fret, mixed', 5, 11,
       [...mixed.values()],
-      'Blue is the minor pentatonic (B D E F♯ A), orange the major (B C♯ D♯ F♯ G♯), split where they share a note. The slow blues layers both over B7: the ♭3 bent up towards the 3rd, the 6th and the 9th from the major side, the 4th and ♭7 from the minor — "the B7 chord voicing, B minor pentatonic, and B major pentatonic" of "Red House".'));
+      'Blue is the minor pentatonic (B D E F♯ A), light the major (B C♯ D♯ F♯ G♯), split where they share a note. Both are the E shape — blue everywhere else on this page; the major side is drawn light here only so the two can be told apart. The slow blues layers both over B7: the ♭3 bent up towards the 3rd, the 6th and the 9th from the major side, the 4th and ♭7 from the minor — "the B7 chord voicing, B minor pentatonic, and B major pentatonic" of "Red House".'));
     const mixo = scaleBoxPlacements(G, false, pcs(G, MIXO));
     figs.push(figure('G Mixolydian at the nut, over G–D–F–C', 0, 5,
       boxMarkers(boxAt(mixo, 'G', 0), G, pcs(G, [0, 4, 7, 10])),
@@ -710,7 +738,15 @@
     renderSongs();
     renderSources();
   }
-  document.addEventListener('keydown', e => { if (e.code === 'Space' && !/input|select|textarea/i.test(e.target.tagName)){ e.preventDefault(); if (playing()) stop(); } });
+  // the space bar: in the full-window view it plays and stops that example;
+  // on the page it stops whatever is playing
+  document.addEventListener('keydown', e => {
+    if (e.code !== 'Space' || e.repeat || /input|select|textarea/i.test(e.target.tagName)) return;
+    e.preventDefault();
+    const bigPlay = big.open && big.querySelector('article.ex .play');
+    if (bigPlay) bigPlay.click();
+    else if (playing()) stop();
+  });
   render();
   renderToc();
   // the tab is built to the width; redrawn when that changes, and not on a

@@ -9,6 +9,14 @@
   GT.reverseFinder.init();
   GT.earTraining.init();
   GT.drills.init();
+  // the site's name is the way home: the jam tab as a fresh page opens it,
+  // whatever was on it
+  const home = document.getElementById('siteHome');
+  if (home) home.addEventListener('click', e => {
+    e.preventDefault();
+    GT.tabs.goTo('caged');
+    GT.jam.reset();
+  });
   GT.tabs.init({
     // whichever tab you're leaving, don't let it keep playing
     onSwitch: () => { GT.jam.stop(); GT.earTraining.stop(); GT.drills.stop(); },

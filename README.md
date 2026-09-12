@@ -26,6 +26,10 @@ A single-page, dependency-free site with six tabs under one header:
   studies, how the page was made, and its sources — every example playable
   and a link away from the Jam tab.
 
+The site's name in the header is the way home: it opens the jam tab as a
+fresh page does, a preset showing, the default feel and tempo, no part,
+no loop, whatever had been done to it.
+
 Switching tabs stops any playback that was running. Each tab has its own URL
 fragment (`#chord-finder`, `#reverse-chord-finder`), so a tab can be
 bookmarked or linked to, and back/forward move between them; the page title
@@ -810,8 +814,10 @@ with a click style: the hat on every beat, the first heavier, and the
 chord under it once a bar when asked); the neck is `neck.js` through
 `js/neck-follow.js`, the chord's grip or the scale's notes in the position
 with each note lit as it sounds, beside the tab on a wide screen — and
-**Expand** opens the drill full-window, the tab drawn to the window's width
-and the neck beside it, the way the Hendrix examples do. The
+**Expand** (or ⌘E / Ctrl-E) opens the drill full-window, the tab drawn to
+the window's width and the neck beside it, with a tempo control of its
+own, the way the Hendrix examples do. A pattern a page sends carries its
+grid, so a 12/8 part's changes drill in 12/8. The
 state rides in the fragment (`#drills?d=scale&k=major:E&sc=blues&b=E@12…`)
 and a link restores every field, the ones it leaves out to their defaults.
 The Hendrix deep dive's scale drills and chord changes open here; its
@@ -924,7 +930,10 @@ Jam tab's preset list has the changes his songs run on; and one part
 chord is a fourth below the last) says `needs` and opens only with that
 preset. `hendrix.html` and `js/hendrix-guide.js` are the deep dive under
 the **Style Deep Dives** tab: the grips drawn with their fingering (T for
-the thumb over the neck) and linked to the finder, the common changes
+the thumb over the neck, a bar where one finger lies across strings),
+grouped under their core shapes — the thumb-over E shape with the split
+chord and the hammered 4th, 6th and 9th as its variations, the 7♯9 with
+the 9th chord — and linked to the finder, the common changes
 played with them, the scales drawn on the neck (the box under the thumb
 chord, the box above it, the blue note, the minor pentatonic against the
 7♯9, Dorian, the major pentatonic, the two pentatonics mixed, Mixolydian)
@@ -1533,7 +1542,8 @@ by what each part does:
 | `neck.js` | Draws a full 15-fret neck as SVG from markers and shape outlines — shared by the jam fretboard, the chord finder's CAGED overview and the reverse finder, so all three necks are one drawing. A fret is close to twice as wide as the gap between two strings, near enough the shape of the real thing to read a grip off, and a note sits close up behind its fret wire where the finger goes rather than in the middle of the gap; the inlays and the fret numbers stay centred, since that's where they are on a guitar. The label and the dot are sized against each other: a single character is set as large as the dot will hold without running into a root's ring, and a longer one ("♭3") a size down so it fits — which is what lets the dots be small enough for the strings to sit that close together. A full neck is wide, so it wants most of a laptop's width — hence the wider cap on how large the drawing may render. |
 | `progressions.js` | The preset progressions, written as scale degrees. Pure data. |
 | `tab.js` | Draws guitar tablature from a note list: the strings, the numbers, the techniques, the bar numbers, and the rhythm under each row (stems, flags, beams within the beat, dots, hollow heads) from each strike's slot length on either grid. |
-| `css/tab.css` | The tab's look, one sheet for the three pages that draw it (jam, parts, review): a 17px string gap, 11px bold numbers, thin strings, the rhythm's stems and beams. Each page keeps only its own playing colour and playhead. |
+| `css/tab.css` | The tab's look, one sheet for the pages that draw it (jam, drills, parts, review, the deep dives): a 17px string gap, 11px bold numbers, thin strings, the rhythm's stems and beams, and the pane a long tab scrolls in. Each page keeps only its own playing colour and playhead. |
+| `tab-pane.js` | A long tab in a pane: more than two rows scrolls, showing as many rows as were last asked for (kept in localStorage, one setting for every page), with a control beside its bottom corner for more or fewer — in a gutter, so nothing sits between the tab and the neck — and the row being played kept in view. Used by the jam tab, the drills and the example player. |
 | `parts-guide-data.js` | What the parts page says about each style and part: progression, tempo, what the rhythm and notes are made of, where the idiom comes from. Pure data. |
 | `parts-guide.js` | The parts page (`parts.html`): every part written out and playable, in any reading. |
 | `example-player.js` | The player the parts page and the deep dives share: draws a realised part as tab and loops it over the style's band, the tab following and, where the card has a neck, its dots lit as the notes sound; tells the page when the playhead enters a bar (`onBar`) and when the loop stops. |

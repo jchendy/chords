@@ -1549,6 +1549,28 @@
     togglePlay();
   });
 
+  // ---- the tab as a fresh page opens it ------------------------------------
+  // A key at random, the first preset its mode offers, and everything else
+  // at its default: the feel, the tempo, the voice, the neck, no part, no
+  // loop. What init does when no link brought a progression, and what the
+  // site's name in the header does when pressed.
+  const DEFAULT_TEMPO = 120;
+  function startFresh(){
+    stopPlayback();
+    const mode = Math.random() < 0.5 ? 'major' : 'minor';
+    const tonic = pick(Object.keys(mode === 'major' ? MAJOR_KEYS : MINOR_KEYS));
+    setKey(mode, tonic);
+    const first = GT.progressionPresets.findIndex(fitsMode);
+    const p = new URLSearchParams();
+    p.set('k', `${mode}:${tonic}`);
+    p.set('t', String(DEFAULT_TEMPO));
+    if (first >= 0) p.set('pr', `${GT.progressionPresets[first].name}|`);
+    // through the link reader, so every field it knows lands at its default
+    if (!applyShareState(p)) render();       // no preset for this mode: roll one
+    setFeel(`${DEFAULT_FEEL.style}.${STYLES[DEFAULT_FEEL.style].variants.findIndex(v => v.label === DEFAULT_FEEL.variant)}`);
+  }
+  function reset(){ startFresh(); writeShareState(); }
+
   // ---- sharing a progression by link ---------------------------------------
   // The state rides in the URL fragment after the tab name:
   //   #jam?k=major:C&c=0.2.maj7,3.1,4.1.7&t=90&s=blues.0
@@ -1942,10 +1964,9 @@
     partTabEl.innerHTML = `<svg viewBox="${built.viewBox}" width="${built.width}" height="${built.height}"`
       + ` role="img" aria-label="${partNow().name}, written out">${built.markup}</svg>`;
     partTabEl.classList.toggle('wrapped', wide);
-    const paged = wide && built.metrics.rows > 2;
-    partTabEl.style.height = paged ? `${2 * built.metrics.rowSpan}px` : '';
-    // room under the last row, so it too can sit on top when its turn comes
-    if (paged) partTabEl.insertAdjacentHTML('beforeend', `<div class="part-tab-end" style="height:${built.metrics.rowSpan}px"></div>`);
+    // a wrapped tab of more than two rows scrolls in a pane of as many rows
+    // as were last asked for (js/tab-pane.js), the same on every page
+    GT.tabPane.apply(partTabEl, wide ? built.metrics : null);
     partTabEl.dataset.drawnAt = avail;
     partTabEl.scrollLeft = 0;
     partTabEl.scrollTop = 0;
@@ -2029,10 +2050,9 @@
     partTabEl.querySelectorAll('.tab-chord').forEach(el => el.classList.toggle('now', Number(el.dataset.bar) === arrival));
     const scale = partTabEl.querySelector('svg').getBoundingClientRect().width / partTab.width;
     if (partTabEl.classList.contains('wrapped')){
-      // the row being played on top, the row after it in view below — what
-      // is coming is what you need to see; what has gone, you played
-      const row = Math.floor(barIdx / partTab.barsPerRow);
-      partTabEl.scrollTo({ top: row * partTab.rowSpan * scale, behavior: 'smooth' });
+      // the row being played kept in view (the pane scrolls only when it
+      // has to, so the rows you asked to see stay put)
+      GT.tabPane.follow(partTabEl, partTab, barIdx * grid);
     } else {
       const barStart = GT.tab.playheadPos(barIdx * grid, partTab).x;
       partTabEl.scrollTo({ left: Math.max(0, barStart * scale - 24), behavior: 'smooth' });
@@ -2305,6 +2325,7 @@
   chordText.addEventListener('input', () => say(''));
 
   GT.jam = {
+    reset,
     // leaving the tab shouldn't leave a progression playing behind you
     stop(){ if (isPlaying) togglePlay(); },
     loadProgression,
@@ -2346,17 +2367,7 @@
       // recognisable rather than a random roll — the first preset the key's
       // own mode offers, with the picker showing which one it is. The dice
       // are right there for a random one.
-      if (!applyShareState(GT.tabs.stateParams())){
-        const mode = Math.random() < 0.5 ? 'major' : 'minor';
-        setKey(mode, pick(Object.keys(mode === 'major' ? MAJOR_KEYS : MINOR_KEYS)));
-        const first = GT.progressionPresets.findIndex(fitsMode);
-        if (first === -1) render();          // no preset for this mode: roll one
-        else {
-          loadPreset(first);
-          buildPresetSelect();               // ...and show which one it is
-          presetSelect.value = String(first);
-        }
-      }
+      if (!applyShareState(GT.tabs.stateParams())) startFresh();
       // The address bar should describe the page from the moment it settles,
       // not from the first time something is touched. It's written after the
       // header has wired the tabs up, since only the tab on show may write.

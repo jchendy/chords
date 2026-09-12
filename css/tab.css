@@ -22,3 +22,15 @@
 .tab-flag{ fill:none; stroke:var(--ink); stroke-width:1.3; stroke-linecap:round; }
 .tab-dot{ fill:var(--ink); }
 .tab-head{ fill:none; stroke:var(--ink); stroke-width:1.2; }
+
+/* a long tab in a pane: as many rows as were last asked for, the rest by
+   scrolling, with a control to the right of its bottom corner — in a
+   gutter the wrapper leaves, so nothing sits between the tab and what is
+   under it (js/tab-pane.js) */
+.tab-pane-wrap{ position:relative; }
+.tab-pane-wrap.has-ctl{ padding-right:30px; }
+.tab-pane{ overflow-y:auto; overflow-x:auto; scroll-behavior:smooth; }
+.tab-pane-ctl{ position:absolute; right:0; bottom:0; display:flex; flex-direction:column; align-items:center; gap:2px; margin:0; font-size:10px; color:var(--muted2, #6f675b); font-variant-numeric:tabular-nums; }
+.tab-pane-ctl button{ width:22px; height:22px; padding:0; border:1px solid var(--line2, #3a3631); border-radius:999px; background:transparent; color:var(--ink, #ece7dc); font:600 13px/1 Inter,system-ui,sans-serif; cursor:pointer; }
+.tab-pane-ctl button:hover{ border-color:var(--a, #e0a84a); }
+.tab-pane-ctl button:disabled{ opacity:.3; cursor:default; }

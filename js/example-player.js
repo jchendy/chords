@@ -41,6 +41,8 @@
     };
     const built = GT.tab.build(example, Math.max(320, host.clientWidth || 800));
     host.innerHTML = `<svg viewBox="${built.viewBox}" width="${built.width}" height="${built.height}" role="img">${built.markup}</svg>`;
+    // a long tab scrolls in a pane of as many rows as were last asked for
+    if (GT.tabPane) GT.tabPane.apply(host, built.metrics);
     return built.metrics;
   }
 
@@ -146,6 +148,7 @@
       const pos = GT.tab.playheadPos(at, metrics);
       head.removeAttribute('hidden');
       head.setAttribute('x', pos.x); head.setAttribute('y', pos.y);
+      if (GT.tabPane) GT.tabPane.follow(head.closest('.tab-pane'), metrics, at);
     }
     const live = log.filter(e => !e.head && e.time <= now && now < e.until);
     const sounding = new Set(live.map(e => e.slot));

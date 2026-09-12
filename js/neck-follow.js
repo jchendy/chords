@@ -69,7 +69,9 @@
       markers.push({ string: c.string, fret: c.fret, color, hollow: true, label: labelFor(pcOf(c) - rootPc, chord), isRoot: pcOf(c) === rootPc });
     });
     addPlayed(markers, played, chord, rootPc);
-    const lines = [{ color, shape: placement.name, cells: cells.map(c => ({ string: c.string, fret: c.fret })) }];
+    // the shape traced low string to high, whatever order the cells came in
+    const traced = cells.slice().sort((a, b) => b.string - a.string || a.fret - b.fret);
+    const lines = [{ color, shape: placement.name, cells: traced.map(c => ({ string: c.string, fret: c.fret })) }];
     const coloured = chord.seventh || chord.sus || (chord.ext && chord.ext.length);
     return { markers, lines, placement, what: `${displayName(chord)} — the ${placement.name} shape${coloured ? ', with its colour hollow' : ''}` };
   }

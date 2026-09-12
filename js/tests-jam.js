@@ -1041,6 +1041,35 @@
     t.equal(bad.join('; '), '', `A part that needs a progression (${found.feel}: ${want}) opens only with it, the excuse loads it, the link carries it`);
   }
 
+  // The site's name in the header is the way home: the tab as a fresh page
+  // opens it — a preset showing, the default feel and tempo, no part, no
+  // loop — whatever had been done to it.
+  function testResetToDefaults(t){
+    start();
+    const bad = [];
+    const { DEFAULT_FEEL, setLoop, loopState } = GT.jam;
+    GT.jam.loadProgression({ chords: ['A', 'D', 'E', 'A'], key: 'A' });
+    setTempo(77);
+    q('#styleGroup .genre-btn[data-value="blues.0"]').click();
+    GT.fretboardView.applyViewState('m:penta.p:position');
+    q('#chartViewGroup .seg-btn[data-value="part"]').click();
+    setLoop({ on: true, from: 1, to: 2 });
+    if (q('#presetSelect').value !== '') bad.push('(a typed progression still shows a preset, so this proves nothing)');
+    if (!GT.jam.partState().notes.length) bad.push('(the part could not be turned on, so this proves nothing)');
+    if (!loopState().on) bad.push('(the loop could not be set, so this proves nothing)');
+    GT.jam.reset();
+    if (q('#presetSelect').value === '') bad.push('no preset showing after a reset');
+    if (q('#tempo').value !== '120') bad.push(`the tempo is ${q('#tempo').value} after a reset`);
+    if (!q('#quickStyle').value.startsWith(`${DEFAULT_FEEL.style}.`)) bad.push(`the feel is ${q('#quickStyle').value} after a reset`);
+    if (GT.jam.partState().notes.length) bad.push('the part is still on after a reset');
+    if (loopState().on) bad.push('the loop is still on after a reset');
+    q('#shareBtn').click();                                      // the state, as the address would carry it
+    if (!/^#jam\?/.test(location.hash) || /[?&]p=/.test(location.hash) || /[?&]r=/.test(location.hash)) bad.push(`the address after a reset is ${location.hash}`);
+    q('#chartViewGroup .seg-btn[data-value="chart"]').click();
+    GT.fretboardView.applyViewState('');
+    t.equal(bad.join('; '), '', 'A reset opens the tab as a fresh page does: a preset, the default feel and tempo, no part, no loop');
+  }
+
   GT.jamSuites = [
     ['Jam: a shared link round-trips', testShareLinkRoundTrips],
     ['Jam: the styles are one list', testTheStyleListIsOneList],
@@ -1064,5 +1093,6 @@
     ['Jam: the band has a volume', testTheBandHasAVolume],
     ['Jam: a part that needs its progression', testAPartThatNeedsItsPreset],
     ['Jam: the old tab name still opens it', testTheOldTabNameStillOpensIt],
+    ['Jam: a reset is a fresh page', testResetToDefaults],
   ];
 })();

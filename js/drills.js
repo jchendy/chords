@@ -62,22 +62,27 @@
   // colour tone on top (a14), joined by commas
   const VOICING_LETTERS = { full: 'f', bass: 'b', fifth: '5', low: 'l', high: 'h', mid: 'm', power: 'p', shell: 's', ninth: '9', sharp9: '#' };
   const LETTER_VOICINGS = Object.fromEntries(Object.entries(VOICING_LETTERS).map(([k, v]) => [v, k]));
-  function encodeStrums(strums){
-    return strums.filter(w => w.strum).map(w => `${w.at}-${VOICING_LETTERS[w.voicing || 'full'] || 'f'}-${w.dur}-${Math.round((w.vel == null ? 0.8 : w.vel) * 10)}${w.mute ? 'x' : ''}${w.chordSlide ? 's' : ''}${w.next ? 'n' : ''}${w.stroke === 'up' ? 'u' : ''}${w.add ? 'a' + w.add : ''}`).join(',');
+  function encodeStrums(strums, grid = 16){
+    const body = strums.filter(w => w.strum).map(w => `${w.at}-${VOICING_LETTERS[w.voicing || 'full'] || 'f'}-${w.dur}-${Math.round((w.vel == null ? 0.8 : w.vel) * 10)}${w.mute ? 'x' : ''}${w.chordSlide ? 's' : ''}${w.next ? 'n' : ''}${w.stroke === 'up' ? 'u' : ''}${w.add ? 'a' + w.add : ''}`).join(',');
+    return body ? (grid === 16 ? body : `${grid}:${body}`) : '';
   }
+  // → { grid, strums }; a pattern on twelve or nine slots says so up front
   function decodeStrums(text){
     const out = [];
-    String(text || '').split(',').forEach(tok => {
-      const m = tok.match(/^(\d+)-([a-z0-9#])-(\d+)-(\d+)(x?)(s?)(n?)(u?)(?:a(\d+))?$/);
+    let grid = 16, body = String(text || '');
+    const g = body.match(/^(\d+):/);
+    if (g){ grid = [9, 12, 16].includes(Number(g[1])) ? Number(g[1]) : 16; body = body.slice(g[0].length); }
+    body.split(',').forEach(tok => {
+      const m = tok.match(/^(\d+(?:\.\d+)?)-([a-z0-9#])-(\d+(?:\.\d+)?)-(\d+)(x?)(s?)(n?)(u?)(?:a(\d+))?$/);
       if (!m) return;
       const w = { at: Number(m[1]), dur: Number(m[3]), vel: Math.min(1, Number(m[4]) / 10), strum: true, voicing: LETTER_VOICINGS[m[2]] || 'full', mute: !!m[5] };
       if (m[6]) w.chordSlide = 1;
       if (m[7]) w.next = true;
       if (m[8]) w.stroke = 'up';
       if (m[9]) w.add = Number(m[9]);
-      if (w.at >= 0 && w.at < 16 && w.dur > 0) out.push(w);
+      if (w.at >= 0 && w.at < grid && w.dur > 0) out.push(w);
     });
-    return out.sort((a, b) => a.at - b.at);
+    return { grid, strums: out.sort((a, b) => a.at - b.at) };
   }
   const STRING_SETS = { all: 'All six', low: 'Bottom four', high: 'Top four', mid: 'Middle four' };
   const POSITIONS = [0, 2, 3, 5, 7, 9, 12];
@@ -264,8 +269,9 @@
   // strings, a 7♯9 its own grip, a chord slid in from a fret below.
   function changesDrill(o){
     const chords = chordsOf(o);
-    const grid = 16, barsEach = Math.max(1, Math.round((o.beats || 4) / 4));
-    const strums = (o.custom && o.custom.length) ? o.custom : (STRUMS[o.strum] || STRUMS.quarters).strums;
+    const custom = o.custom && o.custom.strums && o.custom.strums.length ? o.custom : null;
+    const grid = custom ? custom.grid : 16, barsEach = Math.max(1, Math.round((o.beats || 4) / 4));
+    const strums = custom ? custom.strums : (STRUMS[o.strum] || STRUMS.quarters).strums;
     const part = { name: 'changes', figure: strums, variants: [], fills: [strums] };
     const bars = [];
     chords.forEach(chord => { for (let b = 0; b < barsEach; b++) bars.push({ chord }); });
@@ -282,7 +288,7 @@
     });
     const all = windowOf(notes.map(n => ({ string: n.string, fret: n.fret })));
     const names = bars.map(b => displayName(b.chord)).filter((n, i, a) => i === 0 || n !== a[i - 1]).join(' – ');
-    const how = o.custom && o.custom.length ? 'in the pattern the page sent' : (STRUMS[o.strum] ? STRUMS[o.strum].name.toLowerCase() : 'every beat');
+    const how = custom ? `in the pattern the page sent${grid === 12 ? ', in 12/8' : ''}` : (STRUMS[o.strum] ? STRUMS[o.strum].name.toLowerCase() : 'every beat');
     return { notes, chords: bars.map(b => b.chord), grips, window: { min: Math.min(win.min, all.min), max: Math.max(win.max, all.max) }, grid,
              neck: { mode: 'chords' },
              brief: `${names}, ${barsEach === 1 ? 'a bar' : barsEach + ' bars'} each, ${how}, the hand at fret ${o.position}. Land each change on the beat; the strum can be soft, the change can't be late.` };
@@ -340,7 +346,7 @@
       if (state.chords.trim()) p.set('ch', state.chords.trim().split(/[\s,|]+/).join(','));
       if (state.kind === 'changes'){
         if (state.beats !== 4) p.set('bt', String(state.beats));
-        if (state.custom && state.custom.length) p.set('pt', encodeStrums(state.custom));
+        if (state.custom) p.set('pt', encodeStrums(state.custom.strums, state.custom.grid));
         else if (state.strum !== 'quarters') p.set('st', state.strum);
       }
       if (state.position !== 5) p.set('pos', String(state.position));
@@ -368,7 +374,7 @@
     state.beats = num('bt', [4, 8, 16], 4);
     state.strum = one('st', Object.keys(STRUMS), 'quarters');
     state.custom = p.get('pt') ? decodeStrums(p.get('pt')) : null;
-    if (state.custom && !state.custom.length) state.custom = null;
+    if (state.custom && !state.custom.strums.length) state.custom = null;
     state.cross = one('cr', Object.keys(CROSSINGS), 'skip');
     state.strings = one('ss', Object.keys(STRING_SETS), 'all');
     state.perString = num('ps', [2, 3, 4, 6], 4);
@@ -406,7 +412,8 @@
     const seg = (id, value) => $(id).querySelectorAll('.seg-btn').forEach(b => b.classList.toggle('active', b.dataset.value === String(value)));
     seg('drillKindGroup', state.kind);
     $('drillKey').value = `${state.mode}:${state.tonic}`;
-    $('drillTempo').value = String(state.tempo); $('drillTempoOut').textContent = String(state.tempo);
+    ['drillTempo', 'drillTempo2'].forEach(id => { $(id).value = String(state.tempo); });
+    ['drillTempoOut', 'drillTempoOut2'].forEach(id => { $(id).textContent = String(state.tempo); });
     seg('drillDivGroup', state.div);
     $('drillScale').value = state.scale;
     seg('drillPatternGroup', state.pattern);
@@ -477,7 +484,7 @@
     cardHome = { parent: card.parentNode, next: card.nextSibling };
     expanded = true;
     big.appendChild(card);
-    $('drillExpand').hidden = true; $('drillClose').hidden = false;
+    $('drillExpand').hidden = true; $('drillClose').hidden = false; $('drillTempoBig').hidden = false;
     if (!big.open) big.showModal();
     redraw();
   }
@@ -486,7 +493,7 @@
     expanded = false;
     if (big && big.open) big.close();
     if (cardHome) cardHome.parent.insertBefore(card, cardHome.next);
-    $('drillExpand').hidden = false; $('drillClose').hidden = true;
+    $('drillExpand').hidden = false; $('drillClose').hidden = true; $('drillTempoBig').hidden = true;
     redraw();
   }
   function render(){
@@ -529,15 +536,27 @@
     // choosing a pattern of the tab's own lets go of the one the page sent
     $('drillStrum').addEventListener('change', () => { const v = $('drillStrum').value; if (v !== 'custom'){ state.strum = v; state.custom = null; } syncUI(); writeState(); render(); });
     $('drillChords').addEventListener('change', () => { state.chords = $('drillChords').value; writeState(); render(); });
-    $('drillTempo').addEventListener('input', () => { state.tempo = Number($('drillTempo').value); $('drillTempoOut').textContent = String(state.tempo); if (playingHere()) player().playing().tempo = state.tempo; });
-    $('drillTempo').addEventListener('change', writeState);
+    // two tempo sliders, one in the setup and one on the card for the
+    // full-window view, kept the same
+    ['drillTempo', 'drillTempo2'].forEach(id => {
+      $(id).addEventListener('input', () => {
+        state.tempo = Number($(id).value);
+        ['drillTempo', 'drillTempo2'].forEach(o => { if (o !== id) $(o).value = String(state.tempo); });
+        ['drillTempoOut', 'drillTempoOut2'].forEach(o => { $(o).textContent = String(state.tempo); });
+        if (playingHere()) player().playing().tempo = state.tempo;
+      });
+      $(id).addEventListener('change', writeState);
+    });
     $('drillComp').addEventListener('change', () => { state.comp = $('drillComp').checked; if (playingHere()) player().playing().hooks.comp = state.comp; writeState(); });
     $('drillNeckToggle').addEventListener('change', () => { state.neck = $('drillNeckToggle').checked; writeState(); drawNeck(playingHere() ? player().playing().shownBar || 0 : 0); });
     card.querySelector('.play').addEventListener('click', togglePlay);
     $('drillExpand').addEventListener('click', expand);
     $('drillClose').addEventListener('click', collapse);
     document.addEventListener('keydown', e => {
-      if (e.code !== 'Space' || e.repeat || $('page-drills').hidden || GT.keys.typing(e.target)) return;
+      if ($('page-drills').hidden || e.repeat) return;
+      // ⌘E / Ctrl-E: the drill large, and back
+      if ((e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && e.code === 'KeyE'){ e.preventDefault(); if (expanded) collapse(); else expand(); return; }
+      if (e.code !== 'Space' || GT.keys.typing(e.target)) return;
       e.preventDefault(); togglePlay();
     });
     $('drillShare').addEventListener('click', async () => {

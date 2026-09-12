@@ -68,6 +68,16 @@
   .wide{ overflow-x:auto; }
   /* the grips, drawn */
   .grips{ display:grid; grid-template-columns:repeat(auto-fill, minmax(190px, 1fr)); gap:12px; margin:10px 0 16px; }
+  /* the grips grouped: a core shape, its variations beside it */
+  #grips{ display:block; }
+  .grip-group{ margin:0 0 14px; padding:12px 14px; border:1px solid var(--line2); border-radius:12px; background:var(--panel2); }
+  .grip-group.has-vars{ display:grid; grid-template-columns:200px minmax(0, 1fr); gap:16px; align-items:start; }
+  .grip-group:not(.has-vars) .grip-core{ display:grid; grid-template-columns:200px minmax(0, 1fr); gap:0 16px; }
+  .grip-group:not(.has-vars) .grip-core .grip{ grid-row:2; }
+  .grip-kicker{ font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted2); margin:0 0 6px; }
+  .grip-vars .grips{ margin:0; grid-template-columns:repeat(auto-fill, minmax(170px, 1fr)); }
+  .grip.var{ background:var(--panel); border-style:dashed; }
+  @media (max-width:640px){ .grip-group.has-vars, .grip-group:not(.has-vars) .grip-core{ grid-template-columns:1fr; } }
   .grip{ border:1px solid var(--line); border-radius:10px; background:var(--panel); padding:10px 12px 8px; }
   .grip svg{ display:block; width:100%; height:auto; }
   .grip .name{ font-weight:600; margin:4px 0 2px; }
@@ -179,7 +189,7 @@
     <p>Almost everything in the rhythm style follows from one grip. Instead of a first-finger barre, the thumb comes over the top of the neck and frets the root on the low E string; the first finger is then free, and so are the others.<sup class="c"><a href="#src-thumb">[12]</a> <a href="#src-gp-five">[6b]</a></sup> With the bass note under the thumb, the hand strikes the D, G and B strings on their own — the triad inside the E shape, the "split chord" — and the spare fingers hammer onto the shape: the 4th onto the 3rd on the G string (a sus4), the 6th onto the 5th on the B string, the 9th onto the octave on the top string.<sup class="c"><a href="#src-happy">[8]</a> <a href="#src-blackstar">[9]</a></sup> Mermikides notes the choice of exactly those three colours — 4th, 6th, 9th on a major triad; 7th, 9th, 11th on a minor — is not arbitrary: they add colour without a leading-tone pull, "grounded" extensions that keep the chord where it was.<sup class="c"><a href="#src-gresham">[1]</a></sup></p>
     <p>The same hand converts every barre shape: the E-shape major and minor, the A-shape and C-shape majors with the 3rd often in the bass, the minor-7 shapes with the root on the 5th string, the add9.<sup class="c"><a href="#src-pg-rhythms">[7b]</a></sup> The Pickup Music course goes shape by shape through the CAGED system and pairs each with the records: the E shape and the thumb with "Little Wing" and "Bold as Love", the A shape and the slides that connect two shapes with "Wait Until Tomorrow" and "Castles Made of Sand", the G shape's double stops with "The Wind Cries Mary", the C shape's major-7 colours with "Castles" and "Angel".<sup class="c"><a href="#src-pickup">[11]</a></sup></p>
     <h3>The grips</h3>
-    <p>Every one of these is in the <a href="index.html#chord-finder">Chord finder</a>, tagged <b>Hendrix</b> with the name given here. The fingering is in the dots — <b>T</b> is the thumb over the top of the neck — and the number beside a diagram is the fret it starts at for the chord named; a shape with no number sits at the nut, where a ring above a string is an open string and an <b>x</b> a string left out.</p>
+    <p>Most of these are one hand. The thumb-over E shape is the core; the split chord, the hammered 4th, the 6th and the 9th are that hand with one finger moved, so they sit under it as variations, and the 9th chord under the 7♯9 the same way. Every one is in the <a href="index.html#chord-finder">Chord finder</a>, tagged <b>Hendrix</b> with the name given here. The fingering is in the dots — <b>T</b> is the thumb over the top of the neck — and the number beside a diagram is the fret it starts at for the chord named; a shape with no number sits at the nut, where a ring above a string is an open string and an <b>x</b> a string left out.</p>
     <div class="grips" id="grips"></div>
     <h3>The changes, with the grips</h3>
     <p>The common changes his songs run on, played with these grips: the chords alone — whole and partial, the thumb's bass note and the split chord, the stabs and the 9ths — with no fills or runs, so the hand can learn the changes before the lines between them. <b>Open in drills</b> puts the same changes on the Drills tab with the part's own strumming pattern — the thumb's bass note and the split chord, the stabs — at any tempo, and any other pattern a click away. <b>Neck</b> on any card draws the chord as it's fretted, or the scale under the hand, and lights each note as it sounds — the way the Jam tab's neck follows a part.</p>
@@ -276,6 +286,7 @@
 <script src="js/tab.js"></script>
 <script src="js/audio.js"></script>
 <script src="js/band.js"></script>
+<script src="js/tab-pane.js"></script>
 <script src="js/example-player.js"></script>
 <script src="js/neck-follow.js"></script>
 <script src="js/drills.js"></script>

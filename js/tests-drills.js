@@ -28,6 +28,7 @@
   add('select', 'drillKey');
   add('input', 'drillTempo', { type: 'range', min: '40', max: '208', value: '80' });
   add('b', 'drillTempoOut');
+  add('span', 'drillTempoBig', { hidden: true }); add('input', 'drillTempo2', { type: 'range', min: '40', max: '208', value: '80' }); add('b', 'drillTempoOut2');
   seg('drillDivGroup', [1, 2, 3, 4], 2);
   add('div', 'drillChordsRow'); add('input', 'drillChords', { type: 'text' });
   add('span', 'drillBeatsField'); add('select', 'drillBeats').innerHTML = '<option value="4">4</option><option value="8">8</option><option value="16">16</option>';
@@ -159,8 +160,15 @@
     const { encodeStrums, decodeStrums } = GT.drills;
     const sent = 'fake';
     const custom = decodeStrums('0-b-2-9,2-m-2-8,8-b-2-9,10-m-2-8x');
-    if (custom.length !== 4 || custom[1].voicing !== 'mid' || !custom[3].mute) bad.push(`a pattern did not decode (${JSON.stringify(custom)})`);
-    if (encodeStrums(custom) !== '0-b-2-9,2-m-2-8,8-b-2-9,10-m-2-8x') bad.push(`a pattern did not encode back (${encodeStrums(custom)})`);
+    if (custom.grid !== 16 || custom.strums.length !== 4 || custom.strums[1].voicing !== 'mid' || !custom.strums[3].mute) bad.push(`a pattern did not decode (${JSON.stringify(custom)})`);
+    if (encodeStrums(custom.strums) !== '0-b-2-9,2-m-2-8,8-b-2-9,10-m-2-8x') bad.push(`a pattern did not encode back (${encodeStrums(custom.strums)})`);
+    // a pattern on twelve slots keeps its grid, and the drill plays in 12/8
+    const twelve = decodeStrums('12:0-9-2.5-9s,2-f-0.8-5x,6-9-3-9');
+    if (twelve.grid !== 12 || twelve.strums.length !== 3 || !twelve.strums[0].chordSlide || twelve.strums[0].dur !== 2.5) bad.push(`a twelve-slot pattern did not decode (${JSON.stringify(twelve)})`);
+    if (encodeStrums(twelve.strums, 12) !== '12:0-9-2.5-9s,2-f-0.8-5x,6-9-3-9') bad.push(`a twelve-slot pattern did not encode back (${encodeStrums(twelve.strums, 12)})`);
+    const blues = realiseDrill({ ...o, kind: 'changes', chords: 'B7 E9', custom: twelve, position: 2 });
+    if (!blues || blues.grid !== 12 || blues.notes.some(n => n.at >= 12)) bad.push('a twelve-slot pattern did not put the drill on a twelve grid');
+    if (!blues || !blues.notes.some(n => n.bar === 0 && n.at === 0)) bad.push('the 12/8 drill has no strike on one');
     const thumb = realiseDrill({ ...o, kind: 'changes', chords: 'Em', custom, position: 0 });
     const bassNote = thumb.notes.filter(n => n.bar === 0 && n.at === 0), split = thumb.notes.filter(n => n.bar === 0 && n.at === 2);
     if (bassNote.length !== 1 || bassNote[0].string < 3 || bassNote[0].midi % 12 !== 4) bad.push(`the thumb's bass note came out as ${bassNote.map(n => n.string + ':' + n.fret).join(' ')}`);
@@ -226,15 +234,50 @@
     const dlg = q('#drillCard').closest('dialog');
     if (!dlg || !dlg.open || !GT.drills.isExpanded()) bad.push('expand did not open the drill in a dialog');
     if (!q('#drillExpand').hidden || q('#drillClose').hidden) bad.push('the buttons did not swap on expand');
+    // ...with a tempo control of its own, kept the same as the setup's
+    if (q('#drillTempoBig').hidden) bad.push('the full-window view has no tempo control');
+    q('#drillTempo2').value = '132'; q('#drillTempo2').dispatchEvent(new Event('input'));
+    if (state.tempo !== 132 || q('#drillTempo').value !== '132' || q('#drillTempoOut').textContent !== '132') bad.push('the full-window tempo did not carry over');
     q('#drillClose').click();
     if (q('#drillCard').parentNode !== home || GT.drills.isExpanded() || (dlg && dlg.open)) bad.push('close did not bring the card back');
+    if (!q('#drillTempoBig').hidden) bad.push('the full-window tempo control stayed after closing');
     if (!q('#drillTab svg')) bad.push('the tab was not redrawn after closing');
     // a link with nothing of ours is left alone
     if (applyState(new URLSearchParams('c=Bb13'))) bad.push('a stranger\'s link was taken as ours');
     t.equal(bad.join('; '), '', 'The drills page draws on init, shows each kind\'s rows, keeps one shape on, and its link round-trips');
   }
 
+  // A tab of more than two rows scrolls in a pane of as many rows as were
+  // last asked for, the setting kept across pages
+  function testALongTabInAPane(t){
+    const { apply, rows, set, DEFAULT } = GT.tabPane;
+    const bad = [];
+    const keep = rows();
+    set(DEFAULT);
+    const host = document.createElement('div');
+    root.appendChild(host);
+    host.innerHTML = '<svg viewBox="0 0 400 400"></svg>';
+    const metrics = { rows: 4, rowSpan: 100, height: 400, barsPerRow: 2, grid: 16 };
+    apply(host, metrics);
+    const ctl = () => host.nextElementSibling;
+    if (!host.classList.contains('tab-pane') || host.style.maxHeight !== '202px') bad.push(`four rows did not make a two-row pane (${host.style.maxHeight})`);
+    if (!ctl() || !/2\/4/.test(ctl().textContent)) bad.push('no control beside the pane');
+    if (!host.parentNode.classList.contains('tab-pane-wrap') || !host.parentNode.classList.contains('has-ctl')) bad.push('the pane has no gutter for its control');
+    ctl().querySelector('.tab-rows-more').click();
+    if (rows() !== 3 || host.style.maxHeight !== '302px' || !/3\/4/.test(ctl().textContent)) bad.push(`asking for more did not give a third row (${rows()}, ${host.style.maxHeight})`);
+    let stored = null;
+    try { stored = localStorage.getItem('gt.tabRows'); } catch (e) { stored = 'no storage'; }
+    if (stored !== '3' && stored !== 'no storage') bad.push(`the rows were not kept (${stored})`);
+    // a short tab is left alone, and the control goes
+    apply(host, { rows: 2, rowSpan: 100, height: 200, barsPerRow: 2, grid: 16 });
+    if (host.classList.contains('tab-pane') || host.style.maxHeight || (ctl() && ctl().classList.contains('tab-pane-ctl')) || host.parentNode.classList.contains('has-ctl')) bad.push('a two-row tab got a pane');
+    set(keep);
+    host.parentNode.remove();
+    t.equal(bad.join('; '), '', 'A tab of more than two rows scrolls in a pane, more or fewer rows by its control, the choice kept');
+  }
+
   GT.drillsSuites = [
+    ['Drills: a long tab in a pane', testALongTabInAPane],
     ['Drills: a scale drill', testAScaleDrill],
     ['Drills: picking and string crossing', testPickingAndCrossing],
     ['Drills: chord changes and arpeggios', testChangesAndArpeggios],
