@@ -344,8 +344,8 @@ already fits and the bar has no space to spare. The style picker chooses the
   a chord sitting behind is the shape you get when you switch to it: both come
   from one list of that chord's shapes and one function picking from it, in
   every view, rather than from two pieces of code that have to agree. Colour there means which
-  chord a note belongs to, so the legend reads the same way: one entry per chord with its name, numeral, the CAGED shape
-  it's sitting in and the frets it spans, each spotlighting its chord when you
+  chord a note belongs to, so the legend reads the same way: one entry per chord with its name, numeral and the CAGED shape
+  it's sitting in (the frets it spans as its tooltip), each spotlighting its chord when you
   hover it, and the chord in front marked. Over all positions only one chord is
   drawn, so colour is free to say which of its five shapes a note is in
   instead, and the interval colouring stays available there.
@@ -432,10 +432,12 @@ already fits and the bar has no space to spare. The style picker chooses the
   shape outlines stay shape-coloured either way; colouring by interval has
   nothing to add to Roots (already coloured by root) or the position reading
   (coloured by chord), so the control is hidden there
-- The legend says where each shape sits — "C shape 6–10" — and, for a shape
-  that appears twice on a 15-fret neck, both places ("D shape 0–2 · 12–14").
-  Only shapes actually on screen get an entry, so a single box or a zoomed
-  stretch of neck leaves the others out
+- The legend names the shapes and nothing more: where each sits is its
+  tooltip ("frets 6–10", and both places for a shape that appears twice on a
+  15-fret neck, "frets 0–2 · 12–14") rather than a row of numbers beside the
+  names, and the ringed root and the faded passing note explain themselves
+  on the neck, so neither gets an entry. Only shapes actually on screen get
+  an entry, so a single box or a zoomed stretch of neck leaves the others out
 - In the CAGED views, hover/tap a shape name in the legend to spotlight that
   shape; "Follow playback" (on by default) lets the fretboard track whichever
   chord is currently sounding

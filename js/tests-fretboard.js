@@ -490,7 +490,8 @@
   // on, so nothing should be coloured by it or named after it. Pentatonic used
   // to hand notes at the nut to a D box anchored at -2, which put a run in the
   // legend — "D shape 0-1 · 9-13" — for a position you could not step to.
-  // Every run the legend draws should be a position you can reach: count them.
+  // Every run the legend knows (each entry carries its frets as a tooltip)
+  // should be a position you can reach: count them.
   function testEveryBoxNamedCanBeReached(t){
     loadProgression(['C', 'F', 'G']);
     const all = ['C', 'A', 'G', 'E', 'D'];
@@ -502,8 +503,8 @@
       // three-shape stepper and calling the difference a bug.
       setView('neck');
       setShapes(all);
-      const runs = [...q('#cagedLegend').querySelectorAll('.range')]
-        .reduce((n, el) => n + el.textContent.split('·').length, 0);
+      const runs = [...q('#cagedLegend').querySelectorAll('[data-shape][title]')]
+        .reduce((n, el) => n + el.title.split('·').length, 0);
       // walk the stepper right round and collect the distinct windows it lands on
       setView('position');
       setShapes(all);

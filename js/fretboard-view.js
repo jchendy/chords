@@ -1282,22 +1282,23 @@
         .map(r => `<span><i style="background:${r.color}"></i>${r.name}<em>${r.num}</em></span>`).join('');
       return;
     }
-    // each entry says where on the neck that shape sits, so you can find it
-    // without hunting for the colour
+    // where on the neck each shape sits — as the entry's tooltip, not in
+    // words beside it: the colour on the neck already says where, and a row
+    // of fret numbers under the neck read as more to take in than they gave
     const range = n => {
       const runs = shapeRanges[n];
       if (!runs || !runs.length) return '';
-      return `<em class="range">${runs.map(r => `${r.min}–${r.max}`).join(' · ')}</em>`;
+      return ` title="frets ${runs.map(r => `${r.min}–${r.max}`).join(' · ')}"`;
     };
     // Chords in one position is Progression's picture, so it gets
     // Progression's legend: one entry per chord, named, numbered, tagged with
     // the CAGED shape it's sitting in, and spotlightable by hovering it.
     if (inPosition && (fretMode === 'caged' || fretMode === 'triads3')){
       const entries = ghostLegendData.map(g =>
-        `<span data-shape="${g.tag}" tabindex="0" role="button" aria-label="Highlight ${g.name}"` +
+        `<span data-shape="${g.tag}" tabindex="0" role="button" aria-label="Highlight ${g.name}"${range(g.tag)}` +
         `${g.current ? ' class="legend-current"' : ''}>` +
         `<i style="background:${g.color}"></i>${g.name}<em>${g.numeral}</em>` +
-        `${g.shapeLetter ? `<small class="pos-shape-tag">${g.shapeLetter}</small>` : ''}${range(g.tag)}</span>`);
+        `${g.shapeLetter ? `<small class="pos-shape-tag">${g.shapeLetter}</small>` : ''}</span>`);
       cagedLegend.innerHTML = entries.join('');
       return;
     }
@@ -1317,7 +1318,7 @@
         return uniq.length ? `<small class="pos-shape-tag">${uniq.join(' ')}</small>` : '';
       };
       INVERSIONS.filter(i => drawn.has(i.tag)).forEach(i =>
-        parts.push(`<span data-shape="${i.tag}" tabindex="0" role="button" aria-label="Highlight ${i.label}"><i style="background:${i.color}"></i>${i.label}${lettersFor(i.tag)}${range(i.tag)}</span>`));
+        parts.push(`<span data-shape="${i.tag}" tabindex="0" role="button" aria-label="Highlight ${i.label}"${range(i.tag)}><i style="background:${i.color}"></i>${i.label}${lettersFor(i.tag)}</span>`));
     }
     if (colorBy === 'interval'){
       // the dots are coloured by what each note is in the chord, so that's
@@ -1335,20 +1336,17 @@
       const drawn = new Set([...fretboardSvg.querySelectorAll('.note-dot[data-shapes]')]
         .flatMap(g => g.getAttribute('data-shapes').split(',')));
       cagedShapesShown.filter(n => drawn.has(n)).forEach(n =>
-        parts.push(`<span data-shape="${n}" tabindex="0" role="button" aria-label="Highlight ${n} shape"><i style="background:${CAGED_COLORS[n]}"></i>${n} shape${range(n)}</span>`));
+        parts.push(`<span data-shape="${n}" tabindex="0" role="button" aria-label="Highlight ${n} shape"${range(n)}><i style="background:${CAGED_COLORS[n]}"></i>${n} shape</span>`));
     }
-    // colouring by interval, the swatches already name the root and the 7th —
-    // saying it twice reads as two different things
-    if (colorBy !== 'interval'){
-      parts.push(`<span><i class="ring"></i>root</span>`);
-      // Only the grips draw a 7th as a hollow dot; opened out, it's just
-      // another chord tone with its own label — and a plain triad has no 7th
-      // to explain either way.
-      if (fretMode === 'caged' && !wholeArpeggio && currentChord() && currentChord().seventh){
-        parts.push(`<span><i class="hollow"></i>7th</span>`);
-      }
+    // The ringed root and the faded passing note explain themselves on the
+    // neck — the ring is on the note that is named, the faint dot is faint —
+    // so the legend doesn't name them. Only the grips' hollow 7th gets an
+    // entry (colouring by interval, the swatch already names it): opened out
+    // it's just another chord tone with its own label, and a plain triad has
+    // no 7th to explain either way.
+    if (colorBy !== 'interval' && fretMode === 'caged' && !wholeArpeggio && currentChord() && currentChord().seventh){
+      parts.push(`<span><i class="hollow"></i>7th</span>`);
     }
-    if (fretMode === 'penta' || fretMode === 'scale') parts.push(`<span><i class="passing"></i>passing note</span>`);
     cagedLegend.innerHTML = parts.join('');
   }
 
