@@ -744,6 +744,9 @@
     q('#chordSlots .chord-row:not([hidden]) .bar-type-field').value = 'Bbm7';
     q('#chordSlots .chord-row:not([hidden]) .bar-type-set').click();
     if (rows().length !== 3) bad.push(`naming a held chord's second bar left ${rows().length} slots, not 3`);
+    // the editor stays on that bar, showing its row alone, not the whole song
+    const shownAfter = rows().filter(r => !r.hidden);
+    if (q('#barEditor').hidden || shownAfter.length !== 1 || shownAfter[0].dataset.chord !== '2') bad.push(`after a change the editor shows rows ${rows().filter(r => !r.hidden).map(r => r.dataset.chord).join(',')}`);
     if (bars()[barsNow - 1].querySelector('.chord-name').textContent !== 'Bbm7') bad.push(`the named bar reads ${bars()[barsNow - 1].querySelector('.chord-name').textContent}`);
     if (bars()[barsNow - 2].querySelector('.chord-name').textContent === 'Bbm7') bad.push('naming one bar renamed the bar before it');
     bars()[barsNow - 2].click();                                 // the held chord's remaining bar

@@ -553,6 +553,7 @@
 
       chordSlotsEl.appendChild(slot);
     }
+    if (editing) chordSlotsEl.querySelectorAll('.chord-row').forEach(row => { row.hidden = Number(row.dataset.chord) !== editing.chord; });
   }
 
   // ---- hearing one chord on its own ---------------------------------------
@@ -608,9 +609,14 @@
     if (!barEditor) return;
     const idx = Number(bar.dataset.chord);
     editing = { chord: idx, measure: Number(bar.dataset.bar) - barOffset(idx) };
+    showBarEditor(bar);
+  }
+  // the editor on a bar: that bar marked, that chord's row alone, the box under it
+  function showBarEditor(bar){
+    if (!barEditor || !editing) return;
     chordsRoot.querySelectorAll('.bar.editing').forEach(b => b.classList.remove('editing'));
     bar.classList.add('editing');
-    chordSlotsEl.querySelectorAll('.chord-row').forEach(row => { row.hidden = Number(row.dataset.chord) !== idx; });
+    chordSlotsEl.querySelectorAll('.chord-row').forEach(row => { row.hidden = Number(row.dataset.chord) !== editing.chord; });
     barEditor.hidden = false;
     // under the bar, kept inside the page
     const host = barEditor.offsetParent || document.body;
@@ -751,6 +757,11 @@
       `;
       chordsEl.appendChild(item);
     });
+    if (editing && barEditor && !barEditor.hidden){
+      const want = barOffset(editing.chord) + editing.measure;
+      const bar = [...chordsEl.querySelectorAll('.bar')].find(b => Number(b.dataset.bar) === want);
+      if (bar) showBarEditor(bar); else closeBarEditor();
+    }
     // "+" at the right edge of the last bar, inside its cell, so it takes no
     // room of its own; it adds one bar of the same chord after it
     const lastBar = chordsEl.lastElementChild;
