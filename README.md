@@ -813,7 +813,12 @@ arpeggio with the 6th), what the rhythm does (space in a slow blues,
 sixteenth bursts in funk, triplets in gypsy jazz), and where the last beat
 goes — nearly every fill ends on notes written against the next chord: its
 root approached from a semitone or a tone away, its 3rd, its 5th, or the
-root enclosed from above and below, as the style would.
+root enclosed from above and below, as the style would. The blues and rock
+parts also go up the neck: intervals above the octave (17 the 4th, 19 the
+5th, 22 the ♭7, 24 the root, 26 and 27 the 9th and ♭3 above it) place on
+the box's top strings, which is where B.B. King's box, Albert King's bends,
+Berry's double stops and the rock unison bend live; a card's counts line
+says how many of its bars go up there.
 
 **Where the parts come from, and why they're nobody's.** Every part is
 written from the idiom of its feel — where a shuffle puts its weight, which

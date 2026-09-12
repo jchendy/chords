@@ -163,10 +163,12 @@
           written = pick(part.stops);
           stopBars.add(b);
         } else {
-          const list = changing && part.fillsOnChange ? part.fillsOnChange
-                     : !changing && part.fillsOnStay ? part.fillsOnStay
-                     : part.fills;
-          written = pick(list);
+          // the fills for the situation, and the plain ones with them — a
+          // plain fill fits either way, and was never heard here while a
+          // change or stay list existed
+          const situation = (changing ? part.fillsOnChange : part.fillsOnStay) || [];
+          const list = situation.concat(part.fills || []);
+          written = pick(list.length ? list : part.fills);
         }
       } else {
         const figures = [part.figure, ...(part.variants || [])];
@@ -512,6 +514,9 @@
     if (part.stops) flags.push('stop-time');
     if (part.figureMode === 'roll') flags.push('rolled figures');
     const counts = ['fills', 'fillsOnChange', 'fillsOnStay'].map(k => (part[k] || []).length);
+    // bars that go above the box's middle octave: the upper-register lines
+    const high = w => !w.strum && Math.max(w.iv, w.iv2 == null ? -99 : w.iv2) >= 17;
+    const highBars = ['variants', 'fills', 'fillsOnChange', 'fillsOnStay', 'tails', 'turnarounds', 'stops'].reduce((a, k) => a + (part[k] || []).filter(bar => bar.some(high)).length, 0) + ((part.turnaround || []).some(high) ? 1 : 0);
     ['ghost', 'rake', 'trem', 'vib', 'stacc', 'pm', 'chordSlide', 'add'].forEach(k => { if (has(k)) flags.push({ ghost: 'ghost notes', rake: 'rakes', trem: 'tremolo picking', vib: 'vibrato', stacc: 'staccato', pm: 'palm-muted notes', chordSlide: 'chord slides', add: 'colour tones' }[k]); });
     if (allWritten.some(bar => bar.some(n => n.strum && n.voicing === 'shell'))) flags.push('shell voicings');
     if (allWritten.some(bar => bar.some(n => n.tech === 'double' && n.up))) flags.push('double-stop bends');
@@ -519,7 +524,7 @@
       <div class="part-head"><h4>${esc(part.name)}${tag ? ` <span class="tag">${esc(tag)}</span>` : ''}</h4>
         <span class="btns"><span class="easytag" hidden></span><button type="button" class="reroll" title="Roll the fills again, as New fills does in the app">New fills</button><span class="roll"></span><button type="button" class="play">Play</button></span></div>
       ${part.why ? `<p class="why">${part.why}</p>` : ''}
-      ${advanced ? `<p class="counts">${(part.variants || []).length + 1} figures · fills ${counts[0]} plain, ${counts[1]} into a change, ${counts[2]} staying put${part.tails ? ` · ${part.tails.length} tails` : ''}${part.pickups ? ` · ${part.pickups.length} pickups` : ''}${part.stops ? ` · ${part.stops.length} stop-time` : ''}</p>` : `<p class="counts">${(part.variants || []).length + 1} figures · ${(part.fills || []).length} fills</p>`}
+      ${advanced ? `<p class="counts">${(part.variants || []).length + 1} figures · fills ${counts[0]} plain, ${counts[1]} into a change, ${counts[2]} staying put${part.tails ? ` · ${part.tails.length} tails` : ''}${part.pickups ? ` · ${part.pickups.length} pickups` : ''}${part.stops ? ` · ${part.stops.length} stop-time` : ''}${highBars ? ` · ${highBars} up high` : ''}</p>` : `<p class="counts">${(part.variants || []).length + 1} figures · ${(part.fills || []).length} fills</p>`}
       ${flags.length ? `<p class="flags">Needs: ${flags.map(f => `<span>${esc(f)}</span>`).join(' ')}</p>` : ''}
       <div class="tab"></div>`;
     host.appendChild(card);
@@ -557,6 +562,7 @@
       if (wasPlaying && state) play(card, card.querySelector('.play'), { pattern, style, chords: state.chords, tempo: entry.tempo, notes: state.notes, metrics: state.metrics, tabHost });
     });
     card.rebuild = () => { if (playing && playing.host === card) stop(); build(); };
+    card.getState = () => state;   // for measuring from the console
     return card;
   }
 

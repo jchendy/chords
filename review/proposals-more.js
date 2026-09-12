@@ -29,6 +29,8 @@
     if (!pt){ missing.push(key); return; }
     Object.keys(extra).forEach(k => {
       if (k === 'why2'){ pt.why = (pt.why || '') + ' ' + extra[k]; return; }
+      // a part written with one turnaround keeps it in the roll when more are added
+      if (k === 'turnarounds' && !pt.turnarounds && pt.turnaround) pt.turnarounds = [pt.turnaround];
       if (Array.isArray(extra[k]) && Array.isArray(pt[k])) pt[k] = pt[k].concat(extra[k]);
       else pt[k] = extra[k];
     });
@@ -696,6 +698,176 @@
   extend('simple|Simple|Arpeggio study', {
     why2: 'And a second way into the change, the arpeggio landing on the next chord\'s 3rd.',
     fillsOnChange: [[s(0, 4, 0.85), n(4, 0, 2, 0.75), n(6, 4, 2, 0.75), n(8, 7, 2, 0.8), n(10, 12, 2, 0.8), nx(12, 7, 2, 0.7), nx(14, 4, 2, 0.8)]],
+  });
+
+  // =========================================================================
+  // FOURTH PASS — the upper register. Nothing in the blues or rock parts went
+  // above the octave: every line sat on the low and middle strings of the box.
+  // The players don't. B.B. King's box is the top three strings around the
+  // root on the B string — the 9th and the ♭3 bent to the 3rd, the 6th, the
+  // root shaken; Albert King's is the pentatonic shape above the root, bent
+  // a step and a step and a half; Freddie King and Stevie Ray Vaughan run the
+  // box down from its top string; rock answers the low chord with the unison
+  // bend, 4ths on the top two strings, and the riff said an octave up.
+  // Intervals: 12 the octave, 14 the 9th, 15 the ♭3, 16 the 3rd, 17 the 4th,
+  // 19 the 5th, 21 the 6th, 22 the ♭7, 24 the double octave, 26 the 9th and
+  // 27/28 the ♭3/3 above it. A five-fret box whose root sits on the low E
+  // holds everything to 28 on its top string; one rooted on the A string
+  // holds to 23 and folds the rest down an octave, so the parts written for
+  // E-rooted styles (Texas, Hooker, Delta, Bo Diddley) peak on the ♭7.
+  // ---- blues (twelve to the bar) ----
+  extend('blues|Blues shuffle|5–6 boogie', {
+    why2: 'Fourth pass, up the neck: the boogie answered from the top of the box — the ♭7 bent to the high root and shaken — as a fill and a tail, and a turnaround that walks down from the double octave.',
+    fills: [[d(0, 0, 7, 1.6, 0.85, { pm: true }), d(2, 0, 7, 0.8, 0.5, { pm: true }), d(3, 0, 9, 1.6, 0.8, { pm: true }), d(5, 0, 9, 0.8, 0.5, { pm: true }),
+             b(6, 22, 2, 3, 0.9, { vib: true }), n(9, 19, 1.6, 0.8), n(11, 15, 0.8, 0.7)]],
+    tails: [[b(9, 22, 2, 2.4, 0.9, { vib: true })]],
+    turnarounds: [[n(0, 24, 1.6, 0.9, { vib: true }), n(2, 22, 0.8, 0.7), n(3, 21, 1.6, 0.8), n(5, 19, 0.8, 0.7), n(6, 15, 0.8, 0.75), n(7, 16, 0.8, 0.8), n(8, 12, 0.8, 0.8), nx(9, 13, 1.6, 0.8), nx(11, 12, 0.8, 0.85)]],
+  });
+  extend('blues|Blues shuffle|Upbeat chops (the second guitar)', {
+    why2: 'Fourth pass, up the neck: the second guitar answers on the top strings — the ♭7 bent to the root and the box run down, or the high root into the next chord\'s 3rd above the octave.',
+    fillsOnStay: [[s(2, 0.8, 0.65, 'high'), s(5, 0.8, 0.65, 'high'), b(6, 22, 2, 2.4, 0.85, { vib: true }), n(9, 19, 0.8, 0.7), n(10, 17, 0.8, 0.7), n(11, 15, 0.8, 0.7)]],
+    fillsOnChange: [[s(2, 0.8, 0.65, 'high'), s(5, 0.8, 0.65, 'high'), n(6, 24, 1.6, 0.85, { vib: true }), n(8, 22, 0.8, 0.7), nx(9, 16, 1.6, 0.8, { vib: true }), nx(11, 19, 0.8, 0.6)]],
+  });
+  extend('blues|Blues shuffle|Stabs and licks', {
+    why2: 'Fourth pass, up the neck: the licks in the B.B. box — the high root said and shaken with the ♭7–5–♭7 turn, the 9th bent to the 3rd above the double octave, the 6th to the root and down the box; into a change the ♭7 bent to the root falls onto the next 3rd; staying, the high root twice with a rake and the ♭3 bent a half-step; a tail on the ♭7-to-root bend.',
+    fills: [
+      [n(0, 24, 2.4, 0.9, { vib: true }), n(3, 22, 0.8, 0.75), n(4, 19, 0.8, 0.7), n(5, 22, 0.8, 0.75), n(6, 24, 3, 0.85, { vib: true }), s(9, 2.4, 0.8, 'high')],
+      [b(0, 26, 2, 2.4, 0.9, { vib: true }), n(3, 24, 0.8, 0.75), n(4, 21, 0.8, 0.7), n(5, 24, 1.6, 0.8), n(7, 21, 0.8, 0.7), n(8, 19, 2.4, 0.85, { vib: true })],
+      [n(0, 21, 0.8, 0.8), n(1, 24, 2.4, 0.9, { vib: true }), n(5, 22, 0.8, 0.7), n(6, 19, 1.6, 0.85, { vib: true }), n(9, 17, 0.8, 0.7), n(10, 15, 0.8, 0.7), n(11, 12, 0.8, 0.8)],
+    ],
+    fillsOnChange: [[b(0, 22, 2, 2.4, 0.9, { vib: true }), n(3, 19, 0.8, 0.75), n(4, 17, 0.8, 0.7), n(5, 15, 0.8, 0.75), n(6, 12, 1.6, 0.8), nx(9, 16, 2.4, 0.85, { vib: true })]],
+    fillsOnStay: [[n(0, 24, 1.6, 0.9, { rake: true }), n(2, 24, 0.8, 0.5), n(3, 24, 1.6, 0.85, { vib: true }), b(6, 27, 1, 2.4, 0.85, { vib: true }), s(9, 2.4, 0.8, 'high')]],
+    tails: [[b(9, 22, 2, 2.4, 0.9, { vib: true })]],
+  });
+  extend('blues|Slow blues|9th-chord comp (Walker-inspired)', {
+    why2: 'Fourth pass, up the neck: the single-note answers to the chord move to the top strings — the ♭7 bent to the root and the box walked down; the 6th to the high root, shaken.',
+    fills: [[s(0, 3, 0.8, 'high', null, { add: 14 }), b(3, 22, 2, 3, 0.9, { vib: true }), n(6, 19, 1, 0.7), n(7, 17, 1, 0.7), n(8, 15, 1, 0.7), n(9, 12, 3, 0.85, { vib: true })]],
+    fillsOnStay: [[s(0, 6, 0.8, 'high', null, { chordSlide: 1, add: 14 }), n(6, 21, 1, 0.7), n(7, 24, 3, 0.85, { vib: true })]],
+  });
+  extend('blues|Slow blues|The call (King-inspired)', {
+    why2: 'Fourth pass, up the neck — where these calls live: the 9th bent to the 3rd above the double octave and answered root–6th–root; the ♭3 bent a half-step and shaken, then the root; the answer from the top of the box; into a change, the ♭7 bent to the root falling onto the next 3rd; staying, the 4th bent to the 5th an octave up, and the 5th bent a step and a half (the Albert King bend); a figure and a turnaround an octave up.',
+    variants: [[n(3, 24, 3, 0.9, { vib: true }), n(9, 22, 1, 0.7), n(10, 19, 1, 0.7), n(11, 17, 1, 0.75)]],
+    fills: [
+      [b(3, 26, 2, 3, 0.9, { vib: true }), n(9, 24, 1, 0.7), n(10, 21, 1, 0.7), n(11, 24, 1, 0.75)],
+      [b(0, 27, 1, 4, 0.9, { vib: true }), n(6, 24, 3, 0.85, { vib: true })],
+      [n(0, 24, 2, 0.9, { vib: true }), n(2, 22, 1, 0.75), n(3, 19, 3, 0.85, { vib: true }), n(9, 17, 1, 0.7), n(10, 15, 1, 0.7), n(11, 12, 1, 0.8)],
+    ],
+    fillsOnChange: [[b(3, 22, 2, 3, 0.9, { vib: true }), n(6, 19, 1, 0.7), n(7, 17, 1, 0.65), n(8, 15, 1, 0.7), nx(9, 16, 3, 0.85, { vib: true })]],
+    fillsOnStay: [
+      [b(3, 17, 2, 3, 0.9, { vib: true }), n(9, 15, 1, 0.7), n(10, 12, 2, 0.85, { vib: true })],
+      [b(0, 19, 3, 4, 0.9, { vib: true }), n(6, 17, 1, 0.7), n(7, 15, 2, 0.8), n(9, 12, 3, 0.85, { vib: true })],
+    ],
+    turnarounds: [[n(0, 24, 1, 0.9), n(1, 22, 1, 0.75), n(2, 21, 1, 0.7), n(3, 20, 1, 0.7), n(4, 19, 1, 0.75), n(5, 17, 1, 0.7), n(6, 15, 1, 0.75), n(7, 16, 2, 0.8), nx(9, 19, 1.5, 0.75), nx(10.5, 12, 1.5, 0.85, { vib: true })]],
+  });
+  extend('blues|Jump blues|9th stabs (Walker-inspired)', {
+    why2: 'Fourth pass, up the neck: the horn riff answered an octave up — 6th, ♭7, root, ♭7 on the top strings — and the high root said twice when staying.',
+    fills: [[s(3, 1.6, 0.85, 'high', null, { add: 14 }), n(6, 21, 0.8, 0.8), n(8, 22, 0.8, 0.75), n(9, 24, 1.6, 0.9), n(11, 22, 0.8, 0.7)]],
+    fillsOnStay: [[s(3, 1.6, 0.85, 'high', null, { add: 14, chordSlide: 1 }), n(6, 24, 0.8, 0.85), n(8, 24, 0.8, 0.5), n(9, 22, 1.6, 0.8), n(11, 19, 0.8, 0.7)]],
+  });
+  extend('blues|Jump blues|Boogie walk under the stabs', {
+    why2: 'Fourth pass, up the neck: half a bar of the walk, then the horn riff on the top strings.',
+    fills: [[n(0, 0, 1.6, 0.9, { pm: true }), n(2, 4, 0.8, 0.7, { pm: true }), n(3, 7, 1.6, 0.85, { pm: true }), n(5, 9, 0.8, 0.7, { pm: true }), n(6, 22, 1.6, 0.85), n(8, 24, 0.8, 0.8), n(9, 22, 1.6, 0.8), n(11, 19, 0.8, 0.7)]],
+  });
+  extend('blues|Texas shuffle|Everything at once', {
+    why2: 'Fourth pass, up the neck: the box run down from its top string with a rake into the first note and the ♭3 bent a tone at the end; staying, the 5th and ♭7 up top with the ♭7 bent to the root; a triplet tail from the top.',
+    fills: [[n(0, 22, 0.8, 0.9, { rake: true }), n(1, 19, 0.8, 0.75), n(2, 17, 0.8, 0.8), n(3, 19, 0.8, 0.85), n(4, 17, 0.8, 0.75), n(5, 15, 0.8, 0.75), n(6, 17, 0.8, 0.85), n(7, 15, 0.8, 0.75), n(8, 12, 0.8, 0.75), b(9, 15, 2, 2.4, 0.9, { vib: true })]],
+    fillsOnStay: [[d(0, 0, 7, 1.6, 0.9, { pm: true }), s(2, 0.8, 0.5, 'full', 'mute'), d(3, 0, 9, 1.6, 0.85, { pm: true }), s(5, 0.8, 0.5, 'full', 'mute'), n(6, 19, 0.8, 0.85), n(7, 22, 0.8, 0.8), b(8, 22, 2, 2.4, 0.9, { vib: true }), s(11, 0.8, 0.5, 'full', 'mute')]],
+    tails: [[n(9, 22, 0.8, 0.85), n(10, 19, 0.8, 0.75), n(11, 17, 0.8, 0.8)]],
+  });
+  extend('blues|Texas shuffle|Texas triplets', {
+    why2: 'Fourth pass, up the neck: the groups of three from the top string down, the ♭7 said twice and bent to the root when staying, and a change fill that runs down and back up to land on the next chord\'s 3rd above the octave.',
+    fills: [[n(0, 22, 0.8, 0.9, { rake: true }), n(1, 19, 0.8, 0.75), n(2, 17, 0.8, 0.8), n(3, 19, 0.8, 0.85), n(4, 17, 0.8, 0.75), n(5, 15, 0.8, 0.8), n(6, 17, 0.8, 0.85), n(7, 15, 0.8, 0.75), n(8, 12, 0.8, 0.8), b(9, 15, 2, 2.4, 0.9, { vib: true })]],
+    fillsOnStay: [[d(0, 0, 7, 1.6, 0.9, { pm: true }), s(2, 0.8, 0.5, 'full', 'mute'), d(3, 0, 9, 1.6, 0.85, { pm: true }), s(5, 0.8, 0.5, 'full', 'mute'), n(6, 22, 0.8, 0.85), n(7, 22, 0.8, 0.5), n(8, 19, 0.8, 0.8), b(9, 22, 2, 2.4, 0.9, { vib: true })]],
+    fillsOnChange: [[n(0, 22, 0.8, 0.85), n(1, 19, 0.8, 0.75), n(2, 17, 0.8, 0.75), n(3, 15, 1.6, 0.85), n(5, 17, 0.8, 0.7), n(6, 19, 0.8, 0.8), n(7, 22, 0.8, 0.75), n(8, 19, 0.8, 0.8), nx(9, 17, 0.8, 0.75), nx(10, 16, 1.6, 0.85, { vib: true })]],
+  });
+  extend('blues|One-chord boogie|Boogie pedal', {
+    why2: 'Fourth pass, up the neck: the shout on the top strings — 5th, ♭7, 5th over the pedal — and the ♭3-to-3 hammer an octave up.',
+    fills: [[n(0, 0, 1.6, 0.9, { pm: true }), n(2, 0, 0.8, 0.6, { pm: true }), n(3, 19, 0.8, 0.85), n(4, 22, 0.8, 0.8), n(5, 19, 0.8, 0.8), n(6, 0, 1.6, 0.9, { pm: true }), n(8, 0, 0.8, 0.6, { pm: true }), h(9, 15, 16, 1.6, 0.8), n(11, 12, 0.8, 0.7)]],
+  });
+  extend('blues|Delta fingerstyle|Dead thumb and fills', {
+    why2: 'Fourth pass, up the neck: the fingers answer on the first string over the thumb — the ♭7 and 5th in triplets, the box down to the octave — and the ♭3 hammered to the 3 up there when staying.',
+    fills: [[s(0, 1.4, 0.85, 'bass', 'mute'), n(1, 22, 0.8, 0.75), n(2, 19, 0.8, 0.7), s(3, 1.4, 0.8, 'bass', 'mute'), n(4, 17, 0.8, 0.7), n(5, 15, 0.8, 0.65), s(6, 1.4, 0.85, 'bass', 'mute'), n(7, 12, 1.6, 0.75), s(9, 1.4, 0.8, 'bass', 'mute'), n(11, 10, 0.8, 0.6)]],
+    fillsOnStay: [[s(0, 1.4, 0.85, 'bass', 'mute'), n(2, 22, 0.8, 0.75), s(3, 1.4, 0.8, 'bass', 'mute'), n(4, 19, 0.8, 0.7), n(5, 22, 0.8, 0.7), s(6, 1.4, 0.85, 'bass', 'mute'), n(7, 19, 0.8, 0.7), n(8, 17, 0.8, 0.7), s(9, 1.4, 0.8, 'bass', 'mute'), h(11, 15, 16, 0.8, 0.7)]],
+  });
+  extend('blues|Minor blues|Minor call', {
+    why2: 'Fourth pass, up the neck: the calls an octave up — the 4th bent to the 5th at the top of the box, the high root shaken and the box run down, the 5th bent a step and a half to the ♭7 (Albert King\'s bend); into a change, the high bend falling onto the next chord\'s ♭3 above the octave; a figure up top.',
+    variants: [[n(0, 24, 1, 0.85), n(1, 22, 1, 0.75), n(2, 19, 4, 0.85, { vib: true }), n(9, 21, 1, 0.7), n(10, 19, 2, 0.8)]],
+    fills: [
+      [b(0, 17, 2, 4, 0.9, { vib: true }), n(6, 15, 1, 0.75), n(7, 12, 2, 0.8), n(9, 22, 3, 0.8, { vib: true })],
+      [n(0, 24, 3, 0.9, { vib: true }), n(3, 22, 1, 0.75), n(4, 19, 2, 0.8), n(6, 17, 1, 0.7), n(7, 15, 1, 0.7), n(8, 12, 4, 0.85, { vib: true })],
+      [b(0, 19, 3, 4, 0.9, { vib: true }), n(6, 17, 1, 0.7), n(7, 15, 2, 0.8), n(9, 12, 3, 0.85, { vib: true })],
+    ],
+    fillsOnChange: [[b(3, 17, 2, 3, 0.9, { vib: true }), n(6, 15, 1, 0.7), n(7, 12, 2, 0.75), nx(9, 15, 3, 0.85, { vib: true })]],
+    fillsOnStay: [[n(3, 22, 3, 0.85, { vib: true }), n(6, 19, 1, 0.7), n(7, 17, 1, 0.7), n(8, 15, 1, 0.7), n(9, 12, 3, 0.85, { vib: true })]],
+  });
+  extend('blues|Minor blues|Minor comp', {
+    why2: 'Fourth pass, up the neck: the answer in the space climbs the top strings to the ♭7, or to the high root.',
+    fills: [[s(0, 3, 0.75, 'shell'), n(3, 15, 3, 0.8, { vib: true }), n(6, 17, 1, 0.7), n(7, 19, 1, 0.75), n(8, 22, 1, 0.8), n(9, 24, 3, 0.85, { vib: true })]],
+    fillsOnStay: [[s(0, 6, 0.75, 'shell'), n(6, 15, 1, 0.7), n(7, 17, 1, 0.7), n(8, 19, 1, 0.75), n(9, 22, 3, 0.8, { vib: true })]],
+  });
+
+  // ---- rock (sixteen to the bar) ----
+  extend('rock|Rock|Chords with space (Young-inspired)', {
+    why2: 'Fourth pass, up the neck: the low chord answered on the top two strings — 4ths (the 5th under the root, the 4th under the ♭7), the unison bend as a tail, the high root raked and shaken when staying.',
+    fills: [[s(0, 4, 0.95, 'low'), s(6, 2, 0.85, 'low'), d(8, 19, 24, 2, 0.85), d(10, 19, 24, 2, 0.6), d(12, 17, 22, 2, 0.8), d(14, 19, 24, 2, 0.85)]],
+    tails: [[d(12, 17, 19, 4, 0.9, { up: 2, vib: true })], [n(12, 24, 2, 0.9, { rake: true }), n(14, 22, 2, 0.8)]],
+    fillsOnStay: [[s(0, 4, 0.95, 'low'), g(4, 1, 0.3, 'low'), s(6, 2, 0.85, 'low'), n(8, 24, 2, 0.9, { rake: true }), n(10, 22, 2, 0.8), n(12, 24, 4, 0.9, { vib: true })]],
+  });
+  extend('rock|Rock|Stabs on the and', {
+    why2: 'Fourth pass, up the neck: the riff said an octave up with the ♭7 bent to the high root; two unison bends and the rake to the high root when staying; into a change, the high root down to the 5th and onto the next chord\'s ♭7 and root above the octave.',
+    fills: [[n(0, 12, 2, 0.9, { pm: true }), n(2, 12, 1, 0.5, { pm: true }), n(3, 22, 1, 0.8, { rake: true }), n(4, 24, 2, 0.85), n(6, 12, 2, 0.75, { pm: true }), n(8, 12, 1, 0.5, { pm: true }), n(9, 22, 1, 0.8), n(10, 24, 2, 0.85), b(12, 22, 2, 4, 0.9, { vib: true })]],
+    fillsOnStay: [[d(0, 17, 19, 4, 0.9, { up: 2 }), d(4, 17, 19, 4, 0.85, { up: 2 }), n(8, 24, 2, 0.9, { rake: true }), n(10, 22, 2, 0.8), n(12, 19, 4, 0.9, { vib: true })]],
+    fillsOnChange: [[s(0, 4, 0.9, 'low'), n(6, 24, 2, 0.9, { rake: true }), n(8, 22, 2, 0.8), n(10, 19, 2, 0.8), nx(12, 22, 2, 0.8), nx(14, 24, 2, 0.9, { vib: true })]],
+  });
+  extend('rock|Straight rock|Eighth-note chug, muted', {
+    why2: 'Fourth pass, up the neck: half a bar of chug, then the unison bend and the ♭7 raked on the first string; or the riff said on the top strings — ♭7, ♭7, 5th, 4th.',
+    fills: [[s(0, 1.8, 0.95), s(2, 1.8, 0.55, 'low', 'mute'), s(4, 1.8, 0.7, 'low', 'mute'), s(6, 1.8, 0.55, 'low', 'mute'), d(8, 17, 19, 4, 0.9, { up: 2, vib: true }), n(12, 22, 2, 0.9, { rake: true }), n(14, 19, 2, 0.8)]],
+    fillsOnStay: [[s(0, 1.8, 0.95), s(2, 1.8, 0.55, 'low', 'mute'), s(4, 1.8, 0.7, 'low', 'mute'), s(6, 1.8, 0.55, 'low', 'mute'), n(8, 22, 2, 0.9), n(10, 22, 2, 0.6), n(12, 19, 2, 0.85), n(14, 17, 2, 0.8)]],
+  });
+  extend('rock|Straight rock|Chords and a riff', {
+    why2: 'Fourth pass, up the neck: the riff on the top strings — ♭7, 5th, ♭7, 5th, then the 4th bent to the 5th — and the same bend answered by the 5th and ♭7 when staying.',
+    fills: [[n(0, 22, 2, 0.9), n(2, 19, 2, 0.75), n(4, 22, 2, 0.85), n(6, 19, 2, 0.75), b(8, 17, 2, 4, 0.85, { vib: true }), s(12, 4, 0.9)]],
+    fillsOnStay: [[s(0, 4, 0.9), s(4, 2, 0.7, 'low', 'mute'), s(6, 2, 0.6, 'low', 'mute'), b(8, 17, 2, 4, 0.85, { vib: true }), n(12, 19, 2, 0.75), n(14, 22, 2, 0.8)]],
+  });
+  extend('rock|Half-time rock|Pedal and stab', {
+    why2: 'Fourth pass, up the neck: the pedal kept low and the answer up top — the ♭3 bent a tone at the octave, the 5th and ♭7 on the first string — and the ♭7 bent to the high root, held, when staying.',
+    fills: [[n(0, 0, 2, 0.9, { pm: true }), n(2, 0, 2, 0.6, { pm: true }), b(4, 15, 2, 4, 0.9, { vib: true }), n(8, 0, 2, 0.85, { pm: true }), n(10, 0, 2, 0.6, { pm: true }), n(12, 19, 2, 0.8), n(14, 22, 2, 0.85)]],
+    fillsOnStay: [[s(0, 8, 0.95, 'low'), b(8, 22, 2, 8, 0.9, { vib: true })]],
+  });
+  extend("rock|Rock 'n' roll|Straight boogie", {
+    why2: 'Fourth pass, up the neck: the boogie answered with double stops on the top strings — the 3rd bent under the 5th, the ♭3 and 5th, the root and 3rd.',
+    fills: [[d(0, 0, 7, 2, 0.9, { pm: true }), d(2, 0, 7, 2, 0.6, { pm: true }), d(4, 0, 9, 2, 0.85, { pm: true }), d(6, 0, 9, 2, 0.6, { pm: true }), d(8, 16, 19, 2, 0.85, { up: 1 }), d(10, 16, 19, 2, 0.6), d(12, 15, 19, 2, 0.85), d(14, 12, 16, 2, 0.8)]],
+  });
+  extend("rock|Rock 'n' roll|Double stops (Berry-inspired)", {
+    why2: 'Fourth pass, up the neck: the double stops where Berry plays them — on the top two strings above the octave: the ♭7 with the 9th walking down to the 3rd and 5th, the figure itself an octave up, two unison bends when staying, and the change fill from up there.',
+    variants: [[d(0, 16, 19, 2, 0.9, { up: 1 }), d(2, 16, 19, 2, 0.6), d(4, 16, 19, 2, 0.85), d(6, 15, 19, 2, 0.7), d(8, 12, 16, 2, 0.85), d(10, 12, 16, 2, 0.6), d(12, 12, 19, 4, 0.85)]],
+    fills: [[d(0, 22, 26, 2, 0.9), d(2, 22, 26, 2, 0.6), d(4, 21, 24, 2, 0.85), d(6, 17, 22, 2, 0.75), d(8, 16, 19, 4, 0.85, { up: 1 }), n(12, 15, 2, 0.75), n(14, 16, 2, 0.8)]],
+    fillsOnStay: [[d(0, 17, 19, 4, 0.9, { up: 2 }), d(4, 17, 19, 4, 0.85, { up: 2 }), d(8, 16, 19, 2, 0.9, { up: 1 }), d(10, 16, 19, 2, 0.6), d(12, 16, 19, 4, 0.85)]],
+    fillsOnChange: [[d(0, 16, 19, 2, 0.9, { up: 1 }), d(2, 16, 19, 2, 0.6), d(4, 16, 19, 2, 0.85), n(8, 22, 2, 0.8), n(10, 19, 2, 0.75), nx(12, 16, 4, 0.85, { vib: true })]],
+  });
+  extend('rock|Bo Diddley beat|The clave strum', {
+    why2: 'Fourth pass, up the neck: the 5th up to the ♭7 on the first string where the chord was.',
+    fills: [[s(0, 2, 0.9), g(2, 1, 0.3), g(4, 1, 0.3), s(6, 2, 0.85), n(8, 19, 2, 0.8), n(10, 22, 2, 0.85), s(12, 2, 0.85), g(14, 1, 0.3)]],
+  });
+  extend('rock|Jangle|Ringing arpeggio', {
+    why2: 'Fourth pass, up the neck: the arpeggio in the chord\'s top octave — 3rd, 5th, 6th — the way the high strings of a twelve-string ring, and a change fill that comes down from there onto the next chord\'s 5th and 3rd.',
+    fills: [[n(0, 12, 4, 0.8), n(1, 16, 4, 0.6), n(2, 19, 4, 0.7), n(3, 21, 4, 0.6), n(4, 19, 4, 0.65), n(5, 16, 4, 0.55), n(6, 19, 4, 0.65), n(7, 21, 4, 0.6), n(8, 12, 4, 0.8), n(9, 16, 4, 0.6), n(10, 19, 4, 0.7), n(11, 21, 4, 0.6), n(12, 19, 4, 0.65), n(13, 16, 4, 0.55), n(14, 14, 4, 0.65), n(15, 12, 4, 0.6)]],
+    fillsOnChange: [[n(0, 12, 4, 0.8), n(1, 16, 4, 0.6), n(2, 19, 4, 0.7), n(3, 21, 4, 0.6), n(4, 19, 4, 0.65), n(5, 16, 4, 0.55), n(6, 19, 4, 0.65), n(7, 21, 4, 0.6), n(8, 19, 2, 0.7), n(10, 16, 2, 0.65), nx(12, 19, 2, 0.6), nx(14, 16, 2, 0.75)]],
+  });
+  extend('rock|Southern rock|Hammered double stops', {
+    why2: 'Fourth pass, up the neck: the twin-guitar line from the 6th above the octave with the ♭3 hammered up there, the hammered double stops themselves an octave up, and a tail on the high hammer.',
+    fills: [[n(0, 21, 2, 0.9), n(2, 19, 2, 0.75), n(4, 16, 2, 0.8), h(6, 15, 16, 2, 0.8), n(8, 19, 2, 0.8), n(10, 21, 2, 0.85), n(12, 19, 4, 0.85, { vib: true })]],
+    fillsOnStay: [[s(0, 2, 0.9), h(2, 14, 16, 2, 0.8), d(4, 16, 19, 2, 0.8), h(6, 17, 19, 2, 0.75), s(8, 2, 0.85), h(10, 15, 16, 2, 0.8), d(12, 12, 16, 2, 0.8), d(14, 16, 19, 2, 0.7)]],
+    tails: [[h(12, 15, 16, 2, 0.8), d(14, 16, 19, 2, 0.75)]],
+  });
+  extend('rock|Crazy Horse stomp|Four quarters', {
+    why2: 'Fourth pass, up the neck: the one-note solo on the top string — the ♭7 bent to the root and shaken, said again — and the 5th answered by the ♭3 bent, up there.',
+    fills: [[b(0, 22, 2, 4, 0.95, { vib: true }), b(4, 22, 2, 4, 0.9, { vib: true }), b(8, 22, 2, 8, 0.95, { vib: true })],
+            [n(0, 19, 4, 0.95, { vib: true }), b(4, 15, 2, 4, 0.9, { vib: true }), n(8, 19, 4, 0.95, { vib: true }), b(12, 15, 2, 4, 0.9, { vib: true })]],
+  });
+  extend('rock|Heartland|Sus strum', {
+    why2: 'Fourth pass, up the neck: the electric\'s answer in double stops on the top two strings — 3rd and 5th, 9th and 5th, root and 3rd.',
+    fills: [[s(0, 4, 0.85), d(4, 16, 19, 2, 0.8), d(6, 16, 19, 2, 0.6), d(8, 14, 19, 2, 0.75), d(10, 12, 16, 4, 0.8), s(14, 2, 0.65, 'high')]],
   });
 
   if (missing.length) console.warn('proposals-more: no part for', missing);
