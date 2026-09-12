@@ -76,7 +76,7 @@
     const recent = $('styleRecent'); if (recent) recent.addEventListener('click', e => { if (e.target.closest('button')) openSheet(false); });
 
 
-    // ---- all the controls on the neck, or none of them ----
+    // ---- all the controls, or none of them: the neck's, the progression's buttons, the part's row ----
     // A phone turned sideways is the case the width test gets wrong: it is
     // about as wide as a tablet held upright, so the controls come on when
     // it's the one screen with no room for them. What tells the two apart is
@@ -89,6 +89,7 @@
     const setControls = on => {
       document.body.classList.toggle('controls-off', !on);
       tog.setAttribute('aria-pressed', String(on));
+      tog.textContent = on ? 'Hide controls' : 'Show controls';
     };
     const phoneSideways = window.matchMedia(
       '(orientation: landscape) and (max-height: 500px) and (pointer: coarse)');

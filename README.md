@@ -203,7 +203,7 @@ names the tab you're on.
   window you can drag; a joined ‹ › pair at the end of the toolbar and an
   arrow on each edge of the window step it. One transport is pinned to the
   bottom of the tab: Play, the tempo slider with its BPM readout and five one-tap tempos under it, the
-  click and Neck controls. In the Part view the
+  click and a Hide / Show controls button. In the Part view the
   controls are one row — the part's arrows and name, New fills, the
   lead-roll tag, Easy, Follow chords / Stay on the I — with the techniques
   (and Humanize) behind a Techniques menu and the part and band volumes
@@ -213,14 +213,15 @@ names the tab you're on.
   moves out of the Settings menu into the bar when the window is wide enough
   and back again whenever the menu is open, so it is never missing a
   setting. On a phone the site name drops out and the tools row scrolls
-  sideways. A Neck controls button in the transport, at every width, hides
-  every control on the neck so the picture has the screen — a phone needs it
+  sideways. A Hide controls button in the transport (Show controls once
+  pressed), at every width, hides every control — the neck's, the
+  progression's buttons, the part's row — so the picture has the screen — a phone needs it
   most, but a desktop can want the neck on its own too. Turned sideways a phone goes further, because that is the shape with the
 least height and the most need of it: the chart sets its chord names small
 and tight, and the controls come off by default. A phone in landscape is
 told apart from a tablet by its height and from a desktop window someone has
 made short by its pointer — it is the only screen that is both short and
-touched — and once you have pressed the Neck controls button yourself, rotating
+touched — and once you have pressed the controls button yourself, rotating
 doesn't overrule you. The bar itself can fold away too, from a button at its
 right end, leaving Play floating clear of the page and giving the neck the
 eighty-odd pixels the bar was using; that button is there wherever there's
