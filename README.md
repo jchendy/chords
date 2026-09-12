@@ -225,7 +225,14 @@ names the tab you're on.
   moves out of the Settings menu into the bar when the window is wide enough
   and back again whenever the menu is open, so it is never missing a
   setting. On a phone the site name drops out and the tools row scrolls
-  sideways. A Hide controls button in the transport (Show controls once
+  sideways, and the transport goes to two rows rather than squeezing seven
+  controls into one (the slider used to run under its own presets): Play,
+  the slider with its number and the controls button on the first; the
+  loop, the one-tap tempos, the link and the gear on the second. The two
+  rows are flex lines, not grid rows, so neither's columns bind the other's;
+  a full-width nothing (`::after`) is the line break and `order` says which
+  side of it each control takes, with the tempo's own wrappers lifted out by
+  `display: contents`. A Hide controls button in the transport (Show controls once
   pressed), at every width, hides every control — the neck's, the
   progression's buttons, the part's row — so the picture has the screen — a phone needs it
   most, but a desktop can want the neck on its own too. Turned sideways a phone goes further, because that is the shape with the

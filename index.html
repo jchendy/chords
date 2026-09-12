@@ -236,7 +236,7 @@
      the three one-tap tempos under it; it takes a fixed share of the width so
      the controls to its right stay put */
   .loop{ display:inline-flex; align-items:center; gap:4px; }
-  .loop-sel{ font-size:.78rem; padding:4px 6px; min-width:0; }
+  select.loop-sel{ font-size:.78rem; padding:4px 6px; min-width:0; }
   .loop-dash{ color:var(--muted2); font-size:.8rem; }
   .loop:not(.on) .loop-sel, .loop:not(.on) .loop-dash{ opacity:.45; }
   .loop.on #loopToggle{ color:var(--a); border-color:var(--a); }
@@ -595,6 +595,40 @@
     .styleline{ font-size:1.05rem; }
     .chord-row{ grid-template-columns:20px 1fr 72px 96px; gap:6px; }
     .big-input{ font-size:1.35rem; }
+  }
+
+  /* ---------- a phone held upright: the bar in two rows ---------- */
+  /* Six controls and a tempo don't share 350px in a line — the slider ran
+     under its own presets. So the bar becomes a grid of two rows: Play, the
+     slider with its number, and the controls toggle on the first; the loop,
+     the one-tap tempos, the link and the gear on the second. The tempo's
+     two rows are wrapped twice in the markup for the wide bar's sake;
+     display:contents lifts them out so each can take its own line. The rows
+     are flex lines rather than grid rows so neither's columns bind the
+     other's: a line break (::after, a full-width nothing) parts them, and
+     `order` says what goes on which side of it. */
+  @media (max-width:640px){
+    #page-caged{ padding-bottom:128px; }
+    .transport{ flex-wrap:wrap; row-gap:4px; column-gap:8px; }
+    .transport .tempo, .transport .tempo-stack{ display:contents; }
+    .transport::after{ content:''; flex:1 0 100%; order:4; height:0; }
+    .transport .play-btn{ order:1; }
+    .transport .tempo-row{ order:2; flex:1 1 0; min-width:0; gap:10px; }
+    .transport #controlsToggle{ order:3; }
+    .transport .loop{ order:5; }
+    .transport .bpm-row{ order:6; flex:0 0 auto; }
+    .transport #quickShare{ order:7; margin-left:auto; }
+    .transport #setupOpenQuick{ order:8; }
+    .transport .sp, .transport .bar-slot, .transport #transportCollapse{ display:none; }
+    .tempo #tempo{ flex:1 1 60px; min-width:60px; }
+    .tempo .val{ font-size:.8rem; }
+    .loop{ gap:3px; }
+    select.loop-sel{ font-size:.74rem; padding:4px 2px 4px 4px; }
+    .bpm-row .seg-btn{ font-size:.7rem; margin:0 5px 0 0; padding:4px 2px; }
+    .bpm-row .seg-btn:last-child{ margin-right:0; }
+    #controlsToggle{ font-size:.74rem; padding:7px 9px; white-space:nowrap; }
+    /* the settings popover clears the taller bar */
+    .settings-menu{ bottom:calc(126px + env(safe-area-inset-bottom, 0px)); max-height:calc(100vh - 150px); }
   }
 
   /* ---------- a phone turned sideways ---------- */
