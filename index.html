@@ -255,7 +255,10 @@
   .loop-dash{ color:var(--muted2); font-size:.8rem; }
   .loop:not(.on) .loop-sel, .loop:not(.on) .loop-dash{ opacity:.45; }
   .loop.on #loopToggle{ color:var(--a); border-color:var(--a); }
-  .chart-grid .bar.outside{ opacity:.35; }
+  /* the bars outside the loop sit back, playing or not: while it plays every
+     bar but the sounding one is dimmed, so the loop's bars have to stay a
+     step brighter than the ones it skips or the loop vanishes as it starts */
+  .chart-grid .bar.outside, .chart-grid .bar.dim.outside{ opacity:.2; }
   .tempo{ display:inline-flex; align-items:center; gap:10px; flex:0 1 300px; min-width:0; }
   .tempo-stack{ display:flex; flex-direction:column; gap:2px; min-width:0; flex:1; }
   .tempo-row{ display:flex; align-items:center; gap:12px; min-width:0; }

@@ -213,7 +213,9 @@ names the tab you're on.
   window you can drag; a joined ‹ › pair at the end of the toolbar and an
   arrow on each edge of the window step it. One transport is pinned to the
   bottom of the tab: Play, then the loop — a switch and the first and last
-  bar of a stretch to play round, the chart dimming the bars outside it,
+  bar of a stretch to play round, the chart dimming the bars outside it
+  (a step below the dimming playback gives every bar but the sounding one,
+  so the loop stays visible once it starts),
   the link carrying it (`r=3-4`) — the tempo slider with its BPM readout
   and five one-tap tempos under it, the click, a button that copies a link
   to all of it — key, chords, style, tempo, the neck's view, the part's
