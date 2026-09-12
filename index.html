@@ -315,7 +315,12 @@
   .settings-menu h3{ font-size:.66rem; text-transform:uppercase; letter-spacing:.12em; color:var(--muted2); margin:8px 0 4px; }
   .settings-menu .frow{ padding:4px 0; }
   .bar-editor{ width:min(440px, calc(100vw - 24px)); z-index:26; }
-  .bar-editor .chord-row, .bar-editor .chord-head{ grid-template-columns:22px 1fr 72px 110px 28px; }
+  .bar-editor{ width:min(560px, calc(100vw - 24px)); }
+  .bar-editor .chord-row{ grid-template-columns:22px minmax(0, 1.3fr) 104px minmax(0, 1fr) 28px; }
+  .bar-type{ display:inline-flex; gap:4px; min-width:0; }
+  .bar-type-field{ flex:1 1 60px; min-width:0; padding:5px 7px; }
+  .bar-type-field.bad{ border-color:var(--bad); }
+  .bar-type-set{ padding:5px 9px; }
   .bar-editor .chord-row[hidden]{ display:none; }
   .chord-row .ib.remove{ width:26px; height:26px; }
   .chart-grid .add-bar{ position:absolute; right:-6px; top:50%; transform:translateY(-50%); width:26px; height:26px; border-radius:50%; border:1px dashed var(--line2); background:var(--bg); color:var(--muted2); font:600 15px/1 Inter,system-ui,sans-serif; cursor:pointer; padding:0; }
@@ -809,7 +814,7 @@
          tapped (practice.js renders one row a chord into #chordSlots and
          shows the one asked for) -->
     <div class="popover bar-editor" id="barEditor" hidden>
-      <div class="chord-head" aria-hidden="true"><span class="chord-num"></span><span>Chord</span><span>Bars</span><span>Quality</span><span></span></div>
+      <div class="chord-row chord-head" aria-hidden="true"><span class="chord-num"></span><span>Chord</span><span>Quality</span><span>Type it</span><span></span></div>
       <div id="chordSlots"></div>
     </div>
   </section>

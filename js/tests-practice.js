@@ -679,9 +679,12 @@
     // The bars a chord lasts, changed in Set up, are bars the part has to
     // cover: it once redrew the chart and left the tab as it was until the
     // view was switched away and back.
-    const barsSel = q('#chordSlots .bars-select');
-    barsSel.value = '1';
-    barsSel.dispatchEvent(new Event('change', { bubbles: true }));
+    // ...taken off with the editor, a bar at a time: the first chord's
+    // second bar deleted twice, three bars down to one
+    for (let k = 0; k < 2; k++){
+      document.querySelectorAll('#chords .bar')[1].click();
+      q('#chordSlots .chord-row:not([hidden]) .remove').click();
+    }
     const now = [...document.querySelectorAll('#partTab .tab-chord')].map(el => `${el.dataset.bar}:${el.textContent}`);
     t.equal(now.join(' '), '0:A 1:D 3:E 4:D 5:A', 'The tab follows a change to how long a chord lasts');
     q('#chartViewGroup .seg-btn[data-value="chart"]').click();
@@ -734,7 +737,21 @@
     rows()[1].querySelector('.remove').click();
     if (rows().length !== 1) bad.push(`× left ${rows().length} rows`);
     if (!q('#barEditor').hidden) bad.push('the editor stayed open after the chord went');
-    if (!rows()[0].querySelector('.remove').disabled) bad.push('the last chord can be removed');
+    // a chord held for two: editing its second bar splits it, and × takes one bar only
+    q('#chordCountUp').click();                                  // a second chord, two bars long
+    const barsNow = bars().length;
+    bars()[barsNow - 1].click();                                 // its second bar
+    q('#chordSlots .chord-row:not([hidden]) .bar-type-field').value = 'Bbm7';
+    q('#chordSlots .chord-row:not([hidden]) .bar-type-set').click();
+    if (rows().length !== 3) bad.push(`naming a held chord's second bar left ${rows().length} slots, not 3`);
+    if (bars()[barsNow - 1].querySelector('.chord-name').textContent !== 'Bbm7') bad.push(`the named bar reads ${bars()[barsNow - 1].querySelector('.chord-name').textContent}`);
+    if (bars()[barsNow - 2].querySelector('.chord-name').textContent === 'Bbm7') bad.push('naming one bar renamed the bar before it');
+    bars()[barsNow - 2].click();                                 // the held chord's remaining bar
+    q('#chordSlots .chord-row:not([hidden]) .remove').click();
+    if (bars().length !== barsNow - 1) bad.push(`× on a bar took ${barsNow - bars().length} bars`);
+    for (let guard = 0; bars().length > 1 && guard < 20; guard++){ bars()[bars().length - 1].click(); q('#chordSlots .chord-row:not([hidden]) .remove').click(); }
+    if (bars().length !== 1) bad.push(`deleting bar by bar stopped at ${bars().length}`);
+    if (!rows()[0].querySelector('.remove').disabled) bad.push('the last bar can be removed');
 
     // the picker: a group a genre, the same buttons the bar's select has
     const groups = [...document.querySelectorAll('#styleGroup .style-genre')];

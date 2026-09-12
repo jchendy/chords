@@ -479,33 +479,16 @@
       sel.value = slotChoices[i] == null ? 'off' : String(slotChoices[i]);
       sel.addEventListener('change', () => {
         if (sel.value === 'off') return;         // it's already that chord
-        slotChoices[i] = chromaticOf(sel.value) == null ? Number(sel.value) : sel.value;
+        const j = isolateBar(i);                 // this bar alone, if the chord is held
+        slotChoices[j] = chromaticOf(sel.value) == null ? Number(sel.value) : sel.value;
         // a chord picked by hand starts from the key's own shape for it,
         // unless a shape was already set on this slot
-        currentProgression[i] = chordForDegree(slotChoices[i], shapeFor(i, slotChoices[i]));
+        currentProgression[j] = chordForDegree(slotChoices[j], shapeFor(j, slotChoices[j]));
         loadedLabel = null;
         clearPreset();
         renderAll();
       });
       slot.appendChild(sel);
-
-      // how long this particular chord lasts, so a progression can hold one
-      // chord for four bars and the next for one
-      const bars = document.createElement('select');
-      bars.className = 'mini-select bars-select';
-      bars.setAttribute('aria-label', `Measures for chord ${i + 1}`);
-      bars.innerHTML = [1, 2, 3, 4, 6, 8]
-        .map(n => `<option value="${n}">${n}</option>`).join('');
-      bars.value = String(measuresFor(i));
-      bars.addEventListener('change', () => {
-        slotMeasures[i] = Number(bars.value) || DEFAULT_MEASURES;
-        clearPreset();      // once the bar lengths change it isn't that preset any more
-        renderChordDisplay();
-        rebuildPart();      // the part is written over the bars, so it has more or fewer now
-        writeShareState();
-        resetPlaybackCursor();
-      });
-      slot.appendChild(bars);
 
       // what shape the chord takes — free to leave the key, with a ✓ on the
       // two shapes the key itself gives this degree
@@ -532,20 +515,40 @@
       const implied = randomSeventhsToggle.checked ? diatonicSeventhFor(deg) : plain;
       sev.value = shapeFor(i, deg) || plain;
       sev.addEventListener('change', () => {
+        const j = isolateBar(i);
         // leaving the untouched choice unrecorded is what lets a slot follow
         // the key when you transpose or flip Major/Minor
-        slotShapes[i] = sev.value === implied ? null : sev.value;
-        currentProgression[i] = chordForDegree(deg, shapeFor(i, deg));
+        slotShapes[j] = sev.value === implied ? null : sev.value;
+        currentProgression[j] = chordForDegree(deg, shapeFor(j, deg));
         clearPreset();
         renderAll();
       });
       slot.appendChild(sev);
 
+      // or name the bar's chord outright
+      const typed = document.createElement('span');
+      typed.className = 'bar-type';
+      const field = document.createElement('input');
+      field.type = 'text'; field.className = 'chord-text bar-type-field'; field.placeholder = currentProgression[i] ? displayName(currentProgression[i]) : 'A7';
+      field.spellcheck = false; field.setAttribute('aria-label', `Type a chord for bar ${i + 1}`);
+      const setBtn = document.createElement('button');
+      setBtn.type = 'button'; setBtn.className = 'tbtn bar-type-set'; setBtn.textContent = 'Set';
+      const apply = () => {
+        const name = field.value.trim();
+        if (!name) return;
+        if (!setBarFromName(i, name)){ field.classList.add('bad'); field.setAttribute('aria-invalid', 'true'); }
+      };
+      setBtn.addEventListener('click', apply);
+      field.addEventListener('keydown', e => { if (e.key === 'Enter'){ e.preventDefault(); apply(); } });
+      field.addEventListener('input', () => { field.classList.remove('bad'); field.removeAttribute('aria-invalid'); });
+      typed.appendChild(field); typed.appendChild(setBtn);
+      slot.appendChild(typed);
+
       const rm = document.createElement('button');
       rm.type = 'button'; rm.className = 'ib remove'; rm.textContent = '×';
-      rm.setAttribute('aria-label', `Remove chord ${i + 1}`); rm.title = 'Remove this chord';
-      rm.disabled = chordCount <= 1;
-      rm.addEventListener('click', () => removeChord(i));
+      rm.setAttribute('aria-label', `Remove bar ${i + 1}`); rm.title = 'Remove this bar';
+      rm.disabled = chordCount <= 1 && measuresFor(i) <= 1;
+      rm.addEventListener('click', () => removeBar(i));
       slot.appendChild(rm);
 
       chordSlotsEl.appendChild(slot);
@@ -575,9 +578,36 @@
   // The bar you tap is heard and opened for editing: its row of the chord
   // editor (chord, bars, quality, remove) appears under it. The "+ bar" cell
   // at the end adds a chord.
+  // which bar is open in the editor: its chord's slot, and which of that
+  // chord's bars it is
+  let editing = null;
+  // A change made in the editor is to one bar. When the bar belongs to a
+  // chord held for several, that bar is split off first — the bars before
+  // it, the bar, the bars after — so the chord, the quality, a typed name or
+  // a delete touch only it. Returns the bar's own slot.
+  function isolateBar(i){
+    if (!editing || editing.chord !== i) return i;
+    const m = measuresFor(i);
+    if (m <= 1) return i;
+    const before = editing.measure, after = m - before - 1;
+    const pieces = [before, 1, after].filter(n => n > 0);
+    if (chordCount + pieces.length - 1 > MAX_CHORDS) return i;     // no room to split: the whole chord it is
+    const copy = () => ({ choice: slotChoices[i], shape: slotShapes[i], chord: { ...currentProgression[i] } });
+    const parts = pieces.map(n => ({ ...copy(), bars: n }));
+    slotChoices.splice(i, 1, ...parts.map(x => x.choice));
+    slotShapes.splice(i, 1, ...parts.map(x => x.shape));
+    currentProgression.splice(i, 1, ...parts.map(x => x.chord));
+    slotMeasures.splice(i, 1, ...parts.map(x => x.bars));
+    chordCount = slotChoices.length;
+    chordCountValue.textContent = chordCount;
+    const j = i + (before > 0 ? 1 : 0);
+    editing = { chord: j, measure: 0 };
+    return j;
+  }
   function openBarEditor(bar){
     if (!barEditor) return;
     const idx = Number(bar.dataset.chord);
+    editing = { chord: idx, measure: Number(bar.dataset.bar) - barOffset(idx) };
     chordsRoot.querySelectorAll('.bar.editing').forEach(b => b.classList.remove('editing'));
     bar.classList.add('editing');
     chordSlotsEl.querySelectorAll('.chord-row').forEach(row => { row.hidden = Number(row.dataset.chord) !== idx; });
@@ -590,6 +620,7 @@
     barEditor.style.left = `${Math.max(8, Math.min(bb.left - hb.left, hb.width - width - 8))}px`;
   }
   function closeBarEditor(){
+    editing = null;
     if (!barEditor || barEditor.hidden) return;
     barEditor.hidden = true;
     chordsRoot.querySelectorAll('.bar.editing').forEach(b => b.classList.remove('editing'));
@@ -632,6 +663,35 @@
     loadedLabel = null;
     clearPreset();
     renderAll();
+  }
+  // one bar out: a chord held for several loses one, a chord of one bar goes
+  function removeBar(i){
+    if (measuresFor(i) > 1){
+      closeBarEditor();
+      slotMeasures[i] = measuresFor(i) - 1;      // a length never set is the default, not a number to take one from
+      loadedLabel = null;
+      clearPreset();
+      renderAll();
+      return;
+    }
+    removeChord(i);
+  }
+  // a bar named by hand — "A7", "Bbm7" — the way a typed progression names
+  // its bars: pinned to a degree when the key owns that root in that
+  // quality, otherwise a chord that names itself
+  function setBarFromName(i, name){
+    const chord = chordFromName(name, SEMITONE[currentTonic], currentMode);
+    if (!chord) return false;
+    const j = isolateBar(i);
+    const rootPc = SEMITONE[chord.note] % 12;
+    const match = currentDiatonic.find(d => SEMITONE[d.note] % 12 === rootPc && d.quality === chord.quality);
+    slotChoices[j] = match ? match.deg : null;
+    slotShapes[j] = shapeOf(chord);
+    currentProgression[j] = chord;
+    loadedLabel = null;
+    clearPreset();
+    renderAll();
+    return true;
   }
   // one chord out of the middle; the ones after it move up
   function removeChord(i){
