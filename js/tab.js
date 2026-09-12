@@ -206,11 +206,16 @@
       const beamed = new Set(groups.flat());
       hits.forEach(h => {
         const y1 = h.y0 + STEM_H;
-        if (h.kind === 'whole' || h.kind === 'half'){
-          els.push(`<ellipse class="tab-head" cx="${h.x}" cy="${h.y0 + 3}" rx="4.2" ry="2.8"/>`);
+        // the long values take a hollow head, drawn the way notation draws
+        // one: an oval leaning up to the right, the stem on its left side;
+        // the whole note is the head alone
+        const headed = h.kind === 'whole' || h.kind === 'half';
+        if (headed){
+          const cx = h.kind === 'half' ? h.x + 4 : h.x;
+          els.push(`<ellipse class="tab-head" cx="${cx}" cy="${h.y0 + 2.5}" rx="4.4" ry="2.7" transform="rotate(-22 ${cx} ${h.y0 + 2.5})"/>`);
         }
-        if (h.kind !== 'whole') els.push(`<line class="tab-stem" x1="${h.x}" y1="${h.y0 + (h.kind === 'half' ? 5 : 0)}" x2="${h.x}" y2="${y1}"/>`);
-        if (h.dotted) els.push(`<circle class="tab-dot" cx="${h.x + 5}" cy="${h.y0 + 3}" r="1.5"/>`);
+        if (h.kind !== 'whole') els.push(`<line class="tab-stem" x1="${h.x}" y1="${h.y0 + (headed ? 2.5 : 0)}" x2="${h.x}" y2="${y1}"/>`);
+        if (h.dotted) els.push(`<circle class="tab-dot" cx="${h.x + (h.kind === 'half' ? 12 : h.kind === 'whole' ? 8 : 5)}" cy="${h.y0 + 2.5}" r="1.5"/>`);
         if (h.flags && !beamed.has(h)){
           for (let f = 0; f < h.flags; f++){
             const y = y1 - f * 5;
