@@ -1012,6 +1012,134 @@
   // part told to stay on the I never leaves the key. A part that snapped
   // half its notes away would technically pass that, so it also has to keep
   // most of what was written when the reading is generous.
+  // The engine's ways of mixing a part, each held on a part written for the
+  // purpose: fills that know whether the chord is changing (and the plain
+  // fills pooled with them), the turnaround on the last bar, stop-time, lead
+  // rolls, tails, the seed, double stops placed by shape, the thumb on the
+  // bass strings, the power chord, and easy mode.
+  function testTheEngineFeatures(t){
+    const { realise, EASY_TECH } = GT.parts;
+    const n  = (at, iv, dur = 2, vel = 0.8, x) => ({ at, iv, dur, vel, ...(x || {}) });
+    const nx = (at, iv, dur = 2, vel = 0.8) => ({ at, iv, dur, vel, next: true });
+    const s  = (at, dur = 2, vel = 0.8, voicing = 'full', mute) => ({ at, dur, vel, strum: true, voicing, mute: !!mute });
+    const d  = (at, iv, iv2, dur = 2, vel = 0.8, x) => ({ at, iv, iv2, dur, vel, tech: 'double', ...(x || {}) });
+    const opts = { reading: 'scale', window: { min: 5, max: 9 }, scaleTheory: 'parallel', stayOnKey: false, key: { tonic: 'A', mode: 'major' }, tech: null };
+    const A = chordFromName('A'), D = chordFromName('D');
+    const barsOf = names => names.map(c => ({ chord: c }));
+    const inBar = (notes, b) => notes.filter(x => x.bar === b && !x.strum);
+    const ivs = (notes, b) => inBar(notes, b).map(x => x.iv).join(',');
+
+    // a part whose lists are told apart by their intervals
+    const part = {
+      name: 'probe', figure: [s(0), n(8, 0)], variants: [[s(0), n(8, 7)]],
+      fills: [[n(0, 2)]], fillsOnChange: [[nx(0, 4)]], fillsOnStay: [[n(0, 9)]],
+    };
+    // bars 1, 3 and 5 fill: bar 1 stays on A, bar 3 goes to D, the last bar goes back to A
+    const bars = barsOf([A, A, A, A, D, D]);
+    {
+      // the plain fill is pooled with the situation's: over seeds, a stay bar
+      // gets the stay fill or the plain one and never the change fill
+      const stay = new Set(), change = new Set();
+      for (let seed = 1; seed <= 12; seed++){
+        const out = realise(part, bars, seed, opts, { grid: 16 });
+        stay.add(ivs(out, 1)); change.add(ivs(out, 3));
+      }
+      t.ok(stay.has('9') && stay.has('2') && !stay.has('4'), `a bar before more of the same chord draws from the stay fills and the plain ones (${[...stay].join(' | ')})`);
+      t.ok(change.has('4') && change.has('2') && !change.has('9'), `a bar before a change draws from the change fills and the plain ones (${[...change].join(' | ')})`);
+      // the change fill's note is written against the next chord: D's 3rd, F#
+      const out = realise(part, bars, [...Array(12).keys()].map(k => k + 1).find(seed => ivs(realise(part, bars, seed, opts, { grid: 16 }), 3) === '4'), opts, { grid: 16 });
+      const note = inBar(out, 3)[0];
+      t.equal(note && note.midi % 12, SEMITONE['F#'] % 12, 'a next-chord note lands on the next chord');
+    }
+    {
+      // the turnaround takes the last bar, whatever the roll
+      const withTurn = { ...part, turnaround: [n(0, 12)] };
+      const seen = new Set();
+      for (let seed = 1; seed <= 6; seed++) seen.add(ivs(realise(withTurn, bars, seed, opts, { grid: 16 }), 5));
+      t.equal([...seen].join('|'), '12', 'the last bar of the form is the turnaround');
+      // the figures take the figure bars in turn
+      const out = realise(part, bars, 1, opts, { grid: 16 });
+      t.equal([0, 2, 4].map(b => ivs(out, b)).join(' '), '0 7 0', 'the figure and its variant take the figure bars in turn');
+    }
+    {
+      // stop-time: the fill bar is the stop bar, and the realisation says which
+      const stopped = { ...part, stops: [[n(0, 3)]], stopChance: 1 };
+      const out = realise(stopped, bars, 2, opts, { grid: 16 });
+      t.ok(out.stopBars.has(1) && out.stopBars.has(3) && !out.stopBars.has(0), 'with stop-time certain, every fill bar is a stop bar');
+      t.equal(ivs(out, 1), '3', 'a stop bar plays the stop-time line');
+      const never = realise({ ...stopped, stopChance: 0 }, bars, 2, opts, { grid: 16 });
+      t.equal(never.stopBars.size, 0, 'with stop-time at zero there is none');
+    }
+    {
+      // lead rolls: the leads take the fill bars, some rolls only
+      const lead = { ...part, leads: [[n(0, 5)]] };
+      const always = realise({ ...lead, leadChance: 1 }, bars, 3, opts, { grid: 16 });
+      t.ok(always.leadRoll && ivs(always, 1) === '5' && ivs(always, 3) === '5', 'a lead roll puts the lead lines in the fill bars');
+      const never = realise({ ...lead, leadChance: 0 }, bars, 3, opts, { grid: 16 });
+      t.ok(!never.leadRoll && ivs(never, 1) !== '5', 'no lead roll, no lead lines');
+      let leads = 0;
+      for (let seed = 1; seed <= 40; seed++) if (realise(lead, bars, seed, opts, { grid: 16 }).leadRoll) leads++;
+      t.ok(leads >= 6 && leads <= 24, `about a third of rolls are lead rolls (${leads} of 40)`);
+    }
+    {
+      // a tail replaces the end of a figure bar
+      const tailed = { ...part, tails: [[n(12, 11)]], tailChance: 1 };
+      const out = realise(tailed, bars, 1, opts, { grid: 16 });
+      t.equal(ivs(out, 0), '11', 'a tail takes the end of the figure bar');
+      // the seed holds a roll still, and another seed is another roll
+      const a = JSON.stringify(realise(part, bars, 5, opts, { grid: 16 })), b = JSON.stringify(realise(part, bars, 5, opts, { grid: 16 }));
+      t.ok(a === b, 'the same seed realises the same part');
+      const rolls = new Set();
+      for (let seed = 1; seed <= 10; seed++) rolls.add(JSON.stringify(realise(part, bars, seed, opts, { grid: 16 })));
+      t.ok(rolls.size > 1, 'different seeds are different rolls');
+    }
+    {
+      // double stops by shape: a 3rd on adjacent strings, an octave one string apart, a 6th the same
+      const pair = (w) => { const out = realise({ name: 'p', figure: [w], variants: [], fills: [[w]] }, barsOf([A, A]), 1, opts, { grid: 16 }); const one = out.filter(x => x.bar === 0 && x.tech === 'double'); return one.length === 2 ? Math.abs(one[0].string - one[1].string) : -1; };
+      t.equal(pair(d(0, 4, 7)), 1, 'a 3rd sits on adjacent strings');
+      t.equal(pair(d(0, 0, 7)), 1, 'a 5th sits on adjacent strings');
+      t.equal(pair(d(0, 0, 12)), 2, 'an octave skips a string');
+      t.equal(pair(d(0, 4, 12)), 2, 'a 6th skips a string');
+      t.equal(pair(d(0, 0, 9)), 1, "the boogie's root and 6th are adjacent, a stretch");
+      // ...and the shape itself, on a neck made up so both shapes exist at
+      // the same pitches: the rule has to choose, not the register
+      const { placePair } = GT.parts;
+      const pal = { root: SEMITONE.A % 12, allowed: new Set([...Array(12).keys()]) };
+      const made = [{ string: 2, fret: 6, midi: 61 }, { string: 1, fret: 5, midi: 64 }, { string: 0, fret: 0, midi: 64 }, { string: 1, fret: 10, midi: 69 }, { string: 0, fret: 5, midi: 69 }];
+      const gapOf = (iv, iv2, x) => { const r = placePair({ at: 0, iv, iv2, dur: 1, vel: 1, tech: 'double', ...(x || {}) }, made, pal, 45); return r ? Math.abs(r.c2.string - r.c1.string) : -1; };
+      t.equal(gapOf(16, 19), 1, 'given both shapes, a 3rd takes the adjacent string');
+      t.equal(gapOf(16, 24), 2, 'given both shapes, a 6th skips a string');
+    }
+    {
+      // the thumb: the root on a bass string, the 5th on the one beside it — the chord's own, whatever the palette
+      const stayOpts = { ...opts, stayOnKey: true };
+      const out = realise({ name: 't', figure: [s(0, 2, 0.8, 'bass'), s(4, 2, 0.8, 'fifth')], variants: [], fills: [[s(0, 2, 0.8, 'bass')]] }, barsOf([D, D]), 1, stayOpts, { grid: 16 });
+      const bass = out.find(x => x.bar === 0 && x.at === 0), fifth = out.find(x => x.bar === 0 && x.at === 4);
+      t.ok(bass && bass.string >= 3 && bass.midi % 12 === SEMITONE.D % 12, 'the thumb\'s root is D on a bass string, even with the part on the I');
+      t.ok(fifth && fifth.string >= 3 && fifth.midi % 12 === SEMITONE.A % 12 && Math.abs(fifth.string - bass.string) === 1, 'the thumb\'s 5th is on the string beside the root');
+    }
+    {
+      // a power chord: root, 5th, octave and nothing else, on consecutive strings
+      const out = realise({ name: 'pw', figure: [s(0, 2, 0.9, 'power')], variants: [], fills: [[s(0, 2, 0.9, 'power')]] }, barsOf([A, A]), 1, opts, { grid: 16 });
+      const chord = out.filter(x => x.bar === 0 && x.strum).sort((a, b) => b.string - a.string);
+      const pcs = chord.map(x => x.midi % 12);
+      t.ok(chord.length >= 2 && chord.length <= 3 && pcs.every(p => p === SEMITONE.A % 12 || p === SEMITONE.E % 12), `a power chord is root and 5th only (${chord.length} strings)`);
+      t.ok(chord.every((c, i) => i === 0 || c.string === chord[i - 1].string - 1), 'a power chord sits on consecutive strings');
+    }
+    {
+      // easy mode: no bends, hammer-ons, pull-offs or slides; sixteenths back on the eighths; a written easy version used as is
+      // (the hammer-on lasts four slots: played plain it is two picked notes, the second halfway)
+      const busy = { name: 'e', figure: [s(0), n(1, 4, 1), { at: 3, iv: 5, up: 2, dur: 2, vel: 0.8, tech: 'bend' }, { at: 6, iv: 3, iv2: 4, dur: 4, vel: 0.8, tech: 'hammer' }, n(12, 7, 2, 0.8, { ghost: true })], variants: [], fills: [[n(0, 2)]] };
+      const easy = realise(busy, barsOf([A, A]), 1, opts, { grid: 16, easy: true });
+      t.ok(easy.every(x => !x.bend && x.tech !== 'h' && x.slide == null), 'easy mode plays the techniques plain');
+      t.ok(easy.filter(x => x.bar === 0).every(x => Math.floor(x.at) % 2 === 0), 'easy mode moves sixteenths onto the eighths');
+      t.ok(!easy.some(x => x.ghost), 'easy mode drops ghost notes');
+      const written = realise({ ...busy, easy: { figure: [n(0, 12)], variants: [], fills: [[n(0, 12)]] } }, barsOf([A, A]), 1, opts, { grid: 16, easy: true });
+      t.equal(ivs(written, 0), '12', 'a part with an easy version written for it plays that');
+      t.ok(EASY_TECH.double && !EASY_TECH.bend, 'easy mode keeps double stops and drops bends');
+    }
+  }
+
   function testTheSuggestedParts(t){
     const { LIBRARY, partsFor, palette, realise, rollFills } = GT.parts;
     const { STYLES } = GT.audio;
@@ -2119,6 +2247,7 @@
       ['Every note the neck can play has a recording near it', testEveryNoteHasARecording],
       ['Every chord the practice tab plays has recordings for it', testEveryChordFitsTheRecordings],
       ['The piano map covers both layers end to end', testThePianoMapIsWhole],
+      ['The engine mixes a part the ways the styles ask', testTheEngineFeatures],
       ['The suggested parts realise inside the reading', testTheSuggestedParts],
       ['The engine sleeps when idle, never while playing', testTheEngineSleepsButNotWhilePlaying],
       ['Every bass note every style can play has a recording', testEveryBassNoteHasARecording],
