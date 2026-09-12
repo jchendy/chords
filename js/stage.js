@@ -77,6 +77,13 @@
     const songBtn = $('setupOpen');
     const setSong = on => { document.body.classList.toggle('song-open', on); songBtn.setAttribute('aria-pressed', String(on)); };
     songBtn.addEventListener('click', () => setSong(!document.body.classList.contains('song-open')));
+    // open to start where there is room beside the chart, closed where there isn't;
+    // once pressed by hand, resizing doesn't overrule you
+    const wideForSong = window.matchMedia('(min-width: 900px)');
+    let songChosenByHand = false;
+    songBtn.addEventListener('click', () => { songChosenByHand = true; });
+    setSong(wideForSong.matches);
+    wideForSong.addEventListener('change', () => { if (!songChosenByHand) setSong(wideForSong.matches); });
     placeHomes();
 
     // ---- all the controls on the neck, or none of them ----

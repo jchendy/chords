@@ -302,8 +302,11 @@
   .song-panel .frow{ padding:5px 0; }
   .song-panel .sel{ max-width:220px; }
   .song-hint{ margin:6px 0 2px; font-size:.75rem; color:var(--muted2); }
-  /* below the wide layout the panel is a drawer the Song button opens */
-  @media (max-width:899px){ body:not(.song-open) .song-panel{ display:none; } }
+  /* the Song button opens and closes the panel at every width: open to start
+     on a wide screen (beside the chart), closed on a phone (a drawer under it) */
+  body:not(.song-open) .song-panel{ display:none; }
+  body:not(.song-open) .chart-body{ grid-template-columns:minmax(0, 1fr); }
+  .tbtn[aria-pressed="true"]{ border-color:var(--a); color:var(--a); }
   .popover{ position:absolute; z-index:25; background:var(--panel); border:1px solid var(--line2); border-radius:10px; padding:10px 12px; box-shadow:0 10px 30px rgba(0,0,0,.45); }
   .pop-wrap{ position:relative; display:inline-flex; }
   .menu-pop{ top:calc(100% + 6px); left:0; min-width:220px; display:flex; flex-direction:column; gap:8px; }
