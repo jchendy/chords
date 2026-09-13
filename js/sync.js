@@ -209,14 +209,19 @@
       name: 'firebase',
       user: () => asUser(auth.currentUser),
       onUser: fn => auth.onAuthStateChanged(u => fn(asUser(u))),
+      // the popup: Firebase's own, on the project's domain — fine on desktop
+      // browsers, and not on Safari, which blocks the frame it reports back
+      // through; the token route below is the one that works everywhere
       async signIn(){
         const provider = new fb.auth.GoogleAuthProvider();
         try { await auth.signInWithPopup(provider); }
         catch (e) {
-          if (e && /popup-blocked|popup-closed|canceled-popup/.test(String(e.code))) await auth.signInWithRedirect(provider);
-          else throw e;
+          if (e && /popup-blocked|popup-closed|canceled-popup/.test(String(e.code))) throw new Error('The sign-in window was blocked or closed before it could finish. Allow pop-ups for this site and try again.');
+          throw e;
         }
       },
+      // Google's identity library signed the person in and gave an ID token: hand it to Firebase
+      signInWithToken: idToken => auth.signInWithCredential(fb.auth.GoogleAuthProvider.credential(idToken)),
       signOut: () => auth.signOut(),
       async read(){ const snap = await docRef().get(); return snap.exists ? snap.data() : null; },
       write: doc => docRef().set(doc),
@@ -278,7 +283,50 @@
     try { return await attach(await firebaseBackend(config())); }
     catch (e) { setStatus('error', String(e && e.message || e)); return null; }
   }
+  // ---- Google's own sign-in button (Google Identity Services) ----
+  // With `clientId` in the config, the sign-in is Google's: its library
+  // draws the button, opens its own window from the tap, and hands back
+  // an ID token that Firebase takes with signInWithCredential — no frame
+  // from the project's domain, so it works on Safari and on phones, where
+  // Firebase's popup cannot report back. The library is loaded when a
+  // button is first drawn, so it is ready before the tap.
+  const GSI = 'https://accounts.google.com/gsi/client';
+  let gsiLoading = null, gsiInited = false;
+  const pendingSignIns = [];
+  const gisConfigured = () => !!(config() && config().clientId);
+  function gsiReady(){
+    if (window.google && window.google.accounts && window.google.accounts.id) return Promise.resolve(true);
+    if (!gsiLoading) gsiLoading = loadScript(GSI).then(() => true).catch(e => { gsiLoading = null; setStatus('error', String(e && e.message || e)); return false; });
+    return gsiLoading;
+  }
+  async function onGoogleToken(response){
+    const token = response && response.credential;
+    if (!token){ setStatus('error', 'Google sent no token back.'); return; }
+    try {
+      setStatus('syncing');
+      const b = backend || await start();
+      if (!b) throw new Error('sync is not available here');
+      await b.signInWithToken(token);
+      pendingSignIns.splice(0).forEach(r => r(true));
+    } catch (e) { setStatus('error', String(e && e.message || e)); }
+  }
+  // Google's button drawn into a host; the promise settles true when the
+  // person is signed in through it (a Not now elsewhere settles it false)
+  async function googleButton(host){
+    if (!host || !gisConfigured()) return false;
+    host.innerHTML = '<span class="gsi-wait">Loading Google sign-in…</span>';
+    if (!(await gsiReady())){ host.innerHTML = '<span class="sync-err">Google\'s sign-in could not be loaded.</span>'; return false; }
+    if (!gsiInited){
+      window.google.accounts.id.initialize({ client_id: config().clientId, callback: onGoogleToken, ux_mode: 'popup', auto_select: false, itp_support: true });
+      gsiInited = true;
+    }
+    host.innerHTML = '';
+    window.google.accounts.id.renderButton(host, { theme: 'filled_black', size: 'large', shape: 'pill', text: 'signin_with', logo_alignment: 'left', width: 240 });
+    start();                       // the Firebase library in the background, so the token has somewhere to go
+    return true;
+  }
   async function signIn(){
+    if (gisConfigured()) return ask('signin');   // Google's button lives in the dialog
     const b = backend || await start();
     if (!b) return false;
     try { await b.signIn(); return true; } catch (e) { setStatus('error', String(e && e.message || e)); return false; }
@@ -308,11 +356,14 @@
       else if (s.user) body = `<p class="sync-line"><b>Synced</b> as ${esc(s.user.name || s.user.email)}${s.user.name ? ` (${esc(s.user.email)})` : ''}${s.state === 'syncing' ? ' · syncing…' : s.lastSync ? ` · last synced ${when(s.lastSync)}` : ''}${s.state === 'error' ? ` · <span class="sync-err">${esc(s.error)}</span>` : ''}</p>
         <p class="sync-btns"><button type="button" class="btn small" id="syncNow">Sync now</button><button type="button" class="btn small" id="syncOut">Sign out</button><button type="button" class="linklike" id="syncDelete">Delete my data from the cloud</button> <a href="privacy.html">What is stored</a></p>`;
       else if (s.state === 'loading') body = `<p class="sync-line muted">Loading sync…</p>`;
-      else if (s.state === 'deleted') body = `<p class="sync-line">Your cloud data and account are deleted. What is in this browser stays here. <button type="button" class="btn small" id="syncIn">Sign in with Google</button></p>`;
-      else body = `<p class="sync-line">Keep your favorites, course progress and settings on every device you use. <button type="button" class="btn small" id="syncIn">Sign in with Google</button>${s.state === 'error' ? ` <span class="sync-err">${esc(s.error)}</span>` : ''}</p>
+      else if (s.state === 'deleted') body = `<p class="sync-line">Your cloud data and account are deleted. What is in this browser stays here.</p><p class="sync-btns">${gisConfigured() ? '<span class="gsi-host"></span>' : '<button type="button" class="btn small" id="syncIn">Sign in with Google</button>'}</p>`;
+      else body = `<p class="sync-line">Keep your favorites, course progress and settings on every device you use.${s.state === 'error' ? ` <span class="sync-err">${esc(s.error)}</span>` : ''}</p>
+        <p class="sync-btns">${gisConfigured() ? '<span class="gsi-host"></span>' : '<button type="button" class="btn small" id="syncIn">Sign in with Google</button>'}</p>
         <p class="sync-line muted">Google sends the site your name, email address and picture, which stay with your account; what you have starred and done is one small document only you can read. <a href="privacy.html">What is stored, and how to delete it</a>.</p>`;
       host.innerHTML = `<div class="sync-panel"><p class="kicker">Sync across devices</p>${body}</div>`;
       const on = (id, fn) => { const el = host.querySelector('#' + id); if (el) el.addEventListener('click', fn); };
+      const gsiHost = host.querySelector('.gsi-host');
+      if (gsiHost) googleButton(gsiHost);
       on('syncIn', () => signIn());
       on('syncNow', () => syncNow());
       on('syncOut', () => signOut());
@@ -350,28 +401,41 @@
       dialog.sign-in-ask .ask-btns{ display:flex; flex-wrap:wrap; gap:10px; margin-top:14px; }
       dialog.sign-in-ask button{ font:600 13px/1 Inter,system-ui,sans-serif; padding:9px 16px; border-radius:999px; border:1px solid var(--line2, #3a3631); background:var(--panel2, #1b1a18); color:var(--ink, #ece7dc); cursor:pointer; }
       dialog.sign-in-ask button.ask-in{ background:var(--a, #e0a84a); color:#0c0b0a; border-color:var(--a, #e0a84a); }
-      dialog.sign-in-ask .ask-err{ color:#e069a6; font-size:.9rem; }`;
+      dialog.sign-in-ask .ask-err{ color:#e069a6; font-size:.9rem; }
+      .gsi-host{ display:inline-block; min-height:44px; min-width:240px; vertical-align:middle; }
+      .gsi-host[hidden]{ display:none; }
+      .gsi-wait{ font-size:12px; color:var(--muted2, #6f675b); line-height:44px; }`;
     document.head.appendChild(st);
   }
   const WHY = {
     favorite: 'Favorites are kept with your Google account, so the same ones are on every device you use.',
     progress: 'Course progress is kept with your Google account, so a piece done on one device is done on all of them.',
+    signin: 'Signed in, your favorites, course progress and settings are kept on every device you use.',
   };
   function ask(what){
     ensureStyle();
     if (!askDialog){
       askDialog = document.createElement('dialog');
       askDialog.className = 'sign-in-ask';
-      askDialog.innerHTML = `<h3>Sign in to keep this</h3><p class="ask-what"></p><p class="ask-more">Google shares your name and email address with the site; nothing else is stored about you. <a href="privacy.html">What is stored</a>.</p><p class="ask-err" hidden></p><div class="ask-btns"><button type="button" class="ask-in">Sign in with Google</button><button type="button" class="ask-no">Not now</button></div>`;
+      askDialog.innerHTML = `<h3 class="ask-title">Sign in to keep this</h3><p class="ask-what"></p><p class="ask-more">Google shares your name and email address with the site; nothing else is stored about you. <a href="privacy.html">What is stored</a>.</p><p class="ask-err" hidden></p><div class="ask-btns"><span class="gsi-host" hidden></span><button type="button" class="ask-in">Sign in with Google</button><button type="button" class="ask-no">Not now</button></div>`;
       document.body.appendChild(askDialog);
     }
     const dlg = askDialog;
+    dlg.querySelector('.ask-title').textContent = what === 'signin' ? 'Sign in' : 'Sign in to keep this';
     dlg.querySelector('.ask-what').textContent = WHY[what] || WHY.progress;
     const err = dlg.querySelector('.ask-err'); err.hidden = true; err.textContent = '';
+    const gsiHost = dlg.querySelector('.gsi-host'), plainBtn = dlg.querySelector('.ask-in');
+    gsiHost.hidden = !gisConfigured(); plainBtn.hidden = gisConfigured();
     return new Promise(resolve => {
       let settled = false;
       const done = ok => { if (settled) return; settled = true; if (dlg.open) dlg.close(); resolve(ok); };
-      dlg.querySelector('.ask-in').onclick = async () => {
+      if (gisConfigured()){
+        pendingSignIns.push(ok => done(ok));       // Google's button settles it when the token has signed the person in
+        googleButton(gsiHost);
+        const offStatus = onStatus(s => { if (s.state === 'error' && dlg.open){ err.textContent = s.error; err.hidden = false; } });
+        dlg.addEventListener('close', offStatus, { once: true });
+      }
+      plainBtn.onclick = async () => {
         const ok = await signIn();
         if (ok && (user || (backend && backend.user()))) done(true);
         else { err.textContent = status.error || 'The sign-in did not go through.'; err.hidden = false; }
@@ -403,7 +467,7 @@
     onStatus(draw);
   }
 
-  GT.sync = { collect, merge, apply, canon, attach, start, signIn, signOut, syncNow, deleteCloudData, status: current, onStatus, panel, signButton, require, gateOpen, isOn, configured, available, META_KEY, ON_KEY, CDN,
+  GT.sync = { collect, merge, apply, canon, attach, start, signIn, signOut, syncNow, deleteCloudData, status: current, onStatus, panel, signButton, require, gateOpen, isOn, configured, gisConfigured, available, googleButton, onGoogleToken, META_KEY, ON_KEY, CDN, GSI,
               // for the tests: the bookkeeping as it stands
               meta: () => loadMeta(), resetMeta: () => { meta = null; try { localStorage.removeItem(META_KEY); } catch (e) { /* no storage */ } shadow.clear(); snapshotKeys().forEach(remember); },
               detach: () => { if (unsubscribe){ unsubscribe(); unsubscribe = null; } backend = null; user = null; lastRemote = null; clearTimeout(uploadTimer); setStatus('off'); } };

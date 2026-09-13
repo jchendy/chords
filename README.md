@@ -1282,7 +1282,13 @@ Firestore, under the signed-in person's own id, and merges it with the
 browser's on every page load and on every change, so what was done on any
 device is done on all of them. Sign-in is Google, through Firebase
 Authentication, and the session stays in the browser, so it is one click
-per browser rather than one per visit.
+per browser rather than one per visit. The sign-in itself is Google's own
+button (Google Identity Services), loaded when a button is first drawn
+and handing Firebase the ID token it returns — not Firebase's popup,
+which reports back through a frame from the project's own domain that
+Safari's tracking protection blocks, so on an iPhone the popup opened
+and closed with nothing done. The popup is kept only for a config with no
+`clientId`.
 
 The merge is per item, by time — the one rule that makes two devices safe
 to use offline. A favorite starred on one device and removed on another
@@ -1330,11 +1336,14 @@ email; Authentication → Settings → Authorized domains → add the site's
 domain (localhost is there already); Build → Firestore Database → create in
 production mode, then paste `firebase/firestore.rules` under Rules and
 publish; Project settings → General → Your apps → add a web app and copy
-its config into `js/firebase-config.js`. Optionally, in the Google Cloud
-console, restrict the API key to the site's domain and fill in the OAuth
-consent screen (name, support email, homepage, a link to
-`privacy.html`) and publish it — the only scopes used are non-sensitive,
-so no verification is needed.
+its config into `js/firebase-config.js`; Authentication → Sign-in method →
+Google → Web SDK configuration → the Web client ID into `clientId` there,
+and in the Google Cloud console (APIs & Services → Credentials → that
+client) the site's domain under Authorized JavaScript origins. Optionally,
+in the Google Cloud console, restrict the API key to the site's domain and
+fill in the OAuth consent screen (name, support email, homepage, a link
+to `privacy.html`) and publish it — the only scopes used are
+non-sensitive, so no verification is needed.
 
 ## Usage
 
