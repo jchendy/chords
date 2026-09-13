@@ -319,7 +319,7 @@
       const r = 15, c = 2 * Math.PI * r;
       return `<svg class="ring${done ? ' done' : ''}" viewBox="0 0 40 40" aria-hidden="true"><circle class="track" cx="20" cy="20" r="${r}"/><circle class="fill" cx="20" cy="20" r="${r}" stroke-dasharray="${c}" stroke-dashoffset="${c * (1 - frac)}"/><text x="20" y="20" text-anchor="middle" dominant-baseline="central">${done ? '✓' : n}</text></svg>`;
     };
-    const strip = lesson => `<span class="strip" aria-hidden="true">${lesson.pieces.map(p => `<i class="${p.type}${isDone(lesson, p) ? ' done' : ''}" title="${esc(p.title)}">${ICONS[p.type] || '·'}</i>`).join('')}</span>`;
+    const strip = lesson => `<span class="strip" aria-hidden="true">${lesson.pieces.map(p => `<i class="k-${p.type}${isDone(lesson, p) ? ' done' : ''}" title="${esc(p.title)}">${ICONS[p.type] || '·'}</i>`).join('')}</span>`;
     function renderHome(){
       current = null;
       const s = summary();
@@ -329,7 +329,7 @@
       const hero = s.complete
         ? `<div class="hero complete"><p class="kicker">Course complete</p><h2>Every piece done — ${plural(s.pieces, 'piece')} across ${plural(s.lessons, 'lesson')}.</h2><p>Go round again at the record's tempo, or take the studies into Jam and change the key.</p><p class="hero-btns"><a class="btn primary" href="${hrefOf(course[0], 1)}">Start again from lesson 1</a><a class="btn" href="#s1">Read the full page</a></p></div>`
         : at && s.started
-          ? `<div class="hero"><p class="kicker">Pick up where you left off</p><h2>Lesson ${at[0].n} · ${esc(at[0].title)}</h2><p class="hero-piece"><span class="icon ${at[1].type}">${ICONS[at[1].type]}</span> ${esc(at[1].kicker)} · ${esc(at[1].title)} · piece ${at[0].pieces.indexOf(at[1]) + 1} of ${at[0].pieces.length}</p><p class="hero-btns"><a class="btn primary" href="${hrefOf(at[0], at[1])}">Continue →</a><a class="btn" href="${hrefOf(at[0], null)}">Lesson ${at[0].n} from its first piece</a></p></div>`
+          ? `<div class="hero"><p class="kicker">Pick up where you left off</p><h2>Lesson ${at[0].n} · ${esc(at[0].title)}</h2><p class="hero-piece"><span class="icon k-${at[1].type}">${ICONS[at[1].type]}</span> ${esc(at[1].kicker)} · ${esc(at[1].title)} · piece ${at[0].pieces.indexOf(at[1]) + 1} of ${at[0].pieces.length}</p><p class="hero-btns"><a class="btn primary" href="${hrefOf(at[0], at[1])}">Continue →</a><a class="btn" href="${hrefOf(at[0], null)}">Lesson ${at[0].n} from its first piece</a></p></div>`
           : `<div class="hero"><p class="kicker">Not started</p><h2>${plural(s.lessons, 'lesson')}, ${plural(s.pieces, 'piece')}, about ${minutesText(s.minutes)} of playing.</h2><p>One piece at a time, in order. Your place is kept in this browser.</p><p class="hero-btns"><a class="btn primary" href="${hrefOf(course[0], 1)}">Start lesson 1 →</a></p></div>`;
       root.innerHTML = `
         <div class="course-home">
@@ -365,7 +365,7 @@
     }
 
     // ---- a lesson, one piece at a time ----
-    const railItem = (lesson, p, i, cur) => `<li class="${p.type}${isDone(lesson, p) ? ' done' : ''}${p === cur ? ' current' : ''}"><a href="${hrefOf(lesson, p)}" ${p === cur ? 'aria-current="step"' : ''}><span class="icon">${isDone(lesson, p) ? '✓' : ICONS[p.type] || '·'}</span><span class="rail-title"><span class="rail-kicker">${esc(p.kicker)}</span>${esc(p.title)}</span><span class="rail-min">${p.minutes} min</span></a></li>`;
+    const railItem = (lesson, p, i, cur) => `<li class="k-${p.type}${isDone(lesson, p) ? ' done' : ''}${p === cur ? ' current' : ''}"><a href="${hrefOf(lesson, p)}" ${p === cur ? 'aria-current="step"' : ''}><span class="icon">${isDone(lesson, p) ? '✓' : ICONS[p.type] || '·'}</span><span class="rail-title"><span class="rail-kicker">${esc(p.kicker)}</span>${esc(p.title)}</span><span class="rail-min">${p.minutes} min</span></a></li>`;
     const segments = (lesson, cur) => `<span class="segments" aria-hidden="true">${lesson.pieces.map(p => `<i class="${isDone(lesson, p) ? 'done' : ''}${p === cur ? ' current' : ''}"></i>`).join('')}</span>`;
     function lessonFrame(lesson, cur, inner){
       const d = doneCount(lesson);
@@ -398,8 +398,8 @@
       const prev = lesson.pieces[i - 1] || null, next = lesson.pieces[i + 1] || null;
       const done = isDone(lesson, piece);
       lessonFrame(lesson, piece, `
-        <article class="piece ${piece.type}">
-          <p class="kicker"><span class="icon ${piece.type}">${ICONS[piece.type]}</span> ${esc(piece.kicker)} · ${piece.minutes} min · piece ${i + 1} of ${lesson.pieces.length}</p>
+        <article class="piece k-${piece.type}">
+          <p class="kicker"><span class="icon k-${piece.type}">${ICONS[piece.type]}</span> ${esc(piece.kicker)} · ${piece.minutes} min · piece ${i + 1} of ${lesson.pieces.length}</p>
           <h3>${esc(piece.title)}</h3>
           <div class="piece-body"></div>
           ${piece.note ? `<p class="piece-note">${piece.note}</p>` : ''}

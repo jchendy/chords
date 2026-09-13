@@ -32,8 +32,8 @@
 .btn:focus-visible, .linklike:focus-visible{ outline:2px solid var(--a); outline-offset:2px; }
 .linklike{ background:none; border:0; padding:0; font:inherit; color:var(--a); cursor:pointer; text-decoration:underline; }
 .icon{ display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:50%; border:1px solid var(--line2); font:600 11px/1 Inter,system-ui,sans-serif; color:var(--muted); vertical-align:-5px; }
-.icon.card{ color:var(--a); border-color:var(--a); }
-.icon.check{ color:#8ec93f; border-color:#3f5a26; }
+.icon.k-card{ color:var(--a); border-color:var(--a); }
+.icon.k-check{ color:#8ec93f; border-color:#3f5a26; }
 
 /* ---- the dashboard ---- */
 .course-home{ max-width:980px; margin:0 auto; padding-top:26px; }
@@ -69,9 +69,9 @@
 .lesson-goal.big{ font-size:1rem; color:var(--muted); margin:0 0 12px; }
 .strip{ display:flex; flex-wrap:wrap; gap:3px; }
 .strip i{ display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; border-radius:4px; border:1px solid var(--line2); font:600 10px/1 Inter,system-ui,sans-serif; font-style:normal; color:var(--muted2); overflow:hidden; }
-.strip i.card{ color:var(--a); border-color:#5a4520; }
+.strip i.k-card{ color:var(--a); border-color:#5a4520; }
 .strip i.done{ background:var(--a); color:#0c0b0a; border-color:var(--a); }
-.strip i.check.done{ background:#8ec93f; border-color:#8ec93f; }
+.strip i.k-check.done{ background:#8ec93f; border-color:#8ec93f; }
 .lesson-side{ display:flex; flex-direction:column; align-items:flex-end; gap:8px; }
 .status{ font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted2); white-space:nowrap; }
 .status.in-progress{ color:var(--a); }
@@ -110,12 +110,14 @@
 .piece{ padding:0 0 30px; }
 .piece .kicker .icon{ margin-right:4px; }
 .piece-body{ min-width:0; }
-.piece.read .piece-body, .piece.text .piece-body, .piece.check .piece-body{ max-width:72ch; }
+.piece.k-read .piece-body, .piece.k-text .piece-body, .piece.k-check .piece-body{ max-width:72ch; }
 .course-read{ font-size:1.02rem; line-height:1.6; color:var(--ink); max-width:72ch; }
 .course-read p{ margin:0 0 12px; }
 .course-read.note{ padding:10px 14px; border-left:3px solid var(--line2); background:var(--panel); border-radius:0 8px 8px 0; }
-.piece.figure .neck-fig{ max-width:900px; }
-.piece.grips .grip-group{ margin:0; }
+.piece.k-figure .neck-fig{ max-width:900px; }
+.piece.k-grips .grip-group{ margin:0; }
+.piece.k-grips .grip-group:not(.has-vars){ max-width:560px; }
+/* (the kinds are prefixed k- because the page styles .grips, .faults, .players and .sources of its own) */
 .course-songs{ display:grid; gap:12px; max-width:90ch; }
 .course-songs .song{ margin:0; }
 .course-faults{ max-width:none; }
