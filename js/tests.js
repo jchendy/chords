@@ -3061,6 +3061,27 @@
     t.equal(bad.join('; '), '', 'The example player fingers the tab: the whole hand a change, no finger a note, the neck on the shape struck');
   }
 
+  // A backend of the tests' own for js/sync.js: signed in or out as asked,
+  // its cloud a document in memory. The star tests sign in with it, since a
+  // star or a mark waits on sign-in wherever sync is possible.
+  GT.testSync = {
+    backend(user, doc = null){
+      const cloud = { doc, writes: 0, subs: [] };
+      let userFn = null;
+      return { cloud, name: 'fake', user: () => user, onUser: fn => { userFn = fn; }, setUser(u){ user = u; if (userFn) userFn(u); },
+        signIn: async () => {}, signOut: async () => { user = null; if (userFn) userFn(null); },
+        read: async () => cloud.doc, write: async d => { cloud.doc = d; cloud.writes++; }, subscribe: fn => { cloud.subs.push(fn); return () => { cloud.subs = cloud.subs.filter(x => x !== fn); }; },
+        remove: async () => { cloud.doc = null; }, deleteAccount: async () => {} };
+    },
+    // sign in with the fake, remembering what sync had in storage; `restore` puts it back
+    async signIn(){
+      const keys = [GT.sync.META_KEY, GT.sync.ON_KEY];
+      const kept = Object.fromEntries(keys.map(k => [k, localStorage.getItem(k)]));
+      await GT.sync.attach(GT.testSync.backend({ uid: 'test', name: 'Test', email: 'test@example.com' }));
+      return () => { GT.sync.detach(); keys.forEach(k => { if (kept[k] == null) localStorage.removeItem(k); else localStorage.setItem(k, kept[k]); }); GT.sync.resetMeta(); };
+    },
+  };
+
   // Favourites (js/favourites.js): a starred thing is kept with its name
   // and its link, newest first, starred again it is gone, the list survives
   // a read-back from storage, and the page lists them by kind with a way to
@@ -3135,6 +3156,7 @@
     const F = GT.favourites;
     const keys = ['gt.favourites', 'gt.hendrixCourse', 'gt.hendrixNeck', S.META_KEY, S.ON_KEY];
     const kept = Object.fromEntries(keys.map(k => [k, localStorage.getItem(k)]));
+    const hadConfig = window.GT_FIREBASE;
     try {
       keys.forEach(k => localStorage.removeItem(k));
       S.resetMeta(); F.reload();
@@ -3145,10 +3167,9 @@
       if (!meta.favRemoved.x9) bad.push('removing a favourite left no tombstone');
       if (!meta.prefsAt['gt.hendrixNeck']) bad.push('a preference written has no time');
       // a fake backend: signed in, one favourite and one done piece already in the cloud
-      const cloud = { doc: { v: 1, favourites: { items: [fav('x1', 100)], removed: [] }, courses: [{ prefix: 'hendrix', done: [{ key: 'thumb/card-x1', at: 100 }], undone: [], ticks: [], last: null, at: 100 }], prefs: [], updated: 100 }, writes: 0, subs: [] };
-      let userFn = null;
-      const backend = { name: 'fake', user: () => ({ uid: 'u1', name: 'Test', email: 't@example.com' }), onUser: fn => { userFn = fn; }, signIn: async () => {}, signOut: async () => { userFn(null); },
-        read: async () => cloud.doc, write: async doc => { cloud.doc = doc; cloud.writes++; }, subscribe: fn => { cloud.subs.push(fn); return () => { cloud.subs = cloud.subs.filter(x => x !== fn); }; }, remove: async () => { cloud.doc = null; }, deleteAccount: async () => {} };
+      const backend = GT.testSync.backend({ uid: 'u1', name: 'Test', email: 't@example.com' },
+        { v: 1, favourites: { items: [fav('x1', 100)], removed: [] }, courses: [{ prefix: 'hendrix', done: [{ key: 'thumb/card-x1', at: 100 }], undone: [], ticks: [], last: null, at: 100 }], prefs: [], updated: 100 });
+      const cloud = backend.cloud;
       let seen = 0; const off = F.onChange(() => { seen++; });
       await S.attach(backend);
       if (!F.has('x1')) bad.push('the cloud\'s favourite did not land in the browser');
@@ -3174,7 +3195,34 @@
       off();
       await S.signOut();
       if (S.isOn()) bad.push('signing out left sync switched on');
+      // the gate: signed in, a star or a mark goes ahead; signed out where
+      // sync is possible, it asks first, and Not now changes nothing; where
+      // sync is not possible there is nothing to sign in to
+      // (the tests page carries no Firebase config of its own: a pretend one makes sync possible for the moment)
+      window.GT_FIREBASE = { apiKey: 'test', authDomain: 't', projectId: 't', appId: 't' };
+      if (!S.available()) bad.push('with a config over http, sync should be possible');
+      S.detach();
+      const out = GT.testSync.backend(null);
+      await S.attach(out);
+      if (!(await Promise.race([S.require('favourite').then(() => 'answered'), new Promise(r => setTimeout(() => r('asked'), 200))]) === 'asked')) bad.push('signed out, the gate did not ask');
+      const dlg = document.querySelector('dialog.sign-in-ask');
+      if (!dlg || !dlg.open) bad.push('the sign-in dialog is not open');
+      else {
+        const answer = new Promise(r => setTimeout(() => r('still waiting'), 300));
+        dlg.querySelector('.ask-no').click();
+        await new Promise(r => setTimeout(r, 50));
+        if (dlg.open) bad.push('Not now did not close the dialog');
+      }
+      out.setUser({ uid: 'u2', name: 'Two', email: 'two@example.com' });
+      await new Promise(r => setTimeout(r, 100));
+      if (!(await S.require('favourite'))) bad.push('signed in, the gate did not open');
+      if (document.querySelector('dialog.sign-in-ask[open]')) bad.push('signed in, the gate still asked');
+      await S.signOut();
+      window.GT_FIREBASE = null;
+      if (!(await S.require('favourite'))) bad.push('with no sync possible, the gate should let the action through');
+      window.GT_FIREBASE = hadConfig;
     } finally {
+      window.GT_FIREBASE = hadConfig;
       S.detach();
       keys.forEach(k => { if (kept[k] == null) localStorage.removeItem(k); else localStorage.setItem(k, kept[k]); });
       S.resetMeta(); F.reload();
@@ -3239,19 +3287,27 @@
           if (!w.document.querySelector('.page').hidden) bad.push('the full page is still shown in the course');
           // the star on the course's copy of a card keeps the card by its id on its page, and lights the page's own copy too
           const favKept = w.localStorage.getItem(w.GT.favourites.KEY);
+          const syncKept = [w.GT.sync.META_KEY, w.GT.sync.ON_KEY].map(k => [k, w.localStorage.getItem(k)]);
           try {
             w.GT.favourites.clear();
+            // the star waits on sign-in: the frame signs in with a backend of the test's own
+            await w.GT.sync.attach(GT.testSync.backend({ uid: 'frame', name: 'Frame', email: 'frame@example.com' }));
             const star = w.document.querySelector('#course .piece article.ex .star');
             if (!star) bad.push('the card in the course has no star');
             else {
               star.click();
+              await wait(150);
               const cardId = l1.pieces[firstCard - 1].cardId;
               const f = w.GT.favourites.get(`dive:${page}:${cardId}`);
               if (!f || f.kind !== 'dive' || f.href !== `${page}.html#${cardId}`) bad.push(`starring the card kept ${JSON.stringify(f)}`);
               const pageStar = w.document.querySelector(`main article.ex#${cardId} .star`);
               if (!pageStar || pageStar.textContent[0] !== '★') bad.push("the page's own copy of the card is not lit");
             }
-          } finally { if (favKept == null) w.localStorage.removeItem(w.GT.favourites.KEY); else w.localStorage.setItem(w.GT.favourites.KEY, favKept); w.GT.favourites.reload(); }
+          } finally {
+            w.GT.sync.detach();
+            if (favKept == null) w.localStorage.removeItem(w.GT.favourites.KEY); else w.localStorage.setItem(w.GT.favourites.KEY, favKept); w.GT.favourites.reload();
+            syncKept.forEach(([k, v]) => { if (v == null) w.localStorage.removeItem(k); else w.localStorage.setItem(k, v); });
+          }
           w.location.hash = '#s1';
           await wait(400);
           if (w.document.querySelector('.page').hidden || !w.document.getElementById('course').hidden) bad.push('leaving the course did not show the page');

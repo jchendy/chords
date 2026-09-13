@@ -40,7 +40,7 @@
   });
   GT.favourites.renderPage();
   GT.favourites.onChange(() => GT.favourites.renderPage());
-  if (GT.sync) GT.sync.panel(document.getElementById('syncPanel'));
+  if (GT.sync){ GT.sync.panel(document.getElementById('syncPanel')); GT.sync.signButton(document.getElementById('signWrap')); }
   GT.tabs.init({
     // whichever tab you're leaving, don't let it keep playing
     onSwitch: () => { GT.jam.stop(); GT.earTraining.stop(); GT.drills.stop(); },

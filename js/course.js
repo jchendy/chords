@@ -82,6 +82,8 @@
     const doneCount = lesson => lesson.pieces.filter(p => isDone(lesson, p)).length;
     const lessonDone = lesson => lesson.pieces.length > 0 && doneCount(lesson) === lesson.pieces.length;
 
+    // progress is kept with the person's account: signed out, marking asks first (js/sync.js)
+    const gate = () => (GT.sync && GT.sync.require) ? GT.sync.require('progress') : Promise.resolve(true);
     // ---- the pieces, resolved against the page ----
     // Each entry of a lesson's list names something on the page; here it
     // becomes a piece with a title, a kind, a time and a way to draw itself,
@@ -183,7 +185,8 @@
             const ticks = state.ticks[k] || items.map(() => false);
             host.innerHTML = `<p class="course-check-lead">Tick each when you can do it — the piece is complete when they all are.</p>
               <ul class="course-check">${items.map((t, i) => `<li><label><input type="checkbox" data-i="${i}"${ticks[i] ? ' checked' : ''}> <span>${esc(t)}</span></label></li>`).join('')}</ul>`;
-            host.querySelectorAll('input').forEach(box => box.addEventListener('change', () => {
+            host.querySelectorAll('input').forEach(box => box.addEventListener('change', async () => {
+              if (!(await gate())){ box.checked = !box.checked; return; }
               const now = state.ticks[k] || items.map(() => false);
               now[Number(box.dataset.i)] = box.checked;
               state.ticks[k] = now;
@@ -421,9 +424,12 @@
       const ctx = { refresh: () => refreshMarks(lesson, piece) };
       piece.render(body, ctx);
       const toggle = root.querySelector('#pieceDone');
-      toggle.addEventListener('change', () => { setDone(lesson, piece, toggle.checked); if (piece.type === 'check') piece.render((body.innerHTML = '', body), ctx); refreshMarks(lesson, piece); });
-      root.querySelector('#pieceNext').addEventListener('click', () => {
-        if (!isDone(lesson, piece)) setDone(lesson, piece, true);
+      toggle.addEventListener('change', async () => {
+        if (!(await gate())){ toggle.checked = isDone(lesson, piece); return; }
+        setDone(lesson, piece, toggle.checked); if (piece.type === 'check') piece.render((body.innerHTML = '', body), ctx); refreshMarks(lesson, piece);
+      });
+      root.querySelector('#pieceNext').addEventListener('click', async () => {
+        if (!isDone(lesson, piece)){ if (!(await gate())) return; setDone(lesson, piece, true); }
         go(next ? hrefOf(lesson, next) : hrefOf(lesson, 'done'));
       });
     }

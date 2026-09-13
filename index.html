@@ -263,6 +263,8 @@
   .dive-course .go:hover, .dive-course .go:focus-visible{ text-decoration:underline; outline:none; }
   /* ---------- favourites: the stars, and the page ---------- */
   .tbtn.star.on{ color:var(--a); border-color:var(--a); }
+  .ib.star-ib{ font-size:1.05rem; line-height:1; }
+  .ib.star-ib.on{ color:var(--a); border-color:var(--a); }
   .tb-hint{ color:var(--muted2); font-size:.82rem; margin-left:10px; }
   .favs-group{ margin:0 0 22px; }
   .favs-group h3{ font-family:Fraunces,Georgia,serif; font-weight:600; font-size:1.15rem; margin:0 0 8px; }
@@ -778,6 +780,8 @@
     <button type="button" class="seg-btn site-tab" data-tab="favourites">Favourites</button>
   </nav>
   <span class="sp"></span>
+  <!-- sign in / sign out, for the favourites and the course progress that are kept with the account (js/sync.js) -->
+  <span id="signWrap" hidden></span>
   <!-- the rest of the site: the things that aren't a tool you'd switch to
        mid-practice, behind a menu at the end of the row -->
   <span class="menu-wrap">
@@ -1095,6 +1099,8 @@
     <!-- a link to everything as it stands — key, chords, style, tempo, the
          neck's view, the part's roll — so it belongs with the page's own
          controls, not the progression's -->
+    <!-- the star: this jam, as it stands, kept in the favourites (the same star sits in the Share row of the controls) -->
+    <button type="button" class="ib star-ib" id="jamStarQuick" aria-label="Keep this in your favourites" aria-pressed="false">☆</button>
     <button type="button" class="ib" id="quickShare" aria-label="Copy a link to all of this" title="Copy a link to all of this: the key, the chords, the style and tempo, the neck as it is shown and the part as it was rolled"><svg class="i-link" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8.2 11.8a3.4 3.4 0 0 0 5 .3l2.6-2.6a3.4 3.4 0 0 0-4.8-4.8l-1.5 1.5"/><path d="M11.8 8.2a3.4 3.4 0 0 0-5-.3L4.2 10.5a3.4 3.4 0 0 0 4.8 4.8l1.5-1.5"/></svg><svg class="i-tick" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 10.5l3.5 3.5 7.5-8"/></svg></button>
     <!-- the settings set once and left — voice, click, count-in, what the dice
          may use, colour, frets, the link — belong to the page, so their gear

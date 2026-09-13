@@ -584,6 +584,7 @@
            windowAt, card, exampleById, renderCards, countInOn, setCountIn, prefKey,
            init(){
              render(); renderToc(); bindTocFold(); bindCountIn();
+             if (GT.sync){ const top = document.querySelector('.top'); if (top){ const wrap = document.createElement('span'); wrap.id = 'signWrap'; wrap.hidden = true; top.appendChild(wrap); GT.sync.signButton(wrap); } }
              if (GT.favourites){
                GT.favourites.linkFromPage();
                // a card starred in one place (the course's copy, the large view) is starred in every copy

@@ -1245,7 +1245,8 @@ be noise.
 
 **Favourites** are the same links with a name on them. The ☆ on a deep
 dive's card (in the Read view, the course and the large view alike) keeps
-the card by its id on its page; the ☆ in the Jam tab's Share row keeps the
+the card by its id on its page; the ☆ in the Jam tab's playback bar, beside
+the link icon (and the same star in the Share row of its controls), keeps the
 tab as it is set — its key, chords or preset, feel, part and tempo, named
 by them ("Hendrix: Little Wing · E minor · Soul ballad · Thumb bass and
 the split chord · 70 BPM") with the link Copy link would give, and it goes
@@ -1284,6 +1285,15 @@ document is arrays of records rather than maps, since Firestore field
 names cannot carry the dots and slashes the keys have. A test holds the
 merge (both orders give one answer, merging a document with itself changes
 nothing), the watch, and a round trip through a fake backend.
+
+Because a favourite or a mark is kept with the person's account, both
+wait on sign-in wherever sync is possible: signed out, the star or the
+Mark complete button opens a small dialog — sign in, and the action goes
+ahead; not now, and nothing changes. Where sync is not possible (no
+config, a page opened from disk) there is nothing to sign in to and the
+action goes ahead in the browser as before. A Sign in / Sign out button
+sits at the right of every toolbar — the front page's header and the dive
+pages' top bar — showing the signed-in person's name and picture.
 
 Nothing of this loads unless it is wanted. `js/firebase-config.js` holds
 the Firebase project's web config (the `jeffs-guitar-tools` project, open

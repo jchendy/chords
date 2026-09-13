@@ -306,11 +306,12 @@
 
   // The star by Copy link keeps the drill as set, named by its kind and
   // what it drills, with the link that reopens it
-  function testTheStarKeepsTheDrill(t){
+  async function testTheStarKeepsTheDrill(t){
     start();
     const bad = [];
     const F = GT.favourites;
     const kept = localStorage.getItem(F.KEY);
+    const restoreSync = await GT.testSync.signIn();   // a star waits on sign-in
     try {
       F.clear();
       q('#drillKindGroup [data-value="scale"]').click();
@@ -318,6 +319,7 @@
       if (!/^Scale shapes: /.test(d.title) || !/BPM/.test(d.sub)) bad.push(`the drill is described as ${JSON.stringify(d)}`);
       const star = q('#drillStar');
       star.click();
+      await new Promise(r => setTimeout(r, 50));
       const favs = F.list();
       if (favs.length !== 1 || favs[0].kind !== 'drills' || !/^index\.html#drills\?d=scale/.test(favs[0].href)) bad.push(`starring kept ${JSON.stringify(favs.map(f => [f.kind, f.href]))}`);
       if (star.textContent[0] !== '★') bad.push('the star is not lit');
@@ -325,8 +327,9 @@
       if (star.textContent[0] !== '☆') bad.push('another drill shows the star lit');
       q('#drillKindGroup [data-value="scale"]').click();
       star.click();
+      await new Promise(r => setTimeout(r, 50));
       if (F.list().length !== 0) bad.push('starring again did not take it out');
-    } finally { if (kept == null) localStorage.removeItem(F.KEY); else localStorage.setItem(F.KEY, kept); F.reload(); }
+    } finally { restoreSync(); if (kept == null) localStorage.removeItem(F.KEY); else localStorage.setItem(F.KEY, kept); F.reload(); }
     t.equal(bad.join('; '), '', 'The star by Copy link keeps the drill as set, named, with its link');
   }
 

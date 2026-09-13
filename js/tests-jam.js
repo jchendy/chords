@@ -1105,11 +1105,17 @@
   // The star in the Share row keeps the tab as it is set — named by its
   // preset or chords, key, feel, part and tempo — with the link Copy link
   // would give, and says so as the state changes; starred again, it is gone.
-  function testTheStarKeepsTheJam(t){
+  async function testTheStarKeepsTheJam(t){
     start();
     const bad = [];
     const F = GT.favourites;
     const kept = localStorage.getItem(F.KEY);
+    // the test before leaves its last link in the address bar with its
+    // hashchange events still queued; an async test would see them land
+    // mid-way, so the address is cleared and the queue let run first
+    history.replaceState(null, '', location.pathname);
+    await new Promise(r => setTimeout(r, 120));
+    const restoreSync = await GT.testSync.signIn();   // a star waits on sign-in
     try {
       F.clear();
       setKey('major:C'); setTempo(120);
@@ -1117,10 +1123,11 @@
       if (!d.title || !/C major/.test(d.sub) || !/120 BPM/.test(d.sub)) bad.push(`the state is described as ${JSON.stringify(d)}`);
       const star = q('#jamStar');
       star.click();
+      await new Promise(r => setTimeout(r, 50));
       const favs = F.list();
       if (favs.length !== 1 || favs[0].kind !== 'jam') bad.push(`starring kept ${favs.length} favourites of kind ${favs[0] && favs[0].kind}`);
       if (favs.length && !/^index\.html#jam\?k=major%3AC/.test(favs[0].href)) bad.push(`the favourite's link is ${favs[0] && favs[0].href}`);
-      if (star.textContent[0] !== '★' || star.getAttribute('aria-pressed') !== 'true') bad.push(`the star reads ${star.textContent} after starring`);
+      if (star.textContent[0] !== '★' || star.getAttribute('aria-pressed') !== 'true') bad.push(`the star reads ${star.textContent} after starring (kept ${favs[0] && favs[0].id.slice(0, 50)}; now ${GT.jam.favourite().id.slice(0, 50)}; gate ${GT.sync.gateOpen()})`);
       // a change of state is another thing: the star goes hollow, and the kept one stays
       setTempo(96);
       if (star.textContent[0] !== '☆') bad.push('the star stayed lit for a state that is not kept');
@@ -1128,8 +1135,9 @@
       setTempo(120);
       if (star.textContent[0] !== '★') bad.push('back at the kept state the star is not lit');
       star.click();
+      await new Promise(r => setTimeout(r, 50));
       if (F.list().length !== 0 || star.textContent[0] !== '☆') bad.push('starring again did not take it out');
-    } finally { if (kept == null) localStorage.removeItem(F.KEY); else localStorage.setItem(F.KEY, kept); F.reload(); }
+    } finally { restoreSync(); if (kept == null) localStorage.removeItem(F.KEY); else localStorage.setItem(F.KEY, kept); F.reload(); }
     t.equal(bad.join('; '), '', 'The star in the Share row keeps the jam as set, named, with its link, and follows the state');
   }
 

@@ -1203,8 +1203,7 @@
     document.querySelectorAll('.bpm-preset')
       .forEach(b => b.classList.toggle('active', Number(b.dataset.bpm) === getTempo()));
     // the star follows the tempo as it moves; the address bar when it settles
-    const star = document.getElementById('jamStar');
-    if (star && star._paintStar) star._paintStar();
+    paintStars();
   });
   tempoInput.addEventListener('change', () => writeShareState());
   function setTempo(bpm){
@@ -1705,8 +1704,7 @@
   // which is the part the address bar can't do for you.
   function writeShareState(){
     GT.tabs.setState('caged', shareState().toString());
-    const star = document.getElementById('jamStar');
-    if (star && star._paintStar) star._paintStar();   // the star says whether this exact state is kept
+    paintStars();   // the stars say whether this exact state is kept
   }
   // The tab as it is set, in words — what a favourite of it is called: the
   // preset and its variant, or the chords; then the key, the feel, the part
@@ -1722,6 +1720,9 @@
   }
   // the favourite: this state, named, with the link that reopens it
   const jamFavourite = () => { const params = shareState().toString(); const d = describeState(); return { id: `jam:${params}`, kind: 'jam', title: d.title, sub: d.sub, href: `index.html#jam?${params}` }; };
+  // two stars for the same thing: one in the playback bar, one in the Share row of the controls
+  const STAR_IDS = ['jamStarQuick', 'jamStar'];
+  const paintStars = () => STAR_IDS.forEach(id => { const b = document.getElementById(id); if (b && b._paintStar) b._paintStar(); });
 
 
   // Bring a shared link's state in. Returns false if there wasn't one, so the
@@ -2488,9 +2489,11 @@
       // own mode offers, with the picker showing which one it is. The dice
       // are right there for a random one.
       if (!applyShareState(GT.tabs.stateParams())) startFresh();
-      // the star in the Share row: bound once the tab is set up, since it reads the whole state
-      const jamStar = document.getElementById('jamStar');
-      if (jamStar && GT.favourites) GT.favourites.star(jamStar, jamFavourite);
+      // the stars: bound once the tab is set up, since they read the whole state; starred in one place, lit in both
+      if (GT.favourites){
+        STAR_IDS.forEach(id => { const b = document.getElementById(id); if (b) GT.favourites.star(b, jamFavourite, { onToggle: paintStars }); });
+        GT.favourites.onChange(paintStars);
+      }
       // The address bar should describe the page from the moment it settles,
       // not from the first time something is touched. It's written after the
       // header has wired the tabs up, since only the tab on show may write.

@@ -74,10 +74,12 @@
       btn.textContent = on ? '★' + (btn.dataset.label ? ' ' + btn.dataset.label : '') : '☆' + (btn.dataset.label ? ' ' + btn.dataset.label : '');
       btn.title = on ? 'In your favourites — click to take it out' : 'Keep this in your favourites';
     };
-    btn.addEventListener('click', e => {
+    btn.addEventListener('click', async e => {
       e.preventDefault(); e.stopPropagation();
       const d = descriptor();
       if (!d) return;
+      // a favourite is kept with the person's account: signed out, the star asks first
+      if (GT.sync && GT.sync.require && !(await GT.sync.require('favourite'))) return;
       const on = toggle(d);
       paint();
       if (onToggle) onToggle(on, d);

@@ -320,7 +320,88 @@
     onStatus(draw);
   }
 
-  GT.sync = { collect, merge, apply, canon, attach, start, signIn, signOut, syncNow, deleteCloudData, status: current, onStatus, panel, isOn, configured, available, META_KEY, ON_KEY, CDN,
+  // ---- the gate: keeping something means being signed in ----
+  // A favourite starred or a piece marked complete is kept with the
+  // person's account, so where sync is possible and nobody is signed in,
+  // the action waits on a small dialog: sign in, and it goes ahead; not
+  // now, and nothing changes. Where sync is not possible (no config, a
+  // page opened from disk) there is nothing to sign in to, and the action
+  // goes ahead in the browser as it always did.
+  let askDialog = null;
+  function ensureStyle(){
+    if (document.getElementById('gt-sync-style')) return;
+    const st = document.createElement('style');
+    st.id = 'gt-sync-style';
+    st.textContent = `
+      .sign-wrap{ display:inline-flex; align-items:center; gap:8px; align-self:center; margin-left:12px; }
+      .top .views{ order:1; } .top .favs-link{ order:2; } .top .sign-wrap{ order:3; }   /* the dive pages' top bar: views, the ★, then sign in at the far right */
+      .sign-wrap[hidden]{ display:none; }
+      .sign-btn{ font:600 12px/1 Inter,system-ui,sans-serif; letter-spacing:.02em; padding:7px 12px; border-radius:999px; border:1px solid var(--line2, #3a3631); background:transparent; color:var(--muted, #a49a8a); cursor:pointer; white-space:nowrap; }
+      .sign-btn:hover{ color:var(--ink, #ece7dc); border-color:var(--a, #e0a84a); }
+      .sign-btn[disabled]{ opacity:.6; cursor:default; }
+      .sign-who{ display:inline-flex; align-items:center; gap:7px; color:var(--muted, #a49a8a); font-size:12px; max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+      .sign-who img{ width:22px; height:22px; border-radius:50%; flex:none; }
+      dialog.sign-in-ask{ max-width:min(92vw, 420px); padding:20px 22px 18px; border:1px solid var(--line2, #3a3631); border-radius:14px; background:var(--panel, #141312); color:var(--ink, #ece7dc); font:14px/1.55 Inter,system-ui,sans-serif; }
+      dialog.sign-in-ask::backdrop{ background:rgba(0,0,0,.6); }
+      dialog.sign-in-ask h3{ font:600 1.25rem/1.2 Fraunces,Georgia,serif; margin:0 0 8px; }
+      dialog.sign-in-ask p{ margin:0 0 10px; color:var(--muted, #a49a8a); }
+      dialog.sign-in-ask .ask-btns{ display:flex; flex-wrap:wrap; gap:10px; margin-top:14px; }
+      dialog.sign-in-ask button{ font:600 13px/1 Inter,system-ui,sans-serif; padding:9px 16px; border-radius:999px; border:1px solid var(--line2, #3a3631); background:var(--panel2, #1b1a18); color:var(--ink, #ece7dc); cursor:pointer; }
+      dialog.sign-in-ask button.ask-in{ background:var(--a, #e0a84a); color:#0c0b0a; border-color:var(--a, #e0a84a); }
+      dialog.sign-in-ask .ask-err{ color:#e069a6; font-size:.9rem; }`;
+    document.head.appendChild(st);
+  }
+  const WHY = {
+    favourite: 'Favourites are kept with your Google account, so the same ones are on every device you use.',
+    progress: 'Course progress is kept with your Google account, so a piece done on one device is done on all of them.',
+  };
+  function ask(what){
+    ensureStyle();
+    if (!askDialog){
+      askDialog = document.createElement('dialog');
+      askDialog.className = 'sign-in-ask';
+      askDialog.innerHTML = `<h3>Sign in to keep this</h3><p class="ask-what"></p><p class="ask-more">Google shares your name and email address with the site; nothing else is stored about you. <a href="privacy.html">What is stored</a>.</p><p class="ask-err" hidden></p><div class="ask-btns"><button type="button" class="ask-in">Sign in with Google</button><button type="button" class="ask-no">Not now</button></div>`;
+      document.body.appendChild(askDialog);
+    }
+    const dlg = askDialog;
+    dlg.querySelector('.ask-what').textContent = WHY[what] || WHY.progress;
+    const err = dlg.querySelector('.ask-err'); err.hidden = true; err.textContent = '';
+    return new Promise(resolve => {
+      let settled = false;
+      const done = ok => { if (settled) return; settled = true; if (dlg.open) dlg.close(); resolve(ok); };
+      dlg.querySelector('.ask-in').onclick = async () => {
+        const ok = await signIn();
+        if (ok && (user || (backend && backend.user()))) done(true);
+        else { err.textContent = status.error || 'The sign-in did not go through.'; err.hidden = false; }
+      };
+      dlg.querySelector('.ask-no').onclick = () => done(false);
+      dlg.addEventListener('close', () => done(false), { once: true });   // Esc, or a click outside
+      if (!dlg.open) dlg.showModal();
+    });
+  }
+  const gateOpen = () => !!user || !available();
+  const require = what => gateOpen() ? Promise.resolve(true) : ask(what);
+
+  // the sign in / sign out button, in a page's toolbar
+  function signButton(host){
+    if (!host) return;
+    ensureStyle();
+    host.classList.add('sign-wrap');
+    const draw = () => {
+      const s = current();
+      host.hidden = !s.available;
+      if (!s.available) return;
+      if (s.user) host.innerHTML = `<span class="sign-who" title="${esc(s.user.email)}">${s.user.photo ? `<img src="${esc(s.user.photo)}" alt="" referrerpolicy="no-referrer">` : ''}${esc(s.user.name || s.user.email)}</span><button type="button" class="sign-btn" id="signOutBtn">Sign out</button>`;
+      else host.innerHTML = `<button type="button" class="sign-btn" id="signInBtn"${s.state === 'loading' || s.state === 'syncing' ? ' disabled' : ''}>${s.state === 'loading' ? 'Sign in…' : 'Sign in'}</button>`;
+      const inBtn = host.querySelector('#signInBtn'), outBtn = host.querySelector('#signOutBtn');
+      if (inBtn) inBtn.addEventListener('click', () => signIn());
+      if (outBtn) outBtn.addEventListener('click', () => signOut());
+    };
+    draw();
+    onStatus(draw);
+  }
+
+  GT.sync = { collect, merge, apply, canon, attach, start, signIn, signOut, syncNow, deleteCloudData, status: current, onStatus, panel, signButton, require, gateOpen, isOn, configured, available, META_KEY, ON_KEY, CDN,
               // for the tests: the bookkeeping as it stands
               meta: () => loadMeta(), resetMeta: () => { meta = null; try { localStorage.removeItem(META_KEY); } catch (e) { /* no storage */ } shadow.clear(); snapshotKeys().forEach(remember); },
               detach: () => { if (unsubscribe){ unsubscribe(); unsubscribe = null; } backend = null; user = null; lastRemote = null; clearTimeout(uploadTimer); setStatus('off'); } };
