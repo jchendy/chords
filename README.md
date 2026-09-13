@@ -1,7 +1,16 @@
 # Jeff's Guitar Tools
 
-A single-page, dependency-free site with six tabs under one header:
+A single-page, dependency-free site with a landing page and seven tools
+under one header:
 
+- **Home** — the landing page the site opens on: every tool with a way in
+  and a few places worth going straight to — a jam with a part already
+  playing (the twelve-bar in A with the 5–6 boogie, Purple Haze's changes
+  with the Hendrix chord, the rockabilly twelve, a bossa nova on a jazz
+  turnaround, the Andalusian cadence as gypsy jazz, a metal gallop), a
+  chord worth looking at in the finder, a grip to identify, a scale to
+  hear, a drill, a lesson. `js/home.js` builds the links from the presets,
+  styles and parts as they are, and a test holds that every one resolves.
 - **Jam** — generates random diatonic chord progressions and
   plays them back on a recorded piano or a recorded guitar, over a recorded
   double bass, with an optional hi-hat click.
@@ -36,9 +45,9 @@ A single-page, dependency-free site with six tabs under one header:
   Share row and in the Drills toolbar keeps that thing, as it is set, on a
   page of its own, each with the link that reopens it.
 
-The site's name in the header is the way home: it opens the jam tab as a
-fresh page does, a preset showing, the default feel and tempo, no part,
-no loop, whatever had been done to it.
+The site's name in the header is the way home: it opens the landing
+page. (The jam tab's own reset — a preset showing, the default feel and
+tempo, no part, no loop — is what a fresh `#jam` gives.)
 
 Wherever a tab is drawn — the jam tab, the drills, the Hendrix page, the
 parts page — a click on it sets the playback position. Playing, the music
@@ -1865,6 +1874,7 @@ by what each part does:
 | `ear-training.js` | Ear training tab: what's on the neck — a chord shape, a pentatonic box or a scale box — and the drill over its notes. Draws and sounds chords from the chord finder's own code and boxes from the jam tab's, so no tab can drift from another. |
 | `tooltips.js` | The (i) info bubbles. |
 | `tabs.js` | Tab switching, plus the URL fragment and page title that go with each tab — including `setState`, which lets a tab write its own state after the slug so an exercise can be bookmarked. |
+| `home.js` | The landing page: each tool's card with its blurb and its tries — the jam links built from the presets, styles and parts by name (`jamLink`), the finder, reverse finder, ear-training and drills links in each tab's own format, the deep-dive lessons and cards — and `links()` for the test that holds them. |
 | `favorites.js` | Favorites: the list in localStorage (id, kind, title, sub, href, added), the one star button every page draws from it (`star(button, descriptor)`), the Favorites page listed by kind with removal, and the ★ link the deep dives carry to it. |
 | `sync.js` | Sync across devices: the local state collected as one document with its times, the merge by item and time, the watch on localStorage that keeps the tombstones, the Firebase backend (Google sign-in, one Firestore document a person) loaded only when sync is on, the panel on the Favorites page, and `attach()` for a backend of the tests' own. |
 | `firebase-config.js` | The Firebase project's web config, `null` until sync is set up; identifiers, not secrets. |

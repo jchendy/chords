@@ -9,14 +9,11 @@
   GT.reverseFinder.init();
   GT.earTraining.init();
   GT.drills.init();
-  // the site's name is the way home: the jam tab as a fresh page opens it,
-  // whatever was on it
+  // the site's name is the way home: the landing page
   const home = document.getElementById('siteHome');
-  if (home) home.addEventListener('click', e => {
-    e.preventDefault();
-    GT.tabs.goTo('caged');
-    GT.jam.reset();
-  });
+  if (home) home.addEventListener('click', e => { e.preventDefault(); GT.tabs.goTo('home'); });
+  GT.home.render();
+  if (GT.favorites) GT.favorites.onChange(() => GT.home.render());
   // The deep dives' cards say how far their courses have got, from the
   // summary each course keeps in localStorage (js/course.js): the lessons
   // done, and the piece to pick up at, linked straight to it.
@@ -48,6 +45,7 @@
     // hidden, an empty chord finder wants the cursor in its field, and the
     // ear trainer has nothing to drill until it rolls something
     onShow: {
+      home: () => GT.home.render(),
       finder: () => GT.chordFinder.focus(),
       reverse: () => GT.reverseFinder.refresh(),
       ear: () => GT.earTraining.refresh(),

@@ -3082,6 +3082,69 @@
     },
   };
 
+  // The landing page (js/home.js): every link it offers resolves — a jam's
+  // preset, variant, feel and part exist by name and the link carries their
+  // indexes; a chord for the finder parses; a grip for the reverse finder
+  // is six strings of fret or x; an ear-training link names a drill and a
+  // scale the trainer has; a drill names a kind, scale and pattern the
+  // Drills tab has; a deep-dive link goes to one of the two pages — and
+  // the page draws one card a section with its tries
+  function testTheHomePageLinksResolve(t){
+    const H = GT.home;
+    const bad = [];
+    const { parseChordName } = GT.theory;
+    const S = GT.audio.STYLES, presets = GT.progressionPresets;
+    const EAR_SCALES = ['major', 'dorian', 'phrygian', 'lydian', 'mixolydian', 'minor', 'locrian', 'majorpenta', 'minorpenta'];
+    const links = H.links();
+    if (links.length < 30) bad.push(`only ${links.length} links`);
+    links.forEach(l => {
+      const q = l.href.includes('?') ? new URLSearchParams(l.href.split('?')[1]) : new URLSearchParams();
+      if (l.jam){
+        const preset = presets.find(p => p.name === l.jam.preset);
+        if (!preset) bad.push(`${l.label}: no preset ${l.jam.preset}`);
+        else if (l.jam.variant && !(preset.variants || []).some(v => v.name === l.jam.variant)) bad.push(`${l.label}: ${l.jam.preset} has no variant ${l.jam.variant}`);
+        const feelIdx = S[l.jam.style] ? S[l.jam.style].variants.findIndex(v => v.label === l.jam.feel) : -1;
+        if (feelIdx < 0) bad.push(`${l.label}: no feel ${l.jam.style} / ${l.jam.feel}`);
+        else if (q.get('s') !== `${l.jam.style}.${feelIdx}`) bad.push(`${l.label}: the link says s=${q.get('s')}, the feel is ${l.jam.style}.${feelIdx}`);
+        const partIdx = feelIdx < 0 ? -1 : GT.parts.partsFor(l.jam.style, l.jam.feel).findIndex(x => x.name === l.jam.part);
+        if (partIdx < 0) bad.push(`${l.label}: no part ${l.jam.part}`);
+        else if (!(q.get('p') || '').startsWith(`${partIdx}.`)) bad.push(`${l.label}: the link says p=${q.get('p')}, the part is ${partIdx}`);
+        if (q.get('pr') !== `${l.jam.preset}|${l.jam.variant || ''}`) bad.push(`${l.label}: the link's preset is ${q.get('pr')}`);
+        const [mode, tonic] = (q.get('k') || '').split(':');
+        if (!(mode === 'major' ? GT.theory.MAJOR_KEYS : GT.theory.MINOR_KEYS)[tonic]) bad.push(`${l.label}: the key ${q.get('k')} is not one the jam has`);
+        if (preset && (preset.mode || (preset.variants.find(v => v.name === (l.jam.variant || '')) || {}).mode) && (preset.mode || preset.variants.find(v => v.name === (l.jam.variant || '')).mode) !== mode) bad.push(`${l.label}: the preset is ${preset.mode || 'mode-locked'} and the key is ${mode}`);
+      } else if (l.chord){
+        if (!parseChordName(l.chord)) bad.push(`${l.label}: ${l.chord} does not parse`);
+        if (q.get('c') !== l.chord) bad.push(`${l.label}: the link carries c=${q.get('c')}`);
+      } else if (l.grip){
+        if (!/^([0-9]{1,2}|x)(-([0-9]{1,2}|x)){5}$/.test(l.grip)) bad.push(`${l.label}: ${l.grip} is not a grip`);
+        if (q.get('n') !== l.grip) bad.push(`${l.label}: the link carries n=${q.get('n')}`);
+      } else if (l.ear){
+        if (!['scale', 'penta', 'quality', 'chord'].includes(q.get('m'))) bad.push(`${l.label}: no ear drill ${q.get('m')}`);
+        if (l.ear.s && !EAR_SCALES.includes(l.ear.s)) bad.push(`${l.label}: no ear scale ${l.ear.s}`);
+        if (l.ear.q && q.get('q').split('.').length !== l.ear.q.length) bad.push(`${l.label}: the qualities do not match the link`);
+      } else if (l.drill){
+        const D = GT.drills;
+        if (!D.KINDS[q.get('d')]) bad.push(`${l.label}: no drill kind ${q.get('d')}`);
+        if (q.get('sc') && !D.SCALES.some(x => x.id === q.get('sc'))) bad.push(`${l.label}: no drill scale ${q.get('sc')}`);
+        if (q.get('p') && !D.PATTERNS[q.get('p')]) bad.push(`${l.label}: no drill pattern ${q.get('p')}`);
+        if (q.get('b') && !/^[CAGED]@\d{1,2}$/.test(q.get('b'))) bad.push(`${l.label}: the box ${q.get('b')} is not shape@fret`);
+        if (q.get('d') === 'changes' && !q.get('ch')) bad.push(`${l.label}: a changes drill with no chords`);
+      } else if (l.page){
+        if (!/^(hendrix|psychobilly)\.html#/.test(l.href)) bad.push(`${l.label}: ${l.href} is not a deep-dive link`);
+      } else if (!/^#[a-z-]+$/.test(l.href)) bad.push(`${l.label}: ${l.href} is not a tab`);
+    });
+    const host = document.createElement('div');
+    document.body.appendChild(host);
+    try {
+      H.render(host);
+      const cards = host.querySelectorAll('.home-card').length, tries = host.querySelectorAll('.home-tries a').length;
+      if (cards !== H.sections().length) bad.push(`${cards} cards for ${H.sections().length} sections`);
+      if (tries !== H.sections().reduce((n, s) => n + s.tries.length, 0)) bad.push(`${tries} tries drawn`);
+    } finally { host.remove(); }
+    t.equal(bad.join('; '), '', `The landing page's ${links.length} links resolve: the jams' presets, feels and parts by name, the chords parse, the grips, ear drills and drills are ones the tabs have`);
+  }
+
   // Favorites (js/favorites.js): a starred thing is kept with its name
   // and its link, newest first, starred again it is gone, the list survives
   // a read-back from storage, and the page lists them by kind with a way to
@@ -3356,6 +3419,7 @@
       ['The hand is fingered', testTheHandIsFingered],
       ['The tab shows the fingering', testTheTabShowsTheFingering],
       ['The example player fingers the tab', testTheExampleIsFingered],
+      ['The landing page', testTheHomePageLinksResolve],
       ['Favorites are kept', testTheFavoritesAreKept],
       ['Sync across devices', testTheSyncMergesByTime],
       ['The deep dives as courses', testTheCoursesCoverTheirPages],

@@ -261,6 +261,24 @@
   .dive-course .bar span{ display:block; height:100%; background:var(--a); }
   .dive-course .go{ color:var(--a); font-weight:600; white-space:nowrap; cursor:pointer; }
   .dive-course .go:hover, .dive-course .go:focus-visible{ text-decoration:underline; outline:none; }
+  /* ---------- home: the landing page ---------- */
+  .home-kicker{ font-size:.66rem; letter-spacing:.12em; text-transform:uppercase; color:var(--muted2); margin:8px 0 6px; }
+  .home-title{ font-family:Fraunces,Georgia,serif; font-weight:600; font-size:1.9rem; line-height:1.15; margin:0 0 10px; max-width:26ch; text-wrap:balance; }
+  .home-lede{ color:var(--muted); max-width:64ch; margin:0 0 22px; font-size:1.02rem; }
+  .home-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap:16px; }
+  .home-card{ display:flex; flex-direction:column; gap:8px; padding:18px 20px 16px; border:1px solid var(--line2); border-radius:12px; background:var(--panel); min-width:0; }
+  .home-card h3{ margin:0; font-family:Fraunces,Georgia,serif; font-weight:600; font-size:1.3rem; }
+  .home-card h3 a{ color:var(--ink); text-decoration:none; }
+  .home-card h3 a:hover{ color:var(--a); }
+  .home-blurb{ margin:0; color:var(--muted); line-height:1.5; font-size:.92rem; }
+  .home-blurb b{ color:var(--ink); }
+  .home-try-lbl{ margin:6px 0 0; font-size:.66rem; letter-spacing:.12em; text-transform:uppercase; color:var(--muted2); }
+  .home-tries{ margin:0; padding:0; list-style:none; display:grid; gap:5px; }
+  .home-tries a{ color:var(--ink); text-decoration:none; font-size:.9rem; line-height:1.4; display:block; padding:5px 10px; border:1px solid var(--line); border-radius:8px; background:var(--panel2); }
+  .home-tries a:hover{ border-color:var(--a); color:var(--a); }
+  .home-open{ margin-top:auto; padding-top:8px; color:var(--a); font-weight:600; text-decoration:none; }
+  .home-open:hover{ text-decoration:underline; }
+  .home-more{ grid-column:1 / -1; color:var(--muted); margin:6px 0 0; }
   /* ---------- favorites: the stars, and the page ---------- */
   .tbtn.star.on{ color:var(--a); border-color:var(--a); }
   .ib.star-ib{ font-size:1.05rem; line-height:1; }
@@ -768,11 +786,12 @@
 <!-- ================= site: brand, the tools, and the menu ================== -->
 <header class="site">
   <!-- tabs.js reads the site name from .site-title for the page title -->
-  <h1 class="site-title"><a href="#jam" id="siteHome" title="The jam tab, as it opens">Jeff's Guitar Tools</a></h1>
+  <h1 class="site-title"><a href="#home" id="siteHome" title="Home">Jeff's Guitar Tools</a></h1>
   <!-- the tools, in the same vocabulary as every other choice on the page;
        tabs.js switches pages by data-tab and keeps the slug in the URL -->
   <nav class="tools" id="siteTabs" aria-label="Tools">
-    <button type="button" class="seg-btn site-tab active" data-tab="caged">Jam</button>
+    <button type="button" class="seg-btn site-tab active" data-tab="home">Home</button>
+    <button type="button" class="seg-btn site-tab" data-tab="caged">Jam</button>
     <button type="button" class="seg-btn site-tab" data-tab="finder">Chord finder</button>
     <button type="button" class="seg-btn site-tab" data-tab="reverse">Reverse chord finder</button>
     <button type="button" class="seg-btn site-tab" data-tab="ear">Ear training</button>
@@ -798,6 +817,19 @@
 </header>
 
 <main class="site-main">
+
+<!-- ================= Home =========================================== -->
+<!-- the landing page: every tool with a way in and a few places worth
+     going straight to; js/home.js builds the links from the presets,
+     styles and parts as they are -->
+<div class="tab-page" id="page-home">
+  <section class="page home">
+    <p class="home-kicker">Jeff's Guitar Tools</p>
+    <h2 class="home-title">A band to play with, the chords and scales to play over it, and two players taken apart.</h2>
+    <p class="home-lede">Everything runs in the browser, from a page you can open anywhere. Pick a tool, or start from one of the places below.</p>
+    <div class="home-grid" id="homeSections"></div>
+  </section>
+</div>
 
 <!-- ================= Jam ============================================ -->
 <div class="tab-page" id="page-caged">
@@ -1553,6 +1585,7 @@
 <script src="js/tooltips.js"></script>
 <script src="js/tabs.js"></script>
 <script src="js/favorites.js"></script>
+<script src="js/home.js"></script>
 <script src="js/firebase-config.js"></script>
 <script src="js/sync.js"></script>
 <script src="js/fretboard-view.js"></script>
