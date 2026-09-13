@@ -88,7 +88,7 @@
   .decide textarea{ width:100%; background:var(--panel2); color:var(--ink); border:1px solid var(--line2); border-radius:8px; padding:8px 10px; font:13px/1.4 Inter,system-ui,sans-serif; resize:vertical; }
   .engine-item{ margin:14px 0; padding:12px 16px; border:1px solid var(--line); border-radius:12px; background:var(--panel); }
   #dump{ width:100%; min-height:200px; margin-top:10px; background:var(--panel2); color:var(--ink); border:1px solid var(--line2); border-radius:8px; font:12px/1.4 ui-monospace,monospace; }
-  /* the tab itself is css/tab.css; this page's own is the playing colour */
+  /* the tab itself is css/tab.css; this page's own is the playing color */
   .tab-note.now text{ fill:var(--a); }
   .tab-playhead{ fill:var(--a); opacity:.22; }
   @media (max-width:820px){ .cols{ grid-template-columns:1fr; } main{ padding:16px 12px 60px; } }
@@ -118,14 +118,14 @@
   <p class="lede">Each style the jam tab offers is here twice: what the app plays now on the left, what is proposed on the right — the band and every guitar part, all playable. Under each is where to say <b>keep it, take the proposal, mix, or drop it</b>, and a box for anything you'd want different. New styles have their own cards (<b>add / add with tweaks / skip</b>), and the engine proposals are at the end. Decisions save as you go — to <code>review/decisions.json</code> when this page is served by <code>serve.py</code>, and to this browser either way; <b>Copy decisions</b> puts them on the clipboard.</p>
   <div class="how">
     <p><b>Reading the proposals.</b> Six bars each, as on the parts page: figure, fill, variant, fill, variant, fill — except that the proposed fills know whether the next bar changes chord (a change gets a walk or an approach, more of the same chord gets a push or a repeat), and the last bar of the form gets a turnaround where the style has one. "Needs:" on a card lists what the app's engine would have to learn for the part to sound this way there; here the page plays it.</p>
-    <p><b>The controls above</b> apply to everything: the reading (proposed parts realise into the Chords, Pentatonic or Scales palette like the existing ones), techniques on or off, and three proposed engine features you can hear — timing and velocity humanized, slapback echo on the styles that live on it (rockabilly, surf, country), and the fill every four bars instead of two. Re-rolling changes which of the proposed fills each phrase gets.</p>
+    <p><b>The controls above</b> apply to everything: the reading (proposed parts realize into the Chords, Pentatonic or Scales palette like the existing ones), techniques on or off, and three proposed engine features you can hear — timing and velocity humanized, slapback echo on the styles that live on it (rockabilly, surf, country), and the fill every four bars instead of two. Re-rolling changes which of the proposed fills each phrase gets.</p>
     <p><b>Where the research came from.</b> Each genre opens with what its players actually do, with the records that show it. Every name is a reference point for the style, never a source of lines; where a proposed sub-style is "inspired by" someone, it takes their way of playing in the terms a method book would use for it and nothing they own.</p>
   </div>
   <nav class="toc" id="toc"></nav>
   <div id="genres"></div>
   <section class="genre" id="engine">
     <h2>The engine</h2>
-    <div class="research"><p>What the parts above need that the app cannot do yet, and other things that would make every style better. Items marked "demo above" are what this page's player and realiser already do, so you have heard them; the rest is described.</p></div>
+    <div class="research"><p>What the parts above need that the app cannot do yet, and other things that would make every style better. Items marked "demo above" are what this page's player and realizer already do, so you have heard them; the rest is described.</p></div>
     <div id="engineList"></div>
   </section>
   <textarea id="dump" hidden></textarea>

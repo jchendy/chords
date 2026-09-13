@@ -14,7 +14,7 @@
   const GT = (window.GT = window.GT || {});
   const { parseChordName, pick, SEMITONE } = GT.theory;
   const { STRING_TUNING, STRING_MIDI, pentaBoxPlacements, scaleBoxPlacements,
-          boxColouredNotes, gripOutlines } = GT.fretboard;
+          boxColoredNotes, gripOutlines } = GT.fretboard;
 
   const $ = id => document.getElementById(id);
   const modeGroup = $('earModeGroup');
@@ -44,7 +44,7 @@
   const scoreEl = $('earScore');
 
   // The chords worth drilling: the everyday triads and sevenths, and the
-  // colours you meet soon after. Not every formula the finder knows — picking
+  // colors you meet soon after. Not every formula the finder knows — picking
   // the flat 9th out of a 7♭9 is nobody's first ear-training exercise.
   const TYPES = ['', 'm', '7', 'maj7', 'm7', '6', 'm6', 'sus2', 'sus4', 'add9', '9', 'm7b5', 'dim7'];
   const ROOTS = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'];
@@ -112,7 +112,7 @@
   let asked = null, askedCell = null, rootCell = null;
   let missed = false;            // has this question been got wrong already?
   let nextRound = null;          // the pause between a right answer and the next note
-  let right = 0, tries = 0;      // the running tally, while practising
+  let right = 0, tries = 0;      // the running tally, while practicing
 
   // Setting up an exercise and doing one are different jobs, and the tab is
   // in one state or the other. A run is ten questions with a result at the
@@ -121,7 +121,7 @@
   // version, because sometimes you do just want to noodle.
   const RUN_LENGTH = 10;
   let phase = 'ready';           // 'ready' | 'running' | 'done'
-  let runLength = RUN_LENGTH;    // 0 while practising
+  let runLength = RUN_LENGTH;    // 0 while practicing
   let runAsked = 0, runRight = 0;
   let runMarks = [];             // true/false per question answered
   let runMisses = new Map();     // what was got wrong, and how often
@@ -144,7 +144,7 @@
   // because a D is two semitones up. A scale is already in that order.
   const aboveTheOctave = degree => /^(9|11|13)$/.test(degree);
 
-  function notesOf(cells, rootPc, formula, rootName, scaleFlavoured){
+  function notesOf(cells, rootPc, formula, rootName, scaleFlavored){
     const { degreeNameFor, noteNameFor } = GT.chordFinder;
     const byPc = new Map();
     cells.forEach(c => {
@@ -154,7 +154,7 @@
     });
     return [...byPc.values()]
       .map(n => {
-        const degree = scaleFlavoured ? SCALE_DEGREES[n.interval] : degreeNameFor(n.interval, formula);
+        const degree = scaleFlavored ? SCALE_DEGREES[n.interval] : degreeNameFor(n.interval, formula);
         return Object.assign({}, n, { degree, name: noteNameFor(n.pc, degree, rootName) });
       })
       .sort((a, b) => (a.interval + (aboveTheOctave(a.degree) ? 12 : 0))
@@ -257,7 +257,7 @@
       ? pentaBoxPlacements(rootPc, scale.minor)
       : scaleBoxPlacements(rootPc, scale.minor, scale.ivs.map(i => (rootPc + i) % 12));
     // Every box the neck can hold, including the stubs hanging off either
-    // end. A stub isn't a box anyone practises, so keep the ones that are
+    // end. A stub isn't a box anyone practices, so keep the ones that are
     // nearly whole — measured against the fullest, since a five-note
     // pentatonic box and a seven-note scale box aren't the same size.
     const fullest = Math.max(...placements.map(p => p.cells.length), 0);
@@ -377,7 +377,7 @@
   }
 
   // The picture the jam tab draws, from the code the jam tab draws
-  // it with: every note coloured by the CAGED box it belongs to, and the chord
+  // it with: every note colored by the CAGED box it belongs to, and the chord
   // shape inside that box traced through it. Knowing which chord shape a box
   // sits on is most of what makes a box worth learning, so it's drawn rather
   // than described.
@@ -405,10 +405,10 @@
     // Every note of the box says which degree it is — reading the shape is
     // half of what a box is for — and the ones outside the octave in play are
     // drawn quiet, so you can see the whole shape and see which part of it
-    // you're being asked about. boxColouredNotes draws a pitch class wherever
+    // you're being asked about. boxColoredNotes draws a pitch class wherever
     // it falls on the neck, which for one box means everywhere the scale
     // reaches; this is the box, so it keeps the box's own cells.
-    const markers = boxColouredNotes([s.shape], {
+    const markers = boxColoredNotes([s.shape], {
       labelOf: pc => (scalePcs.has(pc) ? degreeFor(pc) : null),
       rootPc: s.rootPc,
     }).filter(m => inBox.has(key(m)))
@@ -789,7 +789,7 @@
   }
 
   // A run's shape, drawn as it fills: what you got, what you missed, and how
-  // much is left. While practising there's nothing to fill, so the tally
+  // much is left. While practicing there's nothing to fill, so the tally
   // stands in its place.
   function drawProgress(){
     if (!runLength){
@@ -1001,7 +1001,7 @@
     }
   }
 
-  // One judgement, whichever surface gave the answer: a button that names a
+  // One judgment, whichever surface gave the answer: a button that names a
   // note, or a dot on the neck. `marks` is only the names of the classes each
   // surface wears, since a button and a fret dot say "no" differently.
   function respond(choice, el, marks){

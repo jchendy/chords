@@ -15,7 +15,7 @@
 //   one note per string      a grip has one note per string, by definition
 //   whole triads only        three notes on three strings, or not drawn
 //   every chord present      a view of the progression shows the progression
-//   a shared note's colours  highlighting a chord shows it in its own colour
+//   a shared note's colors  highlighting a chord shows it in its own color
 //
 (function(){
   'use strict';
@@ -25,7 +25,7 @@
   // Built rather than copied from index.html: the view only ever asks for ids
   // and data-values, so that's all a fixture owes it. A control added to the
   // real page and forgotten here fails loudly on the next run, which is the
-  // behaviour worth having.
+  // behavior worth having.
   const SEG = {
     fretModeGroup: ['roots', 'caged', 'triads3', 'penta', 'scale'],
     viewGroup: ['position', 'neck'],
@@ -53,7 +53,7 @@
     b.id = id;
     root.appendChild(b);
   });
-  // the view greys a checkbox out by reaching for the label wrapping it, and
+  // the view grays a checkbox out by reaching for the label wrapping it, and
   // hides Whole arpeggio by that label's own id — so the wrapper has to be the
   // label here too, as it is on the page, not a box beside it
   const WRAPPER_ID = { wholeArpeggioToggle: 'wholeArpeggioWrap' };
@@ -191,7 +191,7 @@
   // ---- the suites ----------------------------------------------------------
 
   // B17 — a grip has one note per string. The position reading used to clip
-  // the whole five-shape board to the window, so fragments of neighbouring
+  // the whole five-shape board to the window, so fragments of neighboring
   // shapes came through and one "chord" could hold two notes on a string.
   function testGripsAreGrips(t){
     let bad = null, checked = 0;
@@ -308,10 +308,10 @@
     t.ok(!bad, 'The legend names exactly the chords on the neck' + (bad ? ` — ${bad}` : ''));
   }
 
-  // B21 — a note two chords share is drawn once, in one of their colours, so
+  // B21 — a note two chords share is drawn once, in one of their colors, so
   // it has to carry the other's too, or spotlighting that chord shows it in
   // the wrong one.
-  function testSharedNotesCarryEveryColour(t){
+  function testSharedNotesCarryEveryColor(t){
     let bad = null, shared = 0;
     PROGRESSIONS.forEach(names => {
       loadProgression(names);
@@ -326,14 +326,14 @@
               .split(',').map(x => x.split(':')[0]).filter(Boolean));
             const gap = tags.filter(x => !have.has(x));
             if (gap.length && !bad){
-              bad = `${names.join('-')} ${mode} position ${p}: note shared by [${tags}] has colours for [${[...have]}]`;
+              bad = `${names.join('-')} ${mode} position ${p}: note shared by [${tags}] has colors for [${[...have]}]`;
             }
           });
           stepPosition();
         }
       });
     });
-    t.ok(!bad, `A note two chords share carries a colour for each of them (${shared} shared notes)`
+    t.ok(!bad, `A note two chords share carries a color for each of them (${shared} shared notes)`
       + (bad ? ` — ${bad}` : ''));
   }
 
@@ -487,7 +487,7 @@
   }
 
   // A box anchored off the end of the neck is one the arrows can never land
-  // on, so nothing should be coloured by it or named after it. Pentatonic used
+  // on, so nothing should be colored by it or named after it. Pentatonic used
   // to hand notes at the nut to a D box anchored at -2, which put a run in the
   // legend — "D shape 0-1 · 9-13" — for a position you could not step to.
   // Every run the legend knows (each entry carries its frets as a tooltip)
@@ -520,14 +520,14 @@
     setView('neck'); setShapes(all);
   }
 
-  // Across the neck, a dot's colour is the CAGED box it belongs to, and the
+  // Across the neck, a dot's color is the CAGED box it belongs to, and the
   // three views that draw that picture — the Chords arpeggio, Pentatonic and
   // Scales — each say so in their own copy of the same loop. That's how B5
-  // happened: one copy coloured notes with a box anchored off the end of the
+  // happened: one copy colored notes with a box anchored off the end of the
   // neck while the others didn't. The invariant behind all three is that the
-  // colour on a dot has to be the colour of a box that dot claims to be in.
-  function testEveryColourComesFromItsBox(t){
-    const colours = GT.fretboard.CAGED_COLORS;
+  // color on a dot has to be the color of a box that dot claims to be in.
+  function testEveryColorComesFromItsBox(t){
+    const colors = GT.fretboard.CAGED_COLORS;
     const bad = [];
     let dots = 0;
     loadProgression(['Am7', 'Dm7', 'E7']);
@@ -540,7 +540,7 @@
         svg.querySelectorAll('.note-dot').forEach(g => {
           const shapes = (g.getAttribute('data-shapes') || '').split(',').filter(Boolean);
           const halves = [...g.querySelectorAll('path')];
-          // a hollow dot — the 7th — wears its colour on the stroke, with the
+          // a hollow dot — the 7th — wears its color on the stroke, with the
           // panel showing through, so reading its fill would read the panel
           const paint = g.classList.contains('hollow') ? 'stroke' : 'fill';
           const fills = halves.length
@@ -548,26 +548,26 @@
             : [...g.querySelectorAll('circle:not(.dot-ring)')].map(c => c.getAttribute(paint));
           if (!fills.length) return;
           dots++;
-          const owned = shapes.map(n => colours[n]).filter(Boolean);
-          // a half painted in a colour no box of this dot wears
+          const owned = shapes.map(n => colors[n]).filter(Boolean);
+          // a half painted in a color no box of this dot wears
           const stray = fills.filter(f => f && !owned.includes(f));
           if (stray.length && bad.length < 4)
             bad.push(`${mode} arp=${arp}: a dot in [${shapes.join(',')}] is painted ${stray[0]}`);
           // a split dot is how "two boxes share this note" is drawn, so two
-          // halves of one colour would be saying nothing in two places
+          // halves of one color would be saying nothing in two places
           if (halves.length === 2 && fills[0] === fills[1] && bad.length < 4)
             bad.push(`${mode} arp=${arp}: a split dot has both halves ${fills[0]}`);
         });
       });
     });
-    t.ok(!bad.length, `Every dot wears the colour of a box it's in (${dots} checked)`
+    t.ok(!bad.length, `Every dot wears the color of a box it's in (${dots} checked)`
       + (bad.length ? ` — ${bad[0]}` : ''));
   }
 
   // A shape switched off leaves the view entirely — no dot claims it, no
   // outline traces it, no legend entry names it, and the arrows don't stop on
   // it. Filtering at the source is what makes that true of a note two shapes
-  // share: with one of them off it's a plain dot in the other's colour rather
+  // share: with one of them off it's a plain dot in the other's color rather
   // than a split still half-painted by a shape that isn't there.
   function testDisabledShapesLeaveTheView(t){
     const bad = [];
@@ -816,7 +816,7 @@
   // ---- what the neck is showing, as a string and back again ----
   // The jam tab's link carries the view in one field, so that a bookmark
   // holds what you were actually looking at — the third box of the A-shape
-  // pentatonic, coloured by interval — and not merely the key you were in.
+  // pentatonic, colored by interval — and not merely the key you were in.
   // Two things have to hold. A setting left at its default writes nothing, or
   // every link carries a dozen fields nobody needs. And applying a state has
   // to set everything, not only what the string mentions: a link should land
@@ -853,15 +853,15 @@
     view.applyViewState(there);
     if (active('fretModeGroup') !== 'penta') bad.push(`the view came back as ${active('fretModeGroup')}`);
     if (active('viewGroup') !== 'neck') bad.push(`the reading came back as ${active('viewGroup')}`);
-    if (active('colorByGroup') !== 'interval') bad.push(`the colouring came back as ${active('colorByGroup')}`);
+    if (active('colorByGroup') !== 'interval') bad.push(`the coloring came back as ${active('colorByGroup')}`);
     if (view.viewState() !== there) bad.push(`the round trip wrote "${view.viewState()}" for "${there}"`);
 
     // a string that mentions one thing still puts everything else back
     view.applyViewState('c:interval');
     if (active('fretModeGroup') !== 'caged' || active('viewGroup') !== 'position'){
-      bad.push('a link that named only the colouring left the rest where it was');
+      bad.push('a link that named only the coloring left the rest where it was');
     }
-    if (active('colorByGroup') !== 'interval') bad.push('...and did not even set the colouring');
+    if (active('colorByGroup') !== 'interval') bad.push('...and did not even set the coloring');
 
     view.applyViewState('');     // leave the neck as it was found
     t.equal(bad.join('; '), '', 'The neck travels as a string, defaults and all');
@@ -874,13 +874,13 @@
     ['Fretboard: triads are drawn whole', testTriadsAreWhole],
     ['Fretboard: the progression is all there, in both views', testEveryChordIsDrawn],
     ['Fretboard: the legend matches the neck', testLegendMatchesTheNeck],
-    ['Fretboard: shared notes know their colours', testSharedNotesCarryEveryColour],
+    ['Fretboard: shared notes know their colors', testSharedNotesCarryEveryColor],
     ['Fretboard: the hand stays put while a progression plays', testPositionHoldsStillWhilePlaying],
     ['Fretboard: a chord previewed is the chord you get', testPreviewMatchesArrival],
     ['Fretboard: one position narrows the neck', testPositionNarrows],
     ['Fretboard: every position method draws alike', testPositionMethodsRenderAlike],
     ['Fretboard: every box named is a box you can reach', testEveryBoxNamedCanBeReached],
-    ['Fretboard: every colour comes from a box the note is in', testEveryColourComesFromItsBox],
+    ['Fretboard: every color comes from a box the note is in', testEveryColorComesFromItsBox],
     ['Fretboard: a shape switched off leaves the view', testDisabledShapesLeaveTheView],
     ['Fretboard: each reading keeps its own shapes', testEachReadingKeepsItsOwnShapes],
     ['Fretboard: the shapes follow you between views', testShapesCarryBetweenViews],

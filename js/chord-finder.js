@@ -398,7 +398,7 @@
   const FAMILY_TIER = { power: 0, open: 1, barre: 1, grip: 2, upper: 3, triad: 4, shell: 5, caged: 6, other: 7 };
 
   // The grips Hendrix's playing is built from, as the sources describe them
-  // (docs/STYLES-CATALOGUE.md, the Hendrix genre): the E-shape barre with
+  // (docs/STYLES-CATALOG.md, the Hendrix genre): the E-shape barre with
   // the thumb over the neck on the bass note, its D–G–B triad struck on its
   // own (the "split chord"), the E shape with the 6th, the 9th or the 4th
   // added, the 5th-string-root 9th and 7♯9 grips, the A- and C-shape barres
@@ -656,7 +656,7 @@
   }
 
   // A plain triad also gets the whole-neck CAGED picture at the top — the same
-  // five shapes, colours and labels the jam tab draws.
+  // five shapes, colors and labels the jam tab draws.
   function buildCagedOverview(parsed){
     const isMinor = parsed.formula.name === 'm';
     const { markers, lines, shapesShown } = cagedTriadBoard(parsed.rootPc, isMinor, parsed.rootName);

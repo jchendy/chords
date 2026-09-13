@@ -11,7 +11,7 @@
     CAGED_MAJOR, CAGED_MINOR, CAGED_ORDER, CAGED_COLORS, ROOT_PALETTE,
     cagedPlacements, seventhCells, arpeggioCells, cagedArpeggioBoxes, stringSetTriads,
     pentaBoxPlacements, scaleBoxPlacements, cagedTriadBoard, closeTriadShape,
-    boxColouredNotes, gripOutlines, nearestByAnchor,
+    boxColoredNotes, gripOutlines, nearestByAnchor,
   } = GT.fretboard;
 
   // Which chord tone is underneath a three-string triad — the thing that
@@ -90,7 +90,7 @@
   let stringSetLow = 2;          // Triads: lowest string of the set (2 = e-B-G)
   let shapeRanges = {};          // per shape: the frets it spans, for the legend
 
-  // What each note *is* in the chord it's being read against. Colouring by
+  // What each note *is* in the chord it's being read against. Coloring by
   // this rather than by CAGED box is what you want when playing over changes:
   // the roots, 3rds and 7ths are the notes that spell the chord. The roles
   // come from the chord itself, so a ♭5 reads as the 5th it is while a ♭6 in
@@ -114,8 +114,8 @@
   const clusterMode = () =>
     fretMode === 'caged' && inPosition && cagedPosMethod !== 'box';
 
-  // A dot shared by several shapes is drawn once, in whichever colour got
-  // there first. Remembering every owner's colour lets the spotlight repaint
+  // A dot shared by several shapes is drawn once, in whichever color got
+  // there first. Remembering every owner's color lets the spotlight repaint
   // it as the shape you're actually looking at.
   function withTagColors(markers, colorFor){
     return markers.map(m => {
@@ -126,7 +126,7 @@
     });
   }
 
-  // recolour a finished marker list, keeping everything else about it
+  // recolor a finished marker list, keeping everything else about it
   function applyColorBy(markers, chord){
     if (colorBy !== 'interval' || !chord) return markers;
     const { rootPc, roles } = rolesOf(chord);
@@ -196,7 +196,7 @@
   // need four frets to hold one shape of every chord — a hand — and A plus E
   // need five. Take it down to a single shape and the answer is ten to twelve,
   // which is most of the neck and not a position at all. Past a hand's reach
-  // the option stops meaning anything, so it greys out and Cluster takes over:
+  // the option stops meaning anything, so it grays out and Cluster takes over:
   // Cluster is already the reading that lets each chord sit where it really
   // falls instead of insisting they share a box.
   const HAND_SPAN = 6;        // index finger to little finger, generously
@@ -283,11 +283,11 @@
       cagedPosMethodGroup.querySelectorAll('.seg-btn')
         .forEach(b => b.classList.toggle('active', b.dataset.value === 'cluster'));
     }
-    // Roots is already coloured by root; and in one position Chords colours by
+    // Roots is already colored by root; and in one position Chords colors by
     // chord, so there's nothing for the interval option to say in either
-    const colourIsChord = inPosition && ['caged', 'triads3'].includes(fretMode);
-    colorByGroup.hidden = !chordModes || colourIsChord;
-    colorByLabel.hidden = !chordModes || colourIsChord;
+    const colorIsChord = inPosition && ['caged', 'triads3'].includes(fretMode);
+    colorByGroup.hidden = !chordModes || colorIsChord;
+    colorByLabel.hidden = !chordModes || colorIsChord;
   }
 
   fretRangeSelect.addEventListener('change', () => {
@@ -538,7 +538,7 @@
   // differently depending on which of them is currently in focus (root for
   // one, some other degree for another) ----
   const fillsIn = g => [...g.querySelectorAll('circle:not(.dot-ring), path')];
-  // a hollow dot wears its colour on the stroke, with the panel showing
+  // a hollow dot wears its color on the stroke, with the panel showing
   // through — repainting its fill would solidify the very thing that makes
   // it read as a 7th
   const paint = (g, colors) => {
@@ -583,7 +583,7 @@
       const isHot = !!shape && list.includes(shape);
       g.classList.toggle('hot', isHot);
       // a shared cell reads as whatever degree it is *for* the spotlighted
-      // chord, and wears that chord's colour, not whichever one drew it first
+      // chord, and wears that chord's color, not whichever one drew it first
       if (isHot){ setDotLabel(g, shape); setDotColor(g, shape); }
       else { resetDotLabel(g); resetDotColor(g); }
     });
@@ -733,7 +733,7 @@
       if (!chosen.has(curName)) return { markers: [], lines: [] };
 
       // The chord in front goes down first, so a note two chords share is
-      // drawn in its colour and the chord behind adds itself to that dot.
+      // drawn in its color and the chord behind adds itself to that dot.
       const order = [curName, ...[...chosen.keys()].filter(n => n !== curName)];
       const markers = [], lines = [], placed = new Map();
       ghostLegendData = [];
@@ -778,7 +778,7 @@
     }
 
     // Close triads on one set of three strings, every inversion, all the way
-    // up the neck — each shape outlined and coloured by what's in the bass.
+    // up the neck — each shape outlined and colored by what's in the bass.
     if (fretMode === 'triads3'){
       const chord = currentChord();
       if (!chord) return { markers: [], lines: [] };
@@ -815,7 +815,7 @@
         cells: t.cells.slice().sort((a, b) => a.string - b.string),
       }));
 
-      // a note can serve two neighbouring shapes; it gets a half of each
+      // a note can serve two neighboring shapes; it gets a half of each
       const cellMap = new Map();
       triads.forEach(t => t.cells.forEach(c => {
         const key = c.string + ':' + c.fret;
@@ -846,8 +846,8 @@
       if (!inPosition) return { markers: applyColorBy(shown.markers, chord), lines: shown.lines };
 
       // In one position the other chords' triads come too, exactly as they do
-      // in Chords: colour says which chord, the inversion moves to the legend
-      // tag, and the rest of the progression sits behind in its own colours.
+      // in Chords: color says which chord, the inversion moves to the legend
+      // tag, and the rest of the progression sits behind in its own colors.
       const cands = host.progression().filter(c => c.quality !== 'dim');
       const curIdx = Math.min(cagedChordIdx, cands.length - 1);
       const { tag: curTag, color: curColor } = idOf(cands, curIdx);
@@ -878,12 +878,12 @@
       const cands = host.progression().filter(c => c.quality !== 'dim');
       const curIdx = Math.min(cagedChordIdx, cands.length - 1);
       const { tag: curTag, color: curColor } = idOf(cands, curIdx);
-      // In one position several chords share the neck, so colour says which
+      // In one position several chords share the neck, so color says which
       // chord a note belongs to and the legend names its shape — the same
       // scheme Progression uses. Across the neck only one chord is drawn, so
-      // colour is free to say which of its five shapes a note is in instead.
+      // color is free to say which of its five shapes a note is in instead.
       const asChord = (m) => {
-        // drop the shape-keyed colours it was drawn with: this dot now answers
+        // drop the shape-keyed colors it was drawn with: this dot now answers
         // to a chord, not to a CAGED shape, and a stale key here would leave
         // the spotlight repainting it as something it no longer is
         const { split, colorsByTag, ...rest } = m;
@@ -907,7 +907,7 @@
         const grips = gripBoxes(chord);
         const one = applyBoxWindow(board.markers, board.lines, grips, boxOpts);
         // cagedTriadBoard draws all five shapes at once, so clipping that to a
-        // window leaves fragments of the neighbouring ones — notes that belong
+        // window leaves fragments of the neighboring ones — notes that belong
         // to no shape you're holding, which read as stray arpeggio notes. In
         // one position, keep only the cells of the shape the box actually is.
         const boxOnly = inPosition && shownBoxCells
@@ -941,7 +941,7 @@
       cagedShapesShown = CAGED_ORDER.filter(n => boxes.some(b => b.name === n));
       const lines = board.lines;
 
-      const markers = boxColouredNotes(boxes, { labelOf: pc => degByPc[pc], rootPc });
+      const markers = boxColoredNotes(boxes, { labelOf: pc => degByPc[pc], rootPc });
       // In one position the window is the hand's, so it's chosen from the
       // grips — the same boxes the arpeggio-off reading steps through.
       // Stepping the arpeggio's own boxes instead moved the position whenever
@@ -1008,10 +1008,10 @@
       // string, following the actual fingering — same as Chords mode
       const lines = gripOutlines(rootPc, isMinor, enabledShapes());
 
-      // every pentatonic note is coloured by the CAGED box(es) that actually
+      // every pentatonic note is colored by the CAGED box(es) that actually
       // contain it: notes shared by two adjacent boxes get a split dot
       // (left half = lower box, right half = higher box)
-      const markers = boxColouredNotes(placements, {
+      const markers = boxColoredNotes(placements, {
         labelOf: pc => degByPc[pc], rootPc, passingOf: pc => !tones.has(pc),
       });
       const shown = applyBoxWindow(withTagColors(markers, n => CAGED_COLORS[n]), lines, placements);
@@ -1062,7 +1062,7 @@
 
       const lines = gripOutlines(rootPc, isMinor, enabledShapes());
 
-      const markers = boxColouredNotes(boxes, {
+      const markers = boxColoredNotes(boxes, {
         labelOf: pc => degByPc[pc], rootPc, passingOf: pc => !tones.has(pc),
       });
       const shown = applyBoxWindow(withTagColors(markers, n => CAGED_COLORS[n]), lines, boxes);
@@ -1099,7 +1099,7 @@
     return { markers: [], lines: [] };
   }
 
-  // The progression's *other* chords, drawn into the box you're practising in
+  // The progression's *other* chords, drawn into the box you're practicing in
   // so you can see where the changes fall without moving your hand. Faint, and
   // only where the chord you're on isn't already using the fret, so it reads as
   // background rather than as competing with the shape.
@@ -1110,7 +1110,7 @@
   // makes a cluster look like a box rather than like the old Progression map.
   // `placed` maps a cell to the marker already drawn there, whoever drew it: a
   // cell two chords share is drawn once, by whichever got there first, and the
-  // second chord adds its tag and colour to that dot rather than being dropped.
+  // second chord adds its tag and color to that dot rather than being dropped.
   // Otherwise spotlighting the second chord would light an incomplete version
   // of it, missing exactly the notes it holds in common with the first.
   function placeShape({ chord, cells, tag, color, ghost, isNext, placed, markers }){
@@ -1147,7 +1147,7 @@
   }
 
   // `placed` maps a cell to the marker already drawn there, whoever drew it.
-  // A cell two chords share gets drawn once, in the front chord's colour, but
+  // A cell two chords share gets drawn once, in the front chord's color, but
   // it belongs to both — so the second chord adds its tag to the marker that's
   // already there rather than being dropped. Otherwise spotlighting that chord
   // would light an incomplete version of it, missing exactly the notes it
@@ -1238,8 +1238,8 @@
   }
 
   // A chord is identified by what it is, not by where it sits: a twelve-bar
-  // blues has C7 in three slots, and drawing it in three colours with three
-  // legend entries says there are three chords when there's one. Colour and
+  // blues has C7 in three slots, and drawing it in three colors with three
+  // legend entries says there are three chords when there's one. Color and
   // tag key off the chord's name, in the order it first appears.
   function chordIdentity(cands){
     const byName = new Map();
@@ -1271,7 +1271,7 @@
   }
 
   function renderFretLegend(){
-    // The position is drawn on the neck itself, as a labelled window over the
+    // The position is drawn on the neck itself, as a labeled window over the
     // frets it covers, so the legend doesn't say it again in words. It's
     // published here instead, for whatever draws that window.
     if (shownWindow) cagedLegend.dataset.window = `${shownWindow.min}-${shownWindow.max}`;
@@ -1283,7 +1283,7 @@
       return;
     }
     // where on the neck each shape sits — as the entry's tooltip, not in
-    // words beside it: the colour on the neck already says where, and a row
+    // words beside it: the color on the neck already says where, and a row
     // of fret numbers under the neck read as more to take in than they gave
     const range = n => {
       const runs = shapeRanges[n];
@@ -1305,7 +1305,7 @@
 
     const parts = [];
     // The inversions are what this view is *about*, so they keep their
-    // entries (and their spotlight) whichever way the dots are coloured.
+    // entries (and their spotlight) whichever way the dots are colored.
     if (fretMode === 'triads3'){
       const drawn = new Set([...fretboardSvg.querySelectorAll('.note-dot[data-shapes]')]
         .flatMap(g => g.getAttribute('data-shapes').split(',')));
@@ -1321,7 +1321,7 @@
         parts.push(`<span data-shape="${i.tag}" tabindex="0" role="button" aria-label="Highlight ${i.label}"${range(i.tag)}><i style="background:${i.color}"></i>${i.label}${lettersFor(i.tag)}</span>`));
     }
     if (colorBy === 'interval'){
-      // the dots are coloured by what each note is in the chord, so that's
+      // the dots are colored by what each note is in the chord, so that's
       // what the legend has to explain — the shape outlines still trace boxes
       const chord = currentChord();
       const names = ['root', '3rd', '5th'];
@@ -1341,7 +1341,7 @@
     // The ringed root and the faded passing note explain themselves on the
     // neck — the ring is on the note that is named, the faint dot is faint —
     // so the legend doesn't name them. Only the grips' hollow 7th gets an
-    // entry (colouring by interval, the swatch already names it): opened out
+    // entry (coloring by interval, the swatch already names it): opened out
     // it's just another chord tone with its own label, and a plain triad has
     // no 7th to explain either way.
     if (colorBy !== 'interval' && fretMode === 'caged' && !wholeArpeggio && currentChord() && currentChord().seventh){
@@ -1422,7 +1422,7 @@
   //
   // Restoring works by pressing the controls rather than by assigning to the
   // variables behind them: every one of these settings has a handler that
-  // does more than store a value — re-basing the box, greying out what no
+  // does more than store a value — re-basing the box, graying out what no
   // longer applies, re-drawing — and pressing the control runs all of that
   // the way a hand would. The one exception is the box number, which has no
   // control of its own, only arrows.

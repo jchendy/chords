@@ -29,7 +29,7 @@
 //   beats — beats to the bar (four unless said; the waltzes are three)
 //   slapback — the guitar part gets an echo (the players do that, not this)
 //
-// A stop-time bar (the part's realisation names them) is the band hitting
+// A stop-time bar (the part's realization names them) is the band hitting
 // the One and stopping: kick, comp and bass root on the first slot, nothing
 // after, the guitar alone.
 (function(){

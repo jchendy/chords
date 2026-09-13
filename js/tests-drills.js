@@ -1,4 +1,4 @@
-// Regression tests for the drills tab: what each kind of drill realises
+// Regression tests for the drills tab: what each kind of drill realizes
 // (the notes inside the shape, in the order the exercise wants), the state
 // the link carries, and the page's controls. Like the other tab tests this
 // builds the controls the module binds to, so it must load before
@@ -70,13 +70,13 @@
   const onGrid = d => d.notes.every(n => n.at >= 0 && n.at < d.grid && n.dur > 0 && n.at + n.dur <= d.grid);
 
   function testAScaleDrill(t){
-    const { realiseDrill, boxesFor, SCALES } = GT.drills;
+    const { realizeDrill, boxesFor, SCALES } = GT.drills;
     const bad = [];
     const o = base();
     const scale = SCALES.find(s => s.id === 'minorpenta');
     const boxes = boxesFor(9, scale, null);
-    const d = realiseDrill(o);
-    if (!d){ t.ok(false, 'the scale drill realises'); return; }
+    const d = realizeDrill(o);
+    if (!d){ t.ok(false, 'the scale drill realizes'); return; }
     const box = boxes[0];
     if (!inCells(d, box.cells)) bad.push('a note is outside the box');
     if (!onGrid(d)) bad.push('a note is off the grid');
@@ -89,30 +89,30 @@
     if (m[0] !== Math.min(...m)) bad.push('the run does not start on the lowest note');
     // two a beat on a sixteen grid; triplets on a twelve
     if (d.grid !== 16 || d.notes[1].at !== 2) bad.push(`two a beat came out as grid ${d.grid}, second note at ${d.notes[1].at}`);
-    const trip = realiseDrill({ ...o, div: 3 });
+    const trip = realizeDrill({ ...o, div: 3 });
     if (trip.grid !== 12 || trip.notes[1].at !== 1) bad.push('three a beat is not on a twelve grid');
     // in threes: groups of three ascending on the way up
-    const threes = realiseDrill({ ...o, pattern: 'threes' });
+    const threes = realizeDrill({ ...o, pattern: 'threes' });
     const tm = midis(threes).slice(0, 9);
     if (!(tm[0] < tm[1] && tm[1] < tm[2] && tm[3] > tm[0] && tm[3] < tm[4])) bad.push(`in threes does not sequence (${tm.join(' ')})`);
     // another box by name, and the shapes narrowed
-    const e = realiseDrill({ ...o, box: 'E@5' });
+    const e = realizeDrill({ ...o, box: 'E@5' });
     const eBox = boxes.find(b => b.name === 'E' && b.anchor === 5);
     if (!eBox || !inCells(e, eBox.cells)) bad.push('asking for the E shape at the 5th fret did not give it');
-    const only = realiseDrill({ ...o, shapes: new Set(['D']) });
+    const only = realizeDrill({ ...o, shapes: new Set(['D']) });
     const dBoxes = boxesFor(9, scale, new Set(['D']));
     if (!dBoxes.length || !inCells(only, dBoxes[0].cells)) bad.push('narrowing the shapes to D did not give a D box');
     // into the next box: a slide on the way over
-    const across = realiseDrill({ ...o, pattern: 'boxes' });
+    const across = realizeDrill({ ...o, pattern: 'boxes' });
     if (!across.notes.some(n => n.slide != null)) bad.push('into the next box has no slide');
     t.equal(bad.join('; '), '', `A scale drill runs the box up and down, in sequence, on the grid, in the shape asked for (${m.length} notes)`);
   }
 
   function testPickingAndCrossing(t){
-    const { realiseDrill } = GT.drills;
+    const { realizeDrill } = GT.drills;
     const bad = [];
     const o = base();
-    const pick = realiseDrill({ ...o, kind: 'picking', perString: 4, direction: 'up' });
+    const pick = realizeDrill({ ...o, kind: 'picking', perString: 4, direction: 'up' });
     // four notes a string, the strings low to high
     const strings = pick.notes.map(n => n.string);
     for (let i = 0; i < strings.length; i += 4){
@@ -121,28 +121,28 @@
       if (i > 0 && four[0] !== strings[i - 1] - 1) bad.push(`string ${four[0]} does not follow ${strings[i - 1]}`);
     }
     if (!onGrid(pick)) bad.push('a picking note is off the grid');
-    const both = realiseDrill({ ...o, kind: 'picking', perString: 3, direction: 'updown' });
+    const both = realizeDrill({ ...o, kind: 'picking', perString: 3, direction: 'updown' });
     if (both.notes.length !== pick.notes.length / 4 * 3 * 2) bad.push(`up and down with three a string is ${both.notes.length} notes`);
     // crossing: one note a string, never the same string twice running, and a skip in the pattern
-    const cross = realiseDrill({ ...o, kind: 'crossing', cross: 'skip', strings: 'all' });
+    const cross = realizeDrill({ ...o, kind: 'crossing', cross: 'skip', strings: 'all' });
     const cs = cross.notes.map(n => n.string);
     if (cs.some((s, i) => i > 0 && s === cs[i - 1])) bad.push('skip one repeats a string');
     if (!cs.some((s, i) => i > 0 && Math.abs(s - cs[i - 1]) === 2)) bad.push('skip one never skips a string');
     if (new Set(cs).size !== 6) bad.push(`skip one over all six uses ${new Set(cs).size} strings`);
-    const four = realiseDrill({ ...o, kind: 'crossing', cross: 'outside', strings: 'high' });
+    const four = realizeDrill({ ...o, kind: 'crossing', cross: 'outside', strings: 'high' });
     if (new Set(four.notes.map(n => n.string)).size !== 4 || four.notes.some(n => n.string > 3)) bad.push('the top four strings are not the top four');
-    const pedal = realiseDrill({ ...o, kind: 'crossing', cross: 'pedal', strings: 'low' });
+    const pedal = realizeDrill({ ...o, kind: 'crossing', cross: 'pedal', strings: 'low' });
     const ps = pedal.notes.map(n => n.string);
     if (!ps.every((s, i) => i % 2 === 1 || s === 5)) bad.push('off the low string does not return to it');
     t.equal(bad.join('; '), '', 'Picking runs its notes a string in turn; crossing jumps strings the way the pattern says');
   }
 
   function testChangesAndArpeggios(t){
-    const { realiseDrill } = GT.drills;
+    const { realizeDrill } = GT.drills;
     const { chordFromName, chordPcs } = GT.theory;
     const bad = [];
     const o = base();
-    const ch = realiseDrill({ ...o, kind: 'changes', chords: 'G D Em C', beats: 4, strum: 'quarters' });
+    const ch = realizeDrill({ ...o, kind: 'changes', chords: 'G D Em C', beats: 4, strum: 'quarters' });
     if (ch.chords.length !== 4) bad.push(`four chords a bar each came out as ${ch.chords.length} bars`);
     const byMoment = new Map();
     ch.notes.forEach(n => { const k = `${n.bar}:${n.at}`; if (!byMoment.has(k)) byMoment.set(k, []); byMoment.get(k).push(n); });
@@ -154,9 +154,9 @@
       if (ss.some((s, i) => i > 0 && s !== ss[i - 1] + 1)) bad.push(`the strike at ${k} skips a string`);
     });
     // the shapes allowed are the shapes used
-    const eOnly = realiseDrill({ ...o, kind: 'changes', chords: 'G D', shapes: new Set(['E']), position: 5 });
+    const eOnly = realizeDrill({ ...o, kind: 'changes', chords: 'G D', shapes: new Set(['E']), position: 5 });
     if (!eOnly.grips.every(g => g.placement.name === 'E')) bad.push(`allowing only the E shape gave ${eOnly.grips.map(g => g.placement.name).join(',')}`);
-    const eighths = realiseDrill({ ...o, kind: 'changes', chords: 'G', strum: 'eighths', beats: 8 });
+    const eighths = realizeDrill({ ...o, kind: 'changes', chords: 'G', strum: 'eighths', beats: 8 });
     if (eighths.chords.length !== 2) bad.push('eight beats a chord is not two bars');
     if (!eighths.notes.some(n => n.stroke === 'up')) bad.push('every eighth has no upstrokes');
     // a pattern with the thumb's bass note and the split chord comes out as
@@ -170,34 +170,34 @@
     const twelve = decodeStrums('12:0-9-2.5-9s,2-f-0.8-5x,6-9-3-9');
     if (twelve.grid !== 12 || twelve.strums.length !== 3 || !twelve.strums[0].chordSlide || twelve.strums[0].dur !== 2.5) bad.push(`a twelve-slot pattern did not decode (${JSON.stringify(twelve)})`);
     if (encodeStrums(twelve.strums, 12) !== '12:0-9-2.5-9s,2-f-0.8-5x,6-9-3-9') bad.push(`a twelve-slot pattern did not encode back (${encodeStrums(twelve.strums, 12)})`);
-    const blues = realiseDrill({ ...o, kind: 'changes', chords: 'B7 E9', custom: twelve, position: 2 });
+    const blues = realizeDrill({ ...o, kind: 'changes', chords: 'B7 E9', custom: twelve, position: 2 });
     if (!blues || blues.grid !== 12 || blues.notes.some(n => n.at >= 12)) bad.push('a twelve-slot pattern did not put the drill on a twelve grid');
     if (!blues || !blues.notes.some(n => n.bar === 0 && n.at === 0)) bad.push('the 12/8 drill has no strike on one');
-    const thumb = realiseDrill({ ...o, kind: 'changes', chords: 'Em', custom, position: 0 });
+    const thumb = realizeDrill({ ...o, kind: 'changes', chords: 'Em', custom, position: 0 });
     const bassNote = thumb.notes.filter(n => n.bar === 0 && n.at === 0), split = thumb.notes.filter(n => n.bar === 0 && n.at === 2);
     if (bassNote.length !== 1 || bassNote[0].string < 3 || bassNote[0].midi % 12 !== 4) bad.push(`the thumb's bass note came out as ${bassNote.map(n => n.string + ':' + n.fret).join(' ')}`);
     if (split.length !== 3 || !split.every(n => n.string >= 1 && n.string <= 3)) bad.push(`the split chord came out as ${split.map(n => n.string + ':' + n.fret).join(' ')}`);
     if (!thumb.notes.some(n => n.at === 10 && n.mute)) bad.push('the muted strike is not muted');
     // the hand moving with the chords: a position for each, and each bar in its own
-    const moving = realiseDrill({ ...o, kind: 'changes', chords: 'Em G Am', positions: [0, 3, 5], custom: null, strum: 'quarters' });
+    const moving = realizeDrill({ ...o, kind: 'changes', chords: 'Em G Am', positions: [0, 3, 5], custom: null, strum: 'quarters' });
     const inWin = (b, lo, hi) => moving.notes.filter(n => n.bar === b).every(n => n.reach || (n.fret >= lo && n.fret <= hi));
     if (!inWin(0, 0, 3) || !inWin(1, 3, 6) || !inWin(2, 5, 8)) bad.push(`the chords did not follow their positions (${[0, 1, 2].map(b => moving.notes.filter(n => n.bar === b).map(n => n.fret).join('/')).join(' | ')})`);
     if (!moving.windows || moving.windows[1].min !== 3) bad.push('the drill does not say where the hand is, bar by bar');
     // a 7♯9 is the Hendrix grip, root on the A string, not a CAGED 7th
-    const haze = realiseDrill({ ...o, kind: 'changes', chords: 'E7#9', position: 5 });
+    const haze = realizeDrill({ ...o, kind: 'changes', chords: 'E7#9', position: 5 });
     const hz = haze.grips[0].cells.map(c => `${c.string}:${c.fret}`).sort().join(' ');
     if (hz !== '1:8 2:7 3:6 4:7') bad.push(`E7♯9 came out as ${hz}, not x-7-6-7-8-x`);
     // the key's own changes when nothing is typed
-    const own = realiseDrill({ ...o, kind: 'changes', chords: '' });
+    const own = realizeDrill({ ...o, kind: 'changes', chords: '' });
     if (own.chords.length !== 4 || own.chords[0].name !== 'A' || own.chords[1].name !== 'D') bad.push(`the key's own changes are ${own.chords.map(c => c.name).join(' ')}`);
     // arpeggios: only chord tones, up then down, one chord after another
-    const arp = realiseDrill({ ...o, kind: 'arpeggio', chords: 'Am F' });
+    const arp = realizeDrill({ ...o, kind: 'arpeggio', chords: 'Am F' });
     if (!arp.notes.every(n => new Set(chordPcs(arp.chords[n.bar])).has(n.midi % 12))) bad.push('an arpeggio note is not a chord tone of its bar');
     const first = arp.notes.filter(n => arp.chords[n.bar].name === 'Am').map(n => n.midi);
     const peak = first.indexOf(Math.max(...first));
     if (!first.slice(0, peak + 1).every((x, i) => i === 0 || x >= first[i - 1])) bad.push('the arpeggio does not go up first');
     if (arp.chords[arp.chords.length - 1].name !== 'F') bad.push('the second chord does not follow');
-    t.equal(bad.join('; '), '', 'Chord changes strike each grip on the beat on neighbouring strings; arpeggios run each shape\'s tones');
+    t.equal(bad.join('; '), '', 'Chord changes strike each grip on the beat on neighboring strings; arpeggios run each shape\'s tones');
   }
 
   function testTheLinkAndTheControls(t){
@@ -256,7 +256,7 @@
     const cardEl = q('#drillCard');
     const st = { feel: { grid: 16, beats: 4 }, chords: [], notes: [], metrics: null };
     const svgHost = q('#drillTab');
-    const drawn = GT.drills.realiseDrill(GT.drills.state);
+    const drawn = GT.drills.realizeDrill(GT.drills.state);
     if (drawn){
       st.feel = drawn.feel; st.chords = drawn.chords; st.notes = drawn.notes;
       st.metrics = GT.examplePlayer.drawTab(svgHost, drawn.feel, drawn.chords, drawn.notes);
@@ -309,7 +309,7 @@
   async function testTheStarKeepsTheDrill(t){
     start();
     const bad = [];
-    const F = GT.favourites;
+    const F = GT.favorites;
     const kept = localStorage.getItem(F.KEY);
     const restoreSync = await GT.testSync.signIn();   // a star waits on sign-in
     try {

@@ -3,7 +3,7 @@
 //
 // One document a person, under their own id: users/{uid}. A signed-in person
 // can read and write their own and nothing else; nobody can list them. The
-// document is the merged state js/sync.js writes (favourites, the courses'
+// document is the merged state js/sync.js writes (favorites, the courses'
 // progress, the preferences) and is kept small.
 rules_version = '2';
 service cloud.firestore {

@@ -47,7 +47,7 @@
   // head of every section as the page says it.
   const CARDS_GUIDE = `
     <p>Everything you play in this course is a card, and every card works the same way. <b>Play</b> loops it here over the band, and the space bar plays and stops the card on the screen. <b>Neck</b> draws the chord as it is fretted, or the scale under the line, and lights each note as it sounds. <b>Fingering</b> puts a chord diagram over each change of grip. <b>Open in jam</b> or <b>Open in drills</b> puts the same thing on the app's other tabs at the card's own tempo, where you can slow it down, change the key, and roll new fills. <b>Print</b> opens just the tab, for paper; <b>Expand</b> shows the tab and the neck side by side. <b>Count in on Play</b>, in the bar above, gives you a bar before it starts.</p>
-    <p>Each card says how hard it is and the tempo to start at — about seven tenths of the record's. A card's tab is one rolled realisation of a part: the same part rolls different fills in Jam, so learn the figure from the card and the fills from the roll. The exercises come before the parts in every lesson; play each until it is clean at the starting tempo, then turn it up, then move on. Click anywhere on a tab to play from there.</p>`;
+    <p>Each card says how hard it is and the tempo to start at — about seven tenths of the record's. A card's tab is one rolled realization of a part: the same part rolls different fills in Jam, so learn the figure from the card and the fills from the roll. The exercises come before the parts in every lesson; play each until it is clean at the starting tempo, then turn it up, then move on. Click anywhere on a tab to play from there.</p>`;
 
   function create(config){
     const { dive, prefix, name, lessons } = config;
@@ -321,7 +321,7 @@
     const syncLine = () => {
       const s = GT.sync && GT.sync.status();
       if (s && s.user) return `Progress is kept in this browser and synced to your Google account (${esc(s.user.email || s.user.name)}); every device you sign in on has it.`;
-      if (s && s.available) return `Progress is kept in this browser; <a href="index.html#favourites">sign in with Google</a> to have it on every device.`;
+      if (s && s.available) return `Progress is kept in this browser; <a href="index.html#favorites">sign in with Google</a> to have it on every device.`;
       return 'Progress is kept in this browser only (nothing is sent anywhere); clearing the site\'s data clears it.';
     };
     // ---- the dashboard ----

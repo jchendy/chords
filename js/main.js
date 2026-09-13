@@ -38,8 +38,8 @@
     go.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') follow(e); });
     card.appendChild(line);
   });
-  GT.favourites.renderPage();
-  GT.favourites.onChange(() => GT.favourites.renderPage());
+  GT.favorites.renderPage();
+  GT.favorites.onChange(() => GT.favorites.renderPage());
   if (GT.sync){ GT.sync.panel(document.getElementById('syncPanel')); GT.sync.signButton(document.getElementById('signWrap')); }
   GT.tabs.init({
     // whichever tab you're leaving, don't let it keep playing
@@ -52,7 +52,7 @@
       reverse: () => GT.reverseFinder.refresh(),
       ear: () => GT.earTraining.refresh(),
       drills: () => GT.drills.refresh(),
-      favourites: () => GT.favourites.renderPage(),
+      favorites: () => GT.favorites.renderPage(),
     },
   });
 })();

@@ -1177,7 +1177,7 @@
 
   // =========================================================================
   // SIXTH PASS — the fingerpicked parts, as a hand fingerpicks them (marked
-  // `fingers`, so the realiser keeps the fingers off the thumb's strings). Measured
+  // `fingers`, so the realizer keeps the fingers off the thumb's strings). Measured
   // on the page, two thirds of the finger notes in these parts were landing
   // on the A and D strings, under or beside the thumb, because their
   // intervals were written in the root's octave; the fingers play the treble
@@ -1214,7 +1214,7 @@
     };
     walk(pt);
     if (pt.easy) walk(pt.easy);
-    // and the realiser keeps the fingers off whatever strings the thumb takes in a bar
+    // and the realizer keeps the fingers off whatever strings the thumb takes in a bar
     pt.fingers = true;
     pt.why = (pt.why || '') + (thumb
       ? ' Sixth pass: the thumb on the root on every beat, nothing else on the bass strings; the fingers an octave up, on the treble strings, where they are.'

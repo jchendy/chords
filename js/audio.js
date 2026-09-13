@@ -36,8 +36,8 @@
       freqs.push(noteFreq(chord.seventh, seventhOctave));
       topSemi = seventhSemi; topOctave = seventhOctave;
     }
-    // the colour on top: a 9th, a ♯9, a 6th, each above what came before —
-    // and inside the comp's range (the piano is warmed to MIDI 72): a colour
+    // the color on top: a 9th, a ♯9, a 6th, each above what came before —
+    // and inside the comp's range (the piano is warmed to MIDI 72): a color
     // tone that would sit above it drops an octave, into the chord
     (chord.ext || []).forEach(iv => {
       const semi = (rootSemi + iv) % 12;
@@ -434,7 +434,7 @@
   function pianoWaveFor(ctx){
     const imag = new Float32Array(PIANO_PARTIALS);
     const real = new Float32Array(imag.length);
-    // keep the partial levels literal — normalising would rescale the wave and
+    // keep the partial levels literal — normalizing would rescale the wave and
     // make every note noticeably louder than the rest of the mix expects
     return ctx.createPeriodicWave(real, imag, { disableNormalization: true });
   }
@@ -495,7 +495,7 @@
   const STOP_FADE = 0.06;
 
   // Reports what it did — how many notes were called off before they started
-  // and how many were taken away mid-ring — so the behaviour can be tested
+  // and how many were taken away mid-ring — so the behavior can be tested
   // without anything having to listen.
   function cancelScheduled(){
     if (!audioCtx) return { stopped: 0, faded: 0 };
@@ -612,7 +612,7 @@
   // WHY WE THINK WE MAY USE THEM. They are CC0 — a public domain dedication,
   // which waives copyright as far as the law allows, so there is no condition
   // to meet and not even attribution is required. We credit the author
-  // anyway: it is his guitar and his work. The licence is stated by the
+  // anyway: it is his guitar and his work. The license is stated by the
   // author himself in the header of the .sfz that maps these very samples —
   //
   //     // GM Acoustic Guitar
@@ -623,12 +623,12 @@
   // — identically in the upstream repository and in the fork, repeated in a
   // second .sfz beside the samples, under a bank whose README says "Each
   // instrument is licensed by its creator... Only CC0, CC-BY, and equivalent
-  // licences are allowed." Checked 2026-09-10. audio/guitar/SOURCE.md keeps
+  // licenses are allowed." Checked 2026-09-10. audio/guitar/SOURCE.md keeps
   // the full reasoning, and what was rejected and why.
   //
   // The samples are a bonus rather than a requirement: opened from a file://
   // URL the browser gives the page an opaque origin and refuses to let it
-  // read its own neighbours, so the fetch fails and the synthesized voice
+  // read its own neighbors, so the fetch fails and the synthesized voice
   // below plays instead. Nothing about the app depends on them arriving.
   const GUITAR_DIR = 'audio/guitar/';
   const GUITAR_SAMPLES = [
@@ -758,7 +758,7 @@
 
   // THE BASS. A 1958 Otto Rubner double bass, played pizzicato and mapped by
   // D. Smolken, who recorded it and who dedicated it to the public domain
-  // himself: the CC0 licence in audio/bass/LICENSE.txt was committed to
+  // himself: the CC0 license in audio/bass/LICENSE.txt was committed to
   // <https://github.com/sfzinstruments/dsmolken.double-bass> by Smolken in
   // November 2022, with the message "Swapping to CC0", and the readme beside
   // it names him as the copyright holder. That is the test T49's rejected
@@ -832,7 +832,7 @@
   // ---- one bank, two instruments ----
   // Both want the same three things: fetch a file once, keep the decoded
   // buffer, and say nothing when a fetch fails. A page opened from disk can't
-  // read its own neighbours at all, so failing quietly is the common case
+  // read its own neighbors at all, so failing quietly is the common case
   // rather than the exception — everything falls back to the synthesized
   // voices and the app carries on.
   const makeBank = dir => ({ dir, buffers: new Map(), loading: new Map(), reachable: true });
@@ -886,13 +886,13 @@
   // Pitch is moved by the sample's playback rate, which is what a bend or a
   // slide does to a string — the same recording, faster.
   // `who` says what the pluck is beyond its sound: { string } names the
-  // string it is on (the part's realised notes know theirs; a strum's k-th
+  // string it is on (the part's realized notes know theirs; a strum's k-th
   // note from the bottom is 'strum:k'), for the players and the tests.
   // ---- one string can only sound one note ------------------------------
   // The next note on a string — fretted, hammered, restruck — takes it over,
   // and the old one is damped in a few milliseconds rather than ringing
   // under the new one. Keyed by what the caller says the string is: the
-  // part's realised notes know theirs ('part:3'), the comp's voicing has
+  // part's realized notes know theirs ('part:3'), the comp's voicing has
   // none, so its k-th note from the bottom is 'strum:k' — a new grip on the
   // same strings, which is what a comp guitarist does. The kit's hat uses
   // it too ('kit:hat'). Each graph has its own claims, so an offline render
@@ -1117,14 +1117,14 @@
   // lighter (SWEEP_TAPER from first to last); and the whole strum carries
   // the weight one and a half notes would whatever its size — STRUM_SHARE
   // is parts.js's strumStringLevel (B49), held equal by a test — with the
-  // taper renormalised so the sweep changes the shape and not the level.
+  // taper renormalized so the sweep changes the shape and not the level.
   const SWEEP = { down: 0.032, up: 0.022 };
   const SWEEP_TAPER = 0.22;
   const STRUM_SHARE = n => Math.min(1, 1.45 / Math.sqrt(n));
 
   // The plan: [{ freq, at, level, string }] in the order they sound. `vel`
   // is one level for the strum, or a level a string low to high (the
-  // part's realised strings carry their own).
+  // part's realized strings carry their own).
   function strumPlan(freqs, time, vel, { stroke = 'down', sweep, strings } = {}){
     const n = freqs.length;
     const order = freqs.map((f, i) => i);
@@ -1146,17 +1146,17 @@
 
   // ---- the part, played --------------------------------------------------
   // The jam tab, the parts page and the review page all play a
-  // realised part; this is the one place it is turned into sound. `notes`
-  // are realised notes (parts.js), `at(n)` the audio time of a note's own
+  // realized part; this is the one place it is turned into sound. `notes`
+  // are realized notes (parts.js), `at(n)` the audio time of a note's own
   // `at` (the caller knows its grid, its swing and its humanising), `level`
-  // the part's gain over the realised velocity (PART_LEVEL at the default
+  // the part's gain over the realized velocity (PART_LEVEL at the default
   // slider, B48). Strums are grouped by their moment and swept; a rake is
   // two muted strings ahead of the note; a slapback is a second, quieter
   // pluck a moment on where the style lives on it. Returns what it played,
   // for the followers.
   const PART_LEVEL = 2.4;
   const hz = m => 440 * Math.pow(2, (m - 69) / 12);
-  // what a realised note asks of the engine — all of it, not the first
+  // what a realized note asks of the engine — all of it, not the first
   // flag that matches: a hammered note can be muted, a bend can shake
   const partFx = n => {
     const fx = {};
@@ -1398,13 +1398,13 @@
   // the stretch a comping hand uses — the shape and the spacing are kept
   // exactly, only the register moves, which is what a player does when a
   // voicing lands too high: the same grip, an octave down.
-  // Around a centre rather than under a ceiling. A ceiling alone leaves
-  // neighbouring keys an octave apart — a voicing that just fits stays put
+  // Around a center rather than under a ceiling. A ceiling alone leaves
+  // neighboring keys an octave apart — a voicing that just fits stays put
   // while the one a semitone above it drops — so the register would lurch
   // whenever a progression crossed that line. Settling each voicing about the
-  // same centre keeps the comp in one place whatever the key, which is also
+  // same center keeps the comp in one place whatever the key, which is also
   // what makes the movement between chords small.
-  const COMP_CENTRE = 57;                        // A3, where a comping hand sits
+  const COMP_CENTER = 57;                        // A3, where a comping hand sits
   const COMP_DRIFT = 6;                          // ...give or take a half-octave
 
   function settleVoicing(freqs){
@@ -1412,9 +1412,9 @@
     // a voicing settles in a step or two; the bound is there so one that
     // somehow can't fit gives up rather than spinning
     for (let i = 0; i < 4; i++){
-      const centre = notes.reduce((sum, f) => sum + midiOf(f), 0) / notes.length;
-      if (centre - COMP_CENTRE > COMP_DRIFT) notes = notes.map(f => f / 2);
-      else if (COMP_CENTRE - centre > COMP_DRIFT) notes = notes.map(f => f * 2);
+      const center = notes.reduce((sum, f) => sum + midiOf(f), 0) / notes.length;
+      if (center - COMP_CENTER > COMP_DRIFT) notes = notes.map(f => f / 2);
+      else if (COMP_CENTER - center > COMP_DRIFT) notes = notes.map(f => f * 2);
       else break;
     }
     return notes;
@@ -1439,9 +1439,9 @@
       prev = pc;
       return pcFreq(pc, octave);
     })).map(midiOf);
-    // ...and the colour — a 9th, a ♯9, a 13th — on top of it when the range
+    // ...and the color — a 9th, a ♯9, a 13th — on top of it when the range
     // has room, else tucked in above the lowest note, inside the chord; the
-    // colour doesn't move the stack, so what settled stays settled
+    // color doesn't move the stack, so what settled stays settled
     const stack = base.slice();
     (chord.ext || []).forEach(iv => {
       const pc = (r + iv) % 12;
@@ -1809,7 +1809,7 @@
     setBandLevel, bandLevel, partBus: () => partGain,
     PIANO_SOFT, PIANO_HARD, PIANO_SPLIT, PIANO_RANGE, PIANO_XFADE, pianoSampleFor, warmPiano,
     pianoLayerMix, pianoReady: (freq, velocity) => pianoSampleIfReady(freq, velocity >= PIANO_SPLIT),
-    chord7Frequencies, chordVoicings, STYLE_VOICES, COMP_CENTRE, COMP_DRIFT, settleVoicing, lastVoiceAsked: () => lastVoiceAsked,
+    chord7Frequencies, chordVoicings, STYLE_VOICES, COMP_CENTER, COMP_DRIFT, settleVoicing, lastVoiceAsked: () => lastVoiceAsked,
     BASS_SOFT, BASS_MID, BASS_HARD, BASS_BANDS, BASS_TOP, BASS_RANGE, bassSampleFor, bassFold,
     warmBass, bassWarmList, bassNote, bassRootOctave,
     voiceUse: () => ({ ...voiceUse }), resetVoiceUse,

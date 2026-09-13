@@ -234,7 +234,7 @@
       if (n.rake) els.push(`<text class="tab-tech" x="${x - w / 2 - 4}" y="${y + 3.5}" text-anchor="middle">r</text>`);
       if (n.tech === 'h' || n.tech === 'p'){
         // the letter sits over the gap to the note it leads to, which the
-        // realisation put half this note's length later
+        // realization put half this note's length later
         const q = positionOf(n.at + n.dur, m);
         const x2 = q.x + q.slotW / 2;
         const mid = q.top === p.top ? (x + x2) / 2 : x + p.slotW / 2;
@@ -407,8 +407,8 @@
       groups.forEach(g => {
         const y1 = g[0].y0 + STEM_H;
         els.push(`<line class="tab-beam" x1="${g[0].x}" y1="${y1}" x2="${g[g.length - 1].x}" y2="${y1}"/>`);
-        // the shorter values' extra beams: between neighbours that both have
-        // them, else a stub toward the neighbour the note is beamed to
+        // the shorter values' extra beams: between neighbors that both have
+        // them, else a stub toward the neighbor the note is beamed to
         const most = Math.max(...g.map(h => h.flags));
         for (let level = 2; level <= most; level++){
           const y = y1 - (level - 1) * 4.5;

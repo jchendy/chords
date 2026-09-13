@@ -4,7 +4,7 @@
 // STYLES variants, plus the fields the page's player understands (ghost,
 // hatOpen, rim, fill, bassApproach, compAnticipate, swing, beats, slapback,
 // snareVels/kickVels, bass entries with next:true); the parts take the same
-// shape as parts.js's, plus the flags the page's realiser understands
+// shape as parts.js's, plus the flags the page's realizer understands
 // (fillsOnChange, fillsOnStay, turnaround; ghost, stacc, pm, vib, trem,
 // rake, chordSlide, add, voicing 'shell', a bend on a double stop).
 //
@@ -14,7 +14,7 @@
 // sub-style is "inspired by" a player, that means their way of playing, in
 // the general terms a method book would use for it.
 // The method behind the parts and styles, and the order to add one in, is
-// docs/STYLES.md; what the research found is docs/STYLES-CATALOGUE.md.
+// docs/STYLES.md; what the research found is docs/STYLES-CATALOG.md.
 (function(){
   'use strict';
   const GT = (window.GT = window.GT || {});
@@ -85,7 +85,7 @@
           },
           {
             name: 'Upbeat chops (the second guitar)',
-            why: 'What the other guitar in a Reed band plays: the chord on the shuffle upbeats only, on the top strings, short. One fill is the T-Bone move — a 9th chord slid in from a half-step below — which needs chord slides and a colour tone on a strum.',
+            why: 'What the other guitar in a Reed band plays: the chord on the shuffle upbeats only, on the top strings, short. One fill is the T-Bone move — a 9th chord slid in from a half-step below — which needs chord slides and a color tone on a strum.',
             figure: [s(2, 0.8, 0.65, 'high'), s(5, 0.8, 0.65, 'high'), s(8, 0.8, 0.65, 'high'), s(11, 0.8, 0.65, 'high')],
             variants: [
               [g(0, 0.5, 0.3), s(2, 0.8, 0.65, 'high'), g(3, 0.5, 0.3), s(5, 0.8, 0.65, 'high'), g(6, 0.5, 0.3), s(8, 0.8, 0.65, 'high'), g(9, 0.5, 0.3), s(11, 0.8, 0.65, 'high')],
@@ -292,7 +292,7 @@
       {
         label: 'Minor blues', inspired: 'B.B. King ("The Thrill Is Gone"), Gary Moore, Otis Rush', style: 'blues',
         progression: ['Am7', 'Am7', 'Dm7', 'Dm7', 'Fmaj7', 'E7'], key: 'A', mode: 'minor', tempo: 80, scaleTheory: 'modal',
-        why: `<p>12/8 and minor: the 4th bent up to the 5th and shaken, the natural 6th over the iv (Dorian), the ♭VI–V turnaround. The comp is minor-7th shells; the bass climbs root–♭3–5–♭7. Realised with the modal palette so the V7's ♭9 is available.</p>`,
+        why: `<p>12/8 and minor: the 4th bent up to the 5th and shaken, the natural 6th over the iv (Dorian), the ♭VI–V turnaround. The comp is minor-7th shells; the bass climbs root–♭3–5–♭7. Realized with the modal palette so the V7's ♭9 is available.</p>`,
         band: { grid: 12, kick: [0, 6], kickVel: 0.6, snare: [3, 9], snareVel: 0.6, ghost: [2, 8], hat: [3, 9], ride: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], voice: 'jazz',
                 bass: [{ slot: 0, off: 0, dur: 3, vel: 0.9 }, { slot: 3, off: 3, dur: 3, vel: 0.7 }, { slot: 6, off: 7, dur: 3, vel: 0.8 }, { slot: 9, off: 10, dur: 3, vel: 0.7 }],
                 bassApproach: true, chord: [{ slot: 0, dur: 6, vel: 0.5 }, { slot: 6, dur: 5, vel: 0.45 }] },

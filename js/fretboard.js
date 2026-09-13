@@ -30,7 +30,7 @@
   // can share a split dot) are always far apart: cyan / amber / rose / blue / lime
   const CAGED_COLORS = { C: '#2fbccb', A: '#e6a13a', G: '#e069a6', E: '#5f8ce8', D: '#8ec93f' };
 
-  // one colour per distinct chord root, assigned in progression order
+  // one color per distinct chord root, assigned in progression order
   const ROOT_PALETTE = ['#2fbccb', '#e6a13a', '#e069a6', '#5f8ce8', '#8ec93f', '#b98ce8', '#e6733a'];
 
   // every CAGED shape placement that fits on the neck, with its played cells
@@ -219,7 +219,7 @@
 
   // The full scale in each CAGED position, written out rather than worked out.
   // These are the shapes players learn, and like the pentatonic ones above they
-  // are a judgement about where a note is best fingered, not something a rule
+  // are a judgment about where a note is best fingered, not something a rule
   // derives: where a note can be had in two places, which one belongs to this
   // box is a choice. Deriving them produced boxes with holes in — a scale you
   // could not play up through the position without a note going missing.
@@ -326,9 +326,9 @@
     return best;
   }
 
-  // Every note a view draws, coloured by the CAGED box that owns it: a note two
+  // Every note a view draws, colored by the CAGED box that owns it: a note two
   // adjacent boxes share gets a split dot (lower box on the left, higher on the
-  // right), a note in one box takes that box's colour, and a note in none takes
+  // right), a note in one box takes that box's color, and a note in none takes
   // the nearest box's — an arpeggio note just outside a box still reads as
   // belonging to it.
   //
@@ -338,7 +338,7 @@
   // only which notes they draw and what they call them, which is all `labelOf`
   // is — the degree to write on a pitch class, or nothing for a note this view
   // leaves out.
-  function boxColouredNotes(boxes, { labelOf, rootPc, passingOf }){
+  function boxColoredNotes(boxes, { labelOf, rootPc, passingOf }){
     const markers = [];
     for (let s = 0; s < 6; s++){
       for (let f = 0; f <= FRET_COUNT; f++){
@@ -388,7 +388,7 @@
   }
 
   // The five CAGED shapes for one triad, laid out across the whole neck and
-  // coloured by shape (notes two shapes share get a split dot). This is the
+  // colored by shape (notes two shapes share get a split dot). This is the
   // data behind the jam tab's Chords view; the chord finder draws
   // the same thing, so both stay identical by construction.
   // Pass `seventhPc` and each shape turns into its 7th-chord voicing (the
@@ -396,10 +396,10 @@
   // `allowed` narrows it to a set of shape letters — the jam tab lets you
   // work on a few of the five at a time. Filtering here rather than afterwards
   // is what keeps a note two shapes share honest: with one of them switched
-  // off it's a plain dot in the other's colour, not a split still half-painted
+  // off it's a plain dot in the other's color, not a split still half-painted
   // by a shape that isn't on the neck.
   // ...and `sus` (4 or 2) turns each shape into its sus voicing: the 3rd's
-  // cells move to the sus note and are labelled for it.
+  // cells move to the sus note and are labeled for it.
   function cagedTriadBoard(rootPc, isMinor, rootLabel, seventhPc = null, allowed = null, sus = null){
     const thirdPc = (rootPc + (sus ? (sus === 4 ? 5 : 2) : isMinor ? 3 : 4)) % 12;
     const fifthPc = (rootPc + 7) % 12;
@@ -479,7 +479,7 @@
 
   // Which CAGED shape a close three-string triad is cut from. A triad has only
   // three notes, so `cagedShapeMatch`'s three-note threshold would only ever
-  // recognise one sitting entirely inside a grip — four in five do, and the
+  // recognize one sitting entirely inside a grip — four in five do, and the
   // rest still sit squarely in a grip's position while borrowing a note from
   // outside it. Take the grip sharing the most notes, nearest one breaking a
   // tie, and require at least two so the answer means something.
@@ -506,7 +506,7 @@
     STRING_TUNING, STRING_MIDI, STRING_LABELS, FRET_COUNT,
     CAGED_MAJOR, CAGED_MINOR, CAGED_ORDER, CAGED_COLORS, ROOT_PALETTE,
     cagedPlacements, seventhCells, susCells, arpeggioCells, cagedArpeggioBoxes, stringSetTriads,
-    pentaBoxPlacements, scaleBoxPlacements, boxColouredNotes, gripOutlines, nearestByAnchor,
+    pentaBoxPlacements, scaleBoxPlacements, boxColoredNotes, gripOutlines, nearestByAnchor,
     cagedTriadBoard, identifyCagedShape, cagedShapeMatch, closeTriadShape,
   };
 })();

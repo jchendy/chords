@@ -211,7 +211,7 @@
     existing: [
       {
         style: 'jazz', label: 'Swing',
-        verdict: `<p>Band: the comp anticipates every change on the "and of 4", the bass walks with a chromatic approach into changes (it did the walk; now the approach is guaranteed), a light snare comp on the "and of 2" every other bar. Guitar: four to the bar on shell voicings (root–3–7); lines in octaves; the Charleston with anticipations. Realised with the modal palette so the V7's ♭9 is available. Needs shell voicings, chord slides, vibrato.</p>`,
+        verdict: `<p>Band: the comp anticipates every change on the "and of 4", the bass walks with a chromatic approach into changes (it did the walk; now the approach is guaranteed), a light snare comp on the "and of 2" every other bar. Guitar: four to the bar on shell voicings (root–3–7); lines in octaves; the Charleston with anticipations. Realized with the modal palette so the V7's ♭9 is available. Needs shell voicings, chord slides, vibrato.</p>`,
         entry: { scaleTheory: 'modal' },
         band: { compAnticipate: true, bassApproach: true, ghost: [5], fill: { snare: [6, 8, 9, 11], kick: [0] } },
         parts: [
@@ -250,7 +250,7 @@
       },
       {
         style: 'jazz', label: 'Bossa nova',
-        verdict: `<p>Band: the rim click plays the bossa clave (1, the and of 2, 4 | 2, the and of 3), the hat on eighths; the bass on 1 and the and of 2 with the 5th. Guitar: the batida written as the two-bar figure it is (the second bar is the variant), the thumb in two, the fingers on the syncopations; the 9th on top of the chords. Realised with the modal palette.</p>`,
+        verdict: `<p>Band: the rim click plays the bossa clave (1, the and of 2, 4 | 2, the and of 3), the hat on eighths; the bass on 1 and the and of 2 with the 5th. Guitar: the batida written as the two-bar figure it is (the second bar is the variant), the thumb in two, the fingers on the syncopations; the 9th on top of the chords. Realized with the modal palette.</p>`,
         entry: { scaleTheory: 'modal' },
         band: { rim: [0, 6, 12, 4, 10], hat: [0, 2, 4, 6, 8, 10, 12, 14], bass: [{ slot: 0, off: 0, dur: 5, vel: 0.85 }, { slot: 6, off: 7, dur: 2, vel: 0.6 }, { slot: 8, off: 7, dur: 5, vel: 0.75 }, { slot: 14, off: 0, dur: 2, vel: 0.6 }] },
         parts: [
@@ -268,7 +268,7 @@
       },
       {
         style: 'gypsy', label: 'Gypsy jazz',
-        verdict: `<p>Band: unchanged except a slightly harder 2 and 4 in the comp. Guitar: la pompe stays; the lines get the vocabulary — the diminished arpeggio off the 3rd of a dominant chord (3, 5, ♭7, ♭9), the 6th, chromatic enclosures. Realised with the modal palette so the ♭9 on the V7 exists.</p>`,
+        verdict: `<p>Band: unchanged except a slightly harder 2 and 4 in the comp. Guitar: la pompe stays; the lines get the vocabulary — the diminished arpeggio off the 3rd of a dominant chord (3, 5, ♭7, ♭9), the 6th, chromatic enclosures. Realized with the modal palette so the ♭9 on the V7 exists.</p>`,
         entry: { scaleTheory: 'modal' },
         band: { chord: [{ slot: 0, dur: 1.2, vel: 0.45 }, { slot: 2, dur: 0.6, vel: 0.3 }, { slot: 3, dur: 1, vel: 0.85 }, { slot: 6, dur: 1.2, vel: 0.45 }, { slot: 8, dur: 0.6, vel: 0.3 }, { slot: 9, dur: 1, vel: 0.85 }] },
         parts: [

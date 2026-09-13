@@ -21,7 +21,7 @@ that widening the range later is a code change rather than another download.
 - **Taken from:** <https://github.com/freepats/upright-piano-KW> (the FreePats
   project's own repository), also published at
   <https://freepats.zenvoid.org/Piano/acoustic-grand-piano.html#UprightKW>.
-- **Licence:** Creative Commons CC0 1.0 (public domain dedication). The full
+- **License:** Creative Commons CC0 1.0 (public domain dedication). The full
   text is in `LICENSE.txt` beside these files, as it ships upstream.
 
 One practical note for whoever wires these up: the file names contain `#`,
@@ -35,7 +35,7 @@ as "no sample" and falls back to the synth.
 
 CC0 waives copyright as far as the law allows: nothing to ask, no condition
 to meet, not even attribution. We name the people who made the recording
-anyway, because it is their work and their neighbour's piano.
+anyway, because it is their work and their neighbor's piano.
 
 The dedication is made by the people who did the recording, and it is stated
 in two places that both belong to them — the project's own web page:

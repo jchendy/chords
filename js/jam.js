@@ -110,7 +110,7 @@
 
   // Name the shape a chord is currently in — the key a slot stores.
   function shapeOf(chord){
-    // the colour beyond the triad and the 7th, where the chord carries it
+    // the color beyond the triad and the 7th, where the chord carries it
     if (chord.sus) return chord.seventh ? '7sus4' : chord.sus === 2 ? 'sus2' : 'sus4';
     if (chord.ext && chord.ext.length){
       const has = n => chord.ext.includes(n);
@@ -149,7 +149,7 @@
     m7:     { triad: 'min', seventh: 10,   label: 'm7'    },
     'm7♭5': { triad: 'dim', seventh: 10,   label: 'm7♭5'  },
     dim7:   { triad: 'dim', seventh: 9,    label: 'dim7'  },
-    // the colour beyond the triad and the 7th — `ext` as semitones above the
+    // the color beyond the triad and the 7th — `ext` as semitones above the
     // root, `sus` in place of the 3rd; the key is the suffix the chord is
     // written with, so a typed "E7♯9" and a picked one are the same chord
     '9':      { triad: 'maj', seventh: 10,   ext: [2], label: '9'      },
@@ -169,10 +169,10 @@
     const dim = quality === 'dim';
     return ['maj', 'min', ...(dim ? ['dim'] : []), '7', 'maj7', 'm7',
             ...(dim ? ['m7♭5', 'dim7'] : []),
-            ...COLOUR_SHAPES];
+            ...COLOR_SHAPES];
   }
-  // the coloured shapes, offered after the plain ones
-  const COLOUR_SHAPES = ['9', 'm9', '7♯9', 'add9', 'm(add9)', '6', 'sus2', 'sus4', '7sus4'];
+  // the colored shapes, offered after the plain ones
+  const COLOR_SHAPES = ['9', 'm9', '7♯9', 'add9', 'm(add9)', '6', 'sus2', 'sus4', '7sus4'];
 
   // every shape there is, for a root the key has nothing to say about. Written
   // out rather than read off CHORD_SHAPES, whose '7' would come first: an
@@ -235,7 +235,7 @@
     const chord = { ...c, _deg: c.deg, _shape: shape || null };
     const spec = CHORD_SHAPES[shape];
 
-    // the base chord carries no colour of its own
+    // the base chord carries no color of its own
     delete chord.ext; delete chord.sus; delete chord.suffix;
     if (!spec){ chord.seventh = null; return chord; }
 
@@ -251,7 +251,7 @@
       chord.numeral = recaseNumeral(chord.numeral, spec.triad);
     }
     chord.seventh = spec.seventh == null ? null : at(spec.seventh);
-    // the colour: the sus note in the 3rd's place, the extensions on top, and
+    // the color: the sus note in the 3rd's place, the extensions on top, and
     // the suffix that names them
     if (spec.sus){ chord.third = at(spec.sus === 4 ? 5 : 2); chord.sus = spec.sus; }
     if (spec.ext) chord.ext = spec.ext.slice();
@@ -285,11 +285,11 @@
   // A whole progression, chosen for you: how many chords, how long each one
   // holds, and then the chords themselves. Short and squarish on purpose —
   // two to four chords of a bar or two is the shape of most things worth
-  // practising over, and anything longer is better built by hand.
+  // practicing over, and anything longer is better built by hand.
   function randomizeProgression(){
     setSlotCount(2 + Math.floor(Math.random() * 3));          // 2, 3 or 4
     slotMeasures = slotChoices.map(() => 1 + Math.floor(Math.random() * 2));
-    randomizeChords();   // degrees and shapes, honouring the two roll settings
+    randomizeChords();   // degrees and shapes, honoring the two roll settings
   }
 
   // A different key, chosen for you — the same progression lands in it, since
@@ -1706,7 +1706,7 @@
     GT.tabs.setState('caged', shareState().toString());
     paintStars();   // the stars say whether this exact state is kept
   }
-  // The tab as it is set, in words — what a favourite of it is called: the
+  // The tab as it is set, in words — what a favorite of it is called: the
   // preset and its variant, or the chords; then the key, the feel, the part
   // if one is on, and the tempo.
   function describeState(){
@@ -1718,8 +1718,8 @@
     const sub = [`${currentTonic} ${currentMode}`, preset ? chords : '', feelName(currentStyle, currentVariant), part, `${getTempo()} BPM`].filter(Boolean).join(' · ');
     return { title, sub };
   }
-  // the favourite: this state, named, with the link that reopens it
-  const jamFavourite = () => { const params = shareState().toString(); const d = describeState(); return { id: `jam:${params}`, kind: 'jam', title: d.title, sub: d.sub, href: `index.html#jam?${params}` }; };
+  // the favorite: this state, named, with the link that reopens it
+  const jamFavorite = () => { const params = shareState().toString(); const d = describeState(); return { id: `jam:${params}`, kind: 'jam', title: d.title, sub: d.sub, href: `index.html#jam?${params}` }; };
   // two stars for the same thing: one in the playback bar, one in the Share row of the controls
   const STAR_IDS = ['jamStarQuick', 'jamStar'];
   const paintStars = () => STAR_IDS.forEach(id => { const b = document.getElementById(id); if (b && b._paintStar) b._paintStar(); });
@@ -1829,13 +1829,13 @@
 
   // ---- a part to play over it ----
   // A rhythm figure and its fills, written for the feel that's playing (see
-  // parts.js) and realised into the notes this reading offers in this
+  // parts.js) and realized into the notes this reading offers in this
   // position. It's a suggestion of what to play, so it shows three ways: lit
   // on the neck as it goes, written out as tab under the chart, and sounded
   // on the recorded guitar so you can hear what you're aiming at.
   //
   // What's on screen stays put for the session. Rolling a new chord or
-  // stepping the box re-realises the same part into the new notes, but the
+  // stepping the box re-realizes the same part into the new notes, but the
   // part and its fills only change when you ask: one pair of arrows steps
   // through the feel's parts, one button re-rolls the fills of the part
   // you're on.
@@ -1844,7 +1844,7 @@
   let partFollowFailed = false;      // logged once, not sixty times a second
   let partBars = [];                 // what the tab was last drawn from, for a redraw on resize
   let partIdx = 0;                  // which of the feel's parts
-  let partSeed = 0;                 // the roll the part was realised from; 0 = not rolled yet
+  let partSeed = 0;                 // the roll the part was realized from; 0 = not rolled yet
   let partEasy = false;             // the beginner's version of the part
   let partBlend = 'mixed';          // a part with lead lines: 'rhythm', 'mixed' or 'lead'
   let partHumanize = false;         // timing and velocity moved a little
@@ -1873,11 +1873,11 @@
   const partLevel = () => partMuted ? 0 : PART_LEVEL_AT_DEFAULT * (partVolume / PART_VOLUME_DEFAULT);
   const BAND_VOLUME_DEFAULT = 100;
   const bandLevel = () => bandMuted ? 0 : bandVolume / BAND_VOLUME_DEFAULT;
-  let partNotes = [];               // realised: bar, at, dur, vel, string, fret, midi
+  let partNotes = [];               // realized: bar, at, dur, vel, string, fret, midi
   let partLog = [];                 // what's been scheduled, for lighting as it sounds
   let partTab = null;               // the drawn tab's metrics, for the playhead
-  let partSig = '';                 // what the realised part was built from
-  let partWindow = null;            // the stretch of neck it was realised in
+  let partSig = '';                 // what the realized part was built from
+  let partWindow = null;            // the stretch of neck it was realized in
   let partBarShown = -1;            // which bar the tab is scrolled to
 
   const chartViewGroup = document.getElementById('chartViewGroup');
@@ -1944,12 +1944,12 @@
     return !!partNow() && pv.inPosition && !!pv.window && PART_READINGS.includes(pv.reading) && partNeedsMet();
   }
 
-  // Everything the realised part depends on, so it's rebuilt when any of it
+  // Everything the realized part depends on, so it's rebuilt when any of it
   // moves and left alone otherwise. The position window is deliberately NOT
   // here: the neck follows the playing chord, and in one position that means
   // re-picking the box on every change — so a part that followed the window
-  // was re-realised into different notes on every chord, and came out
-  // different every time round. The part is realised in the window it was
+  // was re-realized into different notes on every chord, and came out
+  // different every time round. The part is realized in the window it was
   // set in and stays there; stepping the box yourself is the one thing that
   // moves it, and that's wired to the arrows below rather than to the neck.
   function partSignature(){
@@ -1968,7 +1968,7 @@
     if (!partsNow().length) return `No parts written for ${feelName(currentStyle, currentVariant)} yet.`;
     const pv = view.positionView();
     const link = (act, value, text) => `<button type="button" class="link" data-act="${act}" data-value="${value}">${text}</button>`;
-    if (!PART_READINGS.includes(pv.reading)) return `A part is realised into the notes a reading offers: switch the neck to ${link('mode', 'caged', 'Chords')}, ${link('mode', 'triads3', 'Triads')}, ${link('mode', 'penta', 'Pentatonic')} or ${link('mode', 'scale', 'Scales')}.`;
+    if (!PART_READINGS.includes(pv.reading)) return `A part is realized into the notes a reading offers: switch the neck to ${link('mode', 'caged', 'Chords')}, ${link('mode', 'triads3', 'Triads')}, ${link('mode', 'penta', 'Pentatonic')} or ${link('mode', 'scale', 'Scales')}.`;
     if (!pv.inPosition || !pv.window) return `A part is written into one position: ${link('view', 'position', 'switch the neck to \u201cOne position\u201d')}.`;
     const needs = partNow().needs;
     if (needs && !partNeedsMet()) return `This part is written for the \u201c${needs.variant || needs.preset}\u201d progression: ${link('preset', `${needs.preset}|${needs.variant || ''}`, 'load it')}.`;
@@ -2017,7 +2017,7 @@
     const part = partNow(), bars = progressionBars(), pv = view.positionView();
     // the roll: a seed, kept until "New fills" or another part asks for a new one
     if (!partSeed) partSeed = GT.parts.newSeed();
-    partNotes = GT.parts.realise(part, bars, partSeed, {
+    partNotes = GT.parts.realize(part, bars, partSeed, {
       reading: pv.reading, window: partWindow, scaleTheory: pv.scaleTheory, stringSet: pv.stringSet,
       stayOnKey: partScale === 'key', key: { tonic: currentTonic, mode: currentMode }, tech: { ...partTech },
     }, { grid: feelNow().grid, easy: partEasy, blend: partBlend });
@@ -2209,7 +2209,7 @@
   document.getElementById('partReroll').addEventListener('click', () => { partSeed = 0; rebuildPart(); writeShareState(); });
   // the part's tab alone, with its name, the style and the key, for printing
   // — the button sits in the playback bar with the page's controls, and is
-  // greyed until the tabbed part is showing, since the chord chart has no tab
+  // grayed until the tabbed part is showing, since the chord chart has no tab
   function syncPrintButton(){
     const printBtn = document.getElementById('partPrint');
     if (!printBtn) return;
@@ -2461,11 +2461,11 @@
     // leaving the tab shouldn't leave a progression playing behind you
     stop(){ if (isPlaying) togglePlay(); },
     loadProgression,
-    copyShareLink, describeState, favourite: jamFavourite,
+    copyShareLink, describeState, favorite: jamFavorite,
     simpleHitSeconds, SIMPLE_ACCENT, CLICK, DEFAULT_FEEL,
     setTempo, getTempo,
     stepCursor, setLoop, loopState: () => ({ ...loop }), cursor: () => ({ chordIdx, beatInChord }),
-    // the realised part and the window it was realised in, so a test can
+    // the realized part and the window it was realized in, so a test can
     // hold it still across the things that must not move it
     partState: () => ({ notes: partNotes.map(n => ({ ...n })), window: partWindow && { ...partWindow },
                         seed: partSeed, easy: partEasy, blend: partBlend, signature: partSignature(), tech: { ...partTech },
@@ -2501,9 +2501,9 @@
       // are right there for a random one.
       if (!applyShareState(GT.tabs.stateParams())) startFresh();
       // the stars: bound once the tab is set up, since they read the whole state; starred in one place, lit in both
-      if (GT.favourites){
-        STAR_IDS.forEach(id => { const b = document.getElementById(id); if (b) GT.favourites.star(b, jamFavourite, { onToggle: paintStars }); });
-        GT.favourites.onChange(paintStars);
+      if (GT.favorites){
+        STAR_IDS.forEach(id => { const b = document.getElementById(id); if (b) GT.favorites.star(b, jamFavorite, { onToggle: paintStars }); });
+        GT.favorites.onChange(paintStars);
       }
       // The address bar should describe the page from the moment it settles,
       // not from the first time something is touched. It's written after the

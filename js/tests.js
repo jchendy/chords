@@ -1,6 +1,6 @@
 // Regression tests. Open tests.html to run them.
 //
-// The chord finder's results are a judgement call — scoring, ranking, which
+// The chord finder's results are a judgment call — scoring, ranking, which
 // shapes are playable — so the guard here is a snapshot: whatever it returned
 // when these were written must keep coming back. Tuning may add shapes, and
 // that's fine; it must not quietly drop one.
@@ -25,7 +25,7 @@
   // One entry has been changed by hand since the snapshot was taken: Cm7's
   // 8-6-8-8-8-6 became 8-x-8-8-8-6, the same hand with the 5th string muted
   // instead of barred, when the finder learned to show one of two shapes
-  // that are one hand and to prefer the one that's a recognised grip.
+  // that are one hand and to prefer the one that's a recognized grip.
   const BASELINE = {
       "C": [
           "x-3-2-0-1-0",
@@ -662,7 +662,7 @@
           n.cells.forEach(c => {
             if (pcOf(c) !== n.pc) bad.push(`${name} ${g}: ${n.name} points at a fret that isn't it`);
           });
-          if (n.degree !== degreeNameFor(n.interval, p.formula)) bad.push(`${name} ${g}: ${n.name} is labelled ${n.degree}`);
+          if (n.degree !== degreeNameFor(n.interval, p.formula)) bad.push(`${name} ${g}: ${n.name} is labeled ${n.degree}`);
         });
         // and every string of the shape is inside one of the answers, so the
         // note the drill sounds is always one you can name
@@ -1038,11 +1038,11 @@
   }
 
   // ---- 4v. the suggested parts ----
-  // A part is written once per feel as intervals and slots, and realised
+  // A part is written once per feel as intervals and slots, and realized
   // into whatever notes a reading offers in a position. Two things have to
   // hold whatever anyone writes later. The library has to be well-formed:
   // every part belongs to a feel that exists, sits on that feel's grid, and
-  // has a figure and fills to answer it. And realisation has to keep its
+  // has a figure and fills to answer it. And realization has to keep its
   // promise — every note it produces is inside the window and is a note the
   // reading allows, so the chords reading never plays a non-chord tone and a
   // part told to stay on the I never leaves the key. A part that snapped
@@ -1073,8 +1073,8 @@
     t.ok(up.every((s, k) => k === 0 || s.level < up[k - 1].level), '...and on an upstroke, so the treble leads');
     const power = plan => plan.reduce((s, x) => s + x.level * x.level, 0);
     const flat = 6 * Math.pow(0.9 * STRUM_SHARE(6), 2);
-    t.ok(Math.abs(power(down) - flat) / flat < 0.01, 'the taper is renormalised: the strum weighs what it did');
-    t.ok([1, 2, 3, 4, 5, 6].every(n => STRUM_SHARE(n) === GT.parts.strumStringLevel(n)), 'the engine shares a strum the way the realiser does');
+    t.ok(Math.abs(power(down) - flat) / flat < 0.01, 'the taper is renormalized: the strum weighs what it did');
+    t.ok([1, 2, 3, 4, 5, 6].every(n => STRUM_SHARE(n) === GT.parts.strumStringLevel(n)), 'the engine shares a strum the way the realizer does');
     const one = strumPlan([220], 3, 0.8);
     t.ok(one.length === 1 && one[0].at === 3 && Math.abs(one[0].level - 0.8) < 1e-9, 'one string is one note at its own moment and level');
     const given = strumPlan([110, 220, 330], 0, [0.5, 0.6, 0.7]);
@@ -1273,7 +1273,7 @@
   }
 
   function testTheEngineFeatures(t){
-    const { realise, EASY_TECH } = GT.parts;
+    const { realize, EASY_TECH } = GT.parts;
     const n  = (at, iv, dur = 2, vel = 0.8, x) => ({ at, iv, dur, vel, ...(x || {}) });
     const nx = (at, iv, dur = 2, vel = 0.8) => ({ at, iv, dur, vel, next: true });
     const s  = (at, dur = 2, vel = 0.8, voicing = 'full', mute) => ({ at, dur, vel, strum: true, voicing, mute: !!mute });
@@ -1296,13 +1296,13 @@
       // gets the stay fill or the plain one and never the change fill
       const stay = new Set(), change = new Set();
       for (let seed = 1; seed <= 12; seed++){
-        const out = realise(part, bars, seed, opts, { grid: 16 });
+        const out = realize(part, bars, seed, opts, { grid: 16 });
         stay.add(ivs(out, 1)); change.add(ivs(out, 3));
       }
       t.ok(stay.has('9') && stay.has('2') && !stay.has('4'), `a bar before more of the same chord draws from the stay fills and the plain ones (${[...stay].join(' | ')})`);
       t.ok(change.has('4') && change.has('2') && !change.has('9'), `a bar before a change draws from the change fills and the plain ones (${[...change].join(' | ')})`);
       // the change fill's note is written against the next chord: D's 3rd, F#
-      const out = realise(part, bars, [...Array(12).keys()].map(k => k + 1).find(seed => ivs(realise(part, bars, seed, opts, { grid: 16 }), 3) === '4'), opts, { grid: 16 });
+      const out = realize(part, bars, [...Array(12).keys()].map(k => k + 1).find(seed => ivs(realize(part, bars, seed, opts, { grid: 16 }), 3) === '4'), opts, { grid: 16 });
       const note = inBar(out, 3)[0];
       t.equal(note && note.midi % 12, SEMITONE['F#'] % 12, 'a next-chord note lands on the next chord');
     }
@@ -1310,41 +1310,41 @@
       // the turnaround takes the last bar, whatever the roll
       const withTurn = { ...part, turnaround: [n(0, 12)] };
       const seen = new Set();
-      for (let seed = 1; seed <= 6; seed++) seen.add(ivs(realise(withTurn, bars, seed, opts, { grid: 16 }), 5));
+      for (let seed = 1; seed <= 6; seed++) seen.add(ivs(realize(withTurn, bars, seed, opts, { grid: 16 }), 5));
       t.equal([...seen].join('|'), '12', 'the last bar of the form is the turnaround');
       // the figures take the figure bars in turn
-      const out = realise(part, bars, 1, opts, { grid: 16 });
+      const out = realize(part, bars, 1, opts, { grid: 16 });
       t.equal([0, 2, 4].map(b => ivs(out, b)).join(' '), '0 7 0', 'the figure and its variant take the figure bars in turn');
     }
     {
-      // stop-time: the fill bar is the stop bar, and the realisation says which
+      // stop-time: the fill bar is the stop bar, and the realization says which
       const stopped = { ...part, stops: [[n(0, 3)]], stopChance: 1 };
-      const out = realise(stopped, bars, 2, opts, { grid: 16 });
+      const out = realize(stopped, bars, 2, opts, { grid: 16 });
       t.ok(out.stopBars.has(1) && out.stopBars.has(3) && !out.stopBars.has(0), 'with stop-time certain, every fill bar is a stop bar');
       t.equal(ivs(out, 1), '3', 'a stop bar plays the stop-time line');
-      const never = realise({ ...stopped, stopChance: 0 }, bars, 2, opts, { grid: 16 });
+      const never = realize({ ...stopped, stopChance: 0 }, bars, 2, opts, { grid: 16 });
       t.equal(never.stopBars.size, 0, 'with stop-time at zero there is none');
     }
     {
       // the blend: a part with lead lines is rhythm, lead or both
       const lead = { ...part, leads: [[n(0, 5)]] };
-      const rhythm = realise(lead, bars, 3, opts, { grid: 16, blend: 'rhythm' });
+      const rhythm = realize(lead, bars, 3, opts, { grid: 16, blend: 'rhythm' });
       t.ok(!rhythm.leadRoll && rhythm.leadBars.length === 0 && [0, 1, 2, 3, 4, 5].every(b => ivs(rhythm, b) !== '5'), 'pure rhythm: no lead line anywhere');
-      const solo = realise(lead, bars, 3, opts, { grid: 16, blend: 'lead' });
+      const solo = realize(lead, bars, 3, opts, { grid: 16, blend: 'lead' });
       t.ok(solo.leadBars.join() === '0,1,2,3,4,5' && [0, 1, 2, 3, 4, 5].every(b => ivs(solo, b) === '5'), 'pure lead: the lead lines in every bar');
-      const withTurn = realise({ ...lead, turnaround: [n(0, 7)] }, bars, 3, opts, { grid: 16, blend: 'lead' });
+      const withTurn = realize({ ...lead, turnaround: [n(0, 7)] }, bars, 3, opts, { grid: 16, blend: 'lead' });
       t.ok(ivs(withTurn, 5) === '7' && withTurn.leadBars.join() === '0,1,2,3,4', 'and the turnaround keeps the last bar');
       let leadFills = 0, figureBars = 0;
       for (let seed = 1; seed <= 40; seed++){
-        const m = realise(lead, bars, seed, opts, { grid: 16, blend: 'mixed' });
+        const m = realize(lead, bars, seed, opts, { grid: 16, blend: 'mixed' });
         leadFills += m.leadBars.length;
         if (m.leadBars.some(b => b % 2 === 0)) figureBars++;
       }
       t.ok(leadFills >= 40 && leadFills <= 80 && figureBars === 0, `mixed: the lead lines in about half the fill bars, never the figure bars (${leadFills} of 120 fill bars)`);
-      const half = realise({ ...lead, leadChance: 1 }, bars, 3, opts, { grid: 16, blend: 'mixed' });
+      const half = realize({ ...lead, leadChance: 1 }, bars, 3, opts, { grid: 16, blend: 'mixed' });
       t.ok(half.leadBars.join() === '1,3,5' && half.leadRoll, 'a part can say how often (leadChance 1: every fill bar)');
-      t.ok(realise(lead, bars, 3, opts, { grid: 16 }).leadBars.every(b => b % 2 === 1), 'unasked, the blend is mixed');
-      t.ok(realise(part, bars, 3, opts, { grid: 16, blend: 'lead' }).leadBars.length === 0 && !GT.parts.hasLeads(part), 'a part with no lead lines has no blend to speak of');
+      t.ok(realize(lead, bars, 3, opts, { grid: 16 }).leadBars.every(b => b % 2 === 1), 'unasked, the blend is mixed');
+      t.ok(realize(part, bars, 3, opts, { grid: 16, blend: 'lead' }).leadBars.length === 0 && !GT.parts.hasLeads(part), 'a part with no lead lines has no blend to speak of');
     }
     {
       // the Hendrix features: a free note keeps its chromatic pitch, a note
@@ -1355,7 +1355,7 @@
       // the D–G–B strings
       const chordsOpts = { ...opts, reading: 'caged' };
       const freeBar = { ...part, figure: [n(0, 5, 2, 0.8, { free: true }), n(4, 5), n(8, 6, 2, 0.8, { free: true })] };
-      const free = realise(freeBar, bars, 1, chordsOpts, { grid: 16 });
+      const free = realize(freeBar, bars, 1, chordsOpts, { grid: 16 });
       const b0 = inBar(free, 0);
       const fourth = b0.find(x => x.at === 0), snapped = b0.find(x => x.at === 4), flat5 = b0.find(x => x.at === 8);
       t.ok(fourth && fourth.midi % 12 === (SEMITONE.A + 5) % 12 && snapped && snapped.midi % 12 !== (SEMITONE.A + 5) % 12 && flat5 && flat5.midi % 12 === (SEMITONE.A + 6) % 12,
@@ -1365,56 +1365,56 @@
       // octave of the pitch inside stands in
       const tight = { ...opts, window: { min: 5, max: 7 } };
       const reachBar = { ...part, figure: [n(0, 31, 2, 0.8, { reach: 5 }), n(4, 31)] };
-      const reached = realise(reachBar, bars, 1, tight, { grid: 16 });
+      const reached = realize(reachBar, bars, 1, tight, { grid: 16 });
       const far = inBar(reached, 0).find(x => x.at === 0), near = inBar(reached, 0).find(x => x.at === 4);
       t.ok(far && far.fret > tight.window.max && near && near.fret <= tight.window.max, `a note with reach goes past the position (fret ${far && far.fret} for a window to ${tight.window.max}), the same note without stays inside`);
       const pentaOpts = { ...opts, reading: 'penta' };
       const bluesPart = { ...part, blues: true, figure: [n(0, 3), n(4, 10)] };
-      const bl = realise(bluesPart, bars, 1, pentaOpts, { grid: 16 }), plainPenta = realise({ ...part, figure: [n(0, 3), n(4, 10)] }, bars, 1, pentaOpts, { grid: 16 });
+      const bl = realize(bluesPart, bars, 1, pentaOpts, { grid: 16 }), plainPenta = realize({ ...part, figure: [n(0, 3), n(4, 10)] }, bars, 1, pentaOpts, { grid: 16 });
       const pc = (notes, at) => { const x = inBar(notes, 0).find(y => y.at === at); return x && (x.midi % 12); };
       t.ok(pc(bl, 0) === SEMITONE.C % 12 && pc(bl, 4) === SEMITONE.G % 12 && pc(plainPenta, 0) !== SEMITONE.C % 12, 'a blues part plays the minor pentatonic over a major chord (the ♭3 and ♭7 land), where the major pentatonic would have moved them');
       const A7 = chordFromName('A7');
-      const hx = realise({ ...part, figure: [s(0, 4, 0.9, 'sharp9')] }, barsOf([A7, A7, A7, A7]), 1, { ...opts, window: { min: 3, max: 7 } }, { grid: 16 });
+      const hx = realize({ ...part, figure: [s(0, 4, 0.9, 'sharp9')] }, barsOf([A7, A7, A7, A7]), 1, { ...opts, window: { min: 3, max: 7 } }, { grid: 16 });
       const grip = hx.filter(x => x.bar === 0 && x.strum).sort((a, b) => a.midi - b.midi);
       const gripPcs = grip.map(x => (x.midi - SEMITONE.A + 12) % 12), strings = grip.map(x => x.string);
       t.ok(gripPcs.join() === '0,4,10,3' && strings.every((s, k) => k === 0 || s === strings[k - 1] - 1), `the ♯9 grip is root, 3rd, ♭7 and ♯9 on strings in a row (${grip.map(x => `${x.string}:${x.fret}`).join(' ')})`);
       // ...on a dominant chord; on a plain major chord (the G and A round
       // Purple Haze's E7♯9) the same strum is the chord's own grip, whole,
       // and says so (B82)
-      const plain = realise({ ...part, figure: [s(0, 4, 0.9, 'sharp9')] }, bars, 1, { ...opts, window: { min: 3, max: 7 } }, { grid: 16 }).filter(x => x.bar === 0 && x.strum);
+      const plain = realize({ ...part, figure: [s(0, 4, 0.9, 'sharp9')] }, bars, 1, { ...opts, window: { min: 3, max: 7 } }, { grid: 16 }).filter(x => x.bar === 0 && x.strum);
       const plainPcs = new Set(plain.map(x => (x.midi - SEMITONE.A + 12) % 12));
       t.ok(plain.length >= 4 && !plainPcs.has(10) && !plainPcs.has(3) && plain.every(x => x.voicing === 'full') && GT.parts.sharp9Applies(A7) && !GT.parts.sharp9Applies(A), `a ♯9 strum on a plain major chord is the chord's grip, whole, with no ♭7 or ♯9 in it (${plain.map(x => `${x.string}:${x.fret}`).join(' ')})`);
-      const un = realise({ ...part, figure: [d(0, 24, 24, 4, 0.9, { unison: true })] }, bars, 1, opts, { grid: 16 });
+      const un = realize({ ...part, figure: [d(0, 24, 24, 4, 0.9, { unison: true })] }, bars, 1, opts, { grid: 16 });
       const pair = inBar(un, 0).filter(x => x.unison);
       const arrives = x => x.midi + (x.bend || 0);
       t.ok(pair.length === 2 && pair.some(x => x.bend === 2) && pair.every(x => arrives(x) === arrives(pair[0])) && pair[0].string !== pair[1].string && Math.abs(pair[0].string - pair[1].string) === 1, 'a unison bend is the note fretted on one string and bent up a tone to it on the next');
-      const tr = realise({ ...part, figure: [n(0, 7, 4, 0.9, { trill: 9 })] }, bars, 1, opts, { grid: 16 });
+      const tr = realize({ ...part, figure: [n(0, 7, 4, 0.9, { trill: 9 })] }, bars, 1, opts, { grid: 16 });
       const trNotes = inBar(tr, 0);
       // written once — the first note, with the fret it trills to — and the
       // rest played but hidden from the tab
       t.ok(trNotes.length >= 6 && trNotes.filter(x => x.trill).length === 1 && trNotes.filter(x => x.tabHide).length === trNotes.length - 1 && trNotes[0].tabDur === 4 && trNotes[0].trillTo === trNotes[1].fret, `a trill is many notes played and one strike written, with the fret it goes to (${trNotes.length} notes)`);
-      const wah = realise({ ...part, figure: [{ ...s(0, 2, 0.8, 'high'), wah: true }, { ...s(2, 2, 0.6, 'high'), wah: true }, n(4, 7, 2, 0.8, { wah: true })] }, bars, 1, opts, { grid: 16 });
+      const wah = realize({ ...part, figure: [{ ...s(0, 2, 0.8, 'high'), wah: true }, { ...s(2, 2, 0.6, 'high'), wah: true }, n(4, 7, 2, 0.8, { wah: true })] }, bars, 1, opts, { grid: 16 });
       const wahs = wah.filter(x => x.bar === 0 && x.wah);
       t.ok(wahs.length >= 4 && wahs.some(x => x.wah === 'up') && wahs.some(x => x.wah === 'down'), 'the wah rides the pick: toe down on the downstroke, heel on the upstroke');
-      const split = realise({ ...part, figure: [s(0, 2, 0.9, 'bass'), s(2, 2, 0.8, 'mid')] }, bars, 1, { ...opts, reading: 'caged' }, { grid: 16 });
+      const split = realize({ ...part, figure: [s(0, 2, 0.9, 'bass'), s(2, 2, 0.8, 'mid')] }, bars, 1, { ...opts, reading: 'caged' }, { grid: 16 });
       const mid = split.filter(x => x.bar === 0 && x.strum && x.voicing === 'mid').map(x => x.string).sort().join();
       t.ok(mid === '1,2,3', `the split chord is the D, G and B strings (${mid})`);
     }
     {
       // a tail replaces the end of a figure bar
       const tailed = { ...part, tails: [[n(12, 11)]], tailChance: 1 };
-      const out = realise(tailed, bars, 1, opts, { grid: 16 });
+      const out = realize(tailed, bars, 1, opts, { grid: 16 });
       t.equal(ivs(out, 0), '11', 'a tail takes the end of the figure bar');
       // the seed holds a roll still, and another seed is another roll
-      const a = JSON.stringify(realise(part, bars, 5, opts, { grid: 16 })), b = JSON.stringify(realise(part, bars, 5, opts, { grid: 16 }));
-      t.ok(a === b, 'the same seed realises the same part');
+      const a = JSON.stringify(realize(part, bars, 5, opts, { grid: 16 })), b = JSON.stringify(realize(part, bars, 5, opts, { grid: 16 }));
+      t.ok(a === b, 'the same seed realizes the same part');
       const rolls = new Set();
-      for (let seed = 1; seed <= 10; seed++) rolls.add(JSON.stringify(realise(part, bars, seed, opts, { grid: 16 })));
+      for (let seed = 1; seed <= 10; seed++) rolls.add(JSON.stringify(realize(part, bars, seed, opts, { grid: 16 })));
       t.ok(rolls.size > 1, 'different seeds are different rolls');
     }
     {
       // double stops by shape: a 3rd on adjacent strings, an octave one string apart, a 6th the same
-      const pair = (w) => { const out = realise({ name: 'p', figure: [w], variants: [], fills: [[w]] }, barsOf([A, A]), 1, opts, { grid: 16 }); const one = out.filter(x => x.bar === 0 && x.tech === 'double'); return one.length === 2 ? Math.abs(one[0].string - one[1].string) : -1; };
+      const pair = (w) => { const out = realize({ name: 'p', figure: [w], variants: [], fills: [[w]] }, barsOf([A, A]), 1, opts, { grid: 16 }); const one = out.filter(x => x.bar === 0 && x.tech === 'double'); return one.length === 2 ? Math.abs(one[0].string - one[1].string) : -1; };
       t.equal(pair(d(0, 4, 7)), 1, 'a 3rd sits on adjacent strings');
       t.equal(pair(d(0, 0, 7)), 1, 'a 5th sits on adjacent strings');
       t.equal(pair(d(0, 0, 12)), 2, 'an octave skips a string');
@@ -1432,14 +1432,14 @@
     {
       // the thumb: the root on a bass string, the 5th on the one beside it — the chord's own, whatever the palette
       const stayOpts = { ...opts, stayOnKey: true };
-      const out = realise({ name: 't', figure: [s(0, 2, 0.8, 'bass'), s(4, 2, 0.8, 'fifth')], variants: [], fills: [[s(0, 2, 0.8, 'bass')]] }, barsOf([D, D]), 1, stayOpts, { grid: 16 });
+      const out = realize({ name: 't', figure: [s(0, 2, 0.8, 'bass'), s(4, 2, 0.8, 'fifth')], variants: [], fills: [[s(0, 2, 0.8, 'bass')]] }, barsOf([D, D]), 1, stayOpts, { grid: 16 });
       const bass = out.find(x => x.bar === 0 && x.at === 0), fifth = out.find(x => x.bar === 0 && x.at === 4);
       t.ok(bass && bass.string >= 3 && bass.midi % 12 === SEMITONE.D % 12, 'the thumb\'s root is D on a bass string, even with the part on the I');
       t.ok(fifth && fifth.string >= 3 && fifth.midi % 12 === SEMITONE.A % 12 && Math.abs(fifth.string - bass.string) === 1, 'the thumb\'s 5th is on the string beside the root');
     }
     {
       // a power chord: root, 5th, octave and nothing else, on consecutive strings
-      const out = realise({ name: 'pw', figure: [s(0, 2, 0.9, 'power')], variants: [], fills: [[s(0, 2, 0.9, 'power')]] }, barsOf([A, A]), 1, opts, { grid: 16 });
+      const out = realize({ name: 'pw', figure: [s(0, 2, 0.9, 'power')], variants: [], fills: [[s(0, 2, 0.9, 'power')]] }, barsOf([A, A]), 1, opts, { grid: 16 });
       const chord = out.filter(x => x.bar === 0 && x.strum).sort((a, b) => b.string - a.string);
       const pcs = chord.map(x => x.midi % 12);
       t.ok(chord.length >= 2 && chord.length <= 3 && pcs.every(p => p === SEMITONE.A % 12 || p === SEMITONE.E % 12), `a power chord is root and 5th only (${chord.length} strings)`);
@@ -1452,35 +1452,35 @@
       // whatever chord tones the window has on skipped strings
       const E = chordFromName('E');
       const narrow = { ...opts, window: { min: 5, max: 8 } };
-      const out = realise({ name: 'pw2', figure: [s(0, 2, 0.9, 'power')], variants: [], fills: [[s(0, 2, 0.9, 'power')]] }, barsOf([E, E]), 1, narrow, { grid: 16 });
+      const out = realize({ name: 'pw2', figure: [s(0, 2, 0.9, 'power')], variants: [], fills: [[s(0, 2, 0.9, 'power')]] }, barsOf([E, E]), 1, narrow, { grid: 16 });
       const chord = out.filter(x => x.bar === 0 && x.strum).sort((a, b) => b.string - a.string);
       const where = chord.map(c => `${c.string}:${c.fret}${c.reach ? 'r' : ''}`).join(' ');
       t.ok(chord.length >= 2 && chord.every((c, i) => i === 0 || c.string === chord[i - 1].string - 1) && chord.every(c => c.midi % 12 === SEMITONE.E % 12 || c.midi % 12 === SEMITONE.B % 12), `a power chord keeps its shape when the window can't hold its 5th (${where})`);
       t.ok(chord[0].fret >= 5 && chord[0].fret <= 8 && chord.slice(1).every(c => c.reach && c.fret > 8), 'its root is in the window and the notes past it say reach');
     }
     {
-      // every strum is a sweep across neighbouring strings: a grip the
-      // window cuts into strings that aren't neighbours is completed past
+      // every strum is a sweep across neighboring strings: a grip the
+      // window cuts into strings that aren't neighbors is completed past
       // the window (marked reach) — Bm's A-shape grip at the 2nd fret has
-      // its 4th-fret notes outside a 0–3 window — and a colour tone on top
+      // its 4th-fret notes outside a 0–3 window — and a color tone on top
       // (the 9th of a 9th grip) sits on the string beside the grip's top one
       const Bm = chordFromName('Bm'), E9 = chordFromName('E7');
       const low = { ...opts, window: { min: 0, max: 3 } };
       const contiguous = ns => { const ss = ns.map(x => x.string).sort((a, b) => a - b); return ss.every((x, i) => i === 0 || x === ss[i - 1] + 1); };
-      const split = realise({ name: 'sp', figure: [s(0, 2, 0.9, 'mid'), s(4, 2, 0.9, 'full')], variants: [], fills: [[s(0, 2, 0.9, 'mid')]] }, barsOf([Bm, Bm]), 1, low, { grid: 16 });
+      const split = realize({ name: 'sp', figure: [s(0, 2, 0.9, 'mid'), s(4, 2, 0.9, 'full')], variants: [], fills: [[s(0, 2, 0.9, 'mid')]] }, barsOf([Bm, Bm]), 1, low, { grid: 16 });
       const mid = split.filter(x => x.bar === 0 && x.at === 0 && x.strum), full = split.filter(x => x.bar === 0 && x.at === 4 && x.strum);
-      t.ok(mid.length >= 3 && contiguous(mid) && full.length >= 3 && contiguous(full), `a strum the window cuts into keeps to neighbouring strings (${mid.map(x => x.string + ':' + x.fret + (x.reach ? 'r' : '')).join(' ')}; ${full.map(x => x.string + ':' + x.fret + (x.reach ? 'r' : '')).join(' ')})`);
+      t.ok(mid.length >= 3 && contiguous(mid) && full.length >= 3 && contiguous(full), `a strum the window cuts into keeps to neighboring strings (${mid.map(x => x.string + ':' + x.fret + (x.reach ? 'r' : '')).join(' ')}; ${full.map(x => x.string + ':' + x.fret + (x.reach ? 'r' : '')).join(' ')})`);
       t.ok([...mid, ...full].every(x => (x.fret >= 0 && x.fret <= 3) || x.reach), 'the notes it reaches past the window for say so');
-      const nine = realise({ name: 'nine', figure: [{ at: 0, dur: 2, vel: 0.9, strum: true, voicing: 'high', add: 14 }], variants: [], fills: [[s(0)]] }, barsOf([E9, E9]), 1, { ...opts, window: { min: 5, max: 9 } }, { grid: 16 });
+      const nine = realize({ name: 'nine', figure: [{ at: 0, dur: 2, vel: 0.9, strum: true, voicing: 'high', add: 14 }], variants: [], fills: [[s(0)]] }, barsOf([E9, E9]), 1, { ...opts, window: { min: 5, max: 9 } }, { grid: 16 });
       const stab = nine.filter(x => x.bar === 0 && x.at === 0 && x.strum);
-      t.ok(stab.length >= 3 && contiguous(stab), `a colour tone on top sits on the string beside the grip (${stab.map(x => x.string + ':' + x.fret).join(' ')})`);
+      t.ok(stab.length >= 3 && contiguous(stab), `a color tone on top sits on the string beside the grip (${stab.map(x => x.string + ':' + x.fret).join(' ')})`);
     }
     {
       // the thumb's bass note is a bass string: F♯m in a 5–8 window has no
       // root on the E, A or D strings inside it (its only F♯ is on the B
       // string), so the thumb reaches for the A-string root a fret above
       const Fsm = chordFromName('F#m');
-      const out = realise({ name: 'th', figure: [s(0, 2, 0.9, 'bass'), s(4, 2, 0.9, 'mid')], variants: [], fills: [[s(0, 2, 0.9, 'bass')]] }, barsOf([Fsm, Fsm]), 1, { ...opts, window: { min: 5, max: 8 } }, { grid: 16 });
+      const out = realize({ name: 'th', figure: [s(0, 2, 0.9, 'bass'), s(4, 2, 0.9, 'mid')], variants: [], fills: [[s(0, 2, 0.9, 'bass')]] }, barsOf([Fsm, Fsm]), 1, { ...opts, window: { min: 5, max: 8 } }, { grid: 16 });
       const bass = out.find(x => x.bar === 0 && x.at === 0 && x.strum);
       t.ok(bass && bass.string >= 3 && bass.midi % 12 === SEMITONE['F#'] % 12 && bass.reach, `the thumb's bass note is the root on a bass string, reached past the window (${bass ? bass.string + ':' + bass.fret : 'none'})`);
     }
@@ -1488,24 +1488,24 @@
       // the hand moving: a bar may carry its own window, and its notes land
       // there — the thumb barre walking from open Em to G at the 3rd fret
       const G = chordFromName('G'), Em = chordFromName('Em');
-      const walk = realise({ name: 'walk', figure: [s(0, 4, 0.9), s(8, 4, 0.9)], variants: [], fills: [[s(0, 4, 0.9), s(8, 4, 0.9)]] },
+      const walk = realize({ name: 'walk', figure: [s(0, 4, 0.9), s(8, 4, 0.9)], variants: [], fills: [[s(0, 4, 0.9), s(8, 4, 0.9)]] },
         [{ chord: Em, window: { min: 0, max: 3 } }, { chord: G, window: { min: 3, max: 6 } }, { chord: A, window: { min: 5, max: 8 } }, { chord: Em, window: { min: 0, max: 3 } }], 1, { ...opts, window: { min: 0, max: 3 } }, { grid: 16 });
       const inWin = (b, lo, hi) => walk.filter(x => x.bar === b).every(x => x.reach || (x.fret >= lo && x.fret <= hi));
       t.ok(inWin(0, 0, 3) && inWin(1, 3, 6) && inWin(2, 5, 8) && inWin(3, 0, 3) && walk.filter(x => x.bar === 1).some(x => x.fret >= 3), 'a bar with a window of its own is played in it (Em open, G at the 3rd, A at the 5th)');
       // ...and every bar says what it was written from
-      const rolesOf = realise({ name: 'r', figure: [s(0)], variants: [[s(4)]], fills: [[n(0, 7)]], leads: [[n(0, 12)]] }, barsOf([A, A, A, A]), 3, opts, { grid: 16, blend: 'lead' });
-      const rf = realise({ name: 'r', figure: [s(0)], variants: [[s(4)]], fills: [[n(0, 7)]] }, barsOf([A, A, A, A]), 3, opts, { grid: 16 });
+      const rolesOf = realize({ name: 'r', figure: [s(0)], variants: [[s(4)]], fills: [[n(0, 7)]], leads: [[n(0, 12)]] }, barsOf([A, A, A, A]), 3, opts, { grid: 16, blend: 'lead' });
+      const rf = realize({ name: 'r', figure: [s(0)], variants: [[s(4)]], fills: [[n(0, 7)]] }, barsOf([A, A, A, A]), 3, opts, { grid: 16 });
       t.ok(rf.roles.join(',') === 'figure,fill,variant,fill' && rolesOf.roles.every(r => r === 'lead'), `the bars' roles are named (${rf.roles.join(',')}; lead pass ${rolesOf.roles.join(',')})`);
     }
     {
       // easy mode: no bends, hammer-ons, pull-offs or slides; sixteenths back on the eighths; a written easy version used as is
       // (the hammer-on lasts four slots: played plain it is two picked notes, the second halfway)
       const busy = { name: 'e', figure: [s(0), n(1, 4, 1), { at: 3, iv: 5, up: 2, dur: 2, vel: 0.8, tech: 'bend' }, { at: 6, iv: 3, iv2: 4, dur: 4, vel: 0.8, tech: 'hammer' }, n(12, 7, 2, 0.8, { ghost: true })], variants: [], fills: [[n(0, 2)]] };
-      const easy = realise(busy, barsOf([A, A]), 1, opts, { grid: 16, easy: true });
+      const easy = realize(busy, barsOf([A, A]), 1, opts, { grid: 16, easy: true });
       t.ok(easy.every(x => !x.bend && x.tech !== 'h' && x.slide == null), 'easy mode plays the techniques plain');
       t.ok(easy.filter(x => x.bar === 0).every(x => Math.floor(x.at) % 2 === 0), 'easy mode moves sixteenths onto the eighths');
       t.ok(!easy.some(x => x.ghost), 'easy mode drops ghost notes');
-      const written = realise({ ...busy, easy: { figure: [n(0, 12)], variants: [], fills: [[n(0, 12)]] } }, barsOf([A, A]), 1, opts, { grid: 16, easy: true });
+      const written = realize({ ...busy, easy: { figure: [n(0, 12)], variants: [], fills: [[n(0, 12)]] } }, barsOf([A, A]), 1, opts, { grid: 16, easy: true });
       t.equal(ivs(written, 0), '12', 'a part with an easy version written for it plays that');
       t.ok(EASY_TECH.double && !EASY_TECH.bend, 'easy mode keeps double stops and drops bends');
     }
@@ -1522,9 +1522,9 @@
       ['A', 'C', 'E', 'G'].forEach(root => [{ min: 0, max: 3 }, { min: 2, max: 6 }, { min: 5, max: 9 }, { min: 7, max: 11 }].forEach(window => {
         const o = { ...opts, window, key: { tonic: root, mode: 'major' } };
         const bars2 = barsOf([chordFromName(root), chordFromName(root)]);
-        withRule += clash(realise(probe, bars2, 1, o, { grid: 16 }));
-        withoutRule += clash(realise({ ...probe, fingers: false }, bars2, 1, o, { grid: 16 }));
-        realise(probe, bars2, 1, o, { grid: 16 }).forEach(x => { if (x.tech === 'h'){ hammers++; const partner = realise(probe, bars2, 1, o, { grid: 16 }).find(m => m.soft && Math.abs(m.at - (x.at + x.dur)) < 1e-9); if (partner && partner.string !== x.string) apart++; } });
+        withRule += clash(realize(probe, bars2, 1, o, { grid: 16 }));
+        withoutRule += clash(realize({ ...probe, fingers: false }, bars2, 1, o, { grid: 16 }));
+        realize(probe, bars2, 1, o, { grid: 16 }).forEach(x => { if (x.tech === 'h'){ hammers++; const partner = realize(probe, bars2, 1, o, { grid: 16 }).find(m => m.soft && Math.abs(m.at - (x.at + x.dur)) < 1e-9); if (partner && partner.string !== x.string) apart++; } });
       }));
       t.equal(withRule, 0, 'in a fingerpicked part no finger note shares a string with the thumb');
       t.ok(withoutRule > 0, `the rule is the part's, not everyone's (${withoutRule} clashes with it off)`);
@@ -1539,7 +1539,7 @@
         const grid = (GT.audio.STYLES[style] && (GT.audio.STYLES[style].variants.find(v => v.label === feel) || {}).grid) || grids[style] || 16;
         ['A', 'E'].forEach(root => [{ min: 2, max: 6 }, { min: 7, max: 11 }].forEach(window => {
           const o = { ...opts, window, key: { tonic: root, mode: 'major' } };
-          const out = realise(part, barsOf([chordFromName(root), chordFromName(root), chordFromName(root + '7'), chordFromName(root + '7')]), 2, o, { grid });
+          const out = realize(part, barsOf([chordFromName(root), chordFromName(root), chordFromName(root + '7'), chordFromName(root + '7')]), 2, o, { grid });
           libClash += clash(out);
         }));
       })));
@@ -1567,7 +1567,7 @@
       found.forEach(part => [1, 2, 3].forEach(seed => [false, true].forEach(easy => ['caged', 'penta'].forEach(reading => {
         const chords = positions.map(([name, at]) => ({ chord: chordFromName(name), window: { min: at, max: at + 3 } }));
         const o = { ...opts, reading, key: { tonic: 'E', mode: 'minor' }, scaleTheory: 'modal' };
-        const out = realise(part, chords, seed, o, { grid: 16, easy });
+        const out = realize(part, chords, seed, o, { grid: 16, easy });
         chords.forEach((bar, b) => {
           const hand = bar.window.min;
           const notes = out.filter(x => x.bar === b && !x.strum && !x.next);
@@ -1593,7 +1593,7 @@
       const riffBars = [E79, E79, E79, E79].map(chord => ({ chord }));
       let lowE = 0, reached = 0, riffNotes = 0;
       [1, 2, 3].forEach(seed => [false, true].forEach(easy => {
-        const out = realise(fuzz, riffBars, seed, { ...opts, reading: 'penta', window: { min: 5, max: 8 }, key: { tonic: 'E', mode: 'major' } }, { grid: 16, easy });
+        const out = realize(fuzz, riffBars, seed, { ...opts, reading: 'penta', window: { min: 5, max: 8 }, key: { tonic: 'E', mode: 'major' } }, { grid: 16, easy });
         // (the octaves variant puts the lower note of each pair on the low E by design: pairs are not counted)
         out.filter(x => !x.strum && !x.next && x.tech !== 'double').forEach(x => { riffNotes++; if (x.string === 5) lowE++; if (x.string === 3 && x.fret === 9 && x.reach) reached++; });
       }));
@@ -1602,7 +1602,7 @@
   }
 
   function testTheSuggestedParts(t){
-    const { LIBRARY, partsFor, palette, realise, rollFills } = GT.parts;
+    const { LIBRARY, partsFor, palette, realize, rollFills } = GT.parts;
     const { STYLES } = GT.audio;
     const bad = [];
     let parts = 0;
@@ -1675,7 +1675,7 @@
 
     // A chord held for bars is not the same bar over and over: the figure's
     // variants take the phrases in turn, and they come back the same way on
-    // the next realisation — a cycle, not a roll.
+    // the next realization — a cycle, not a roll.
     Object.keys(LIBRARY).forEach(style => Object.keys(LIBRARY[style]).forEach(feelName => {
       partsFor(style, feelName).forEach(part => {
         const chord = chordFromName('A7');
@@ -1683,14 +1683,14 @@
         const opts = { reading: 'scale', window: { min: 3, max: 8 }, scaleTheory: 'parallel', stayOnKey: false, key: { tonic: 'A', mode: 'major' } };
         const seed = rollFills(part, bars.length, () => 0);
         const barOf = (notes, b) => JSON.stringify(notes.filter(n => n.bar === b).map(n => [n.at, n.string, n.fret, n.voicing || '']));
-        const one = realise(part, bars, seed, opts), two = realise(part, bars, seed, opts);
+        const one = realize(part, bars, seed, opts), two = realize(part, bars, seed, opts);
         // ...unless the part rolls its figures, when three the same is a roll's right
         if (part.figureMode !== 'roll' && !part.tails && barOf(one, 0) === barOf(one, 2) && barOf(one, 2) === barOf(one, 4)) bad.push(`${part.name}: six bars on one chord play the figure the same way three times`);
         [0, 2, 4].forEach(b => { if (barOf(one, b) !== barOf(two, b)) bad.push(`${part.name}: bar ${b} came out differently the second time`); });
       });
     }));
 
-    // realisation keeps its promise, on every reading, in every key
+    // realization keeps its promise, on every reading, in every key
     const roots = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'];
     const windows = [{ min: 0, max: 3 }, { min: 5, max: 9 }, { min: 10, max: 14 }];
     const midiPc = m => ((m % 12) + 12) % 12;
@@ -1704,9 +1704,9 @@
         partsFor(style, feelName).forEach(part => windows.forEach(window => [false, true].forEach(stayOnKey => {
           const opts = { reading, window, scaleTheory: 'parallel', stayOnKey, key };
           const seed = rollFills(part, bars.length, () => 0.5);
-          const notes = realise(part, bars, seed, opts);
-          const again = realise(part, bars, seed, opts);
-          if (JSON.stringify(notes) !== JSON.stringify(again)) bad.push(`${part.name} realised differently twice`);
+          const notes = realize(part, bars, seed, opts);
+          const again = realize(part, bars, seed, opts);
+          if (JSON.stringify(notes) !== JSON.stringify(again)) bad.push(`${part.name} realized differently twice`);
           const chordTones = chord => new Set([chord.note, chord.third, chord.fifth, chord.seventh]
             .filter(Boolean).map(n => GT.theory.SEMITONE[n] % 12));
           notes.forEach(n => {
@@ -1721,10 +1721,10 @@
               // are chord tones by construction, and that is what's held —
               // and in the triads reading it is the triad the neck shows,
               // on its string set, with no 7th however the chord is spelt
-              // ...except a colour tone (the 9th, the 6th) a strum asked for, which is the reading's to allow
-              // ...and the ♯9 and 9th grips, which carry their colour by name
-              const colourGrip = n.voicing === 'sharp9' || n.voicing === 'ninth';
-              if (!n.colour && !colourGrip && !chordTones(chord).has(midiPc(n.midi))) bad.push(`${reading} ${root}: ${part.name} strums a note that isn't in the chord`);
+              // ...except a color tone (the 9th, the 6th) a strum asked for, which is the reading's to allow
+              // ...and the ♯9 and 9th grips, which carry their color by name
+              const colorGrip = n.voicing === 'sharp9' || n.voicing === 'ninth';
+              if (!n.color && !colorGrip && !chordTones(chord).has(midiPc(n.midi))) bad.push(`${reading} ${root}: ${part.name} strums a note that isn't in the chord`);
               if (reading === 'triads3'){
                 const triad = new Set([chord.note, chord.third, chord.fifth].map(x => GT.theory.SEMITONE[x] % 12));
                 if (!triad.has(midiPc(n.midi))) bad.push(`triads ${root}: ${part.name} strums a note outside the triad`);
@@ -1764,7 +1764,7 @@
             // two strums can share a moment (the batida's thumb under its chord): one group a voicing
             const k = `${n.bar}:${n.at}:${n.voicing}`;
             strumsAt[k] = strumsAt[k] || { count: 0, voicing: n.voicing, low: n };
-            if (!n.colour || n.swapped) strumsAt[k].count++;   // a colour tone rides on top of the grip — or takes the place of its 5th, and counts
+            if (!n.color || n.swapped) strumsAt[k].count++;   // a color tone rides on top of the grip — or takes the place of its 5th, and counts
             if (n.midi < strumsAt[k].low.midi) strumsAt[k].low = n;
           });
           Object.entries(strumsAt).forEach(([k, { count, voicing, low }]) => {
@@ -1802,10 +1802,10 @@
       const seen = {};
       Object.keys(LIBRARY).forEach(style => Object.keys(LIBRARY[style]).forEach(feelName => partsFor(style, feelName).forEach(part => {
         const seed = 3;
-        const on = realise(part, bars, seed, base);
+        const on = realize(part, bars, seed, base);
         on.forEach(n => { const f = flag(n); if (f) seen[f] = true; });
         GT.parts.TECHNIQUES.forEach(tech => {
-          const off = realise(part, bars, seed, { ...base, tech: { [tech]: false } });
+          const off = realize(part, bars, seed, { ...base, tech: { [tech]: false } });
           if (off.some(n => flag(n) === tech)) bad.push(`${part.name}: with ${tech}s off, one is still played`);
           // the notes that were written are still there, one way or another
           const moments = list => new Set(list.filter(n => !n.strum && !n.pair && !n.soft).map(n => `${n.bar}:${n.at}`));
@@ -1823,10 +1823,10 @@
       const I = chordFromName('C'), IV = chordFromName('F');
       const opts = { reading: 'scale', window: { min: 5, max: 9 }, scaleTheory: 'parallel', stayOnKey: false, key: { tonic: 'C', mode: 'major' } };
       const written = [{ at: 0, iv: 0, dur: 4, vel: 1, next: true }, { at: 4, iv: -1, dur: 4, vel: 1, next: true }, { at: 8, iv: 0, dur: 4, vel: 1 }];
-      const got = GT.parts.realiseBar(written, I, opts, IV).map(n => midiPc(n.midi));
+      const got = GT.parts.realizeBar(written, I, opts, IV).map(n => midiPc(n.midi));
       if (got.join() !== [5, 4, 0].join()) bad.push(`over C going to F, [next root, semitone under it, this root] came out as pitch classes ${got.join(' ')}`);
       // and with nothing after it, "next" is this chord
-      const alone = GT.parts.realiseBar(written, I, opts, null).map(n => midiPc(n.midi));
+      const alone = GT.parts.realizeBar(written, I, opts, null).map(n => midiPc(n.midi));
       if (alone.join() !== [0, 11, 0].join()) bad.push(`with no next chord the same came out as ${alone.join(' ')}`);
     }
 
@@ -1848,7 +1848,7 @@
       else if (!roots.length && bass[0].midi % 12 !== GT.theory.SEMITONE[chord.fifth] % 12) bad.push(`${root}7 in ${window.min}-${window.max}: no root in the grip, and 'bass' is not the 5th`);
     }));
 
-    t.equal(bad.join('; '), '', `The suggested parts are well-formed and realise inside the reading (${parts} parts, ${checked} notes)`);
+    t.equal(bad.join('; '), '', `The suggested parts are well-formed and realize inside the reading (${parts} parts, ${checked} notes)`);
   }
 
   // ---- 4w. the audio engine is allowed to stop ----
@@ -2049,7 +2049,7 @@
 
 
   // ---- what every scale box holds, exactly ---------------------------------
-  // A snapshot, not a judgement: each row is one box as "shape@anchor" followed
+  // A snapshot, not a judgment: each row is one box as "shape@anchor" followed
   // by the frets it uses on each string, high e first, "." for a string it
   // doesn't touch. Scale boxes are built by a rule rather than written down, so
   // a change to that rule moves all of them at once — this is what makes such a
@@ -2218,7 +2218,7 @@
 
 
   // The CAGED arpeggio boxes, pinned. Unlike the scale and pentatonic shapes
-  // above these are not a judgement about where a note is best fingered —
+  // above these are not a judgment about where a note is best fingered —
   // the box is every chord tone inside a hand span, so there is nothing to
   // choose. What is worth holding still is where each box sits and how wide
   // it opens: those decide which stretch of neck a position covers, and the
@@ -2397,7 +2397,7 @@
     t.equal(bad.slice(0, 4).join('; '), '', 'Every close triad is three rising chord tones under one hand');
   }
 
-  // Turning a CAGED triad into its 7th-chord voicing is a judgement — which
+  // Turning a CAGED triad into its 7th-chord voicing is a judgment — which
   // note a player actually flattens — so the whole matrix is pinned rather
   // than the two cases that used to stand for it. These are the everyday
   // shapes: open C7 x-3-2-3-1-0, open G7 3-2-0-0-0-1, the E-shape maj7 barre
@@ -2877,16 +2877,16 @@
     t.equal(bad.join('; '), '', `The Bigsby dips: a semitone down over ${DIP.down * 1000} ms and back by ${DIP.back * 1000} ms`);
   }
 
-  // A colour tone marked free is the interval it says in every reading:
+  // A color tone marked free is the interval it says in every reading:
   // the 6th on a rockabilly E6 stays a 6th in Chords, where an unmarked one
   // is snapped to a chord tone
-  function testAFreeColourToneKeepsItsNote(t){
-    const { realise } = GT.parts;
+  function testAFreeColorToneKeepsItsNote(t){
+    const { realize } = GT.parts;
     const { chordFromName } = GT.theory;
     const E = chordFromName('E');
     const opts = { reading: 'caged', window: { min: 0, max: 3 }, scaleTheory: 'parallel', stayOnKey: false, key: { tonic: 'E', mode: 'major' }, tech: null };
     const part = strum => ({ name: 't', figure: [strum], variants: [], fills: [[strum]] });
-    const notesOf = strum => realise(part(strum), [{ chord: E }, { chord: E }], 1, opts, { grid: 16 });
+    const notesOf = strum => realize(part(strum), [{ chord: E }, { chord: E }], 1, opts, { grid: 16 });
     const sixth = (4 + 9) % 12;                                   // C♯ over E
     const free = notesOf({ at: 0, dur: 4, vel: 0.9, strum: true, voicing: 'high', add: 9, free: true });
     const plain = notesOf({ at: 0, dur: 4, vel: 0.9, strum: true, voicing: 'high', add: 9 });
@@ -2903,12 +2903,12 @@
     const A = chordFromName('A');
     const bluesPart = strum => ({ name: 't', blues: true, figure: [strum], variants: [], fills: [[strum]] });
     const bluesOpts = { ...opts, reading: 'penta', key: { tonic: 'A', mode: 'major' } };
-    const topOf = strum => { const ns = realise(bluesPart(strum), [{ chord: A }, { chord: A }], 1, bluesOpts, { grid: 16 }).filter(n => n.strum && n.bar === 0); return ns.length ? Math.max(...ns.map(n => n.midi)) % 12 : null; };
+    const topOf = strum => { const ns = realize(bluesPart(strum), [{ chord: A }, { chord: A }], 1, bluesOpts, { grid: 16 }).filter(n => n.strum && n.bar === 0); return ns.length ? Math.max(...ns.map(n => n.midi)) % 12 : null; };
     const freeTop = topOf({ at: 0, dur: 4, vel: 0.9, strum: true, voicing: 'mid', add: 9, free: true });
     const plainTop = topOf({ at: 0, dur: 4, vel: 0.9, strum: true, voicing: 'mid', add: 9 });
     if (freeTop !== 6) bad.push(`the free 6th over A in the blues reading is pitch class ${freeTop}, not F♯`);
     if (plainTop !== 7) bad.push(`the unmarked 6th over A in the blues reading is pitch class ${plainTop}, not snapped to G`);
-    t.equal(bad.join('; '), '', 'A free colour tone keeps its note: the 6th on E6 in the Chords reading, and on A6 in the blues reading');
+    t.equal(bad.join('; '), '', 'A free color tone keeps its note: the 6th on E6 in the Chords reading, and on A6 in the blues reading');
   }
 
   // The triads reading never leaves a bar empty: where no close triad on
@@ -2917,13 +2917,13 @@
   // the notes past the window marked as a reach — and where one fits, it is
   // still the one inside (B80)
   function testTheTriadsReadingReaches(t){
-    const { realise } = GT.parts;
+    const { realize } = GT.parts;
     const { chordFromName } = GT.theory;
     const strum = { at: 0, dur: 4, vel: 0.8, strum: true, voicing: 'high' };
     const part = { name: 't', figure: [strum], variants: [], fills: [[strum]] };
     const opts = { reading: 'triads3', stringSet: 2, window: { min: 0, max: 3 }, scaleTheory: 'parallel', stayOnKey: false, key: { tonic: 'Db', mode: 'major' }, tech: null };
     const bars = [chordFromName('Db'), chordFromName('Abm7')].map(chord => ({ chord }));
-    const notes = realise(part, bars, 1, opts, { grid: 16 });
+    const notes = realize(part, bars, 1, opts, { grid: 16 });
     const bad = [];
     const abm = notes.filter(n => n.bar === 1 && n.strum);
     if (abm.length !== 3) bad.push(`the A♭m bar has ${abm.length} strummed notes, not a triad`);
@@ -3082,12 +3082,12 @@
     },
   };
 
-  // Favourites (js/favourites.js): a starred thing is kept with its name
+  // Favorites (js/favorites.js): a starred thing is kept with its name
   // and its link, newest first, starred again it is gone, the list survives
   // a read-back from storage, and the page lists them by kind with a way to
   // take each out — and says so when there are none.
-  function testTheFavouritesAreKept(t){
-    const F = GT.favourites;
+  function testTheFavoritesAreKept(t){
+    const F = GT.favorites;
     const bad = [];
     const kept = localStorage.getItem(F.KEY);
     const host = document.createElement('div');
@@ -3099,12 +3099,12 @@
       const a = F.add({ id: 'dive:hendrix:x1', kind: 'dive', title: 'The thumb and the split chord, plain', sub: 'Hendrix · Soul ballad', href: 'hendrix.html#x1' });
       const b = F.add({ id: 'jam:k=major%3AC&t=120', kind: 'jam', title: 'Hendrix: Little Wing', sub: 'C major · 120 BPM', href: 'index.html#jam?k=major%3AC&t=120' });
       if (!a || !b) bad.push('adding returned nothing');
-      if (!F.has('dive:hendrix:x1') || !F.has('jam:k=major%3AC&t=120')) bad.push('a favourite added is not there');
+      if (!F.has('dive:hendrix:x1') || !F.has('jam:k=major%3AC&t=120')) bad.push('a favorite added is not there');
       if (F.list()[0].id !== 'jam:k=major%3AC&t=120') bad.push('the list is not newest first');
-      if (F.add({ id: 'x', kind: 'jam', title: 'no link' })) bad.push('a favourite with no link was kept');
+      if (F.add({ id: 'x', kind: 'jam', title: 'no link' })) bad.push('a favorite with no link was kept');
       F.reload();
-      if (F.list().length !== 2) bad.push(`read back from storage, ${F.list().length} favourites`);
-      if (F.toggle({ id: 'dive:hendrix:x1', kind: 'dive', title: 't', href: 'hendrix.html#x1' }) !== false || F.has('dive:hendrix:x1')) bad.push('toggling a kept favourite did not take it out');
+      if (F.list().length !== 2) bad.push(`read back from storage, ${F.list().length} favorites`);
+      if (F.toggle({ id: 'dive:hendrix:x1', kind: 'dive', title: 't', href: 'hendrix.html#x1' }) !== false || F.has('dive:hendrix:x1')) bad.push('toggling a kept favorite did not take it out');
       if (F.toggle({ id: 'dive:hendrix:x1', kind: 'dive', title: 't', href: 'hendrix.html#x1' }) !== true || !F.has('dive:hendrix:x1')) bad.push('toggling it again did not put it back');
       F.renderPage(host);
       const groups = [...host.querySelectorAll('.favs-group h3')].map(h => h.textContent.replace(/\s*\d+$/, '').trim());
@@ -3116,11 +3116,11 @@
       if (rm) rm.click();
       if (!rm || F.has('dive:hendrix:x1') || host.querySelectorAll('.fav').length !== 1) bad.push('removing from the page did not take it out');
     } finally { host.remove(); if (kept == null) localStorage.removeItem(F.KEY); else localStorage.setItem(F.KEY, kept); F.reload(); }
-    t.equal(bad.join('; '), '', 'Favourites are kept with their name and link, newest first, listed by kind with a way out, and read back from storage');
+    t.equal(bad.join('; '), '', 'Favorites are kept with their name and link, newest first, listed by kind with a way out, and read back from storage');
   }
 
   // Sync across devices (js/sync.js): the merge is by time, item by item —
-  // a favourite starred here and removed there is whichever happened last,
+  // a favorite starred here and removed there is whichever happened last,
   // a piece marked and un-marked likewise, a preference its newest value, a
   // course's ticks and place the newer side's; what a page writes to
   // localStorage is read as a change with its time; and a backend attached
@@ -3131,17 +3131,17 @@
     const bad = [];
     const fav = (id, added) => ({ id, kind: 'dive', title: id, sub: '', href: `hendrix.html#${id}`, added });
     // ---- the merge, pure ----
-    const a = { v: 1, favourites: { items: [fav('x1', 100), fav('x2', 300)], removed: [{ id: 'x3', at: 500 }] },
+    const a = { v: 1, favorites: { items: [fav('x1', 100), fav('x2', 300)], removed: [{ id: 'x3', at: 500 }] },
                 courses: [{ prefix: 'hendrix', done: [{ key: 'a/1', at: 100 }, { key: 'a/2', at: 400 }], undone: [{ key: 'a/3', at: 250 }], ticks: [{ key: 'a/c', ticks: [true, false] }], last: { lesson: 'a', piece: '2' }, at: 900 }],
                 prefs: [{ key: 'gt.hendrixNeck', value: 'chords', at: 100 }, { key: 'gt.tabRows', value: '3', at: 700 }] };
-    const b = { v: 1, favourites: { items: [fav('x2', 300), fav('x3', 600), fav('x4', 50)], removed: [{ id: 'x1', at: 200 }] },
+    const b = { v: 1, favorites: { items: [fav('x2', 300), fav('x3', 600), fav('x4', 50)], removed: [{ id: 'x1', at: 200 }] },
                 courses: [{ prefix: 'hendrix', done: [{ key: 'a/3', at: 200 }, { key: 'a/4', at: 100 }], undone: [{ key: 'a/2', at: 300 }], ticks: [{ key: 'a/c', ticks: [true, true] }], last: { lesson: 'b', piece: '1' }, at: 800 },
                           { prefix: 'psychobilly', done: [{ key: 'boom/x', at: 10 }], undone: [], ticks: [], last: null, at: 20 }],
                 prefs: [{ key: 'gt.hendrixNeck', value: 'scale', at: 200 }, { key: 'gt.psychobillyNeck', value: 'off', at: 50 }] };
     const m = S.merge(a, b);
-    const ids = m.favourites.items.map(f => f.id).sort().join(',');
-    if (ids !== 'x2,x3,x4') bad.push(`the favourites merged to ${ids} (x1 was removed after it was starred, x3 starred after it was removed)`);
-    if (!m.favourites.removed.some(r => r.id === 'x1' && r.at === 200) || m.favourites.removed.some(r => r.id === 'x3')) bad.push(`the tombstones are ${JSON.stringify(m.favourites.removed)}`);
+    const ids = m.favorites.items.map(f => f.id).sort().join(',');
+    if (ids !== 'x2,x3,x4') bad.push(`the favorites merged to ${ids} (x1 was removed after it was starred, x3 starred after it was removed)`);
+    if (!m.favorites.removed.some(r => r.id === 'x1' && r.at === 200) || m.favorites.removed.some(r => r.id === 'x3')) bad.push(`the tombstones are ${JSON.stringify(m.favorites.removed)}`);
     const h = m.courses.find(c => c.prefix === 'hendrix');
     const done = h.done.map(d => d.key).sort().join(',');
     if (done !== 'a/1,a/2,a/4') bad.push(`the hendrix course merged to ${done} done (a/2 was re-marked after it was un-marked, a/3 un-marked after it was marked)`);
@@ -3153,44 +3153,44 @@
     if (S.canon(S.merge(a, b)) !== S.canon(S.merge(b, a))) bad.push('the merge depends on which side is which');
     if (S.canon(S.merge(m, m)) !== S.canon(m)) bad.push('merging a document with itself changes it');
     // ---- the watch, and the round trip through a backend ----
-    const F = GT.favourites;
-    const keys = ['gt.favourites', 'gt.hendrixCourse', 'gt.hendrixNeck', S.META_KEY, S.ON_KEY];
+    const F = GT.favorites;
+    const keys = ['gt.favorites', 'gt.hendrixCourse', 'gt.hendrixNeck', S.META_KEY, S.ON_KEY];
     const kept = Object.fromEntries(keys.map(k => [k, localStorage.getItem(k)]));
     const hadConfig = window.GT_FIREBASE;
     try {
       keys.forEach(k => localStorage.removeItem(k));
       S.resetMeta(); F.reload();
-      // a favourite starred then removed leaves a tombstone; a preference written has a time
+      // a favorite starred then removed leaves a tombstone; a preference written has a time
       F.add(fav('x9', 1)); F.remove('x9');
       localStorage.setItem('gt.hendrixNeck', 'scale');
       const meta = S.meta();
-      if (!meta.favRemoved.x9) bad.push('removing a favourite left no tombstone');
+      if (!meta.favRemoved.x9) bad.push('removing a favorite left no tombstone');
       if (!meta.prefsAt['gt.hendrixNeck']) bad.push('a preference written has no time');
-      // a fake backend: signed in, one favourite and one done piece already in the cloud
+      // a fake backend: signed in, one favorite and one done piece already in the cloud
       const backend = GT.testSync.backend({ uid: 'u1', name: 'Test', email: 't@example.com' },
-        { v: 1, favourites: { items: [fav('x1', 100)], removed: [] }, courses: [{ prefix: 'hendrix', done: [{ key: 'thumb/card-x1', at: 100 }], undone: [], ticks: [], last: null, at: 100 }], prefs: [], updated: 100 });
+        { v: 1, favorites: { items: [fav('x1', 100)], removed: [] }, courses: [{ prefix: 'hendrix', done: [{ key: 'thumb/card-x1', at: 100 }], undone: [], ticks: [], last: null, at: 100 }], prefs: [], updated: 100 });
       const cloud = backend.cloud;
       let seen = 0; const off = F.onChange(() => { seen++; });
       await S.attach(backend);
-      if (!F.has('x1')) bad.push('the cloud\'s favourite did not land in the browser');
-      if (!seen) bad.push('the favourites module was not told');
+      if (!F.has('x1')) bad.push('the cloud\'s favorite did not land in the browser');
+      if (!seen) bad.push('the favorites module was not told');
       const course = JSON.parse(localStorage.getItem('gt.hendrixCourse') || '{}');
       if (!course.done || !course.done['thumb/card-x1']) bad.push('the cloud\'s course progress did not land in the browser');
       if (cloud.writes !== 1) bad.push(`the merged state was written ${cloud.writes} times (once: the local preference and tombstone were new to the cloud)`);
       if (!cloud.doc.prefs.some(p => p.key === 'gt.hendrixNeck' && p.value === 'scale')) bad.push('the local preference did not go up');
-      if (!cloud.doc.favourites.removed.some(r => r.id === 'x9')) bad.push('the tombstone did not go up');
+      if (!cloud.doc.favorites.removed.some(r => r.id === 'x9')) bad.push('the tombstone did not go up');
       if (S.status().state !== 'synced' || !S.isOn()) bad.push(`after attaching the state is ${S.status().state}, on=${S.isOn()}`);
       // a local change goes up after a moment
       F.add(fav('x2', 200));
       await new Promise(r => setTimeout(r, 1500));
-      if (!cloud.doc.favourites.items.some(f => f.id === 'x2')) bad.push('a favourite starred here did not reach the cloud');
+      if (!cloud.doc.favorites.items.some(f => f.id === 'x2')) bad.push('a favorite starred here did not reach the cloud');
       // a change from elsewhere comes down
       const later = Date.now() + 60000;   // newer than anything written here
-      const remote = S.merge(cloud.doc, { v: 1, favourites: { items: [fav('x5', later)], removed: [] }, courses: [], prefs: [{ key: 'gt.hendrixNeck', value: 'off', at: later }], updated: later });
+      const remote = S.merge(cloud.doc, { v: 1, favorites: { items: [fav('x5', later)], removed: [] }, courses: [], prefs: [{ key: 'gt.hendrixNeck', value: 'off', at: later }], updated: later });
       remote.updated = 1000; remote.device = 'other';
       cloud.subs.forEach(fn => fn(remote));
       await new Promise(r => setTimeout(r, 300));
-      if (!F.has('x5')) bad.push('a favourite starred elsewhere did not come down');
+      if (!F.has('x5')) bad.push('a favorite starred elsewhere did not come down');
       if (localStorage.getItem('gt.hendrixNeck') !== 'off') bad.push('a preference changed elsewhere did not come down');
       off();
       await S.signOut();
@@ -3204,7 +3204,7 @@
       S.detach();
       const out = GT.testSync.backend(null);
       await S.attach(out);
-      if (!(await Promise.race([S.require('favourite').then(() => 'answered'), new Promise(r => setTimeout(() => r('asked'), 200))]) === 'asked')) bad.push('signed out, the gate did not ask');
+      if (!(await Promise.race([S.require('favorite').then(() => 'answered'), new Promise(r => setTimeout(() => r('asked'), 200))]) === 'asked')) bad.push('signed out, the gate did not ask');
       const dlg = document.querySelector('dialog.sign-in-ask');
       if (!dlg || !dlg.open) bad.push('the sign-in dialog is not open');
       else {
@@ -3215,11 +3215,11 @@
       }
       out.setUser({ uid: 'u2', name: 'Two', email: 'two@example.com' });
       await new Promise(r => setTimeout(r, 100));
-      if (!(await S.require('favourite'))) bad.push('signed in, the gate did not open');
+      if (!(await S.require('favorite'))) bad.push('signed in, the gate did not open');
       if (document.querySelector('dialog.sign-in-ask[open]')) bad.push('signed in, the gate still asked');
       await S.signOut();
       window.GT_FIREBASE = null;
-      if (!(await S.require('favourite'))) bad.push('with no sync possible, the gate should let the action through');
+      if (!(await S.require('favorite'))) bad.push('with no sync possible, the gate should let the action through');
       window.GT_FIREBASE = hadConfig;
     } finally {
       window.GT_FIREBASE = hadConfig;
@@ -3227,7 +3227,7 @@
       keys.forEach(k => { if (kept[k] == null) localStorage.removeItem(k); else localStorage.setItem(k, kept[k]); });
       S.resetMeta(); F.reload();
     }
-    t.equal(bad.join('; '), '', 'Sync merges by time (favourites and their removals, pieces marked and un-marked, the newest preference), watches what the page writes, and round-trips through a backend');
+    t.equal(bad.join('; '), '', 'Sync merges by time (favorites and their removals, pieces marked and un-marked, the newest preference), watches what the page writes, and round-trips through a backend');
   }
 
   // The deep dives as courses (js/course.js): every piece of both pages is
@@ -3286,10 +3286,10 @@
           if (!w.document.querySelector('#course .piece article.ex .tab svg')) bad.push('the card piece drew no tab');
           if (!w.document.querySelector('.page').hidden) bad.push('the full page is still shown in the course');
           // the star on the course's copy of a card keeps the card by its id on its page, and lights the page's own copy too
-          const favKept = w.localStorage.getItem(w.GT.favourites.KEY);
+          const favKept = w.localStorage.getItem(w.GT.favorites.KEY);
           const syncKept = [w.GT.sync.META_KEY, w.GT.sync.ON_KEY].map(k => [k, w.localStorage.getItem(k)]);
           try {
-            w.GT.favourites.clear();
+            w.GT.favorites.clear();
             // the star waits on sign-in: the frame signs in with a backend of the test's own
             await w.GT.sync.attach(GT.testSync.backend({ uid: 'frame', name: 'Frame', email: 'frame@example.com' }));
             const star = w.document.querySelector('#course .piece article.ex .star');
@@ -3298,14 +3298,14 @@
               star.click();
               await wait(150);
               const cardId = l1.pieces[firstCard - 1].cardId;
-              const f = w.GT.favourites.get(`dive:${page}:${cardId}`);
+              const f = w.GT.favorites.get(`dive:${page}:${cardId}`);
               if (!f || f.kind !== 'dive' || f.href !== `${page}.html#${cardId}`) bad.push(`starring the card kept ${JSON.stringify(f)}`);
               const pageStar = w.document.querySelector(`main article.ex#${cardId} .star`);
               if (!pageStar || pageStar.textContent[0] !== '★') bad.push("the page's own copy of the card is not lit");
             }
           } finally {
             w.GT.sync.detach();
-            if (favKept == null) w.localStorage.removeItem(w.GT.favourites.KEY); else w.localStorage.setItem(w.GT.favourites.KEY, favKept); w.GT.favourites.reload();
+            if (favKept == null) w.localStorage.removeItem(w.GT.favorites.KEY); else w.localStorage.setItem(w.GT.favorites.KEY, favKept); w.GT.favorites.reload();
             syncKept.forEach(([k, v]) => { if (v == null) w.localStorage.removeItem(k); else w.localStorage.setItem(k, v); });
           }
           w.location.hash = '#s1';
@@ -3350,13 +3350,13 @@
       ['The tab comes out in rows', testTheTabComesOutInRows],
       ['The print view packs its bars', testThePrintViewPacksItsBars],
       ['The Bigsby dips', testTheBigsbyDips],
-      ['A free colour tone keeps its note', testAFreeColourToneKeepsItsNote],
+      ['A free color tone keeps its note', testAFreeColorToneKeepsItsNote],
       ['The triads reading and the shell reach rather than leave a bar empty', testTheTriadsReadingReaches],
       ['Two bars share a row', testTwoBarsShareARow],
       ['The hand is fingered', testTheHandIsFingered],
       ['The tab shows the fingering', testTheTabShowsTheFingering],
       ['The example player fingers the tab', testTheExampleIsFingered],
-      ['Favourites are kept', testTheFavouritesAreKept],
+      ['Favorites are kept', testTheFavoritesAreKept],
       ['Sync across devices', testTheSyncMergesByTime],
       ['The deep dives as courses', testTheCoursesCoverTheirPages],
       ['Chord finder output is identifiable in reverse', testFinderOutputIsIdentifiable],
@@ -3379,7 +3379,7 @@
       ['The band plays each slot by the pattern', testTheBandBySlot],
       ['No slot strikes the comp twice; the click and the cushion', testNoSlotStrikesTheCompTwice],
       ['The engine mixes a part the ways the styles ask', testTheEngineFeatures],
-      ['The suggested parts realise inside the reading', testTheSuggestedParts],
+      ['The suggested parts realize inside the reading', testTheSuggestedParts],
       ['The engine sleeps when idle, never while playing', testTheEngineSleepsButNotWhilePlaying],
       ['Every bass note every style can play has a recording', testEveryBassNoteHasARecording],
       ['Every style carries the Voice choice', testTheVoiceReachesEveryStyle],

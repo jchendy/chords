@@ -41,21 +41,21 @@
   <h2>In your browser</h2>
   <p>Every page keeps what it remembers in your browser's own storage (localStorage), on this device only. Nothing in it is sent anywhere unless you switch sync on.</p>
   <ul>
-    <li><b>Favourites</b> — the cards, jam settings and drills you starred, each with its name and the link that reopens it.</li>
+    <li><b>Favorites</b> — the cards, jam settings and drills you starred, each with its name and the link that reopens it.</li>
     <li><b>Course progress</b> — which pieces of the Hendrix and psychobilly courses you marked complete, the lines you ticked in their check lists, and the piece you were last on.</li>
     <li><b>Preferences</b> — the neck, fingering, count-in and contents choices on the deep-dive pages, the number of tab rows shown, the styles you used recently in the Jam tab.</li>
   </ul>
-  <p>To clear it: the <b>Reset progress</b> and <b>Clear them all</b> buttons on the course and Favourites pages, or clear the site's data in your browser's settings.</p>
+  <p>To clear it: the <b>Reset progress</b> and <b>Clear them all</b> buttons on the course and Favorites pages, or clear the site's data in your browser's settings.</p>
 
   <h2>In the cloud, only if you sign in</h2>
-  <p>The Favourites page offers <b>Sign in with Google</b> to keep the same things on every device you use. If you never click it, nothing below applies and no Google code is loaded.</p>
+  <p>The Favorites page offers <b>Sign in with Google</b> to keep the same things on every device you use. If you never click it, nothing below applies and no Google code is loaded.</p>
   <ul>
     <li><b>What Google gives the site.</b> Your name, email address and profile picture, as Google's consent screen says. They are kept in the site's Firebase Authentication account list so the site can tell your data from anyone else's. They are not put into the synced document and are not shown to other people.</li>
-    <li><b>What is synced.</b> One small document in the site's Firestore database, under your account's id, holding the three things above: favourites, course progress and preferences. Nothing else — not what you played, not how long, not where you were.</li>
+    <li><b>What is synced.</b> One small document in the site's Firestore database, under your account's id, holding the three things above: favorites, course progress and preferences. Nothing else — not what you played, not how long, not where you were.</li>
     <li><b>Who can read it.</b> The database's rules let a signed-in person read and write only their own document. The site's owner can see the account list and the documents in the Firebase console, as the person running the project; nobody else can.</li>
     <li><b>Where it is.</b> On Google's servers, in the region the Firebase project was created in. Google's own terms cover that infrastructure.</li>
   </ul>
-  <p class="note"><b>To delete it:</b> on the Favourites page, <b>Delete my data from the cloud</b> removes your synced document and your account for this site in one go; what is in your browser stays until you clear it. Or email <a href="mailto:jeff@jeffsguitartools.com">jeff@jeffsguitartools.com</a> from the address you signed in with and it will be removed by hand.</p>
+  <p class="note"><b>To delete it:</b> on the Favorites page, <b>Delete my data from the cloud</b> removes your synced document and your account for this site in one go; what is in your browser stays until you clear it. Or email <a href="mailto:jeff@jeffsguitartools.com">jeff@jeffsguitartools.com</a> from the address you signed in with and it will be removed by hand.</p>
 
   <h2>Visitor counts</h2>
   <p>The site may use Google Analytics, through Firebase, to see how many people visit and which pages and tabs they use. When it does, Google records for each visit the pages opened, when and for how long, the kind of device and browser, and a rough location worked out from the network address, and stores it under a random identifier in your browser rather than under your name. It is not joined to your sign-in, and it is not used for advertising. Google's own privacy policy covers what Google does with it. To keep your visits out of it, use your browser's tracking protection or Google's <a href="https://tools.google.com/dlpage/gaoptout">opt-out add-on</a>.</p>

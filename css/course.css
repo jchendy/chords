@@ -1,6 +1,6 @@
 /* The course view of a deep dive (js/course.js): the dashboard of lessons,
    a lesson with its rail of pieces and one piece on the screen, the switch
-   in the top bar and the marks in the page's Start-here list. Colours and
+   in the top bar and the marks in the page's Start-here list. Colors and
    type are the page's own variables, so the two views read as one page. */
 
 /* ---- the switch in the top bar ---- */

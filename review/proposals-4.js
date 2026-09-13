@@ -327,7 +327,7 @@
         parts: [
           {
             name: 'Chicken scratch', replaces: 'The one and the chops',
-            why: 'Sixteenths, all sixteen, mostly muted scratches — the chord (with the 9th) sounding on the One, the "a of 2", and the and of 4. The hand never stops. Needs ghost strums and colour tones.',
+            why: 'Sixteenths, all sixteen, mostly muted scratches — the chord (with the 9th) sounding on the One, the "a of 2", and the and of 4. The hand never stops. Needs ghost strums and color tones.',
             figure: scratch([0, 7, 14], 'high', 0.85).map(x => x.ghost ? x : { ...x, add: 14 }),
             variants: [scratch([0, 3, 6, 10, 14], 'high', 0.75).map(x => x.ghost ? x : { ...x, add: 14 }), scratch([0, 8, 11], 'high', 0.85).map(x => x.ghost ? x : { ...x, add: 14 })],
             fills: [[...scratch([0, 7], 'high', 0.85).slice(0, 8).map(x => x.ghost ? x : { ...x, add: 14 }), n(8, 0, 1, 0.85), n(10, 10, 1, 0.75), n(11, 12, 1, 0.75), n(12, 7, 2, 0.8), n(14, 10, 1, 0.7), n(15, 12, 1, 0.75)]],
@@ -444,7 +444,7 @@
   genres.push({
     id: 'metal', name: 'Metal',
     research: `
-      <p><b>What the players actually do.</b> James Hetfield (Metallica's "Master of Puppets", "Creeping Death"): palm-muted downpicking, every note the same direction and weight, the gallop (eighth, two sixteenths), riffs out of the ♭2 and the ♭5, opened up on the accents. Iron Maiden (Steve Harris's bass, Dave Murray and Adrian Smith): the gallop as a running figure with harmonised leads. Tony Iommi (Black Sabbath's "Black Sabbath", "Iron Man"): the tritone, slow, down-tuned, with bends and vibrato — doom. Thrash is 180 and up, all downstrokes; groove metal drags the gallop behind the beat.</p>
+      <p><b>What the players actually do.</b> James Hetfield (Metallica's "Master of Puppets", "Creeping Death"): palm-muted downpicking, every note the same direction and weight, the gallop (eighth, two sixteenths), riffs out of the ♭2 and the ♭5, opened up on the accents. Iron Maiden (Steve Harris's bass, Dave Murray and Adrian Smith): the gallop as a running figure with harmonized leads. Tony Iommi (Black Sabbath's "Black Sabbath", "Iron Man"): the tritone, slow, down-tuned, with bends and vibrato — doom. Thrash is 180 and up, all downstrokes; groove metal drags the gallop behind the beat.</p>
       <p><b>What the app has now, and what is off about it.</b> One metal at 150 with a gallop; the kick is on every eighth (that is a mid-tempo blast, not most metal), there is no doom, no thrash tempo, no half-time breakdown, and — the sound — no distortion, which is an engine proposal.</p>`,
     existing: [
       {
@@ -532,7 +532,7 @@
     existing: [
       {
         style: 'simple', label: 'Simple',
-        verdict: `<p>Keep both parts; add an arpeggio study (the triad up and down through the octave) so the reading's chord tones get practised too, and let the fills know the change (they mostly do).</p>`,
+        verdict: `<p>Keep both parts; add an arpeggio study (the triad up and down through the octave) so the reading's chord tones get practiced too, and let the fills know the change (they mostly do).</p>`,
         band: null,
         parts: [
           {
@@ -558,23 +558,23 @@
     { id: 'phrase', title: 'A fill every four bars, not only every two', demo: true,
       why: '<p>Many styles fill once a phrase, not once a couplet — country, pop, reggae, Afrobeat. A per-part (or per-style) phrase length, 2 or 4, and the figure and its variants take the bars between. The "Fill every" control above does this here.</p>' },
     { id: 'seed', title: 'Seeded, weighted, re-rollable randomness', demo: true,
-      why: '<p>The roll that picks fills is written into the link as a seed, so a part comes back exactly; fills can carry weights (the common one twice as often as the rare one); "New fills" re-rolls the seed, and an option to vary on every pass through the form is available for practising reaction rather than repetition. The Re-roll button above uses a seed.</p>' },
+      why: '<p>The roll that picks fills is written into the link as a seed, so a part comes back exactly; fills can carry weights (the common one twice as often as the rare one); "New fills" re-rolls the seed, and an option to vary on every pass through the form is available for practicing reaction rather than repetition. The Re-roll button above uses a seed.</p>' },
     { id: 'humanize', title: 'Humanized timing and velocity', demo: true,
       why: '<p>A few milliseconds of jitter on every note and a little velocity noise. Machines are exact; players are not, and the difference is most of what reads as "synth". The Humanize checkbox above does ±8 ms and ±10%; per style it could lean late (breakdowns, Crazy Horse) or push (punk, ska).</p>' },
     { id: 'swing16', title: 'Swung sixteenths per style', demo: true,
       why: '<p>Funk, neo-soul, New Orleans, samba and hip-hop feels swing the sixteenths — the second of each pair late by a settable amount (55–65%). The app can swing only by choosing a 12-slot grid. A swing amount on the style, applied to the band and the part alike.</p>' },
     { id: 'techniques', title: 'More techniques: ghost notes, rakes, staccato, tremolo picking, chord slides, double-stop bends, palm-muted notes', demo: true,
-      why: '<p>All heard above: ghost strums are the funk scratch and the ska chunk, rakes are the blues pickup, staccato is chicken pickin\', tremolo picking is surf, chord slides are the T-Bone 9th, double-stop bends are the steel guitar and Chuck Berry, palm-muted single notes are every riff. Each is a written flag and a small rule in the realiser; tremolo needs notes between the grid slots.</p>' },
+      why: '<p>All heard above: ghost strums are the funk scratch and the ska chunk, rakes are the blues pickup, staccato is chicken pickin\', tremolo picking is surf, chord slides are the T-Bone 9th, double-stop bends are the steel guitar and Chuck Berry, palm-muted single notes are every riff. Each is a written flag and a small rule in the realizer; tremolo needs notes between the grid slots.</p>' },
     { id: 'vibrato', title: 'Vibrato (and trills, harmonics)', demo: false,
       why: '<p>Marked "~" in the proposed tabs but not sounded: the engine would modulate the playback rate of a held note (a few Hz, a fraction of a semitone) — the one thing that would make B.B. King, Iommi and the surf melody read as guitar rather than keyboard. Trills are a hammer-on/pull-off chain and need no new sound; harmonics would need a sample or a filter trick.</p>' },
-    { id: 'colour', title: 'Colour tones on strums (6ths, 9ths, 13ths) and shell voicings', demo: true,
+    { id: 'color', title: 'Color tones on strums (6ths, 9ths, 13ths) and shell voicings', demo: true,
       why: '<p>A strum can ask for the 9th on top (T-Bone, funk, bossa) or the 6th (western swing), placed from the reading\'s palette; a "shell" voicing is root–3rd–7th on three low strings with the 5th left out (Freddie Green). Both heard above; both are a voicing rule in strumCells.</p>' },
     { id: 'band', title: 'The band: ghost notes, open hats, rim clicks, per-hit velocities, drum fills, bass approaches, comp anticipation', demo: true,
       why: '<p>Every proposed band uses some of these. Ghost snares and open hats are what make a kit a drummer; a fill into the top of the form marks the form; the bass approaching each change from a semitone below and the comp anticipating it on the "and of 4" are what make the band sound like it knows the tune. All pattern fields, no new voices.</p>' },
     { id: 'meter', title: '3/4 and other meters', demo: true,
       why: '<p>The country waltz and the jazz waltz above run in three. The engine assumes four beats to the bar in the scheduler, the chart, the count-in and the tab; a "beats" field on the style would let the scheduler and the chart follow it.</p>' },
     { id: 'scales', title: 'Style scales for the palette', demo: false,
-      why: '<p>Surf wants the double harmonic scale, metal the Phrygian, funk the Dorian on a minor I, jazz the bebop scales; the app\'s palette is major/minor/Mixolydian or the key. A style could name a scale (as the "modal" reading already adds chord tones), and the reading would honour it. The surf proposal fakes it with an E–F progression.</p>' },
+      why: '<p>Surf wants the double harmonic scale, metal the Phrygian, funk the Dorian on a minor I, jazz the bebop scales; the app\'s palette is major/minor/Mixolydian or the key. A style could name a scale (as the "modal" reading already adds chord tones), and the reading would honor it. The surf proposal fakes it with an E–F progression.</p>' },
     { id: 'tones', title: 'Tones: drive, fuzz, chorus, phaser, slapback, spring reverb', demo: false,
       why: '<p>Slapback echo is heard above (a second pluck 110 ms later); the rest need audio work: a drive stage for rock and metal (the one that was removed with the genre examples could come back for the part bus), a chorus for neo-soul and 80s pop, a phaser for outlaw country, spring reverb for surf, thumb-tone for octaves. Per style, on the part bus.</p>' },
     { id: 'dynamics', title: 'Dynamics over the form: verse and chorus', demo: false,

@@ -3,10 +3,10 @@
 //
 // Nothing here touches the app. The page loads the app's modules and adds a
 // player of its own that understands a few more things than the app's does
-// — the proposals need them to be heard — and a realiser that wraps
-// parts.js's realiseBar with the proposed engine features (fills that know
+// — the proposals need them to be heard — and a realizer that wraps
+// parts.js's realizeBar with the proposed engine features (fills that know
 // whether the chord is changing, turnarounds, ghost notes, rakes, tremolo,
-// chord slides, colour tones, shell voicings). Everything the page can play
+// chord slides, color tones, shell voicings). Everything the page can play
 // that the app can't is marked as such, so a decision to adopt it is also a
 // decision to build it.
 (function(){
@@ -32,7 +32,7 @@
   // ---- easy mode ----
   // A part with an `easy` block plays that (its author's simplification);
   // any other part is simplified by rule: ghost notes go, so do rakes,
-  // tremolo, chord slides and colour tones; bends, hammer-ons, pull-offs and
+  // tremolo, chord slides and color tones; bends, hammer-ons, pull-offs and
   // slides play plain (double stops stay — they are not the hard part);
   // sixteenths move back onto the eighth before them (and drop if that
   // eighth already has a note), the middle of a triplet drops, and nothing
@@ -87,7 +87,7 @@
     return entry.progression.map(name => chordFromName(name, tonicPc, entry.mode || 'major'));
   }
 
-  // ---- placing one extra note: a colour tone on a strum, a shell voicing ----
+  // ---- placing one extra note: a color tone on a strum, a shell voicing ----
   function placeIv(chord, opts, iv, above){
     const pal = parts.palette(chord, opts);
     const sn = parts.snap(pal.root, iv, pal.allowed);
@@ -118,7 +118,7 @@
     return out;
   }
 
-  // ---- the realiser: parts.js's, with the proposed features round it ----
+  // ---- the realizer: parts.js's, with the proposed features round it ----
   // features (all optional, on the part or the written note):
   //   part.fillsOnChange / part.fillsOnStay — fills for a bar before a change / before more of the same chord
   //   part.turnaround — the last bar of the form
@@ -130,7 +130,7 @@
   //   note.rake — a rake across muted strings into the note
   //   note.up (on a double stop) — bend the lower note this far
   //   note.chordSlide — a strum slid in from this many frets below (negative: above)
-  //   note.add — a colour tone on a strum (9, 13, 6...)
+  //   note.add — a color tone on a strum (9, 13, 6...)
   //   voicing 'shell' — root 3rd 7th
   //   strum with next:true — the NEXT chord, struck early (the "and of 4" push)
   // and, on the part, the ways of mixing the figure and the fills that the
@@ -143,7 +143,7 @@
   //   part.stops (+ stopChance) — stop-time: a bar where the band drops out on
   //       the One and the guitar fills the silence
   //   part.figureMode 'roll' — the figure and its variants rolled, not cycled
-  function realiseAdvanced(part, bars, opts, feat = {}){
+  function realizeAdvanced(part, bars, opts, feat = {}){
     const roll = rng(feat.seed || 1);
     const phrase = feat.phrase || 2;
     const grid = feat.grid || 16;
@@ -190,7 +190,7 @@
           written = written.filter(w => w.at < grid * 3 / 4).concat(pick(part.pickups));
         }
       }
-      // strums with a shell voicing, a colour tone or on the next chord are
+      // strums with a shell voicing, a color tone or on the next chord are
       // placed here; the rest goes through parts.js
       const plain = [], extra = [], pairs = [];
       const doubleOk = !(opts.tech && opts.tech.double === false);
@@ -199,14 +199,14 @@
         else if (w.tech === 'double' && doubleOk) pairs.push(w);
         else plain.push(w);
       });
-      let notes = parts.realiseBar(plain, bar.chord, opts, next);
+      let notes = parts.realizeBar(plain, bar.chord, opts, next);
       // double stops placed the way a hand plays them: the written interval
       // kept, 2nds to 5ths on adjacent strings, 6ths and octaves skipping
       // one, 10ths skipping two (the app places each note by pitch alone)
       const pal = parts.palette(bar.chord, opts), nextPal = parts.palette(next, opts);
       pairs.forEach(w => {
         const placed = placePair(w, cells, w.next ? nextPal : pal, homeMidi(cells, (w.next ? nextPal : pal).root));
-        if (!placed){ notes = notes.concat(parts.realiseBar([w], w.next ? next : bar.chord, opts, next)); return; }
+        if (!placed){ notes = notes.concat(parts.realizeBar([w], w.next ? next : bar.chord, opts, next)); return; }
         const mk = (c, more) => ({ at: w.at, dur: w.dur, vel: w.vel, string: c.string, fret: c.fret, midi: c.midi, iv: w.iv, next: !!w.next, tech: 'double', ...more });
         notes.push(mk(placed.c1, {}), mk(placed.c2, { pair: true, iv: w.iv2 }));
       });
@@ -461,12 +461,12 @@
     return built.metrics;
   }
 
-  // ---- realising a part for a card ----
+  // ---- realizing a part for a card ----
   // `seed` is the card's own roll: the existing parts roll their fills the
   // way the app does (rollFills, one pick a phrase), the proposed ones
-  // through realiseAdvanced — so "New fills" on a card shows how much
+  // through realizeAdvanced — so "New fills" on a card shows how much
   // variety each version actually has.
-  function realiseCard(part, entry, style, advanced, seed, grid){
+  function realizeCard(part, entry, style, advanced, seed, grid){
     const chords = chordsOf(entry);
     const bars = chords.map(chord => ({ chord }));
     if (opt.easy) part = easyVersion(part, grid);
@@ -476,8 +476,8 @@
       tech: !opt.tech ? { double: false, bend: false, hammer: false, pull: false, slide: false } : opt.easy ? EASY_TECH : null,
     };
     const notes = advanced
-      ? realiseAdvanced(part, bars, opts, { seed: seed || opt.seed, phrase: opt.phrase, grid })
-      : parts.realise(part, bars, seed || opt.seed, opts, { grid });
+      ? realizeAdvanced(part, bars, opts, { seed: seed || opt.seed, phrase: opt.phrase, grid })
+      : parts.realize(part, bars, seed || opt.seed, opts, { grid });
     return { chords, notes };
   }
 
@@ -494,7 +494,7 @@
         .then(r => { $('saveNote').textContent = r.ok ? 'Saved to review/decisions.json' : 'Saved in this browser (the server did not take it)'; })
         .catch(() => { $('saveNote').textContent = 'Saved in this browser (no server) — use Copy decisions'; });
     }, 400);
-    summarise();
+    summarize();
   }
   function decisionControls(id, choices){
     const d = decisions[id] || {};
@@ -515,7 +515,7 @@
       ta.addEventListener('input', () => { decisions[id] = { ...(decisions[id] || {}), note: ta.value }; saveDecisions(); });
     });
   }
-  function summarise(){
+  function summarize(){
     const all = [...document.querySelectorAll('.decide')].map(el => el.dataset.id);
     const done = all.filter(id => decisions[id] && (decisions[id].choice || (decisions[id].note || '').trim()));
     $('summary').textContent = `${done.length} of ${all.length} decided`;
@@ -547,7 +547,7 @@
     // bars that go above the box's middle octave: the upper-register lines
     const high = w => !w.strum && Math.max(w.iv, w.iv2 == null ? -99 : w.iv2) >= 17;
     const highBars = ['variants', 'fills', 'fillsOnChange', 'fillsOnStay', 'tails', 'turnarounds', 'stops', 'leads'].reduce((a, k) => a + (part[k] || []).filter(bar => bar.some(high)).length, 0) + ((part.turnaround || []).some(high) ? 1 : 0);
-    ['ghost', 'rake', 'trem', 'vib', 'stacc', 'pm', 'chordSlide', 'add'].forEach(k => { if (has(k)) flags.push({ ghost: 'ghost notes', rake: 'rakes', trem: 'tremolo picking', vib: 'vibrato', stacc: 'staccato', pm: 'palm-muted notes', chordSlide: 'chord slides', add: 'colour tones' }[k]); });
+    ['ghost', 'rake', 'trem', 'vib', 'stacc', 'pm', 'chordSlide', 'add'].forEach(k => { if (has(k)) flags.push({ ghost: 'ghost notes', rake: 'rakes', trem: 'tremolo picking', vib: 'vibrato', stacc: 'staccato', pm: 'palm-muted notes', chordSlide: 'chord slides', add: 'color tones' }[k]); });
     if (allWritten.some(bar => bar.some(n => n.strum && n.voicing === 'shell'))) flags.push('shell voicings');
     if (allWritten.some(bar => bar.some(n => n.tech === 'double' && n.up))) flags.push('double-stop bends');
     card.innerHTML = `
@@ -562,7 +562,7 @@
     let state = null, seed = 0, rolls = 0;
     const build = () => {
       try {
-        const { chords, notes } = realiseCard(part, entry, style, advanced, seed, pattern.grid);
+        const { chords, notes } = realizeCard(part, entry, style, advanced, seed, pattern.grid);
         const metrics = drawTab(tabHost, pattern.grid, chords, notes);
         state = { chords, notes, metrics };
         card.querySelector('.roll').textContent = [rolls ? `roll ${rolls}` : '', notes.leadRoll ? 'lead roll' : ''].filter(Boolean).join(' · ');
@@ -571,7 +571,7 @@
         tag.textContent = !opt.easy ? '' : part.easy ? 'easy · written for it' : 'easy · simplified by rule';
         tag.classList.toggle('written', !!part.easy);
       } catch (err){
-        tabHost.innerHTML = `<p class="err">Could not realise: ${esc(err.message)}</p>`;
+        tabHost.innerHTML = `<p class="err">Could not realize: ${esc(err.message)}</p>`;
         console.error(part.name, err);
       }
     };
@@ -659,7 +659,7 @@
         const col = block.querySelector('.col.proposed');
         const entry = { progression: add.progression, key: add.key, tempo: add.tempo, mode: add.mode, scaleTheory: add.scaleTheory };
         bandCard(col.querySelector('.band'), add.band, add.style || genre.id, entry, 'The band');
-        // a genre written for the app's engine (genre.engine) is realised by it, features and all
+        // a genre written for the app's engine (genre.engine) is realized by it, features and all
         (add.parts || []).forEach(part => partCard(col.querySelector('.parts'), part, entry, add.style || genre.id, add.band, !genre.engine));
       });
       main.appendChild(sec);
@@ -675,7 +675,7 @@
       eng.appendChild(el);
     });
     wireDecisions(document);
-    summarise();
+    summarize();
     $('toc').innerHTML = R.genres.map(g => `<a href="${only.length ? `?only=${g.id}` : `#g-${g.id}`}">${esc(g.name)}</a>`).join('')
       + (only.length ? '<a href="review.html">All genres</a>' : '<a href="#engine">Engine</a>');
   }
@@ -707,5 +707,5 @@
   window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(() => { if (window.innerWidth !== drawnWidth){ drawnWidth = window.innerWidth; rebuildAll(); } }, 200); });
 
   render();
-  GT.reviewPage = { realiseAdvanced, describeBand, simplify, easyVersion, decisions: () => decisions, stop };
+  GT.reviewPage = { realizeAdvanced, describeBand, simplify, easyVersion, decisions: () => decisions, stop };
 })();

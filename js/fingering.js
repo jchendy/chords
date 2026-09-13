@@ -22,7 +22,7 @@
   // The model is one "unit" per finger. Every fretted note starts as its own
   // unit, and if that needs more than four fingers we flatten runs of notes
   // that share a fret into a barre — the index across the lowest fret, or a
-  // higher finger laid over neighbouring strings (the ring-finger barre in
+  // higher finger laid over neighboring strings (the ring-finger barre in
   // shapes like C9 and Em9). `allowedPcs` is the chord's own set of notes: an
   // index barre presses every string it crosses, so whatever it sounds has to
   // belong to the chord.
@@ -116,7 +116,7 @@
       }
     }
     while (units.length > 4){
-      // flatten the longest run of neighbouring notes sharing a fret
+      // flatten the longest run of neighboring notes sharing a fret
       let target = null;
       [...byFret.entries()].forEach(([fret, group]) => {
         if (fret === minFret && indexBarre) return;       // already barred

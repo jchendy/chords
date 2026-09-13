@@ -78,7 +78,7 @@
 
   // Every question the drill asks has exactly one answer among the buttons it
   // offers. That sounds like nothing, and it is what broke: the buttons were
-  // built from one list and the question chosen from another, the two labelled
+  // built from one list and the question chosen from another, the two labeled
   // their answers differently, and every press came back "not that one" — in
   // all three note drills at once, while the score sat there counting misses.
   // Pressing every button is the only way to see it, so that's what this does.

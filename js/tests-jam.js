@@ -37,7 +37,7 @@
   ['chords', 'chordSlots', 'presetVariantGroup', 'presetVariantRow',
    'clickRow', 'rootOnlyRow', 'keyMenu', 'keyMenuGrid'].forEach(id => add('div', id));
   ['quickKeyDice', 'quickRandomChords', 'shareBtn', 'styleProgBtn', 'styleTempoBtn', 'jamStar'].forEach(id => add('button', id, { type: 'button' }));
-  // the tab reaches for the label wrapping a checkbox to grey it out
+  // the tab reaches for the label wrapping a checkbox to gray it out
   ['commonToggle', 'randomSeventhsToggle', 'clickToggle', 'countInToggle',
    'rootOnlyToggle'].forEach(id => {
     const label = document.createElement('label');
@@ -307,7 +307,7 @@
       const groups = [...sel.querySelectorAll('optgroup')];
       if (groups.length !== 2){ bad.push(`${key}: ${groups.length} option groups, not 2`); return; }
       const [inKey, outside] = groups;
-      if (!/outside/i.test(outside.label)) bad.push(`${key}: the second group is labelled "${outside.label}"`);
+      if (!/outside/i.test(outside.label)) bad.push(`${key}: the second group is labeled "${outside.label}"`);
       const pcs = g => [...g.children].map(o => pcOf(o.textContent));
       const own = new Set(pcs(inKey)), out = new Set(pcs(outside));
       // the two together are the twelve, with nothing in both
@@ -372,7 +372,7 @@
     // nothing about the key narrows a borrowed chord, so it's offered every
     // shape — plain major first, as everywhere else
     const shapes = [...q('#chordSlots .seventh-select').options].map(o => o.textContent);
-    // the eight triad-and-7th shapes and the nine coloured ones (9, 7♯9, add9, sus...)
+    // the eight triad-and-7th shapes and the nine colored ones (9, 7♯9, add9, sus...)
     if (shapes.length !== 17 || shapes[0] !== 'Major' || !shapes.includes('7♯9') || !shapes.includes('sus4'))
       bad.push(`a borrowed root is offered ${shapes.length} shapes, starting "${shapes[0]}"`);
 
@@ -615,7 +615,7 @@
       view.applyViewState('m:penta.p:position.b:2');
       const moved = JSON.stringify(view.positionView().window) !== JSON.stringify(before);
       if (!moved) bad.push('could not move the neck to test against (box 2 is where it already was)');
-      if (notesOf() !== first) bad.push('the neck moving by itself re-realised the part');
+      if (notesOf() !== first) bad.push('the neck moving by itself re-realized the part');
       if (JSON.stringify(GT.jam.partState().window) !== JSON.stringify(before)){
         bad.push('the part followed the neck to a new window');
       }
@@ -1108,7 +1108,7 @@
   async function testTheStarKeepsTheJam(t){
     start();
     const bad = [];
-    const F = GT.favourites;
+    const F = GT.favorites;
     const kept = localStorage.getItem(F.KEY);
     // the test before leaves its last link in the address bar with its
     // hashchange events still queued; an async test would see them land
@@ -1125,9 +1125,9 @@
       star.click();
       await new Promise(r => setTimeout(r, 50));
       const favs = F.list();
-      if (favs.length !== 1 || favs[0].kind !== 'jam') bad.push(`starring kept ${favs.length} favourites of kind ${favs[0] && favs[0].kind}`);
-      if (favs.length && !/^index\.html#jam\?k=major%3AC/.test(favs[0].href)) bad.push(`the favourite's link is ${favs[0] && favs[0].href}`);
-      if (star.textContent[0] !== '★' || star.getAttribute('aria-pressed') !== 'true') bad.push(`the star reads ${star.textContent} after starring (kept ${favs[0] && favs[0].id.slice(0, 50)}; now ${GT.jam.favourite().id.slice(0, 50)}; gate ${GT.sync.gateOpen()})`);
+      if (favs.length !== 1 || favs[0].kind !== 'jam') bad.push(`starring kept ${favs.length} favorites of kind ${favs[0] && favs[0].kind}`);
+      if (favs.length && !/^index\.html#jam\?k=major%3AC/.test(favs[0].href)) bad.push(`the favorite's link is ${favs[0] && favs[0].href}`);
+      if (star.textContent[0] !== '★' || star.getAttribute('aria-pressed') !== 'true') bad.push(`the star reads ${star.textContent} after starring (kept ${favs[0] && favs[0].id.slice(0, 50)}; now ${GT.jam.favorite().id.slice(0, 50)}; gate ${GT.sync.gateOpen()})`);
       // a change of state is another thing: the star goes hollow, and the kept one stays
       setTempo(96);
       if (star.textContent[0] !== '☆') bad.push('the star stayed lit for a state that is not kept');

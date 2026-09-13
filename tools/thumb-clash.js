@@ -24,7 +24,7 @@ Object.keys(LIBRARY).forEach(style => Object.keys(LIBRARY[style]).forEach(feel =
     ['penta', 'scale', 'caged'].forEach(reading => roots.forEach(root => windows.forEach(window => [1, 2, 3].forEach(seed => {
       const I = chordFromName(root), IV = chordFromName(roots[(roots.indexOf(root) + 3) % roots.length] + '7');
       const barsIn = [I, I, IV, IV, I, IV].map(chord => ({ chord }));
-      const out = GT.parts.realise(part, barsIn, seed, { reading, window, scaleTheory: 'parallel', stayOnKey: false, key: { tonic: root, mode: 'major' }, tech: null }, { grid });
+      const out = GT.parts.realize(part, barsIn, seed, { reading, window, scaleTheory: 'parallel', stayOnKey: false, key: { tonic: root, mode: 'major' }, tech: null }, { grid });
       for (let b = 0; b < barsIn.length; b++){
         const notes = out.filter(n => n.bar === b);
         const thumb = new Set(notes.filter(n => n.strum && (n.voicing === 'bass' || n.voicing === 'fifth')).map(n => n.string));

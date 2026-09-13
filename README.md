@@ -20,7 +20,7 @@ A single-page, dependency-free site with six tabs under one header:
   following note by note, and played over a click. Every setting is in the
   link, so a drill can be bookmarked or handed to someone.
 - **Style Deep Dives** — one player's, or one genre's, whole way of playing,
-  taken apart and put back together as parts you can practise. The first
+  taken apart and put back together as parts you can practice. The first
   is Hendrix (`hendrix.html`): the hands and the grips, the scales, eight
   feels with rhythm, lead and mixed parts, the songs as reference points,
   exercises, studies, how the page was made, and its sources — every
@@ -32,7 +32,7 @@ A single-page, dependency-free site with six tabs under one header:
   course (**Course** in its top bar): the same page as eight lessons, one
   piece at a time, marked complete as you go, your place kept in the
   browser and a Continue button to pick it up.
-- **Favourites** — a ☆ on every card of the deep dives, in the Jam tab's
+- **Favorites** — a ☆ on every card of the deep dives, in the Jam tab's
   Share row and in the Drills toolbar keeps that thing, as it is set, on a
   page of its own, each with the link that reopens it.
 
@@ -60,12 +60,12 @@ names the tab you're on.
 ## Features
 
 - Opens on the first preset the key's mode offers — the three-chord
-  progression, plainest ground to practise over — rather than on a random
+  progression, plainest ground to practice over — rather than on a random
   roll, so a fresh page starts on something recognisable and the picker says
   which it is; the dice are there for a random one. A shared link still wins
 - The chart carries its own copy of the key picker, the key dice and the
   preset picker, plus a dice that rolls a whole progression — two to four
-  chords, a bar or two each, then the chords themselves, honouring the same
+  chords, a bar or two each, then the chords themselves, honoring the same
   two roll settings. So the things you reach for most while playing are on the
   chart rather than two panels down. They're views on the same state, not a
   second copy of it: change either and both follow
@@ -124,9 +124,9 @@ names the tab you're on.
 - Per-slot chord quality — the degree picker names the degree and nothing
   else (`Dm · ii`); a second picker beside it sets the shape, and offers
   Major, Minor, 7, maj7 and m7 on any degree, with dim, m7♭5 and dim7 added
-  on the one degree whose own chord is diminished, and the colours — 9, m9,
+  on the one degree whose own chord is diminished, and the colors — 9, m9,
   7♯9, add9, m(add9), 6, sus2, sus4, 7sus4 — on any degree at all (a chord
-  carries its colour as the semitones beyond its triad and 7th, and as the
+  carries its color as the semitones beyond its triad and 7th, and as the
   sus note in place of its 3rd, and the neck, the comp, the parts and the
   tab all read it: a strum of E7♯9 has its G against the G♯) — and every
   shape at once on a root outside the key, which the key says nothing
@@ -149,7 +149,7 @@ names the tab you're on.
   them. The part is a two-bar figure
   and its answer — rhythm guitar with fills, chord strums on the feel's
   beat and single-note lines between — written for the feel that's playing
-  and realised into the notes the neck's reading offers in its position.
+  and realized into the notes the neck's reading offers in its position.
   It's lit on the neck as it goes, written out as tab with its own controls
   above it — the rhythm under the strings the way printed tab writes it: a
   stem for every strike, bare for a quarter, flagged for an eighth, twice
@@ -169,9 +169,9 @@ names the tab you're on.
   the part or under you. ‹ › steps through the
   feel's parts and "New fills" re-rolls the answering bars of the one
   you're on; the print icon in the playback bar, beside the star, opens
-  the tab alone in a new browser tab for printing, and is greyed while
+  the tab alone in a new browser tab for printing, and is grayed while
   the chord chart is showing, since the chart has no tab; nothing
-  changes otherwise, however long you practise — in
+  changes otherwise, however long you practice — in
   particular the neck following the playing chord into another box does
   not move it. The part stays in the window it was set in, and only
   stepping the box yourself takes it along. "Follow chords" moves the notes
@@ -232,15 +232,15 @@ names the tab you're on.
   feel, the voice — and what the neck below the chart is showing, packed into
   one field. A setting left at its default is left out, so the fragment only
   grows as far as you've strayed from them, and a bookmark holds what you
-  were actually looking at: the third box of the A-shape pentatonic coloured
+  were actually looking at: the third box of the A-shape pentatonic colored
   by interval, not merely the key you were in. A typed progression is written
   as chord names instead, since its chords aren't degrees of anything. "Copy a link to all of this" stays, because putting
   that address on the clipboard is the part the address bar can't do for you
 - An info tooltip (ⓘ) beside the position method, the one choice that
   needs explaining — hover on desktop, tap on touch, tap elsewhere to dismiss
 - The tab is laid out as a stage: near-black ground and high-contrast ink,
-  meant to be read from a music stand, with colour reserved for the CAGED
-  shapes — a chosen control is ink with a rule under it, not a coloured
+  meant to be read from a music stand, with color reserved for the CAGED
+  shapes — a chosen control is ink with a rule under it, not a colored
   fill. The chart comes first, its key as the title and the progression's
   name beside it, both directly editable (the real pickers lie over the text)
   with a dice for each, a
@@ -260,7 +260,7 @@ names the tab you're on.
   of the same chord. A progression loaded any other way — typed, from a
   link, from the style's button — is no preset, and the name says so. Editing one bar of a chord held for several splits that
   bar off, so nothing else moves. The things set once and left — the voice,
-  the click, roots only, the count-in, what the dice may use, the dot colour,
+  the click, roots only, the count-in, what the dice may use, the dot color,
   the fret range, the share link — are in the **Settings** menu under the
   gear. The style has a
   picker of its own, a sheet over the page: the sixty-one feels grouped by
@@ -281,7 +281,7 @@ names the tab you're on.
   and five one-tap tempos under it, the click, a button that copies a link
   to all of it — key, chords, style, tempo, the neck's view, the part's
   roll, the loop — the gear that opens the Settings menu (voice, click,
-  count-in, what the dice may use, colour, frets, the link: the page's
+  count-in, what the dice may use, color, frets, the link: the page's
   settings, so they sit with the page's controls), and a Hide / Show
   controls button. In the Part view the
   controls are one row — the part's name, which is its picker (the real
@@ -377,16 +377,16 @@ already fits and the bar has no space to spare. The style picker chooses the
   isn't the same width as a CAGED grip), so switching view re-picks the
   nearest one rather than carrying the index across, and the hand stays where
   it was:
-  Roots — every root-note location for the progression (colour-coded,
+  Roots — every root-note location for the progression (color-coded,
   legend gives each root's roman numeral; while playing, the currently
   sounding chord's root is ringed and spotlighted);
   Chords — the five CAGED shapes for the chosen chord, outlined and
-  colour-coded, every note labelled by scale degree except the root (which
-  keeps its note name), shared notes split-coloured; a chord carrying a 7th
+  color-coded, every note labeled by scale degree except the root (which
+  keeps its note name), shared notes split-colored; a chord carrying a 7th
   shows its 7th-chord shapes, the 7th drawn as a hollow dot, so this view
   and the position reading agree. **Whole arpeggio** opens those same five
-  shapes out: every chord tone on the neck, each one coloured by the CAGED
-  box it sits in (seam notes split-coloured), labelled by degree, with the
+  shapes out: every chord tone on the neck, each one colored by the CAGED
+  box it sits in (seam notes split-colored), labeled by degree, with the
   grip itself still traced through the middle of its box. That's the CAGED
   arpeggio a method book teaches — the shape you already know, plus the notes
   around it on each string. The outlines are the same grips either way, so the
@@ -397,7 +397,7 @@ already fits and the bar has no space to spare. The style picker chooses the
   at a time, its five shapes everywhere they fall — the view for learning where
   a chord lives. *All chords, one position* is the whole progression gathered
   under one hand, drawn the way it plays —
-  each chord in its own colour, labelled by degree, its grip traced faintly
+  each chord in its own color, labeled by degree, its grip traced faintly
   through, and three tiers of brightness (the chord in front lit, the
   one you're heading into next half-lit, the rest dimmed much further, roots
   included). Only the frets the chord in front isn't already using are drawn,
@@ -407,12 +407,12 @@ already fits and the bar has no space to spare. The style picker chooses the
   the stricter reading would simply drop the chord. And the shape you see for
   a chord sitting behind is the shape you get when you switch to it: both come
   from one list of that chord's shapes and one function picking from it, in
-  every view, rather than from two pieces of code that have to agree. Colour there means which
+  every view, rather than from two pieces of code that have to agree. Color there means which
   chord a note belongs to, so the legend reads the same way: one entry per chord with its name, numeral and the CAGED shape
   it's sitting in (the frets it spans as its tooltip), each spotlighting its chord when you
   hover it, and the chord in front marked. Over all positions only one chord is
-  drawn, so colour is free to say which of its five shapes a note is in
-  instead, and the interval colouring stays available there.
+  drawn, so color is free to say which of its five shapes a note is in
+  instead, and the interval coloring stays available there.
   Whole arpeggio applies to both. Everything about *choosing* a
   position belongs to the second reading, since the first has no position to
   choose — it shows them all. Three ways of putting the progression in one
@@ -440,17 +440,17 @@ already fits and the bar has no space to spare. The style picker chooses the
   One box needs the shapes left on to be able to meet somewhere: on Am–Dm–E,
   all five or A–E–D hold one shape of every chord inside four frets, A and E
   need five, but a single shape needs ten to twelve — most of the neck, and not
-  a position at all. Past a hand's reach the option greys out, and if it was
+  a position at all. Past a hand's reach the option grays out, and if it was
   the one selected, Cluster takes over, since Cluster is already the reading
   that lets each chord sit where it really falls.
   Triads — in one position these behave as Chords does: the chord in front
-  lit, the rest of the progression's triads behind it in their own colours,
+  lit, the rest of the progression's triads behind it in their own colors,
   and the legend naming each chord with the inversion it's sitting in.
   Over all positions they're close three-note triads on one set of three adjacent
   strings (e–B–G, B–G–D, G–D–A or D–A–E), every inversion, all the way up
   the neck, each legend entry also naming the CAGED grip its shapes are cut
   from so a triad reads as somewhere you already know. Each shape is outlined
-  and coloured by which chord tone is
+  and colored by which chord tone is
   underneath — root position, 1st inversion (3rd in the bass), 2nd inversion
   (5th in the bass) — and hovering an inversion in the legend picks out just
   those. A voicing qualifies when it plays one of each chord tone, one per
@@ -458,7 +458,7 @@ already fits and the bar has no space to spare. The style picker chooses the
   which is what produces the shapes rhythm players comp with (C major on the
   top three strings comes out 0-1-0, 5-5-3, 9-8-8, 12-13-12);
   Pentatonic — the chosen chord's major/minor pentatonic, every note
-  coloured by the CAGED box it belongs to (seam notes split-coloured), scale
+  colored by the CAGED box it belongs to (seam notes split-colored), scale
   degrees in the dots, chord-shape outlines through the chord tones. The
   chord's own notes (1, 3, 5 and its 7th) are drawn at full strength and
   the rest of the scale sits back, so the notes to land on read at a glance;
@@ -467,10 +467,10 @@ already fits and the bar has no space to spare. The style picker chooses the
   dominant chord → Mixolydian so its ♭7 is in the scale, minor chord →
   natural minor) and Key mode (chord-scale theory — the progression key's
   mode rooted on the chosen chord, e.g. a IV chord reads as Lydian); same
-  CAGED-box colouring and chord-tone emphasis either way.
+  CAGED-box coloring and chord-tone emphasis either way.
   Every scale box is written out rather than worked out, the way the
   pentatonic ones are: which of two places a note is best fingered in is a
-  judgement, not something a rule derives, and deriving them left every box
+  judgment, not something a rule derives, and deriving them left every box
   with a hole in it — the 2 missing from an octave here, the ♭6 there. A mode
   has the same notes as the major scale it comes from, so it has the same five
   boxes: you play D Dorian with C major's shapes and count from a different
@@ -488,14 +488,14 @@ already fits and the bar has no space to spare. The style picker chooses the
   the neck — all frets, 0–7, 4–11, 8–15, or "Fit to box", which follows
   whichever single box is on screen. The frets keep their width, so a shorter
   neck is drawn in a narrower space and scales up: on a phone the dots go
-  from 14px to 18px and the sideways scroll disappears. **Colour** fills each
+  from 14px to 18px and the sideways scroll disappears. **Color** fills each
   dot either by the CAGED shape it belongs to (the default) or by what the
   note is in the current chord — root, 3rd, 5th, 7th, everything else a
   scale tone. The roles come from the chord itself, so a ♭5 reads as that
   chord's 5th while a ♭6 in the scale around it reads as a scale tone. The
-  shape outlines stay shape-coloured either way; colouring by interval has
-  nothing to add to Roots (already coloured by root) or the position reading
-  (coloured by chord), so the control is hidden there
+  shape outlines stay shape-colored either way; coloring by interval has
+  nothing to add to Roots (already colored by root) or the position reading
+  (colored by chord), so the control is hidden there
 - The legend names the shapes and nothing more: where each sits is its
   tooltip ("frets 6–10", and both places for a shape that appears twice on a
   15-fret neck, "frets 0–2 · 12–14") rather than a row of numbers beside the
@@ -529,7 +529,7 @@ with the ear-training diagrams and the chord diagrams the tab shows over an
 example), which either works out a playable left hand for it or throws it
 out. Fingers are numbered 1 (index) to 4 (pinky); up to three fingers may
 share a fret, and when that isn't enough the shape is barred — the index
-across the lowest fret, or a higher finger laid flat over neighbouring
+across the lowest fret, or a higher finger laid flat over neighboring
 strings (the ring-finger barre that shapes like C9 and Em9 need). Each
 finger is the one its fret says, one a fret from the index — the minor
 barre's two notes two frets up are the ring and the pinky, as in the major
@@ -564,7 +564,7 @@ used (the thumb-over E shape and its split chord, the hammered sus4, 6 and
 add9, the 7♯9 and the 9th, the A and C shapes, stacked fifths), the name
 the Hendrix deep dive gives it, with Hendrix first among the styles.
 
-Choosing and ordering are separate judgements: a score decides which shapes
+Choosing and ordering are separate judgments: a score decides which shapes
 make the cut (fuller chords, small stretches, root in the bass), and a
 second pass brings back the everyday grips the first pass hid — the
 four-string Fmaj7, the three-string power chord, the A9 that lost out to a
@@ -580,7 +580,7 @@ barre before grip, and then up the neck; extra strings past four count for
 little, a barre costs, and so does a hand that zigzags between frets. Open
 position (anything within reach of the nut) counts as one position, so a
 shape that happens to be all open strings never sorts ahead of the real open
-chord. Open-position shapes draw a nut, higher ones are labelled with their
+chord. Open-position shapes draw a nut, higher ones are labeled with their
 starting fret, and a shape built on a CAGED form says which one.
 Every diagram names each sounding string off the end of the neck: the note
 it plays and what that note is in this chord (`B♭ ♭7`, `E 3`, `A R`), so
@@ -664,7 +664,7 @@ A chord is drawn as a chord diagram, because that's how a chord is written
 down; it's the chord finder's own — same search, same diagram, same sounds —
 so clicking it plays the chord three ways over. A box is drawn across the
 whole neck, because that's where it lives and half of learning one is knowing
-where it sits — and it's drawn by the jam tab's own code, coloured by
+where it sits — and it's drawn by the jam tab's own code, colored by
 the CAGED box it belongs to with the chord shape inside it traced through,
 since knowing which chord a box sits on is most of what makes it worth
 learning. (A scale with no perfect 5th has no such grip, and Locrian
@@ -682,7 +682,7 @@ asking for a scale and getting its shapes is one lookup and no translating.
 same five or seven notes two or three times over, and one octave — the span
 a player runs while learning the shape — is a fairer drill than eighteen
 notes spread over five frets. The whole box is still drawn either way; the
-notes outside the octave in play just go quiet — still labelled with their
+notes outside the octave in play just go quiet — still labeled with their
 degree, since reading the shape is half of what a box is for — so you can
 see the whole thing and see which part of it you're being asked about.
 **↓ ↑** move the octave, and stop at the ends rather than wrapping. The ends
@@ -708,7 +708,7 @@ A run is ten questions and then a result: how many you got, and what you went
 wrong on (`Went wrong on ♭7 (3×), 4`). It's the thing that makes the drill
 something you can finish, and therefore something you can do well or badly
 at, which an endless tally never was. **Go again** runs another ten of the
-same; **Change the exercise** puts the setup back. **Just practise** is the
+same; **Change the exercise** puts the setup back. **Just practice** is the
 endless version for when you only want to noodle, and keeps the running
 tally instead of a run.
 
@@ -750,7 +750,7 @@ box or rolling another chord is a new question, so going back has to put the
 neck back too.
 
 **Random** rolls a new subject — in chord mode, the everyday triads and
-sevenths plus the colours you meet soon after, on any of the twelve roots,
+sevenths plus the colors you meet soon after, on any of the twelve roots,
 starting on one of the first few shapes rather than the open one every time;
 in the other two, a key, a scale and a box. In chord mode you can type a
 chord name instead.
@@ -817,7 +817,7 @@ the pointer is coarse.
 The drills tab is the jam tab's pieces put to a different job: not a
 progression to play over, but a thing to get into the hands, over a click.
 Five kinds, each a pure generator in `js/drills.js` (so the tests can
-realise one and count):
+realize one and count):
 
 - **Chord changes** — the grips of a progression, typed in (`G D Em C`,
   with a chord repeated for a chord held) or the key's own I–IV–V–I, each
@@ -853,7 +853,7 @@ the window's width and the neck beside it, with a tempo control of its
 own, the way the Hendrix examples do. A pattern a page sends carries its
 grid, so a 12/8 part's changes drill in 12/8, and can send a position for
 each chord (`pos=0,3,5`: the hand moving with the changes, each bar
-realised in its own window), which the Hendrix chord-change cards do.
+realized in its own window), which the Hendrix chord-change cards do.
 **Count in** plays four beats of hat before the loop (`ci=1`); **Neck**
 hides the neck (`nk=0`); **Fingering** (`fg=1`) puts a chord diagram over
 each bar whose grip changes — the whole hand, fingered by the chord
@@ -899,7 +899,7 @@ three strings where a shuffle keeps its weight, the top three for a stab or
 a chop, a power chord (one hand shape — root, 5th, octave on consecutive
 strings — that reaches two frets past the window for its 5th when the
 window holds only the root, rather than coming out on skipped strings; every
-swept strum keeps to neighbouring strings the same way, completing its grip
+swept strum keeps to neighboring strings the same way, completing its grip
 past the window when the window cuts into it), the root alone — the low note an alternating-bass strum puts
 before the chord (the 5th when the window has cut the root off, the other
 note such a bass goes to) — or the 5th alone, the note that bass alternates
@@ -916,7 +916,7 @@ take in turn, so four bars on one chord aren't the same bar four times
 over; they cycle rather than roll, so the part stays what it was until you
 ask for a change, and the fills are where the dice are. A part is rhythm
 guitar with fills, so every one strums somewhere, and a test says so. It isn't written for
-a key, a box or a reading. Those come at realisation: the interval becomes a
+a key, a box or a reading. Those come at realization: the interval becomes a
 pitch class against the chord (or the key, when the part stays on the I), is
 snapped to a note the reading allows — the note itself if it's there, else
 the nearest within a tone, downward first, else nothing — and is placed on
@@ -961,7 +961,7 @@ rhythm and blues of the Isley and Stax years, the rolling waltz), each with
 rhythm, lead and mixed parts — twenty-three in all — written from what the
 sources say the hands do, never from a recording, and carrying a
 `research` text with the reasons. Marked `engine: true`, so the review page
-realises it with the app's own engine, since the engine grew what the parts
+realizes it with the app's own engine, since the engine grew what the parts
 needed and each feature is held by a test: `free` notes played as written
 whatever the reading offers (the Dorian 6th, the major 3rd against a minor
 pentatonic), `reach` past the position window (the slide into the box
@@ -987,7 +987,7 @@ played with them, the scales drawn on the neck (the box under the thumb
 chord, the box above it, the blue note, the minor pentatonic against the
 7♯9, Dorian, the major pentatonic, the two pentatonics mixed, Mixolydian)
 and played as drills written note by note, then sixty-odd examples,
-exercises and studies realised from the genre's parts and played by the
+exercises and studies realized from the genre's parts and played by the
 shared player — a mixed card for every feel, a study for every preset.
 The page opens on a **Start here** path of eight lessons through the cards
 in the order a student would take them (the exercises follow the scales);
@@ -996,7 +996,7 @@ from what the part asks of the hands), its tempo with a practice tempo at
 70% beside it to slow down to (its links open at the card's own tempo, what
 its Play plays), and whether its sixteenths swing. A
 chord-change card gives the hand a position for each chord (Em at the nut,
-G at the 3rd, Am at the 5th), so the engine realises each bar in its own
+G at the 3rd, Am at the 5th), so the engine realizes each bar in its own
 window, and the tab names over every bar the grip it is played in — the
 CAGED shape, "E shape, split" for the thumb's bass note and the triad, the
 7♯9 grip, the 9th grip, a power chord — and what the bar was written from
@@ -1005,7 +1005,7 @@ direction under the strums (⊓ down, ∨ up) in any bar that has an
 upstroke. Every card has a **Neck** switch, on to start with (chords for
 the changes, the scale for the scale drills) and remembered, that draws
 beside the tab the chord as it's fretted — the CAGED shape the bar's
-strums sit in, whole, with its 7th and its colour tones hollow, or the grip
+strums sit in, whole, with its 7th and its color tones hollow, or the grip
 itself where it is no CAGED shape (the 7♯9 grip as x-7-6-7-8-x, not a C7
 voicing near it) — or the notes the part may play (its palette in the
 position window), redrawn as the playhead enters a bar with a new chord
@@ -1031,7 +1031,7 @@ teachers** section closes the lessons: the faults to listen for, in a
 table, with the fix for each, and a checklist a student can be signed off
 against; every grip says whether its fingering is in the sources or is the
 usual way, and every song lists what to listen for. Then
-the songs analysed as reference points with their tabs linked at Ultimate
+the songs analyzed as reference points with their tabs linked at Ultimate
 Guitar and Songsterr, a section saying how the page was made — by reading,
 with no recording listened to — and a numbered list of every source.
 
@@ -1058,7 +1058,7 @@ variants, so the Jam tab's Psychobilly runs from the Sun rhythm to the horror
 minor. The engine grew what these parts needed, each held by a test: a
 Bigsby `dip` on a chord or a note (a semitone down over a tenth of a second
 and back; "dip" over the tab), a finger-snapped `pop` (the chicken-pickin'
-front), a colour tone marked `free` that keeps its note in every reading and
+front), a color tone marked `free` that keeps its note in every reading and
 takes the place of the grip's 5th when there is no room above the top string
 (E6's C♯ on the B string — the boom-chicka's chicka), and in the band the
 upright snapped on every note (`bassSnap`), the hand slapped against the
@@ -1079,7 +1079,7 @@ the hands (the boom-chicka, the pick with the fingers behind it, the
 slapped bass and the kit, the Bigsby), the grips grouped under their core
 shapes, the changes with the grips, the scales drawn (the Sun box with the
 ♭3, the blues box at the 12th, the jump side, the bebop scale, the horror
-minor, the chicken-pickin' box, the Strut's walk-down, the surf colour) and
+minor, the chicken-pickin' box, the Strut's walk-down, the surf color) and
 played as drills, exercises, the eight feels' rhythm, lead and mixed parts,
 a table of the players wave by wave, nineteen records as reference points,
 eight studies over the presets, a teachers' section, how the page was made,
@@ -1128,8 +1128,8 @@ already know — the Continue card and one-thing-at-a-time of Fender Play
 and Duolingo, Coursera's Resume and its time estimate on every item,
 JustinGuitar's module rings and Mark as complete, Khan Academy's unit
 pages with an icon and a tick per item, Brilliant's one idea a screen —
-and the course's cards are the page's cards, so a piece practised in the
-course is the same realisation, at the same tempo, as on the page.
+and the course's cards are the page's cards, so a piece practiced in the
+course is the same realization, at the same tempo, as on the page.
 
 **The style review.** `review.html` is a page for deciding what the styles
 should become: every existing style beside a proposed revision of it — the
@@ -1137,9 +1137,9 @@ band pattern and every guitar part, both playable — plus proposed new
 styles and a list of engine changes, with a decision to record on each
 (keep / take the proposal / mix / drop; add / skip; do / later / no) and a
 box for notes — and a Print button on every part for its tab alone. Nothing on it touches the app: `review/proposals*.js` hold
-the proposed patterns and parts, `review/review.js` a player and realiser
+the proposed patterns and parts, `review/review.js` a player and realizer
 of its own that understands the proposed engine features (change-aware
-fills, turnarounds, ghost notes, rakes, tremolo, chord slides, colour
+fills, turnarounds, ghost notes, rakes, tremolo, chord slides, color
 tones, shell voicings, swung 16ths, humanized timing, slapback, 3/4), so
 what the app can't do yet can still be heard and judged. An "Easy mode"
 checkbox plays every part the way a teacher would show it first: no bends,
@@ -1154,7 +1154,7 @@ them on the clipboard for the deployed copy, which has no server.
 
 **Implemented.** Everything the review page proposed is what the app now
 plays. The method and the findings are written down in `docs/STYLES.md` and
-`docs/STYLES-CATALOGUE.md`; read the first before changing a style. `js/styles.js` merges the proposals in `review/proposals*.js` over
+`docs/STYLES-CATALOG.md`; read the first before changing a style. `js/styles.js` merges the proposals in `review/proposals*.js` over
 the base data (the band patterns in `js/styles-base.js`, the parts library
 in `js/parts.js`, the guide in `js/parts-guide-data.js`) at load: a
 proposal's band fields override the base feel's, a proposed part replaces
@@ -1163,13 +1163,13 @@ variant of its style, and the guide page is written from the verdicts and
 the parts' reasons. Sixty-one feels, ninety-seven parts. The engine in
 `parts.js` is the review page's: fills that know whether the chord is
 changing, turnarounds, tails, pickups, stop-time, rolled figures, lead
-rolls, ghost notes, rakes, tremolo, vibrato marks, chord slides, colour
+rolls, ghost notes, rakes, tremolo, vibrato marks, chord slides, color
 tones, shell and power voicings, double stops placed by shape, the thumb on
 the bass strings, easy mode; the band scheduler plays ghost snares, open
 hats, rim, ride, a drum fill into the top of the form, the bass approaching
 changes, the comp anticipating them, swung sixteenths, three beats to the
 bar, slapback on the styles that live on it, and humanizing (a checkbox).
-A part is realised from one seed ("New fills" is a new seed), so a link
+A part is realized from one seed ("New fills" is a new seed), so a link
 holds the exact roll. A part with lead lines plays them by a blend —
 rhythm (never), mixed (each fill bar rolled, about half; a part's
 `leadChance` says otherwise), lead (every bar but the turnaround and the
@@ -1205,7 +1205,7 @@ however simple, because being recognisable is the whole point of one.
 Sources were consulted for the idiom, never for the notes; `js/parts.js`
 says so at the top, beside the parts themselves.
 
-A test holds every part to its feel's grid and every realisation to its
+A test holds every part to its feel's grid and every realization to its
 promise: on every reading, in every key, in three positions, every note it
 produces is inside the window and is one the reading allows (a note written
 against the next chord is held to *that* chord's palette, and one test
@@ -1220,7 +1220,7 @@ triads it is three notes of the triad on the chosen strings — and in the
 generous scales reading, at least four notes in five of what was written
 survive, so a part can't quietly snap itself away to nothing. Six bars on
 one chord must not play the figure the same way three times, and must come
-out the same on a second realisation.
+out the same on a second realization.
 
 ## Bookmarking an exercise
 
@@ -1246,7 +1246,7 @@ tab, which keeps its explicit **Copy link**: its state is a whole
 progression, and rewriting twelve chords into the URL on every twiddle would
 be noise.
 
-**Favourites** are the same links with a name on them. The ☆ on a deep
+**Favorites** are the same links with a name on them. The ☆ on a deep
 dive's card (in the Read view, the course and the large view alike) keeps
 the card by its id on its page; the ☆ in the Jam tab's playback bar, beside
 the link icon (and the same star in the Share row of its controls), keeps the
@@ -1255,17 +1255,17 @@ by them ("Hendrix: Little Wing · E minor · Soul ballad · Thumb bass and
 the split chord · 70 BPM") with the link Copy link would give, and it goes
 hollow the moment any of that changes and lights again at a kept state;
 the ☆ in the Drills toolbar keeps the drill as set, named by its kind and
-what it drills. The **Favourites** tab on the front page lists them by
+what it drills. The **Favorites** tab on the front page lists them by
 kind, newest first, each with its name, a line of what it is, when it was
 starred, an Open link and a way out; the deep dives carry a ★ link to it in
 their top bar. The list lives in this browser's localStorage
-(`gt.favourites`, `js/favourites.js`) — nothing is sent anywhere unless
+(`gt.favorites`, `js/favorites.js`) — nothing is sent anywhere unless
 sync is on.
 
 ## Sync across devices
 
 Everything the site remembers lives in the browser's localStorage: the
-favourites (`gt.favourites`), each course's progress (`gt.<dive>Course`)
+favorites (`gt.favorites`), each course's progress (`gt.<dive>Course`)
 and the preferences (every other `gt.*` key — the neck, fingering,
 count-in and contents choices on the dive pages, the tab rows, the recent
 styles). `js/sync.js` keeps the same things as one small document in
@@ -1276,20 +1276,20 @@ Authentication, and the session stays in the browser, so it is one click
 per browser rather than one per visit.
 
 The merge is per item, by time — the one rule that makes two devices safe
-to use offline. A favourite starred on one device and removed on another
+to use offline. A favorite starred on one device and removed on another
 is whichever happened last; a piece marked complete here and un-marked
 there likewise; a preference is its newest value; a course's ticks and
-place are the newer side's. The bookkeeping that needs — when a favourite
+place are the newer side's. The bookkeeping that needs — when a favorite
 was removed, when a piece was un-marked, when a preference last changed —
 is kept in `gt.sync.meta`, written by watching `localStorage.setItem`
-itself, so the favourites, course and page modules did not have to learn
+itself, so the favorites, course and page modules did not have to learn
 about sync; they read what it writes back through `refresh()`. The
 document is arrays of records rather than maps, since Firestore field
 names cannot carry the dots and slashes the keys have. A test holds the
 merge (both orders give one answer, merging a document with itself changes
 nothing), the watch, and a round trip through a fake backend.
 
-Because a favourite or a mark is kept with the person's account, both
+Because a favorite or a mark is kept with the person's account, both
 wait on sign-in wherever sync is possible: signed out, the star or the
 Mark complete button opens a small dialog — sign in, and the action goes
 ahead; not now, and nothing changes. Where sync is not possible (no
@@ -1301,7 +1301,7 @@ pages' top bar — showing the signed-in person's name and picture.
 Nothing of this loads unless it is wanted. `js/firebase-config.js` holds
 the Firebase project's web config (the `jeffs-guitar-tools` project, open
 to anyone with a Google account; set it to `null` to switch sync off):
-with no config, or on a page opened from disk, the Favourites page says
+with no config, or on a page opened from disk, the Favorites page says
 sync is not set up and no Google code is fetched. With a config, the page shows **Sign in
 with Google**; once someone has signed in, that browser loads the Firebase
 compat scripts (app, auth, firestore — plain scripts, from Google's CDN)
@@ -1366,7 +1366,7 @@ you put your hand on, so clipping one to a window, or letting several blur
 together, leaves something on screen nobody can play. What it asserts is that
 a chord is drawn as a grip (one note per string), a triad is drawn whole or
 not at all, the whole progression is on the neck, the legend names exactly
-what's drawn, a note two chords share carries a colour for each of them, and
+what's drawn, a note two chords share carries a color for each of them, and
 playing through a progression doesn't walk the hand along the neck.
 
 Two groups are guarded. The first twelve run over the pure modules; the first
@@ -1374,12 +1374,12 @@ two of those over a fixed list of chords (C, A, G, E, D, Cm, Am, Gm, Em, Dm,
 Ab, Gb, C#, A9, E9, C7, D7, Cm7, CM7):
 
 1. **The chord finder keeps the shapes it already had.** Ranking and
-   playability are judgement calls, so the test holds a snapshot of every
+   playability are judgment calls, so the test holds a snapshot of every
    shape those chords produced and fails if one stops coming back. Adding
    shapes is fine; losing one is not.
 2. **Everything the chord finder draws, the reverse finder can name.** Each
    voicing is fed back through the chord-identification code, which has to
-   recognise it as the chord it came from — so the two halves of the app
+   recognize it as the chord it came from — so the two halves of the app
    can't drift apart.
 3. **Open shapes and movable ones are told apart.** The filter runs inside
    the search rather than over its results, so asking for open shapes gives a
@@ -1471,7 +1471,7 @@ Ab, Gb, C#, A9, E9, C7, D7, Cm7, CM7):
    the purpose: a free note keeps its pitch in a reading that lacks it, a
    note with reach sits past the window and says so, the blues palette puts
    the minor pentatonic over a major chord, the 7♯9 and 9th grips voice
-   their colour, a unison bend is two strings meeting, a trill is 32nds
+   their color, a unison bend is two strings meeting, a trill is 32nds
    with the tab's value on the first, the wah sweeps (measured on the
    rendered mix). And the finder names every grip the Hendrix deep dive
    draws, with Hendrix first among its styles; the jam tab opens a
@@ -1486,7 +1486,7 @@ The second group needs a page. `js/tests-fretboard.js`, `js/tests-ear.js` and
 only ever asks for ids, so that's all a fixture owes it — and then press the
 buttons. That's the only way to catch a class of bug the pure tests can't
 see: the ear trainer once built its answer buttons from one list and chose the
-question from another, the two labelled their answers differently, and every
+question from another, the two labeled their answers differently, and every
 press came back "not that one" in all three note drills at once while the
 score counted misses. Nothing about it is wrong in isolation. Pressing every
 button and finding that exactly one is accepted is what sees it.
@@ -1553,7 +1553,7 @@ A strum is a sweep, not a chord struck at once: the strings one after
 another the way a pick crosses them — 32 ms low to high on a downstroke,
 22 ms high to low on an upstroke, the strings struck later a shade lighter,
 the whole strum weighing what `strumStringLevel` says a strum weighs, the
-taper renormalised so the sweep changes the shape and not the level
+taper renormalized so the sweep changes the shape and not the level
 (`strumPlan` in `js/audio.js`; every player strums through it, the comp's
 guitar voice included, which used to strike 16 ms a string, every string
 at full level, always downward). Which way the pick goes follows the grid
@@ -1571,13 +1571,13 @@ not taken: no CC0 strum bank exists with a grant readable at the source
 aggregators, not dedications by the recordist), and a strum pitch-shifted
 more than two semitones sounds wrong anyway; the sweep over the fifteen
 Martin notes is the answer. One part player (`playPartNotes`) turns a
-realised part into sound for the jam tab, the parts page and the
+realized part into sound for the jam tab, the parts page and the
 review page alike, taking every technique a note asks for rather than the
 first that matches.
 
 One string can only sound one note. The next note on a string — fretted,
 hammered, restruck — takes it over, and the one before is damped in twelve
-milliseconds rather than ringing under it; the part's realised notes know
+milliseconds rather than ringing under it; the part's realized notes know
 their strings, the comp's k-th note from the bottom is its k-th string, so
 a new grip damps the old one the way a hand's does — judged by when the
 notes sound, not by the order they were queued in: the player queues a
@@ -1747,7 +1747,7 @@ dedication is stated, and what the set does and doesn't cover.
 
 The bass is a **1958 Otto Rubner double bass**, played pizzicato by D.
 Smolken, who dedicated his own recordings to the public domain — the CC0
-licence in that repository was committed by him, with the message "Swapping
+license in that repository was committed by him, with the message "Swapping
 to CC0". It sits in `audio/bass/`: eleven pitches from C1 to A3 in three
 velocity bands, the bands split where the upstream `.sfz` splits them rather
 than where the file names suggest, which is a real distinction — a band holds
@@ -1768,7 +1768,7 @@ time a note needs it (about 30 ms on a local server, nothing after that), and
 when it can't be fetched the synthesized piano plays instead and says nothing
 about it. That matters for one case in particular: opened straight from disk
 as a `file://` URL, a browser gives the page an opaque origin and won't let
-it read its own neighbours — Firefox and Chrome both closed that door after
+it read its own neighbors — Firefox and Chrome both closed that door after
 [CVE-2019-11730](https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CORS/Errors/CORSRequestNotHttp)
 — so the recordings are for pages served over http, and double-clicking
 `index.html` still works, just synthesized. The jam tab can use them
@@ -1825,33 +1825,33 @@ by what each part does:
 | File | Responsibility |
 | --- | --- |
 | `theory.js` | Keys, scale degrees, chord formulas, chord naming, chord identification. Pure — no DOM, no audio, no app state. |
-| `fretboard.js` | Tuning, CAGED and pentatonic shape templates, the maths that places them on the neck, CAGED shape matching, and the two pieces of box drawing every view shares — `boxColouredNotes`, which colours a note by the box that owns it, and `gripOutlines`, which traces the chord shape underneath. Also pure. |
-| `neck.js` | Draws a full 15-fret neck as SVG from markers and shape outlines — shared by the jam fretboard, the chord finder's CAGED overview and the reverse finder, so all three necks are one drawing. A fret is close to twice as wide as the gap between two strings, near enough the shape of the real thing to read a grip off, and a note sits close up behind its fret wire where the finger goes rather than in the middle of the gap; the inlays and the fret numbers stay centred, since that's where they are on a guitar. The label and the dot are sized against each other: a single character is set as large as the dot will hold without running into a root's ring, and a longer one ("♭3") a size down so it fits — which is what lets the dots be small enough for the strings to sit that close together. A full neck is wide, so it wants most of a laptop's width — hence the wider cap on how large the drawing may render. |
+| `fretboard.js` | Tuning, CAGED and pentatonic shape templates, the maths that places them on the neck, CAGED shape matching, and the two pieces of box drawing every view shares — `boxColoredNotes`, which colors a note by the box that owns it, and `gripOutlines`, which traces the chord shape underneath. Also pure. |
+| `neck.js` | Draws a full 15-fret neck as SVG from markers and shape outlines — shared by the jam fretboard, the chord finder's CAGED overview and the reverse finder, so all three necks are one drawing. A fret is close to twice as wide as the gap between two strings, near enough the shape of the real thing to read a grip off, and a note sits close up behind its fret wire where the finger goes rather than in the middle of the gap; the inlays and the fret numbers stay centered, since that's where they are on a guitar. The label and the dot are sized against each other: a single character is set as large as the dot will hold without running into a root's ring, and a longer one ("♭3") a size down so it fits — which is what lets the dots be small enough for the strings to sit that close together. A full neck is wide, so it wants most of a laptop's width — hence the wider cap on how large the drawing may render. |
 | `progressions.js` | The preset progressions, written as scale degrees, with the Hendrix and Psychobilly groups the deep dives run on. Pure data. |
 | `tab.js` | Draws guitar tablature from a note list: the strings, the numbers, the techniques, the bar numbers, the chord's name, numeral, grip and role over each bar (and, when the fingering is on, a small chord diagram over a bar whose grip changes), the rhythm under each row (stems, flags, beams within the beat, dots, hollow heads) from each strike's slot length on either grid — a note clipped short is written as its own value with the rest as a gap, unless it is under a slot, when it is the sixteenth its strikes are spaced at. `slotAt` reads the slot under a click, the inverse of the playhead's place. Two bars share a row where a second nearly fits; `rows` gives the drawing a row at a time, and `pack` lays the bars out by what is in them, both for the print view. |
 | `tab-print.js` | The print view every surface with a tab has: the tab drawn again for a page, its bars packed the way printed tab is spaced (a slot a note starts in wide, an empty one narrow, so four bars of a rhythm part share a row, five or six of quarter notes, and a bar of sixteenths takes its room — the bar's role left off the line of names, and the shape too where its diagram shows it) with the strings a little closer, one SVG a row so a row never splits across printed pages, in the tab's own styles set to ink on paper, with a title and a line of facts over it and a Print button the printed page leaves out — opened in a new browser tab. |
-| `css/tab.css` | The tab's look, one sheet for the pages that draw it (jam, drills, parts, review, the deep dives): a 17px string gap, 11px bold numbers, thin strings, the rhythm's stems and beams, and the pane a long tab scrolls in. Each page keeps only its own playing colour and playhead. |
-| `css/course.css` | The course view's look on both deep dives: the dashboard, the lesson bar, the rail and the piece, the switch in the top bar and the marks in Start here, in the pages' own colours and type. |
+| `css/tab.css` | The tab's look, one sheet for the pages that draw it (jam, drills, parts, review, the deep dives): a 17px string gap, 11px bold numbers, thin strings, the rhythm's stems and beams, and the pane a long tab scrolls in. Each page keeps only its own playing color and playhead. |
+| `css/course.css` | The course view's look on both deep dives: the dashboard, the lesson bar, the rail and the piece, the switch in the top bar and the marks in Start here, in the pages' own colors and type. |
 | `tab-pane.js` | A long tab in a pane: more than two rows scrolls, showing as many rows as were last asked for (kept in localStorage, one setting for every page), with a control beside its bottom corner for more or fewer — in a gutter, so nothing sits between the tab and the neck — and the row being played kept in view. Used by the jam tab, the drills and the example player. |
 | `parts-guide-data.js` | What the parts page says about each style and part: progression, tempo, what the rhythm and notes are made of, where the idiom comes from. Pure data. |
 | `parts-guide.js` | The parts page (`parts.html`): every part written out and playable, in any reading, each with a Print button for its tab alone. |
-| `example-player.js` | The player the parts page and the deep dives share: draws a realised part as tab and loops it over the style's band, the tab following and, where the card has a neck, its dots lit as the notes sound; tells the page when the playhead enters a bar (`onBar`) and when the loop stops. `shapeOfBar` names the grip a bar is played in, `gripFor` fingers the whole hand for the diagrams. |
-| `deep-dive.js` | The machinery every style deep dive shares: the links into the jam and drills tabs, the examples realised from a genre's parts and drawn as cards with their neck, fingering, count-in, expand and print, the grips drawn, the scale figures and drills, the songs and sources rendered, the contents in the margin and its fold, the space bar. A page calls `GT.deepDive.create(config)` with its style, its lists and its data; the card builder and the examples by id come back on the api for the course view. |
+| `example-player.js` | The player the parts page and the deep dives share: draws a realized part as tab and loops it over the style's band, the tab following and, where the card has a neck, its dots lit as the notes sound; tells the page when the playhead enters a bar (`onBar`) and when the loop stops. `shapeOfBar` names the grip a bar is played in, `gripFor` fingers the whole hand for the diagrams. |
+| `deep-dive.js` | The machinery every style deep dive shares: the links into the jam and drills tabs, the examples realized from a genre's parts and drawn as cards with their neck, fingering, count-in, expand and print, the grips drawn, the scale figures and drills, the songs and sources rendered, the contents in the margin and its fold, the space bar. A page calls `GT.deepDive.create(config)` with its style, its lists and its data; the card builder and the examples by id come back on the api for the course view. |
 | `course.js` | A deep dive as a course: the Start-here lessons as lists of pieces resolved against the page (a paragraph, a grip group, a figure, a card, songs, players, fault rows, checklist lines, the sources), the dashboard with its Continue card and lesson rings, a lesson with its rail and one piece at a time, the marks kept in localStorage with the place, the switch in the top bar and the marks in Start here, `coverage()` for what is in no lesson. `GT.course.create({ dive, prefix, name, lessons })`. |
-| `hendrix-guide.js` | The Hendrix deep dive's own data (`hendrix.html`): where the hand sits, the grips, the scale figures, the drills, the examples, exercises and studies realised from the Hendrix genre, the songs, the sources, and the eight lessons of its course — on the shared machinery. |
-| `psychobilly-guide.js` | The psychobilly deep dive's own data (`psychobilly.html`): the grips, the figures, the drills, the examples, exercises and studies realised from the Psychobilly genre, the players wave by wave, the songs, the sources, and the eight lessons of its course — on the shared machinery. |
+| `hendrix-guide.js` | The Hendrix deep dive's own data (`hendrix.html`): where the hand sits, the grips, the scale figures, the drills, the examples, exercises and studies realized from the Hendrix genre, the songs, the sources, and the eight lessons of its course — on the shared machinery. |
+| `psychobilly-guide.js` | The psychobilly deep dive's own data (`psychobilly.html`): the grips, the figures, the drills, the examples, exercises and studies realized from the Psychobilly genre, the players wave by wave, the songs, the sources, and the eight lessons of its course — on the shared machinery. |
 | `js/styles-base.js` | The band patterns the app started with: the base `STYLES`, one entry per style with its feels. |
 | `js/styles.js` | Resolves what the app plays: the proposals merged over the base patterns, parts and guide at load (`GT.styles`), with the base kept for the review page. |
 | `js/band.js` | The band one slot at a time — kit, comp, bass, the approach and the push on the last eighth, the fill on the last bar, stop-time — used by the jam tab, the parts page and the review page alike. |
 | `docs/STYLES.md` | The method behind the styles: where the data lives, the rule about sources, how a part is written and placed, the register, double stops, the thumb, the band, checking, adding a style. Read before changing a style. |
-| `docs/STYLES-CATALOGUE.md` | What the research found, per genre and part; generated by `tools/styles-doc.js`. |
-| `tools/` | `sweep.js` realises every part every way and reports rule breaks; `reach.js` prints what each key's box holds; `styles-doc.js` writes the catalogue. |
+| `docs/STYLES-CATALOG.md` | What the research found, per genre and part; generated by `tools/styles-doc.js`. |
+| `tools/` | `sweep.js` realizes every part every way and reports rule breaks; `reach.js` prints what each key's box holds; `styles-doc.js` writes the catalog. |
 | `CLAUDE.md` | What an agent working here has to know first. |
-| `review/review.js` | The style review page (`review.html`): existing beside proposed, playable, with decisions, each part's tab printable on its own. Its own player and realiser, a superset of the app's for the proposed features. |
+| `review/review.js` | The style review page (`review.html`): existing beside proposed, playable, with decisions, each part's tab printable on its own. Its own player and realizer, a superset of the app's for the proposed features. |
 | `review/proposals*.js` | The proposals: revised bands and parts per existing style, new styles, the engine list. Data plus the parts, written with the same helpers parts.js uses and a few more. |
 | `review/proposals-easy.js` | Easy mode's hand-written parts: the beginner's form of a part where the page's simplifying rule can't find it. |
-| `review/proposals-hendrix.js` | The Hendrix genre: eight feels, twenty-three parts with rhythm, lead and mixed forms, the research behind them. Realised by the app's own engine (`engine: true`). |
-| `review/proposals-psychobilly.js` | The Psychobilly genre (id `psychobilly-dive`; its feels join the app's psychobilly style): eight feels from the Sun boom-chicka to the horror minor, twenty parts with rhythm, lead and mixed forms, the research behind them. Realised by the app's own engine (`engine: true`). |
+| `review/proposals-hendrix.js` | The Hendrix genre: eight feels, twenty-three parts with rhythm, lead and mixed forms, the research behind them. Realized by the app's own engine (`engine: true`). |
+| `review/proposals-psychobilly.js` | The Psychobilly genre (id `psychobilly-dive`; its feels join the app's psychobilly style): eight feels from the Sun boom-chicka to the horror minor, twenty parts with rhythm, lead and mixed forms, the research behind them. Realized by the app's own engine (`engine: true`). |
 | `audio.js` | The Web Audio synth voices (piano, bass, drums) and the per-style groove patterns. Owns the `AudioContext` and the queue both players schedule into — how far a stall has put a cursor behind the clock, and calling off notes that haven't sounded — but knows nothing about the UI. |
 | `fretboard-view.js` | The jam tab's fretboard panel: the six views, the legend, the hover spotlight, the follow-playback highlighting. |
 | `jam.js` | The jam tab (once "Practice", and "CAGED practice" before that — both names still open it): progression generation, the chord display and settings, and the playback transport. |
@@ -1861,12 +1861,12 @@ by what each part does:
 | `reverse-finder.js` | Reverse chord finder tab: click targets over the shared neck, and the name lookup. |
 | `drills.js` | The drills tab: the five generators (changes, scale, picking, crossing, arpeggio), the page's state and its link, the controls (count-in, a position a chord, the fingering over the tab), the neck and the player wired to them. |
 | `neck-follow.js` | A neck that follows a part, for any page that plays one: the chord as it's fretted (the shape the bar's strums sit in, or the grip itself when it is no CAGED shape) or the notes the part may play, drawn with neck.js so the player can light them. Shared by the Hendrix deep dive and the drills tab. |
-| `tests-drills.js` | The drills' tests: what each kind realises, the link, the controls. Loads before `drills.js`. |
+| `tests-drills.js` | The drills' tests: what each kind realizes, the link, the controls. Loads before `drills.js`. |
 | `ear-training.js` | Ear training tab: what's on the neck — a chord shape, a pentatonic box or a scale box — and the drill over its notes. Draws and sounds chords from the chord finder's own code and boxes from the jam tab's, so no tab can drift from another. |
 | `tooltips.js` | The (i) info bubbles. |
 | `tabs.js` | Tab switching, plus the URL fragment and page title that go with each tab — including `setState`, which lets a tab write its own state after the slug so an exercise can be bookmarked. |
-| `favourites.js` | Favourites: the list in localStorage (id, kind, title, sub, href, added), the one star button every page draws from it (`star(button, descriptor)`), the Favourites page listed by kind with removal, and the ★ link the deep dives carry to it. |
-| `sync.js` | Sync across devices: the local state collected as one document with its times, the merge by item and time, the watch on localStorage that keeps the tombstones, the Firebase backend (Google sign-in, one Firestore document a person) loaded only when sync is on, the panel on the Favourites page, and `attach()` for a backend of the tests' own. |
+| `favorites.js` | Favorites: the list in localStorage (id, kind, title, sub, href, added), the one star button every page draws from it (`star(button, descriptor)`), the Favorites page listed by kind with removal, and the ★ link the deep dives carry to it. |
+| `sync.js` | Sync across devices: the local state collected as one document with its times, the merge by item and time, the watch on localStorage that keeps the tombstones, the Firebase backend (Google sign-in, one Firestore document a person) loaded only when sync is on, the panel on the Favorites page, and `attach()` for a backend of the tests' own. |
 | `firebase-config.js` | The Firebase project's web config, `null` until sync is set up; identifiers, not secrets. |
 | `firebase/firestore.rules` | The one Firestore rule sync needs — a signed-in person's own document and nothing else — with an allowlist variant. |
 | `privacy.html` | What the site stores, in the browser and in the cloud, who can read it, and how to delete it. |

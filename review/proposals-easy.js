@@ -1,6 +1,6 @@
 // Easy mode: the beginner's version of a part, where a rule wouldn't get
 // there. The page's rule (review.js: simplify) drops ghost notes, rakes,
-// tremolo, chord slides and colour tones, plays bends, hammer-ons, pull-offs
+// tremolo, chord slides and color tones, plays bends, hammer-ons, pull-offs
 // and slides plain, moves sixteenths back onto eighths and drops the middle
 // of a triplet. That is enough for most parts. The ones here have a
 // beginner's form of their own that a rule can't find — the first way a

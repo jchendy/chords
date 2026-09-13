@@ -1,10 +1,10 @@
 // The psychobilly deep dive (psychobilly.html): the page's own data — where
 // the hand sits, the grips, the scale figures, the drills, the examples,
-// exercises and studies realised from the Psychobilly genre (the feels the
+// exercises and studies realized from the Psychobilly genre (the feels the
 // deep dive added to the app's psychobilly style), the players, the songs
 // and the sources — on the machinery every deep dive shares
 // (js/deep-dive.js). Nothing here is played from a recording: every tab on
-// the page is the engine realising a part of the library.
+// the page is the engine realizing a part of the library.
 (function(){
   'use strict';
   const GT = (window.GT = window.GT || {});
@@ -76,7 +76,7 @@
     const jump = boxAt(aMaj, 'E', 5);
     figs.push(figure('A major pentatonic at the 5th: the jump side, with the 6th and the 9th', 3, 9,
       boxMarkers(jump, A, pcs(A, [0, 4, 7, 9])),
-      `The swing side's notes over A6: the 6th (F♯) and the 9th (B) are the colours of the 6/9 chord and of Gallup's lines — the major 6th where a blues player would put the ♭7, as Keith Wyatt puts it. ${fingersOf(jump.cells)}`));
+      `The swing side's notes over A6: the 6th (F♯) and the 9th (B) are the colors of the 6/9 chord and of Gallup's lines — the major 6th where a blues player would put the ♭7, as Keith Wyatt puts it. ${fingersOf(jump.cells)}`));
     // the bebop scale: G Mixolydian at the 3rd with the major 7th passing
     const gMixo = scaleBoxPlacements(G, false, pcs(G, MIXO));
     const bop = boxAt(gMixo, 'E', 3);
@@ -88,7 +88,7 @@
     const horror = boxAt(eMinScale, 'E', 0);
     if (horror) figs.push(figure('E natural minor at the nut, with the harmonic 7th: the horror minor', 0, 5,
       [...boxMarkers(horror, E, pcs(E, [0, 3, 7])), ...hollow(arpeggioCells(0, 4, new Set([(E + 11) % 12])), '7', '#e069a6')],
-      `The minor key's own notes — E F♯ G A B C D — and, over the B7, the D♯ (hollow) that makes the V pull home: the harmonic minor, the note the third wave's minor-key leads lean on. The ♭6 (C) against the B7 is the other colour. ${fingersOf(horror.cells)}`));
+      `The minor key's own notes — E F♯ G A B C D — and, over the B7, the D♯ (hollow) that makes the V pull home: the harmonic minor, the note the third wave's minor-key leads lean on. The ♭6 (C) against the B7 is the other color. ${fingersOf(horror.cells)}`));
     // the chicken-pickin' box: G major pentatonic at the 3rd
     const gMaj = pentaBoxPlacements(G, false);
     const chicken = boxAt(gMaj, 'E', 3);
@@ -101,10 +101,10 @@
       [{ string: 4, fret: 3, color: CAGED_COLORS.A, label: 'i', isRoot: true }, { string: 4, fret: 1, color: CAGED_COLORS.A, label: '♭VII' }, { string: 5, fret: 4, color: CAGED_COLORS.A, label: '♭VI' }, { string: 5, fret: 3, color: CAGED_COLORS.A, label: 'V' }],
       `The roots of Cm, B♭7, A♭7 and G7 as a bass line: down a whole step, down a whole step, down a semitone — the descent Jon MacLennan's lesson gives for "Stray Cat Strut" (the VII7 "in the bluesy walkdown"), and a method-book device older than the song. Play the roots on the beat and the chords on two and four.`,
       [{ color: CAGED_COLORS.A, shape: 'walk', cells: [{ string: 4, fret: 3 }, { string: 4, fret: 1 }, { string: 5, fret: 4 }, { string: 5, fret: 3 }] }]));
-    // Dick Dale's colour: the ♭2 and the major 3rd hollow around the minor box
-    figs.push(figure('The surf colour on E: the ♭2 and the 3rd around the minor pentatonic', 10, 15,
+    // Dick Dale's color: the ♭2 and the major 3rd hollow around the minor box
+    figs.push(figure('The surf color on E: the ♭2 and the 3rd around the minor pentatonic', 10, 15,
       [...boxMarkers(blue, E, pcs(E, [0, 3, 7, 10])), ...hollow(arpeggioCells(11, 15, new Set([(E + 1) % 12])), '♭2', '#e069a6'), ...hollow(arpeggioCells(11, 15, new Set([(E + 4) % 12])), '3', '#e069a6')],
-      `The minor pentatonic box with the F (♭2) and the G♯ (3rd) let in, hollow: the double-harmonic colour of Dale's "Misirlou" — Wikipedia has the Arabic music of his family playing "a major role in his development of surf music" — and the menace the psychobilly guides call "dissonant intervals". Tremolo-picked, the ♭2 leaned on against the root. ${fingersOf(blue.cells)}`));
+      `The minor pentatonic box with the F (♭2) and the G♯ (3rd) let in, hollow: the double-harmonic color of Dale's "Misirlou" — Wikipedia has the Arabic music of his family playing "a major role in his development of surf music" — and the menace the psychobilly guides call "dissonant intervals". Tremolo-picked, the ♭2 leaned on against the root. ${fingersOf(blue.cells)}`));
     return figs;
   }
 
@@ -143,7 +143,7 @@
         const withSeventh = box.map(c => c.string === 3 && c.fret === 5 ? withFx(c, { slide: 4 }) : c);
         return drill([...withSeventh, ...box.slice(0, -1).reverse()], { grid: 12, step: 1 });
       },
-      blurb: 'The scale of a 7th chord, swung, with the major 7th slid into the root on the D string: the bebop colour Guitar World hears in Setzer\'s lines. Over the V of the Strut\'s key.' },
+      blurb: 'The scale of a 7th chord, swung, with the major 7th slid into the root on the D string: the bebop color Guitar World hears in Setzer\'s lines. Over the V of the Strut\'s key.' },
     { id: 'sc6', neckDefault: 'scale', drills: { d: 'scale', k: 'minor:E', sc: 'minor', b: 'E@0', p: 'updown', v: 2 }, title: 'E minor at the nut, the harmonic 7th over the V', feel: 'Horror-minor twang (the third wave)', key: 'E', mode: 'minor', tempo: 120, chords: [{ name: 'Em', bars: 2 }, { name: 'B7', bars: 2 }], window: windowAt(0, 4), reading: 'scale',
       scale: { root: 4, pcs: new Set([...pcs(4, [0, 2, 3, 5, 7, 8, 10]), (4 + 11) % 12]), name: 'E natural minor, with the harmonic 7th' },
       build: () => {
@@ -288,7 +288,7 @@
       blurb: 'The chords on the beat against the bass\'s note and its two slaps after it: the click is the psychobilly clock. Land the downstroke on the note, not the click.' },
   ];
 
-  // whole forms: the presets, a part realised over them
+  // whole forms: the presets, a part realized over them
   const STUDIES = [
     { id: 'st1', wants: ['lead'], title: 'Study in E: the rockabilly twelve', feel: 'Boom-chicka (the Sun way)', part: 'Boom-chicka with the 6th', key: 'E', tempo: 176, blend: 'mixed', seed: 31, window: windowAt(0), reading: 'penta', preset: preset('Rockabilly twelve (the Sun way)'),
       chords: [{ name: 'E', bars: 4 }, { name: 'A', bars: 2 }, { name: 'E', bars: 2 }, { name: 'B7' }, { name: 'A' }, { name: 'E', bars: 2 }],
@@ -559,7 +559,7 @@
         { read: 'p-bigsby' },
         { grips: 'The 6/9', title: 'The 6/9, the 9th and the 13th: the jazz grips with the root on the A string' },
         { figure: 'A major pentatonic at the 5th' },
-        { card: 'sc4', note: 'The jump side\'s box in triplets: three notes a beat, swung, even. The 6th and the 9th are the colours to lean on.' },
+        { card: 'sc4', note: 'The jump side\'s box in triplets: three notes a beat, swung, even. The 6th and the 9th are the colors to lean on.' },
         { card: 'x5', note: 'The 6/9 four to the bar, short, 2 and 4 leaning; the stab on the "and of 2" pressed a semitone down with the bar and let back within the beat. The next chord must be in tune.' },
         { card: 'c-jump' },
         { card: 'r-four' },
@@ -639,7 +639,7 @@
         { card: 'l-twelve' },
         { card: 'm-gallop' },
         { card: 'st6' },
-        { figure: 'The surf colour on E' },
+        { figure: 'The surf color on E' },
         { card: 'x9', note: 'Tremolo picking from the wrist, not the elbow, the pick shallow: an even pulse for a bar at a steady volume. From the elbow it tires and slows; too deep and it catches.' },
         { card: 'r-trem' },
         { card: 'l-surf' },
@@ -677,5 +677,5 @@
     blurb: 'The same page, one piece at a time: the rockabilly under it in the first two lessons, the swing side and the strut, the train, then the stomp, the wrecking pace and the surf, and the horror minor — every paragraph, grip, figure, card, record and check on the page, in the order the Start-here list gives, your place kept.' });
   if (course) course.init();
 
-  GT.psychobillyGuide = { CHANGES, DRILLS, RHYTHM, LEAD, MIXED, EXERCISES, STUDIES, SONGS, SOURCES, PLAYERS, LESSONS, GRIPS: GRIP_GROUPS, course, jamLink: dive.jamLink, drillsLink: dive.drillsLink, openLink: dive.openLink, realiseExample: dive.realiseExample };
+  GT.psychobillyGuide = { CHANGES, DRILLS, RHYTHM, LEAD, MIXED, EXERCISES, STUDIES, SONGS, SOURCES, PLAYERS, LESSONS, GRIPS: GRIP_GROUPS, course, jamLink: dive.jamLink, drillsLink: dive.drillsLink, openLink: dive.openLink, realizeExample: dive.realizeExample };
 })();

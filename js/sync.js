@@ -1,5 +1,5 @@
 // Sync across devices (T75). Everything the site remembers lives in this
-// browser's localStorage: the favourites (gt.favourites), each course's
+// browser's localStorage: the favorites (gt.favorites), each course's
 // progress (gt.<dive>Course) and the preferences (every other gt.* key —
 // the neck, fingering, count-in and contents choices on the dive pages,
 // the tab rows, the recent styles). With sync on, the same things are
@@ -7,12 +7,12 @@
 // own id, and merged on every page load and on every change: what was
 // done on any device is done on all of them.
 //
-// The merge is per item, by time. A favourite starred on one device and
+// The merge is per item, by time. A favorite starred on one device and
 // removed on another is whichever happened last; a piece marked complete
 // here and un-marked there likewise; a preference is its newest value;
 // a course's ticks and place are the newer side's. Nothing is ever lost
 // to a race, and a page that cannot reach the cloud goes on from what it
-// has. The bookkeeping that makes this possible — when a favourite was
+// has. The bookkeeping that makes this possible — when a favorite was
 // removed, when a piece was un-marked, when a preference last changed —
 // is kept in gt.sync.meta, written by watching localStorage itself, so
 // the other modules did not have to change.
@@ -26,13 +26,13 @@
   const GT = (window.GT = window.GT || {});
   const META_KEY = 'gt.sync.meta', ON_KEY = 'gt.sync.on';
   const COURSE_RE = /^gt\.([a-z0-9]+)Course$/i;
-  const FAV_KEY = 'gt.favourites';
+  const FAV_KEY = 'gt.favorites';
   const CDN = 'https://www.gstatic.com/firebasejs/11.6.1/';
   const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
 
   // ---- what is kept, and when it changed ----
   const isSyncKey = k => (k.startsWith('gt.') || k.startsWith('gt-')) && k !== META_KEY && k !== ON_KEY && !/^gt\.sync\./.test(k);
-  const kind = k => k === FAV_KEY ? 'favourites' : COURSE_RE.test(k) ? 'course' : 'pref';
+  const kind = k => k === FAV_KEY ? 'favorites' : COURSE_RE.test(k) ? 'course' : 'pref';
   const readJSON = (k, fallback) => { try { const v = JSON.parse(localStorage.getItem(k) || 'null'); return v == null ? fallback : v; } catch (e) { return fallback; } };
   let meta = null;
   const loadMeta = () => { if (!meta) meta = readJSON(META_KEY, { favRemoved: {}, courseUndone: {}, prefsAt: {}, lastSync: 0, device: '' }); if (!meta.device) meta.device = Math.random().toString(36).slice(2, 10); return meta; };
@@ -49,7 +49,7 @@
     if (!isSyncKey(k)) return;
     const m = loadMeta();
     const before = shadow.get(k);
-    if (kind(k) === 'favourites'){
+    if (kind(k) === 'favorites'){
       const was = safeList(before), is = safeList(value);
       const isIds = new Set(is.map(f => f.id));
       was.forEach(f => { if (!isIds.has(f.id)) m.favRemoved[f.id] = now(); });
@@ -79,9 +79,9 @@
   // ---- the document: the local state, with its times ----
   function collect(){
     const m = loadMeta();
-    const doc = { v: 1, favourites: { items: [], removed: [] }, courses: [], prefs: [], updated: now(), device: m.device };
-    doc.favourites.items = safeList(localStorage.getItem(FAV_KEY)).map(f => ({ id: f.id, kind: f.kind, title: f.title, sub: f.sub || '', href: f.href, added: f.added || 0 }));
-    doc.favourites.removed = Object.entries(m.favRemoved).map(([id, at]) => ({ id, at }));
+    const doc = { v: 1, favorites: { items: [], removed: [] }, courses: [], prefs: [], updated: now(), device: m.device };
+    doc.favorites.items = safeList(localStorage.getItem(FAV_KEY)).map(f => ({ id: f.id, kind: f.kind, title: f.title, sub: f.sub || '', href: f.href, added: f.added || 0 }));
+    doc.favorites.removed = Object.entries(m.favRemoved).map(([id, at]) => ({ id, at }));
     snapshotKeys().forEach(k => {
       if (kind(k) === 'course'){
         const prefix = k.match(COURSE_RE)[1], s = safeObj(localStorage.getItem(k));
@@ -96,18 +96,20 @@
     return doc;
   }
   // The merge, by time, item by item. Pure: a test holds it.
+  // (a document written before the spelling changed carries `favourites`)
+  const spelled = d => d && !d.favorites && d.favourites ? { ...d, favorites: d.favourites } : d;
   function merge(a, b){
-    a = a || { favourites: { items: [], removed: [] }, courses: [], prefs: [] };
-    b = b || { favourites: { items: [], removed: [] }, courses: [], prefs: [] };
-    const out = { v: 1, favourites: { items: [], removed: [] }, courses: [], prefs: [], updated: Math.max(a.updated || 0, b.updated || 0) };
+    a = spelled(a) || { favorites: { items: [], removed: [] }, courses: [], prefs: [] };
+    b = spelled(b) || { favorites: { items: [], removed: [] }, courses: [], prefs: [] };
+    const out = { v: 1, favorites: { items: [], removed: [] }, courses: [], prefs: [], updated: Math.max(a.updated || 0, b.updated || 0) };
     const byId = (list, f) => Object.fromEntries((list || []).map(x => [f(x), x]));
-    const fa = byId(a.favourites && a.favourites.items, x => x.id), fb = byId(b.favourites && b.favourites.items, x => x.id);
-    const ra = byId(a.favourites && a.favourites.removed, x => x.id), rb = byId(b.favourites && b.favourites.removed, x => x.id);
+    const fa = byId(a.favorites && a.favorites.items, x => x.id), fb = byId(b.favorites && b.favorites.items, x => x.id);
+    const ra = byId(a.favorites && a.favorites.removed, x => x.id), rb = byId(b.favorites && b.favorites.removed, x => x.id);
     new Set([...Object.keys(fa), ...Object.keys(fb), ...Object.keys(ra), ...Object.keys(rb)]).forEach(id => {
       const item = [fa[id], fb[id]].filter(Boolean).sort((x, y) => (y.added || 0) - (x.added || 0))[0];
       const removedAt = Math.max(ra[id] ? ra[id].at : 0, rb[id] ? rb[id].at : 0);
-      if (item && (item.added || 0) >= removedAt) out.favourites.items.push(item);
-      else if (removedAt) out.favourites.removed.push({ id, at: removedAt });
+      if (item && (item.added || 0) >= removedAt) out.favorites.items.push(item);
+      else if (removedAt) out.favorites.removed.push({ id, at: removedAt });
     });
     const ca = byId(a.courses, c => c.prefix), cb = byId(b.courses, c => c.prefix);
     new Set([...Object.keys(ca), ...Object.keys(cb)]).forEach(prefix => {
@@ -128,12 +130,12 @@
       const p = [pa[key], pb[key]].filter(Boolean).sort((x, y) => (y.at || 0) - (x.at || 0))[0];
       out.prefs.push({ key, value: p.value, at: p.at || 0 });
     });
-    out.favourites.items.sort((x, y) => (x.added || 0) - (y.added || 0));
+    out.favorites.items.sort((x, y) => (x.added || 0) - (y.added || 0));
     return out;
   }
   // the same document in the same order, so two can be compared
   const canon = d => JSON.stringify({
-    f: (d.favourites.items || []).map(f => [f.id, f.added, f.title, f.sub, f.href, f.kind]).sort(), r: (d.favourites.removed || []).map(x => [x.id, x.at]).sort(),
+    f: (d.favorites.items || []).map(f => [f.id, f.added, f.title, f.sub, f.href, f.kind]).sort(), r: (d.favorites.removed || []).map(x => [x.id, x.at]).sort(),
     c: (d.courses || []).map(c => [c.prefix, (c.done || []).map(x => [x.key, x.at]).sort(), (c.undone || []).map(x => [x.key, x.at]).sort(), (c.ticks || []).map(t => [t.key, t.ticks]).sort(), c.last, c.at]).sort(),
     p: (d.prefs || []).map(p => [p.key, p.value, p.at]).sort() });
   // a merged document written back into localStorage, and the modules told
@@ -142,10 +144,10 @@
     const m = loadMeta();
     const changed = new Set();
     try {
-      const favs = doc.favourites.items.slice().sort((x, y) => (x.added || 0) - (y.added || 0));
+      const favs = doc.favorites.items.slice().sort((x, y) => (x.added || 0) - (y.added || 0));
       const favText = JSON.stringify(favs);
       if (localStorage.getItem(FAV_KEY) !== favText){ localStorage.setItem(FAV_KEY, favText); changed.add(FAV_KEY); }
-      m.favRemoved = Object.fromEntries(doc.favourites.removed.map(x => [x.id, x.at]));
+      m.favRemoved = Object.fromEntries(doc.favorites.removed.map(x => [x.id, x.at]));
       doc.courses.forEach(c => {
         const k = `gt.${c.prefix}Course`;
         const s = safeObj(localStorage.getItem(k));
@@ -163,7 +165,7 @@
       saveMeta();
     } finally { applying = false; }
     if (changed.size){
-      if (changed.has(FAV_KEY) && GT.favourites && GT.favourites.refresh) GT.favourites.refresh();
+      if (changed.has(FAV_KEY) && GT.favorites && GT.favorites.refresh) GT.favorites.refresh();
       [...changed].filter(k => kind(k) === 'course').forEach(k => { const prefix = k.match(COURSE_RE)[1]; const guide = GT[`${prefix}Guide`]; if (guide && guide.course && guide.course.refresh) guide.course.refresh(); });
     }
     return changed;
@@ -211,7 +213,7 @@
         const provider = new fb.auth.GoogleAuthProvider();
         try { await auth.signInWithPopup(provider); }
         catch (e) {
-          if (e && /popup-blocked|popup-closed|cancelled-popup/.test(String(e.code))) await auth.signInWithRedirect(provider);
+          if (e && /popup-blocked|popup-closed|canceled-popup/.test(String(e.code))) await auth.signInWithRedirect(provider);
           else throw e;
         }
       },
@@ -301,13 +303,13 @@
     const draw = () => {
       const s = current();
       let body;
-      if (!s.configured) body = `<p class="sync-line muted">Sync across devices is not set up on this copy of the site. Your favourites, course progress and settings stay in this browser. <a href="privacy.html">What is stored</a>.</p>`;
+      if (!s.configured) body = `<p class="sync-line muted">Sync across devices is not set up on this copy of the site. Your favorites, course progress and settings stay in this browser. <a href="privacy.html">What is stored</a>.</p>`;
       else if (!s.online) body = `<p class="sync-line muted">Sync needs the site served over http; a page opened from disk keeps everything in this browser.</p>`;
       else if (s.user) body = `<p class="sync-line"><b>Synced</b> as ${esc(s.user.name || s.user.email)}${s.user.name ? ` (${esc(s.user.email)})` : ''}${s.state === 'syncing' ? ' · syncing…' : s.lastSync ? ` · last synced ${when(s.lastSync)}` : ''}${s.state === 'error' ? ` · <span class="sync-err">${esc(s.error)}</span>` : ''}</p>
         <p class="sync-btns"><button type="button" class="btn small" id="syncNow">Sync now</button><button type="button" class="btn small" id="syncOut">Sign out</button><button type="button" class="linklike" id="syncDelete">Delete my data from the cloud</button> <a href="privacy.html">What is stored</a></p>`;
       else if (s.state === 'loading') body = `<p class="sync-line muted">Loading sync…</p>`;
       else if (s.state === 'deleted') body = `<p class="sync-line">Your cloud data and account are deleted. What is in this browser stays here. <button type="button" class="btn small" id="syncIn">Sign in with Google</button></p>`;
-      else body = `<p class="sync-line">Keep your favourites, course progress and settings on every device you use. <button type="button" class="btn small" id="syncIn">Sign in with Google</button>${s.state === 'error' ? ` <span class="sync-err">${esc(s.error)}</span>` : ''}</p>
+      else body = `<p class="sync-line">Keep your favorites, course progress and settings on every device you use. <button type="button" class="btn small" id="syncIn">Sign in with Google</button>${s.state === 'error' ? ` <span class="sync-err">${esc(s.error)}</span>` : ''}</p>
         <p class="sync-line muted">Google sends the site your name, email address and picture, which stay with your account; what you have starred and done is one small document only you can read. <a href="privacy.html">What is stored, and how to delete it</a>.</p>`;
       host.innerHTML = `<div class="sync-panel"><p class="kicker">Sync across devices</p>${body}</div>`;
       const on = (id, fn) => { const el = host.querySelector('#' + id); if (el) el.addEventListener('click', fn); };
@@ -321,7 +323,7 @@
   }
 
   // ---- the gate: keeping something means being signed in ----
-  // A favourite starred or a piece marked complete is kept with the
+  // A favorite starred or a piece marked complete is kept with the
   // person's account, so where sync is possible and nobody is signed in,
   // the action waits on a small dialog: sign in, and it goes ahead; not
   // now, and nothing changes. Where sync is not possible (no config, a
@@ -352,7 +354,7 @@
     document.head.appendChild(st);
   }
   const WHY = {
-    favourite: 'Favourites are kept with your Google account, so the same ones are on every device you use.',
+    favorite: 'Favorites are kept with your Google account, so the same ones are on every device you use.',
     progress: 'Course progress is kept with your Google account, so a piece done on one device is done on all of them.',
   };
   function ask(what){

@@ -93,7 +93,7 @@
       });
 
       markers.filter(m => inRange(m.fret)).forEach(m => {
-        // Small enough that two on neighbouring strings stay two dots, and no
+        // Small enough that two on neighboring strings stay two dots, and no
         // smaller than the label it carries — a longer one ("♭3") is set a
         // size down to fit rather than the dot being grown to hold it.
         // A single character is set as large as the dot will hold: the widest
@@ -127,7 +127,7 @@
           const stroke = m.color || (m.split && m.split[0]);
           g += `<circle cx="${cx}" cy="${cy}" r="${r - 1.2}" fill="var(--panel)" stroke="${stroke}" stroke-width="2.4"/>`;
         } else if (m.split){
-          // left half = left shape's colour, right half = right shape's colour
+          // left half = left shape's color, right half = right shape's color
           g += `<path d="M${cx},${cy - r} A${r},${r} 0 0 0 ${cx},${cy + r} Z" fill="${m.split[0]}"/>`;
           g += `<path d="M${cx},${cy - r} A${r},${r} 0 0 1 ${cx},${cy + r} Z" fill="${m.split[1]}"/>`;
         } else {

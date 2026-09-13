@@ -34,7 +34,7 @@ bass figure in every style to it.
 - **Played, recorded and mapped by:** D. Smolken. Fifths tuning (CGDA),
   Thomastik-Infeld Spirocore strings.
 - **Taken from:** <https://github.com/sfzinstruments/dsmolken.double-bass>.
-- **Licence:** Creative Commons CC0 1.0 (public domain dedication). The full
+- **License:** Creative Commons CC0 1.0 (public domain dedication). The full
   text is in `LICENSE.txt`, as it ships upstream.
 
 ## Why we believe we may use them
@@ -55,7 +55,7 @@ Killer Bass failed at the time: that one also said CC0, but the URL it named
 as its source redirected to a shop, so there was nowhere to read the grant.
 The Killer Bass turns out to be `karoryfer.fashionbass` in the same
 collection, dedicated the same way on the same day — it was a contender here
-and lost on tone, not on licence. Checked 2026-09-10.
+and lost on tone, not on license. Checked 2026-09-10.
 
 One practical note: these are 32-bit float WAVs. `decodeAudioData` handles
 them everywhere the app's other recordings work, and a browser that can't

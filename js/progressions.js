@@ -36,7 +36,7 @@
   // beside it. Where a progression has a name people use, it gets it.
   GT.progressionPresets = [
     // First in each mode's list, and so what a fresh page opens on: the
-    // plainest thing you can practise over, before any of the shapes with
+    // plainest thing you can practice over, before any of the shapes with
     // names. Major first, minor next — the picker filters by mode, so each
     // ends up at the top of its own list.
     { name: 'Three-chord', numerals: 'I–IV–V', mode: 'major', chords: [d(0,2), d(3,2), d(4,2)] },

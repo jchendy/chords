@@ -88,7 +88,7 @@
   }
 
   // What to call a chord: its triad name, or the seventh-chord name when it
-  // carries a 7th — or the name it was given, when it carries colour the
+  // carries a 7th — or the name it was given, when it carries color the
   // triad-and-7th model can't spell (a 7♯9, a 9th, an add9, a sus, a 6th).
   // Each chord decides for itself — there's no global switch.
   function displayName(chord){
@@ -295,7 +295,7 @@
 
   // Build the chord object the rest of the app works with from a written name
   // like "A7" or "Dm7". The app's model is a triad plus an optional 7th, and
-  // on top of that the colour a name carries beyond them:
+  // on top of that the color a name carries beyond them:
   //   ext  — the extra tones as semitones above the root (2 the 9th, 3 the
   //          ♯9, 9 the 6th or 13th, 5 the 11th), which the comp voices on
   //          top and the parts count as chord tones
@@ -304,7 +304,7 @@
   //          labels the "3rd" voices the 4th (or 2nd) instead
   //   suffix — the name as written ("7♯9", "sus4", "add9"), kept when the
   //          model can't spell the chord from its triad and 7th alone
-  // A 6th chord keeps its triad and carries the 6th as colour; a power chord
+  // A 6th chord keeps its triad and carries the 6th as color; a power chord
   // (no 3rd at all) is read as major.
   const PLAIN_SUFFIXES = new Set(['', 'm', 'dim', '7', 'maj7', 'm7', 'm7♭5', 'dim7']);
   function chordFromName(name, tonicPc, mode){
@@ -315,7 +315,7 @@
     const thirdIv = ivs.includes(4) ? 4 : ivs.includes(3) ? 3 : undefined;
     const fifthIv = [6, 7, 8].find(i => ivs.includes(i));
     // only a real 7th counts — a 6th chord comes through as its triad with
-    // the 6th as colour rather than being mislabelled
+    // the 6th as color rather than being mislabeled
     const seventhIv = [10, 11].find(i => ivs.includes(i));
     const susIv = thirdIv === undefined ? [5, 2].find(i => ivs.includes(i)) : undefined;
     const ext = ivs.filter(i => i !== 0 && i !== thirdIv && i !== fifthIv && i !== seventhIv && i !== susIv);
@@ -336,7 +336,7 @@
     return chord;
   }
   // the pitch classes a chord sounds: root, 3rd (or sus note), 5th, 7th and
-  // whatever colour it carries
+  // whatever color it carries
   function chordPcs(chord){
     const root = SEMITONE[chord.note] % 12;
     const pcs = [chord.note, chord.third, chord.fifth, chord.seventh].filter(Boolean).map(n => SEMITONE[n] % 12);

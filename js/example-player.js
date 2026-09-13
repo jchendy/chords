@@ -1,4 +1,4 @@
-// One small player for a page of examples: a tab drawn from a realised
+// One small player for a page of examples: a tab drawn from a realized
 // part (tab.js), and one part at a time played over its style's band —
 // the kit, the comp and the bass through band.js, the part on the guitar
 // on its own bus through audio.playPartNotes — looping over its bars,

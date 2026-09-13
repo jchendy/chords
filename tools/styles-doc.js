@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Writes docs/STYLES-CATALOGUE.md from the style data: for every genre the
+// Writes docs/STYLES-CATALOG.md from the style data: for every genre the
 // research (what its players actually do, with the records that show it),
 // then every feel with what it is about, who it is inspired by, its
 // progression, key and tempo, and every part with the reasons it is written
@@ -44,5 +44,5 @@ GT.review.genres.forEach(genre => {
 });
 out.push('## The engine proposals', '');
 GT.review.engine.forEach(e => out.push(`### ${e.title}`, '', text(e.why), ''));
-fs.writeFileSync(path.join(root, 'docs/STYLES-CATALOGUE.md'), out.join('\n'));
-console.log('wrote docs/STYLES-CATALOGUE.md:', out.join('\n').length, 'chars');
+fs.writeFileSync(path.join(root, 'docs/STYLES-CATALOG.md'), out.join('\n'));
+console.log('wrote docs/STYLES-CATALOG.md:', out.join('\n').length, 'chars');

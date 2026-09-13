@@ -5,12 +5,12 @@
 // with: fretboard.js for the shapes and boxes, neck.js and neck-follow.js
 // for the neck, tab.js for the tab, the example player for the sound and
 // the follower. The generators are pure and exported, so the tests can
-// realise a drill and count.
+// realize a drill and count.
 (function(){
   'use strict';
   const GT = (window.GT = window.GT || {});
   const { chordFromName, displayName, chordPcs, SEMITONE, MAJOR_KEYS, MINOR_KEYS, buildDiatonicChords } = GT.theory;
-  const { realise } = GT.parts;
+  const { realize } = GT.parts;
   const F = GT.fretboard;
   const { STRING_MIDI, CAGED_ORDER, cagedPlacements, seventhCells, susCells, pentaBoxPlacements, scaleBoxPlacements, arpeggioCells, FRET_COUNT } = F;
   const NF = GT.neckFollow;
@@ -41,7 +41,7 @@
   // The strumming patterns a change can be drilled with, written the way
   // the parts are (a strum: its slot on a sixteen grid, its length, its
   // weight, the part of the grip it wants — see docs/STYLES.md) and
-  // realised by the same engine, so the thumb's bass note, the split chord
+  // realized by the same engine, so the thumb's bass note, the split chord
   // and a chord slid in from below come out as they do in a part. A page
   // can hand over a pattern of its own in the link (`pt`), which is how the
   // Hendrix deep dive keeps a part's rhythm when its changes open here.
@@ -59,7 +59,7 @@
   };
   // a pattern in a link: strums as at-voicing-length-weight, a suffix each
   // for muted (x), slid in (s), the next chord (n), an upstroke (u), and a
-  // colour tone on top (a14), joined by commas
+  // color tone on top (a14), joined by commas
   const VOICING_LETTERS = { full: 'f', bass: 'b', fifth: '5', low: 'l', high: 'h', mid: 'm', power: 'p', shell: 's', ninth: '9', sharp9: '#' };
   const LETTER_VOICINGS = Object.fromEntries(Object.entries(VOICING_LETTERS).map(([k, v]) => [v, k]));
   function encodeStrums(strums, grid = 16){
@@ -262,7 +262,7 @@
     if (chord.sus) cells = susCells(cells, rootPc, chord.sus);
     return { placement, cells: cells.map(c => ({ string: c.string, fret: c.fret })) };
   }
-  // The changes: the pattern's strums realised by the parts engine over
+  // The changes: the pattern's strums realized by the parts engine over
   // the chords, in the chords reading with the hand at the position asked
   // for (four frets from it, the size of a hand) and only the shapes
   // allowed — so a bass note is the thumb's, a split chord the D, G and B
@@ -283,7 +283,7 @@
     });
     const win = winAt(o.position);
     const opts = { reading: 'caged', window: win, scaleTheory: 'parallel', stayOnKey: false, key: { tonic: o.tonic, mode: o.mode }, tech: null, shapes: o.shapes };
-    const notes = realise(part, bars, 1, opts, { grid }).filter(n => n.strum);
+    const notes = realize(part, bars, 1, opts, { grid }).filter(n => n.strum);
     if (!notes.length) return null;
     // for the neck: what each bar strikes, as the shape it is
     const grips = bars.map(({ chord }, bar) => {
@@ -324,7 +324,7 @@
 
   const GENERATORS = { changes: changesDrill, scale: scaleDrill, picking: pickingDrill, crossing: crossingDrill, arpeggio: arpeggioDrill };
   // everything a drill is made from, in one object the generators read
-  function realiseDrill(state){
+  function realizeDrill(state){
     const o = { ...state, tonicPc: pc(state.tonic), shapes: state.shapes && state.shapes.size < 5 ? state.shapes : null };
     const gen = GENERATORS[state.kind] || scaleDrill;
     const d = gen(o);
@@ -402,7 +402,7 @@
     return true;
   }
   const writeState = () => { GT.tabs.setState('drills', shareState().toString()); const star = $('drillStar'); if (star && star._paintStar) star._paintStar(); };
-  // The drill as it is set, in words — what a favourite of it is called
+  // The drill as it is set, in words — what a favorite of it is called
   function describeState(){
     const kind = KINDS[state.kind] ? KINDS[state.kind].name : state.kind;
     const scale = SCALES.find(x => x.id === state.scale);
@@ -410,7 +410,7 @@
       : `${scale ? scale.name : state.scale}${state.box && state.box.includes('@') ? `, the ${state.box.split('@')[0]} shape at ${state.box.split('@')[1] === '0' ? 'the nut' : 'fret ' + state.box.split('@')[1]}` : ''}${PATTERNS[state.pattern] && state.pattern !== 'updown' ? ', ' + PATTERNS[state.pattern].toLowerCase() : ''}`;
     return { title: `${kind}: ${what}`, sub: `${state.tonic} ${state.mode} · ${state.tempo} BPM${state.kind === 'changes' ? ' · ' + (state.custom ? 'the part\'s strumming' : STRUMS[state.strum] ? STRUMS[state.strum].name || state.strum : state.strum) : ''}` };
   }
-  const drillFavourite = () => { const params = shareState().toString(); const d = describeState(); return { id: `drills:${params}`, kind: 'drills', title: d.title, sub: d.sub, href: `index.html#drills?${params}` }; };
+  const drillFavorite = () => { const params = shareState().toString(); const d = describeState(); return { id: `drills:${params}`, kind: 'drills', title: d.title, sub: d.sub, href: `index.html#drills?${params}` }; };
 
   let drill = null, metrics = null, card = null, neckState = { geo: null, drawn: null };
   let big = null, expanded = false, cardHome = null;      // the full-window view, and where the card came from
@@ -536,7 +536,7 @@
   }
   function render(){
     if (playingHere()) player().stop();
-    drill = realiseDrill(state);
+    drill = realizeDrill(state);
     neckState = { geo: null, drawn: null };
     const tabHost = $('drillTab');
     if (!drill){ tabHost.innerHTML = '<p class="drill-empty">Nothing to play here: no shape of that kind fits. Allow more shapes, or pick another key.</p>'; $('drillBrief').textContent = ''; $('drillNeck').hidden = true; return; }
@@ -607,7 +607,7 @@
       if (e.code !== 'Space' || GT.keys.typing(e.target)) return;
       e.preventDefault(); togglePlay();
     });
-    if ($('drillStar') && GT.favourites) GT.favourites.star($('drillStar'), drillFavourite);
+    if ($('drillStar') && GT.favorites) GT.favorites.star($('drillStar'), drillFavorite);
     $('drillShare').addEventListener('click', async () => {
       writeState();
       try { await navigator.clipboard.writeText(location.href); $('drillShare').textContent = 'Copied'; setTimeout(() => { $('drillShare').textContent = 'Copy link'; }, 1200); } catch (e) { /* nothing to copy to */ }
@@ -637,5 +637,5 @@
   function refresh(){ if (window.innerWidth !== drawnWidth || !metrics){ drawnWidth = window.innerWidth; render(); } }
   function stop(){ if (playingHere()) player().stop(); }
 
-  GT.drills = { init, refresh, stop, expand, collapse, isExpanded: () => expanded, realiseDrill, SCALES, KINDS, PATTERNS, CROSSINGS, STRUMS, STRING_SETS, POSITIONS, boxesFor, boxId, windowOf, shareState, applyState, describeState, favourite: drillFavourite, state, encodeStrums, decodeStrums };
+  GT.drills = { init, refresh, stop, expand, collapse, isExpanded: () => expanded, realizeDrill, SCALES, KINDS, PATTERNS, CROSSINGS, STRUMS, STRING_SETS, POSITIONS, boxesFor, boxId, windowOf, shareState, applyState, describeState, favorite: drillFavorite, state, encodeStrums, decodeStrums };
 })();

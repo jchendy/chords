@@ -1,9 +1,9 @@
 /* The tab as tab.js draws it — one sheet for the three pages that show it
    (the practice tab, the parts guide, the style review), so the strings,
    the numbers and the rhythm read the same everywhere. Each page keeps
-   only what is its own: the colour of the note being played and the
+   only what is its own: the color of the note being played and the
    playhead. Sized after printed tab: a 17px string gap, numbers at 11px
-   bold on a panel-coloured tile, thin strings, a firmer bar line. */
+   bold on a panel-colored tile, thin strings, a firmer bar line. */
 .tab-string{ stroke:var(--line2); stroke-width:1; }
 .tab-bar{ stroke:var(--muted); stroke-width:1.2; opacity:.7; }
 .tab-label{ fill:var(--muted); font:500 10px Inter,system-ui,sans-serif; }

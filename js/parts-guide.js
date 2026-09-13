@@ -1,14 +1,14 @@
 // The parts guide: every part in the library, written out over a progression
 // that suits its style, with what the rhythm and the notes are made of, who
 // the idiom comes from, and a Play button. A page of its own, so the machinery
-// can be read end to end: parts.js realises, tab.js draws, audio.js plays —
+// can be read end to end: parts.js realizes, tab.js draws, audio.js plays —
 // this file only wires them to a page and keeps a small player of its own,
 // since the jam tab's scheduler is wound round that tab's controls.
 (function(){
   'use strict';
   const GT = (window.GT = window.GT || {});
   const { chordFromName, displayName, SEMITONE } = GT.theory;
-  const { SIMPLE_FEEL, partsFor, realise } = GT.parts;
+  const { SIMPLE_FEEL, partsFor, realize } = GT.parts;
   const { GUIDE } = GT.partsGuide;
   const audio = GT.audio;
   const { STYLES } = audio;
@@ -22,7 +22,7 @@
   const guideFor = (style, feel) => GUIDE[`${style}/${feel.label}`] || (GUIDE[style] && GUIDE[style].feel === feel.label ? GUIDE[style] : null);
 
   // ---- the reading the parts are shown in ----
-  // A part is realised into what the neck's reading offers, so the same
+  // A part is realized into what the neck's reading offers, so the same
   // part reads three ways; the guide lets you switch between them.
   let reading = 'scale';
   let techOn = true;
@@ -37,7 +37,7 @@
     return entry.progression.map(name => chordFromName(name, tonicPc, 'major'));
   }
 
-  function realiseFor(style, feel, part, entry, blend){
+  function realizeFor(style, feel, part, entry, blend){
     const chords = chordsOf(entry);
     const bars = chords.map(chord => ({ chord }));
     const opts = {
@@ -47,7 +47,7 @@
     };
     // one seed, so the page reads the same each time; `blend` is the card's
     // own choice for a part with lead lines
-    return { chords, notes: realise(part, bars, 1, opts, { grid: feel.grid, blend }) };
+    return { chords, notes: realize(part, bars, 1, opts, { grid: feel.grid, blend }) };
   }
 
   // ---- the page ----
@@ -92,7 +92,7 @@
         const tabHost = card.querySelector('.tab');
         let state = null, blend = 'mixed';
         const build = () => {
-          const { chords: cs, notes } = realiseFor(style, feel, part, entry, blend);
+          const { chords: cs, notes } = realizeFor(style, feel, part, entry, blend);
           const metrics = drawTab(tabHost, feel, cs, notes);
           state = { chords: cs, notes, metrics };
         };
@@ -142,5 +142,5 @@
     resizeTimer = setTimeout(() => { if (window.innerWidth !== drawnWidth){ drawnWidth = window.innerWidth; rebuildAll(); } }, 200);
   });
 
-  GT.partsGuideView = { FEELS, guideFor, realiseFor, stop };
+  GT.partsGuideView = { FEELS, guideFor, realizeFor, stop };
 })();

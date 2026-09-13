@@ -5,7 +5,7 @@ app: where the material comes from, how a part is written, how it is placed
 on the neck, how it is checked. Read it before adding or changing a style.
 The findings themselves — what each genre's players actually do, with the
 records that show it, and why every part is written the way it is — are in
-[STYLES-CATALOGUE.md](STYLES-CATALOGUE.md), generated from the data.
+[STYLES-CATALOG.md](STYLES-CATALOG.md), generated from the data.
 
 ## Where the data lives
 
@@ -27,11 +27,11 @@ records that show it, and why every part is written the way it is — are in
   base feel's; a proposed part replaces the base part it names (`replaces`)
   and the rest stay; an added feel becomes a new variant of its style; the
   guide page is written from the verdicts and the parts' reasons.
-- `js/parts.js` — the realiser (the notes on the neck), `js/band.js` — the
+- `js/parts.js` — the realizer (the notes on the neck), `js/band.js` — the
   band slot by slot, `js/tab.js` — the drawing. The jam tab, the parts
   page (`parts.html`) and the review page (`review.html`) all play through
   these; there is one copy of each rule.
-- `tools/styles-doc.js` writes the catalogue; `tools/sweep.js` realises
+- `tools/styles-doc.js` writes the catalog; `tools/sweep.js` realizes
   every part in every reading, key, window and seed and reports anything
   outside the rules.
 
@@ -74,7 +74,7 @@ beat), nine for a jazz waltz (three beats of three). Every event has a slot
   own 3rd to a 4th that stays a sus4 in every reading, `p(…, 17, 16, …,
   { free: true, free2: false })` pulls the sus4 off to the chord's 3rd.
   `sn` strikes the
-  next chord early (the "and of 4" push). `add: 14` puts a colour tone (the
+  next chord early (the "and of 4" push). `add: 14` puts a color tone (the
   9th) on top — and with `free` the tone keeps its note in every reading
   and, where the grip has no room above its top string (the E shape at
   the nut), takes the place of the grip's 5th on that string: `add: 9,
@@ -120,7 +120,7 @@ A part has:
   weight moved; taken in turn, or rolled per bar with `figureMode: 'roll'`.
 - `fills`, `fillsOnChange`, `fillsOnStay` — the bar before more of the same
   chord, and the bar before a change (a walk-up, an approach from above, the
-  ♭7 onto the next 3rd). The realiser draws from the situation's list and
+  ♭7 onto the next 3rd). The realizer draws from the situation's list and
   the plain fills together.
 - `tails` (a lick on the end of a figure bar), `pickups` (a lead-in on the
   last beat before a change), `stops` (stop-time: the band out, the guitar
@@ -145,13 +145,13 @@ A part has:
   preset (`pr=`).
 - `why` — the reasons, in words. It becomes the part's page in the guide.
 
-A genre with `engine: true` in its proposal (Hendrix) is realised on the
-review page by the app's own `realise`, not the review page's superset
-realiser, since it was written for features that are in the engine.
+A genre with `engine: true` in its proposal (Hendrix) is realized on the
+review page by the app's own `realize`, not the review page's superset
+realizer, since it was written for features that are in the engine.
 
-A bar handed to `realise` may carry a `window` of its own (`{ chord,
+A bar handed to `realize` may carry a `window` of its own (`{ chord,
 window }`): the Hendrix page gives each chord a position, so the hand moves
-with the changes and each bar is realised in its window, the base window
+with the changes and each bar is realized in its window, the base window
 standing for the rest. The engine says what each bar was written from in
 `roles` — figure, variant, fill, lead, turnaround, stop-time — which the tab
 writes over the bar.
@@ -192,7 +192,7 @@ test holds those three parts to it).
   treble strings, so their intervals are written an octave up, and a part
   marked `fingers: true` (every fingerpicked part; `liftFingers` in
   proposals-more.js sets it) never puts a finger note on a string the thumb
-  uses in that bar — the realiser moves it to the nearest place for its
+  uses in that bar — the realizer moves it to the nearest place for its
   pitch on another string, an octave up before down, and a hammer-on whose
   two notes come apart plays plain. `tools/thumb-clash.js` counts the bars
   where that would otherwise happen. (`thumbCell`, `fingersOffThumb`.)
@@ -213,18 +213,18 @@ test holds those three parts to it).
   `reach`. No strum ever leaves a bar empty (B80).
 - A 7♯9 or a 9th struck whole (`full`) is its own grip — x-7-6-7-8-x,
   x-7-6-7-7-7, root on the A string — when the grip can be had at the
-  position, not a CAGED 7th with the colour left out. `opts.shapes` (a set
+  position, not a CAGED 7th with the color left out. `opts.shapes` (a set
   of CAGED letters) narrows the grips a strum may use; the drills tab sets
   it, the jam tab doesn't.
-- A strum is a pick sweep across neighbouring strings. When the window
+- A strum is a pick sweep across neighboring strings. When the window
   cuts into the grip so that its cells inside sit on strings that aren't
-  neighbours, the grip is completed a fret or two past the window (the
-  notes marked `reach`) rather than played with a string skipped; a colour
+  neighbors, the grip is completed a fret or two past the window (the
+  notes marked `reach`) rather than played with a string skipped; a color
   tone on top (`add`) sits on the string beside the grip's top one, or is
   left out. A shell mutes the string between its root and its 3rd and 7th,
   and a fingerpicked part (`fingers: true`) plucks its chords, so neither
   is held to it. `tools/sweep.js` counts strums that skip a string.
-- A chord with colour the triad-and-7th model can't spell — 7♯9, 9, add9,
+- A chord with color the triad-and-7th model can't spell — 7♯9, 9, add9,
   6, sus2, sus4, 7sus4 — carries it as `ext` (semitones beyond the triad)
   and `sus`, and the palette, the strums and the comp voice it: a strum of
   E7♯9 has its G against the G♯.
@@ -252,19 +252,19 @@ and the list.
 
 Measure rather than assume. When a claim is made about the parts — that
 they sit low, that double stops land on the wrong strings, that the thumb
-moves, that a list is never heard — realise them and count. The scripts in
+moves, that a list is never heard — realize them and count. The scripts in
 `tools/` do this: `sweep.js` (every part through every reading, key, window,
 easy mode and seed: no exceptions, every note in the window or marked
 reach, every bar played, no technique left in easy mode, no vibrato on an
 open string, no swept strum skipping a string), `reach.js` (what each key's box
-holds), and on the review page each card exposes its realised state
+holds), and on the review page each card exposes its realized state
 (`card.getState()`) so a measurement can run in the console.
 
 Every change is held by a test in `js/tests.js` (open `tests.html`): the
-parts are well-formed and realise inside the reading in every key and
+parts are well-formed and realize inside the reading in every key and
 window (a note with `reach` may sit past it, and says so); the engine's
 features each do what they say on a part written for the purpose — free
-notes, reach, the blues palette, the colour grips, unison bends, trills,
+notes, reach, the blues palette, the color grips, unison bends, trills,
 the wah; the band lands the approach and the push on the last eighth of
 every grid; a part with `needs` opens only with its preset and the link
 carries it. Every new test is sabotage-checked: break the thing it holds,
@@ -284,4 +284,4 @@ see it fail, put it back.
    where its players do those, and `leads` if it is a chord part.
 4. Run `node tools/sweep.js`, then `tests.html`; look at the part on the
    review page with the fills rerolled a few times; play it.
-5. Run `node tools/styles-doc.js` so the catalogue says what you found.
+5. Run `node tools/styles-doc.js` so the catalog says what you found.

@@ -1,6 +1,6 @@
 // The machinery every style deep dive shares (hendrix.html, psychobilly.html
 // — js/hendrix-guide.js and js/psychobilly-guide.js hold the pages' own
-// data): the links into the jam and drills tabs, the examples realised from
+// data): the links into the jam and drills tabs, the examples realized from
 // a genre's parts and drawn as cards with their neck, fingering, count-in,
 // expand and print, the grips drawn, the scale figures and drills, the songs
 // and sources rendered, the contents in the margin and its fold, the space
@@ -8,12 +8,12 @@
 // its data; the helpers a page's figures and drills are written with come
 // back on the api, and so do the card builder and the examples by id, which
 // the course view (js/course.js) draws its pieces with. Nothing here is played from a recording: every tab on a
-// deep dive is the engine realising a part of the library.
+// deep dive is the engine realizing a part of the library.
 (function(){
   'use strict';
   const GT = (window.GT = window.GT || {});
   const { chordFromName, displayName, chordPcs, SEMITONE, MINOR_KEYS } = GT.theory;
-  const { partsFor, realise, palette } = GT.parts;
+  const { partsFor, realize, palette } = GT.parts;
   const { STRING_MIDI, CAGED_COLORS, CAGED_MAJOR, CAGED_MINOR, cagedPlacements, arpeggioCells, pentaBoxPlacements, scaleBoxPlacements } = GT.fretboard;
   const { DEG, pcOf, cellKey, pcs, neckGeometry, chordNeck, scaleNeck, boxMarkers, neckSVG, figure } = GT.neckFollow;
   const { STYLES } = GT.audio;
@@ -40,7 +40,7 @@
   // A drill is written as notes, not as a part: the box's cells in pitch
   // order, up and down, in eighths (two slots on a sixteen grid, one on a
   // twelve), each `dur` the space to the next — what the player and the tab
-  // want from a realised part.
+  // want from a realized part.
   const midiOf = c => STRING_MIDI[c.string] + c.fret;
   const byPitch = cells => cells.slice().sort((a, b) => midiOf(a) - midiOf(b) || b.string - a.string);
   const upAndDown = cells => { const up = byPitch(cells); return [...up, ...up.slice(0, -1).reverse()]; };
@@ -162,7 +162,7 @@
   const openLink = ex => ex.drills ? drillsLink(ex) : jamLink(ex);
   const openText = ex => ex.drills ? 'Open in drills' : 'Open in jam';
 
-  // ---- realising an example ----
+  // ---- realizing an example ----
   const optsFor = ex => ({ reading: ex.reading || 'penta', window: ex.window || homeWindow(ex.key), scaleTheory: ex.mode === 'minor' ? 'modal' : 'parallel',
                            stringSet: 2, stayOnKey: false, key: { tonic: ex.key, mode: ex.mode || 'major' }, tech: null });
   function chordsOf(ex){
@@ -173,7 +173,7 @@
   }
   // The hand moving with the chords: an example's `positions` give the fret
   // the hand sits at for each chord (the thumb barre walking Em open, G at
-  // the 3rd, Am at the 5th), and each bar is realised in its own window;
+  // the 3rd, Am at the 5th), and each bar is realized in its own window;
   // a lead part stays in its box. A position is looked up by the chord's
   // name with its accidentals read either way (B♭7 and Bb7 are one chord).
   const plainName = n => String(n).replace(/♭/g, 'b').replace(/♯/g, '#');
@@ -196,7 +196,7 @@
     if (!wins.length) return ex.window || homeWindow(ex.key);
     return { min: Math.min(...wins.map(w => w.min)), max: Math.max(...wins.map(w => w.max)) };
   };
-  // what a realisation shows, for choosing a seed that shows what the
+  // what a realization shows, for choosing a seed that shows what the
   // blurb promises: the devices by name
   const SHOWS = {
     hammer: ns => ns.some(n => n.tech === 'h'), pull: ns => ns.some(n => n.tech === 'p'),
@@ -206,12 +206,12 @@
     lead: ns => (ns.roles || []).includes('lead'), stop: ns => (ns.roles || []).includes('stop-time'),
     turnaround: ns => (ns.roles || []).includes('turnaround'), vib: ns => ns.some(n => n.vib),
   };
-  function realiseExample(ex){
+  function realizeExample(ex){
     const feel = feelByLabel(ex.feel);
     if (!feel) return null;
     const chords = chordsOf(ex);
     // a drill writes its own notes — a scale up and down — rather than
-    // realising a part; its last chord holds for as many bars as the run needs
+    // realizing a part; its last chord holds for as many bars as the run needs
     if (ex.build){
       const notes = ex.build(chords, feel);
       const bars = 1 + Math.max(0, ...notes.map(n => n.bar));
@@ -226,7 +226,7 @@
     const bars = barsOf(ex, chords);
     const feat = { grid: feel.grid, blend: ex.blend || 'mixed', easy: !!ex.easy };
     const run = seed => {
-      let notes = realise(part, bars, seed, optsFor(ex), feat);
+      let notes = realize(part, bars, seed, optsFor(ex), feat);
       if (ex.chordsOnly){ const kept = notes.filter(n => n.strum); kept.stopBars = notes.stopBars; kept.roles = (notes.roles || []).map(r => r === 'fill' ? 'figure' : r); notes = kept; }
       return notes;
     };
@@ -243,7 +243,7 @@
     const notes = run(seed);
     return { feel, part, chords, notes, bars, seed };
   }
-  // how hard a realisation is to play, from what is in it
+  // how hard a realization is to play, from what is in it
   function difficultyOf(notes, ex){
     if (ex.build) return ex.drills && ex.drills.p && ex.drills.p !== 'updown' ? 'intermediate' : 'beginner';
     if (notes.some(n => n.unison || n.trill || n.rake || n.wah || (n.bend && n.bend >= 3) || (n.bend && n.vib))) return 'advanced';
@@ -267,7 +267,7 @@
     const art = document.createElement('article');
     art.className = 'ex' + (cfg.big ? ' big' : '');
     art.id = ex.id;
-    const r = realiseExample(ex);
+    const r = realizeExample(ex);
     // the link opens at the card's own tempo — what its Play plays — with
     // the practice tempo said beside it, to slow down to
     const exForLink = { ...ex, seed: r ? r.seed : ex.seed };
@@ -280,15 +280,15 @@
     art.innerHTML = `
       <div class="ex-head"><div><h4>${esc(ex.title)}</h4>
         <div class="meta"><span>${esc(ex.feel)}</span>${ex.part ? `<span>${esc(ex.part)}</span>` : ''}<span>${esc(ex.key)} ${ex.mode === 'minor' ? 'minor' : 'major'}</span><span>${ex.tempo} BPM · start at ${practiceTempo(ex)}</span>${swung}<span>${kind}</span>${level ? `<span class="chip ${level}">${level}</span>` : ''}</div></div>
-        <span class="btns"><span class="seg neck-seg" role="group" aria-label="Neck"><span class="lbl">Neck</span>${['off', 'chords', 'scale'].map(v => `<button type="button" data-value="${v}"${v === mode0 ? ' class="active"' : ''}>${v[0].toUpperCase() + v.slice(1)}</button>`).join('')}</span><span class="seg fingers-seg"><button type="button" class="fingers${show.fingers ? ' active' : ''}" aria-pressed="${show.fingers}" title="A chord diagram at each change of grip, a finger number over each note">Fingering</button></span><button type="button" class="play">Play</button><a class="drill" href="${link}">${openText(ex)} →</a><button type="button" class="drill print" title="Just the tab, with its title, in a new tab for printing">Print</button>${cfg.big ? '<button type="button" class="drill close-big">Close ✕</button>' : '<button type="button" class="drill expand" title="The example large, tab and neck side by side">Expand ⤢</button>'}${GT.favourites ? '<button type="button" class="drill star" aria-pressed="false">☆</button>' : ''}</span></div>
+        <span class="btns"><span class="seg neck-seg" role="group" aria-label="Neck"><span class="lbl">Neck</span>${['off', 'chords', 'scale'].map(v => `<button type="button" data-value="${v}"${v === mode0 ? ' class="active"' : ''}>${v[0].toUpperCase() + v.slice(1)}</button>`).join('')}</span><span class="seg fingers-seg"><button type="button" class="fingers${show.fingers ? ' active' : ''}" aria-pressed="${show.fingers}" title="A chord diagram at each change of grip, a finger number over each note">Fingering</button></span><button type="button" class="play">Play</button><a class="drill" href="${link}">${openText(ex)} →</a><button type="button" class="drill print" title="Just the tab, with its title, in a new tab for printing">Print</button>${cfg.big ? '<button type="button" class="drill close-big">Close ✕</button>' : '<button type="button" class="drill expand" title="The example large, tab and neck side by side">Expand ⤢</button>'}${GT.favorites ? '<button type="button" class="drill star" aria-pressed="false">☆</button>' : ''}</span></div>
       <p class="blurb">${ex.blurb}</p>
       <div class="body"><div class="tab"></div><div class="neck" hidden></div></div>
       ${ex.refs ? `<p class="refs">${ex.refs}</p>` : ''}`;
     host.appendChild(art);
     // the star: this card, by its id on its page, whichever copy of it was starred
-    if (GT.favourites){
+    if (GT.favorites){
       const baseId = ex.id.replace(/-(course|big)$/, '');
-      GT.favourites.star(art.querySelector('.star'), () => ({ id: `dive:${config.prefix}:${baseId}`, kind: 'dive', title: ex.title.replace(/^\d+\.\s*/, ''),
+      GT.favorites.star(art.querySelector('.star'), () => ({ id: `dive:${config.prefix}:${baseId}`, kind: 'dive', title: ex.title.replace(/^\d+\.\s*/, ''),
         sub: `${config.presetName} · ${ex.feel} · ${ex.key} ${ex.mode === 'minor' ? 'minor' : 'major'} · ${ex.tempo} BPM`, href: `${config.prefix}.html#${baseId}` }));
     }
     if (!r){ art.querySelector('.tab').innerHTML = `<p class="missing">This example's part is missing: ${esc(ex.feel)} / ${esc(ex.part)}</p>`; return; }
@@ -413,7 +413,7 @@
     // the first row of the grid is fret 1 from the nut, or the fret the
     // diagram starts at; only an open string sits above the chart
     const rowY = f => y0 + ((start === 0 ? f : f - start + 1) - 0.5) * sy;
-    // one finger across neighbouring strings at one fret is a barre: a bar
+    // one finger across neighboring strings at one fret is a barre: a bar
     // behind the dots
     for (let a = 0; a < 6; a++){
       const finger = hand[a];
@@ -580,15 +580,15 @@
   });
 
 
-  return { helpers, jamLink, drillsLink, openLink, realiseExample, chordNeck, scaleNeck, gripSVG, feelByLabel, feelIndex,
+  return { helpers, jamLink, drillsLink, openLink, realizeExample, chordNeck, scaleNeck, gripSVG, feelByLabel, feelIndex,
            windowAt, card, exampleById, renderCards, countInOn, setCountIn, prefKey,
            init(){
              render(); renderToc(); bindTocFold(); bindCountIn();
              if (GT.sync){ const top = document.querySelector('.top'); if (top){ const wrap = document.createElement('span'); wrap.id = 'signWrap'; wrap.hidden = true; top.appendChild(wrap); GT.sync.signButton(wrap); } }
-             if (GT.favourites){
-               GT.favourites.linkFromPage();
+             if (GT.favorites){
+               GT.favorites.linkFromPage();
                // a card starred in one place (the course's copy, the large view) is starred in every copy
-               GT.favourites.onChange(() => document.querySelectorAll('article.ex .star').forEach(b => { if (b._paintStar) b._paintStar(); }));
+               GT.favorites.onChange(() => document.querySelectorAll('article.ex .star').forEach(b => { if (b._paintStar) b._paintStar(); }));
              }
            } };
   }

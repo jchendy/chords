@@ -1,6 +1,6 @@
 // A neck that follows a part — what the jam tab's fretboard does for a
 // suggested part, for any page that plays one: the chord as it's fretted
-// (the CAGED grip nearest the hand, its 7th, its colour tones hollow) or the
+// (the CAGED grip nearest the hand, its 7th, its color tones hollow) or the
 // notes the part may play (its palette in the position window), drawn with
 // neck.js so the example player can light each note as it sounds. Shared
 // by the Hendrix deep dive and the drills tab.
@@ -14,7 +14,7 @@
   const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
 
   const DEG = ['1', '♭2', '2', '♭3', '3', '4', '♭5', '5', '♭6', '6', '♭7', '7'];
-  // the label a chord gives an interval: its colours read as 9, ♯9 and 6
+  // the label a chord gives an interval: its colors read as 9, ♯9 and 6
   function labelFor(iv, chord){
     iv = ((iv % 12) + 12) % 12;
     const ext = (chord && chord.ext) || [];
@@ -45,7 +45,7 @@
     });
   }
   // the chord as it's fretted: the CAGED grip nearest the window (inside it
-  // if one is), with its 7th and its sus note, the chord's other colours in
+  // if one is), with its 7th and its sus note, the chord's other colors in
   // the window hollow, and whatever the part plays besides
   // (`given` is a placement already chosen — a drill that picked its own
   // shape draws that one; a grip the bar strums that is no CAGED shape at
@@ -60,16 +60,16 @@
     const mid = (win.min + win.max) / 2;
     const all = cagedPlacements(rootPc, isMinor ? CAGED_MINOR : CAGED_MAJOR).filter(p => p.cells.length > 2);
     // a CAGED placement gets its 7th and its sus note the way the neck fingers them
-    const coloured = p => {
+    const colored = p => {
       let cs = chord.seventh ? seventhCells(p, rootPc, SEMITONE[chord.seventh] % 12) : p.cells.slice();
       return chord.sus ? susCells(cs, rootPc, chord.sus) : cs;
     };
     const nearest = pool => pool.reduce((b, p) => Math.abs(p.meanFret - mid) < Math.abs(b.meanFret - mid) ? p : b);
     const inWin = all.filter(p => p.fretMin >= win.min - 1 && p.fretMax <= win.max + 1);
-    const fitting = struck && struck.length ? all.filter(p => { const cs = coloured(p); return struck.every(s => cs.some(c => c.string === s.string && c.fret === s.fret)); }) : [];
+    const fitting = struck && struck.length ? all.filter(p => { const cs = colored(p); return struck.every(s => cs.some(c => c.string === s.string && c.fret === s.fret)); }) : [];
     const placement = given || (fitting.length ? nearest(fitting) : nearest(inWin.length ? inWin : all));
     // a grip handed over whole (`given.given`) is drawn as it is
-    const cells = placement.given ? placement.cells.slice() : coloured(placement);
+    const cells = placement.given ? placement.cells.slice() : colored(placement);
     const grip = !!placement.grip;
     const color = CAGED_COLORS[placement.name] || GRIP_COLOR;
     const markers = cells.map(c => ({ string: c.string, fret: c.fret, color, label: labelFor(pcOf(c) - rootPc, chord), isRoot: pcOf(c) === rootPc, shapes: [placement.name] }));
@@ -83,12 +83,12 @@
     // the shape traced low string to high, whatever order the cells came in
     const traced = cells.slice().sort((a, b) => b.string - a.string || a.fret - b.fret);
     const lines = [{ color, shape: placement.name, cells: traced.map(c => ({ string: c.string, fret: c.fret })) }];
-    const hasColour = chord.seventh || chord.sus || (chord.ext && chord.ext.length);
-    const what = grip ? `${displayName(chord)} — the ${placement.name}` : `${displayName(chord)} — the ${placement.name} shape${hasColour ? ', with its colour hollow' : ''}`;
+    const hasColor = chord.seventh || chord.sus || (chord.ext && chord.ext.length);
+    const what = grip ? `${displayName(chord)} — the ${placement.name}` : `${displayName(chord)} — the ${placement.name} shape${hasColor ? ', with its color hollow' : ''}`;
     return { markers, lines, placement, what };
   }
   // what the notes on the neck are, in words: the scale given, or the
-  // palette the reading gives the chord (`opts` as realise takes them)
+  // palette the reading gives the chord (`opts` as realize takes them)
   function paletteName(chord, spec){
     if (spec.scale) return spec.scale.name;
     const o = spec.opts || {};
@@ -119,7 +119,7 @@
     addPlayed(markers, played, chord, rootPc);
     return { markers, lines: [], what: `${displayName(chord)} — ${paletteName(chord, spec)} in the position` };
   }
-  // a box's own cells as markers: the shape's colour, degrees from the root,
+  // a box's own cells as markers: the shape's color, degrees from the root,
   // roots ringed, notes outside the chord dimmed
   function boxMarkers(box, rootPc, tones, color){
     return box.cells.map(c => {

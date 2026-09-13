@@ -1,7 +1,7 @@
 // A print view: just the tab, with its title, in a new browser tab. The tab
 // is drawn again at a page's width, one SVG a row, so a row never splits
 // across two printed pages (css `break-inside: avoid` on each), in the
-// page's own tab styles (css/tab.css) with the theme's colours set to ink
+// page's own tab styles (css/tab.css) with the theme's colors set to ink
 // on paper, and a Print button the printed page leaves out. Every surface
 // with a tab — the Hendrix cards, the drills, the jam tab, the parts page,
 // the review page — hands over what it drew (`host._tabExample`, kept by

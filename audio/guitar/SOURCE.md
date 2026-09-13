@@ -9,7 +9,7 @@ between, which is the mapping the original `.sfz` specifies.
 - **Taken from:** <https://github.com/sfzinstruments/Discord-SFZ-GM-Bank>,
   `Discord GM/Melodic/026-Acoustic Guitar (steel)/` — a fork of the original
   at <https://github.com/kinwie/Discord-SFZ-GM-Bank>.
-- **Licence:** Creative Commons CC0 (public domain dedication).
+- **License:** Creative Commons CC0 (public domain dedication).
 
 ## Why we believe we may use them
 
@@ -17,7 +17,7 @@ CC0 waives copyright as far as the law allows, so there is nothing to ask
 permission for and no condition to meet — not even attribution. We credit the
 author anyway, because it is his guitar and his work.
 
-The licence is stated by the author himself, in the header of the `.sfz` file
+The license is stated by the author himself, in the header of the `.sfz` file
 that maps these very samples:
 
     // GM Acoustic Guitar
@@ -33,11 +33,11 @@ look and what it will accept:
 > Each instrument is licensed by its creator. The creator's license terms can
 > be found in the .sfz file for the instrument.
 
-> Only CC0, CC-BY, and equivalent licences are allowed.
+> Only CC0, CC-BY, and equivalent licenses are allowed.
 
 So the terms come from the person who made the recordings, in the file that
 ships with them, in two independent repositories, under a project policy that
-admits no licence more restrictive than CC-BY. Checked 2026-09-10.
+admits no license more restrictive than CC-BY. Checked 2026-09-10.
 
 Two sources that were considered and rejected, so nobody has to check them
 again:

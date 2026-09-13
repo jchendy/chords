@@ -1,9 +1,9 @@
 // The Hendrix deep dive (hendrix.html): the page's own data — where the
 // hand sits, the grips, the scale figures, the drills, the examples,
-// exercises and studies realised from the Hendrix genre, the songs and the
+// exercises and studies realized from the Hendrix genre, the songs and the
 // sources — on the machinery every deep dive shares (js/deep-dive.js).
 // Nothing here is played from a recording: every tab on the page is the
-// engine realising a part of the library.
+// engine realizing a part of the library.
 (function(){
   'use strict';
   const GT = (window.GT = window.GT || {});
@@ -92,11 +92,11 @@
       `The B♭, hollow: a passing note between the 4th and the 5th on the A string and the G string, and on the B string a fret below the box. Slid or bent through, never sat on. ${fingersOf(blue.cells)} The ♭5 on the A string is the ring finger sliding up a fret; on the B string, the index reaching back.`));
     figs.push(figure('Minor over major: the E minor pentatonic against E7♯9', 10, 15,
       boxMarkers(blue, E, pcs(E, [0, 4, 7, 10])),
-      `The same box over a major chord. The 1, 5 and ♭7 sit inside E7♯9; the ♭3 (G) is the ♯9, played against the chord’s G♯ — the tension the fuzz feels keep on purpose — and the 4th is the note that bends. The major 3rd is let in as a passing colour, a hammer-on from the ♭3. ${fingersOf(blue.cells)}`));
+      `The same box over a major chord. The 1, 5 and ♭7 sit inside E7♯9; the ♭3 (G) is the ♯9, played against the chord’s G♯ — the tension the fuzz feels keep on purpose — and the 4th is the note that bends. The major 3rd is let in as a passing color, a hammer-on from the ♭3. ${fingersOf(blue.cells)}`));
     const dor = scaleBoxPlacements(E, true, pcs(E, DORIAN));
     figs.push(figure('E Dorian in the E shape: the 6th and the 9th let in', 10, 15,
       boxMarkers(boxAt(dor, 'E', 12), E, pcs(E, [0, 3, 7, 10])),
-      `The minor pentatonic with the 2nd (F♯, the 9th) and the major 6th (C♯) — the scale Mermikides hears in the "Purple Haze" solo over E5, F♯5 and D5. The 6th against a minor chord is the Dorian colour; the parts write it as a free note. ${fingersOf(boxAt(dor, 'E', 12).cells)}`));
+      `The minor pentatonic with the 2nd (F♯, the 9th) and the major 6th (C♯) — the scale Mermikides hears in the "Purple Haze" solo over E5, F♯5 and D5. The 6th against a minor chord is the Dorian color; the parts write it as a free note. ${fingersOf(boxAt(dor, 'E', 12).cells)}`));
     figs.push(figure('E major pentatonic: the sweet register of the R&B fills', 10, 15,
       boxMarkers(boxAt(eMaj, 'E', 12), E, pcs(E, [0, 4, 7])),
       `The 2nd, the 3rd and the 6th instead of the ♭3 and the ♭7: the scale of the double stops and hammer-ons between the chords on "Wait Until Tomorrow", and of the Mayfield ballads. The 2nd bends to the 3rd here, where the minor box bends the 4th to the 5th. ${fingersOf(boxAt(eMaj, 'E', 12).cells)}`));
@@ -117,7 +117,7 @@
     const mixo = scaleBoxPlacements(G, false, pcs(G, MIXO));
     figs.push(figure('G Mixolydian at the nut, over G–D–F–C', 0, 5,
       boxMarkers(boxAt(mixo, 'G', 0), G, pcs(G, [0, 4, 7, 10])),
-      `The major scale with a ♭7 (F): the key of the "Castles Made of Sand" chorus, whose F chord is the ♭VII. Over G the F is the passing colour; over the F chord it is the root. ${fingersOf(boxAt(mixo, 'G', 0).cells)}`));
+      `The major scale with a ♭7 (F): the key of the "Castles Made of Sand" chorus, whose F chord is the ♭VII. Over G the F is the passing color; over the F chord it is the root. ${fingersOf(boxAt(mixo, 'G', 0).cells)}`));
     return figs;
   }
 
@@ -153,7 +153,7 @@
         const pad = cells => { while (cells.length < 16) cells.push(cells[cells.length - 1]); return cells; };
         return drill([...pad([...minor, ...minor.slice(-4).reverse()]), ...pad([...major, ...major.slice(-4).reverse()])]);
       },
-      blurb: 'Two bars of the minor pentatonic over a plain E major, two bars of the major pentatonic over the same chord. Hear what the ♭3 and the ♭7 do against a major triad, and then what the 2nd, 3rd and 6th do: the blues and the sweet side, the two colours he mixes within one phrase.' },
+      blurb: 'Two bars of the minor pentatonic over a plain E major, two bars of the major pentatonic over the same chord. Hear what the ♭3 and the ♭7 do against a major triad, and then what the 2nd, 3rd and 6th do: the blues and the sweet side, the two colors he mixes within one phrase.' },
     { id: 'sc5', neckDefault: 'scale', drills: { d: 'scale', k: 'minor:E', sc: 'dorian', b: 'E@12', p: 'updown', v: 2 }, title: 'E Dorian: the 6th and the 9th on the way up', feel: 'Soul ballad (chord melody)', key: 'E', mode: 'minor', tempo: 74, chords: [{ name: 'Em7', bars: 4 }], window: windowAt(11), reading: 'scale',
       scale: { root: 4, pcs: pcs(4, DORIAN), name: 'E Dorian' },
       build: () => drill([...upAndDown(boxAt(scaleBoxPlacements(4, true, pcs(4, DORIAN)), 'E', 12).cells), cell(5, 12)]),
@@ -173,14 +173,14 @@
         const up = box.slice(0, 16), down = box.slice(0, 16).reverse();
         return drill([...up, ...down]);
       },
-      blurb: 'The scale in open position, up over G and D, down over F and C: the "Castles Made of Sand" chorus with the ♭7 that makes it Mixolydian. Listen for the F as a colour over G and as home over the F chord.' },
+      blurb: 'The scale in open position, up over G and D, down over F and C: the "Castles Made of Sand" chorus with the ♭7 that makes it Mixolydian. Listen for the F as a color over G and as home over the F chord.' },
   ];
 
   // ---- the examples ----
   const E_FUZZ = windowAt(5);        // the 7♯9 grip's home: the E on the A string at the 7th fret
   // `positions`: the fret the hand sits at for each chord — the thumb barre
   // walking up the neck with the changes, as the lessons describe it — so
-  // each bar is realised where the hand is
+  // each bar is realized where the hand is
   const soul = { feel: 'Soul ballad (chord melody)', key: 'E', mode: 'minor', tempo: 70, chords: [{ name: 'Em' }, { name: 'G' }, { name: 'Am' }, { name: 'Em' }, { name: 'Bm' }, { name: 'C' }], window: windowAt(0), reading: 'scale',
                  positions: { Em: 0, G: 3, Am: 5, Bm: 7, C: 8, Bb: 6, F: 1, D: 5 } };
   const fuzz = { feel: 'Fuzz riff (the Hendrix chord)', key: 'E', tempo: 108, chords: [{ name: 'E7#9', bars: 2 }, { name: 'G' }, { name: 'A' }, { name: 'E7#9', bars: 2 }], window: E_FUZZ, reading: 'penta',
@@ -268,7 +268,7 @@
       blurb: 'The box at the 7th fret in B: the 4th bent to the 5th and shaken, Albert King’s step-and-a-half, the major 3rd against the minor pentatonic, triplet pull-offs, and a beat of silence.',
       refs: 'Red House’s major-and-minor mix from [16b]; its Albert King and Elmore James roots from [6].' },
     { ...funk, id: 'l-funk', wants: ['trill', 'wah'], title: 'Funk lead with the wah', part: 'Funk lead with the wah', blend: 'lead', seed: 3,
-      blurb: 'The pedal following the phrase, the Dorian colour, double-stop chucks between phrases, the trill, a climb into the box above.' },
+      blurb: 'The pedal following the phrase, the Dorian color, double-stop chucks between phrases, the trill, a climb into the box above.' },
     { ...cycle, id: 'l-twelfth', wants: ['bend'], title: 'Blues-scale lead at the 12th', part: 'Blues-scale lead at the 12th', blend: 'lead', seed: 6, window: windowAt(12),
       blurb: 'The E minor blues scale from the box at the 12th fret over the cycle’s major chords: the B string bent a full step and shaken, the ♭5 passing.',
       refs: 'The 12th-fret blues scale and the full-step bend on the 15th fret of the B string, from Jon MacLennan’s lesson [15].' },
@@ -303,7 +303,7 @@
   const EXERCISES = [
     { ...soul, id: 'x1', title: '1. The thumb and the split chord, plain', part: 'Thumb bass and the split chord', blend: 'rhythm', seed: 7, easy: true, tempo: 60,
       blurb: 'The beginner’s version: the bass note under the thumb on one and three, the D–G–B triad on the "and". Get the two strokes to sound like one hand before adding anything.' },
-    { ...soul, id: 'x2', wants: ['hammer'], title: '2. The hammered colours', part: 'Thumb bass and the split chord', blend: 'rhythm', seed: 7, tempo: 62,
+    { ...soul, id: 'x2', wants: ['hammer'], title: '2. The hammered colors', part: 'Thumb bass and the split chord', blend: 'rhythm', seed: 7, tempo: 62,
       blurb: 'Now the 4th on the G string, the 9th on the top string, the 6th on the B — hammered, with the chord still ringing under them. Slow, and clean.' },
     { ...soul, id: 'x3', wants: ['slide'], title: '3. Sliding 6ths', part: 'Sliding 6ths and rolling hammer-ons (the Mayfield way)', blend: 'rhythm', seed: 3, tempo: 64,
       blurb: 'Two strings a string apart, the lower note slid into from a fret below. The 6th is the sound of Stax and of Mayfield; the roll (2nd to 3rd, 4th to 5th) comes after.' },
@@ -323,7 +323,7 @@
       blurb: 'Root, 3rd, 4th, 5th on the low strings into each new chord. Say the next root as you land on it.' },
   ];
 
-  // whole forms: the changes from the songs, a part realised over them
+  // whole forms: the changes from the songs, a part realized over them
   const STUDIES = [
     { id: 'st1', wants: ['lead'], title: 'Study in E minor: the ballad', feel: 'Soul ballad (chord melody)', part: 'Thumb bass and the split chord', key: 'E', mode: 'minor', tempo: 70, blend: 'mixed', seed: 31, window: windowAt(0), reading: 'scale', preset: preset('Soul ballad (Little Wing)'),
       chords: ['Em', 'G', 'Am', 'Em', 'Bm', 'Bb', 'Am', 'C', 'G', 'F', 'C', 'D'].map(name => ({ name })),
@@ -362,7 +362,7 @@
     { id: 'st11', wants: ['lead'], title: 'Study in C♯ minor: minor rock', feel: 'Soul ballad (chord melody)', part: 'Thumb bass and the split chord', key: 'C#', mode: 'minor', tempo: 112, blend: 'mixed', seed: 11, window: windowAt(9), reading: 'scale', preset: preset('Minor rock (All Along the Watchtower)'),
       positions: { 'C#m': 9, B: 7, A: 5 },
       chords: [{ name: 'C#m' }, { name: 'B' }, { name: 'A' }, { name: 'B' }, { name: 'C#m' }, { name: 'B' }, { name: 'A' }, { name: 'B' }],
-      blurb: 'The Watchtower changes — i, VII, VI, VII — as thumb barres walking down from the 9th fret, the split chord and its colours over each, the lines from the C♯ minor box in the fill bars.' },
+      blurb: 'The Watchtower changes — i, VII, VI, VII — as thumb barres walking down from the 9th fret, the split chord and its colors over each, the lines from the C♯ minor box in the fill bars.' },
   ];
 
   // ---- the songs ----
@@ -380,7 +380,7 @@
       what: 'A–E–F♯m–D in the verse, E–F♯–G–A into the chorus with a VI major and a ♭VII, a "masterclass in chordal embellishment" on the E shape with the thumb. The coda is the first phased drums on a record.',
       cites: '[32] [11] [9b]', tab: UG + 'bold-as-love-tabs-718945', tab2: 'https://www.songsterr.com/a/wsa/jimi-hendrix-bold-as-love-chords-s22542' },
     { title: 'Hey Joe', listen: ['The bass walking root, 3rd, 4th, 5th into every new chord, and the 5th becoming the next root', 'The guitar doubling that walk, and the double stops answering the voice', 'The solo from the E minor blues scale at the 12th'], linkKey: 'E', bpm: 82, album: 'single, 1966', key: 'E major with borrowed chords, about 82 BPM', preset: 'Cycle of fourths (Hey Joe)',
-      what: 'C–G–D–A–E, each chord a fourth below the last, the circle of fifths read backwards, two bars of E at the end. The bass walks root, 3rd, 4th, 5th into each new chord and the 5th is the new root; the guitar doubles that walk in places and answers the vocal with double stops. The solo is the E minor blues scale at the 12th fret. Modelled on Tim Rose’s slow arrangement of Billy Roberts’ song.',
+      what: 'C–G–D–A–E, each chord a fourth below the last, the circle of fifths read backwards, two bars of E at the end. The bass walks root, 3rd, 4th, 5th into each new chord and the 5th is the new root; the guitar doubles that walk in places and answers the vocal with double stops. The solo is the E minor blues scale at the 12th fret. Modeled on Tim Rose’s slow arrangement of Billy Roberts’ song.',
       cites: '[15] [9c]', tab: UG + 'hey-joe-tabs-59' },
     { title: 'Purple Haze', listen: ['The intro: E against B♭, a tritone repeated, not resolved', 'The E7♯9 as home in the verse', 'The solo in E Dorian over the power chords, through the Octavia', 'The riff doubled with the bass, muted between the notes'], linkKey: 'E', bpm: 108, album: 'Are You Experienced, 1967', key: 'E (fingered), about 108 BPM', preset: 'Fuzz vamp (Purple Haze)',
       what: 'The intro locks E against B♭ — a tritone, repeated rather than resolved; the verse is E7♯9–G–A; the solo runs Dorian over E5, F♯5 and D5 through the Octavia. The E7♯9 is an all-interval tetrachord: every interval class in four notes. The riff is the E minor pentatonic with the ♭5, muted, doubled with the bass.',
@@ -406,7 +406,7 @@
     { title: 'Wait Until Tomorrow', listen: ['The licks between the chords — hammer-ons and pull-offs at the 9th to 11th frets', 'The bass-and-guitar duet that is the core riff', 'The Cropper likeness: the chord on the beat, the fill after it'], linkKey: 'E', bpm: 118, album: 'Axis: Bold as Love, 1967', key: 'E (fingered; heard in E♭), about 118 BPM', preset: 'Fuzz vamp (Purple Haze)',
       what: 'A/E and G/E in the intro, E–G–A in the chorus, "lots of licks in between the chords" — hammer-ons and pull-offs at the 9th to 11th frets — a bass-and-guitar duet as the core riff, "stylistically similar to Steve Cropper".',
       cites: '[14] [11]', tab: UG + 'wait-until-tomorrow-tabs-11764' },
-    { title: 'Freedom', listen: ['The intro: two chords and a walking lick on the low E and A strings', 'C to E♭, the ♭III, and the 7ths of C7 and F7', 'The jazz colour in the solo'], linkKey: 'C', bpm: 104, album: 'The Cry of Love, 1971', key: 'C (fingered), E♭ tuning', preset: 'Funk (Freedom)',
+    { title: 'Freedom', listen: ['The intro: two chords and a walking lick on the low E and A strings', 'C to E♭, the ♭III, and the 7ths of C7 and F7', 'The jazz color in the solo'], linkKey: 'C', bpm: 104, album: 'The Cry of Love, 1971', key: 'C (fingered), E♭ tuning', preset: 'Funk (Freedom)',
       what: 'C, E♭, C7 and F7; the intro is two chords and a walking lick on the low E and A strings; the solo shows "jazz harmonic sensibility". The last year’s funk, with Billy Cox on bass.',
       cites: '[19] [3]', tab: UG + 'freedom-tabs-395814' },
     { title: 'Spanish Castle Magic', listen: ['Guitar and bass in unison on the riff', 'The open strings inside the power chords', 'The bends in the solo, and the double stop it ends on'], album: 'Axis: Bold as Love, 1967', key: 'descending power chords, heard a half-step down', preset: null,
@@ -491,8 +491,8 @@
         { songs: ['Little Wing', 'The Wind Cries Mary'] },
         { check: ['The thumb bass and the split chord'] },
       ] },
-    { id: 'colours', title: 'The colours, and the 6ths',
-      tagline: 'The sus4, the 6th and the add9 hammered onto the shape, the same hand on the other CAGED shapes, 6ths slid through the changes, and the Dorian colours in the box.',
+    { id: 'colors', title: 'The colors, and the 6ths',
+      tagline: 'The sus4, the 6th and the add9 hammered onto the shape, the same hand on the other CAGED shapes, 6ths slid through the changes, and the Dorian colors in the box.',
       goal: 'each hammered note is as loud as the chord under it.',
       pieces: [
         { grips: 'E-shape barre, thumb over', part: 'vars', title: 'The split chord, the sus4, the 6th and the add9: the same hand, one finger moved' },
@@ -502,13 +502,13 @@
         { card: 'r-sixths' },
         { card: 'c-bold' },
         { figure: 'E Dorian in the E shape' },
-        { card: 'sc5', note: 'The 6th and the 9th let into the box on the way up: the colours of the chord-melody fills.' },
+        { card: 'sc5', note: 'The 6th and the 9th let into the box on the way up: the colors of the chord-melody fills.' },
         { read: 'p-lead', title: 'Lead parts in each feel' },
         { card: 'l-leslie' },
         { read: 'p-studies', title: 'The studies' },
         { card: 'st1', note: 'The whole ballad form with the band, at the card\'s tempo when it holds. Play it through twice before moving on.' },
         { card: 'st9' },
-        { faults: ['The hammered colours'] },
+        { faults: ['The hammered colors'] },
         { songs: ['Bold as Love'] },
         { check: ['The hammered 4th', 'Sliding 6ths'] },
       ] },
@@ -632,8 +632,8 @@
   ];
   const course = GT.course.create({ dive, prefix: 'hendrix', name: 'Hendrix', lessons: LESSONS,
     title: 'Learn Hendrix style in eight lessons',
-    blurb: 'The same page, one piece at a time: the thumb and the split chord, the colours, the Hendrix chord, the box under it, the slow blues, the funk, the cycle, and the rest of the feels — every paragraph, grip, figure, card, record and check on the page, in the order the Start-here list gives, your place kept.' });
+    blurb: 'The same page, one piece at a time: the thumb and the split chord, the colors, the Hendrix chord, the box under it, the slow blues, the funk, the cycle, and the rest of the feels — every paragraph, grip, figure, card, record and check on the page, in the order the Start-here list gives, your place kept.' });
   if (course) course.init();
 
-  GT.hendrixGuide = { CHANGES, DRILLS, RHYTHM, LEAD, MIXED, EXERCISES, STUDIES, SONGS, SOURCES, LESSONS, course, GRIPS: GRIP_GROUPS, jamLink: dive.jamLink, drillsLink: dive.drillsLink, openLink: dive.openLink, realiseExample: dive.realiseExample, chordNeck: dive.chordNeck, scaleNeck: dive.scaleNeck, gripSVG: dive.gripSVG };
+  GT.hendrixGuide = { CHANGES, DRILLS, RHYTHM, LEAD, MIXED, EXERCISES, STUDIES, SONGS, SOURCES, LESSONS, course, GRIPS: GRIP_GROUPS, jamLink: dive.jamLink, drillsLink: dive.drillsLink, openLink: dive.openLink, realizeExample: dive.realizeExample, chordNeck: dive.chordNeck, scaleNeck: dive.scaleNeck, gripSVG: dive.gripSVG };
 })();

@@ -208,7 +208,7 @@
     pop: {
       feel: 'Pop',
       progression: ['C', 'G', 'Am', 'F', 'C', 'G'], key: 'C', tempo: 116,
-      about: 'Straight, the chord doing most of the work: the down-down-up-up-down-up strum with the ups on the top strings, broken chords out of the root, 3rd, 5th and octave, and lines that are melodies — chord tones held, the 9th and 6th as colour, a step into the next chord’s root or 3rd rather than a chromatic slide.',
+      about: 'Straight, the chord doing most of the work: the down-down-up-up-down-up strum with the ups on the top strings, broken chords out of the root, 3rd, 5th and octave, and lines that are melodies — chord tones held, the 9th and 6th as color, a step into the next chord’s root or 3rd rather than a chromatic slide.',
       influences: 'The down-down-up-up-down-up strum is the acoustic pop pattern of the last thirty years, from Oasis to Ed Sheeran; the broken chord is every ballad from “Everybody Hurts” to Coldplay; the melodic fills are what a second guitar adds on a record.',
       parts: {
         'Down down up up down up': 'The strum, with the ups on the top strings. Variants strum every eighth, or put the root under one. Fills: the chord broken up and back; half the pattern then octave-6-5; a melody a beat.',
@@ -218,7 +218,7 @@
     funk: {
       feel: 'Classic funk',
       progression: ['E7', 'E7', 'E7', 'A7', 'E7', 'B7'], key: 'E', tempo: 104,
-      about: 'Sixteenths, short, with rests: the hit on one and the chops on the top strings in the gaps the drums leave, and single-note lines that are mostly the root and the octave with the ♭7 and ♭3 for flavour — said in syncopated bursts, not runs — sliding into the next chord from a semitone below. Double stops in 4ths.',
+      about: 'Sixteenths, short, with rests: the hit on one and the chops on the top strings in the gaps the drums leave, and single-note lines that are mostly the root and the octave with the ♭7 and ♭3 for flavor — said in syncopated bursts, not runs — sliding into the next chord from a semitone below. Double stops in 4ths.',
       influences: 'Jimmy Nolen (James Brown) for the chicken-scratch chop and the hit on the One; Phelps “Catfish” Collins (Bootsy’s brother, James Brown’s other guitarist in 1970) for the single-note lines; Nile Rodgers and Leo Nocentelli (The Meters) for the 4ths.',
       parts: {
         'The one and the chops': 'The hit on one, chops in the gaps. Variants open the one out, or fill the e and a. Fills: root and octave in bursts; the hit then 4ths stabbed; octaves and a chop.',

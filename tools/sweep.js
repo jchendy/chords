@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Realises every part in every reading, key, window, easy mode and seed and
+// Realizes every part in every reading, key, window, easy mode and seed and
 // reports anything outside the rules: an exception, a note outside the
 // window, a bar left empty, a technique left in easy mode. Run it after
 // changing the engine or the styles:   node tools/sweep.js
@@ -11,11 +11,11 @@ const GT = window.GT = {};
 ['js/theory.js','js/fretboard.js','js/parts.js','js/parts-guide-data.js','js/styles-base.js','review/proposals.js','review/proposals-2.js','review/proposals-3.js','review/proposals-4.js','review/proposals-more.js','review/proposals-easy.js','review/proposals-hendrix.js', 'review/proposals-psychobilly.js','js/styles.js'].forEach(f => new Function('window', fs.readFileSync(f, 'utf8'))(window));
 const { STYLES, LIBRARY } = GT.styles;
 const { chordFromName, SEMITONE } = GT.theory;
-const { realise } = GT.parts;
+const { realize } = GT.parts;
 const roots = ['C','Db','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
 const windows = [{ min: 0, max: 3 }, { min: 2, max: 6 }, { min: 5, max: 9 }, { min: 10, max: 14 }];
 const bad = {}; const note = (k, m) => { bad[k] = bad[k] || []; if (bad[k].length < 4) bad[k].push(m); };
-let realised = 0, errors = 0, notes = 0;
+let realized = 0, errors = 0, notes = 0;
 Object.keys(LIBRARY).forEach(style => Object.keys(LIBRARY[style]).forEach(feel => {
   const grid = style === 'simple' ? 16 : STYLES[style].variants.find(v => v.label === feel).grid;
   LIBRARY[style][feel].forEach(part => {
@@ -25,7 +25,7 @@ Object.keys(LIBRARY).forEach(style => Object.keys(LIBRARY[style]).forEach(feel =
       windows.forEach(window => [false, true].forEach(easy => [1, 2, 3].forEach(seed => {
         const opts = { reading, window, scaleTheory: 'parallel', stayOnKey: false, key: { tonic: root, mode: 'major' }, tech: null };
         let out;
-        try { out = realise(part, bars, seed, opts, { grid, easy }); realised++; }
+        try { out = realize(part, bars, seed, opts, { grid, easy }); realized++; }
         catch (e){ errors++; note('throws', `${part.name} ${reading} ${root} ${JSON.stringify(window)} easy=${easy}: ${e.message}`); return; }
         notes += out.length;
         out.forEach(n => {
@@ -42,7 +42,7 @@ Object.keys(LIBRARY).forEach(style => Object.keys(LIBRARY[style]).forEach(feel =
           if (easy && (n.bend || n.tech === 'h' || n.tech === 'p' || n.slide != null || n.ghost || n.trem || n.rake)) note('easy', `${part.name}: easy mode still has ${n.bend ? 'a bend' : n.tech || (n.slide != null ? 'a slide' : n.ghost ? 'a ghost' : n.trem ? 'tremolo' : 'a rake')}`);
         });
         out.stopBars.forEach(b => { if (b % 2 !== 1) note('stopbar', `${part.name}: stop bar ${b} is not a fill bar`); });
-        // a strum is a sweep across neighbouring strings — a shell excepted,
+        // a strum is a sweep across neighboring strings — a shell excepted,
         // which mutes the string between its root and its 3rd and 7th
         const strumsAt = new Map();
         // (one strum at a time: a thumb's bass note and a chord written at the same slot are two)
@@ -54,5 +54,5 @@ Object.keys(LIBRARY).forEach(style => Object.keys(LIBRARY[style]).forEach(feel =
     }));
   });
 }));
-console.log('realised', realised, 'errors', errors, 'notes', notes);
+console.log('realized', realized, 'errors', errors, 'notes', notes);
 Object.entries(bad).forEach(([k, v]) => console.log(k, v.length, v));

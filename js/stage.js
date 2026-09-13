@@ -168,7 +168,7 @@
       if (!m){ win.style.display = 'none'; return; }
       const lo = Number(m[1]), hi = Number(m[2]);
       // Measured off the drawn wires themselves rather than off the viewBox:
-      // the neck has a max width, so on a wide screen the drawing is centred
+      // the neck has a max width, so on a wide screen the drawing is centered
       // inside the scroller and its own coordinates start somewhere in the
       // middle of it. Client rects already carry that, and the scroll offset.
       const scroll = svg.parentElement;
@@ -220,10 +220,10 @@
       const target = win.offsetLeft + win.offsetWidth / 2;
       drag = null;
       win.classList.remove('dragging');
-      const centre = () => win.offsetLeft + win.offsetWidth / 2;
+      const center = () => win.offsetLeft + win.offsetWidth / 2;
       for (let i = 0; i < 8; i++){
         placeWindow();
-        const d = target - centre();
+        const d = target - center();
         if (Math.abs(d) < win.offsetWidth / 2) break;
         (d > 0 ? $('boxNext') : $('boxPrev')).click();
       }

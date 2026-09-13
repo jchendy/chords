@@ -1,5 +1,5 @@
 // Suggested guitar parts for the jam tab: a rhythm figure and its fills,
-// written for a feel and realised into whatever box the neck is showing.
+// written for a feel and realized into whatever box the neck is showing.
 //
 // WHERE THE PARTS COME FROM, AND WHY THEY ARE NOBODY'S. Every part here is
 // written from the idiom of its feel — where a shuffle puts its weight, which
@@ -20,7 +20,7 @@
 // HOW A PART IS WRITTEN. Once per feel, as two bars — a figure, then a fill —
 // on the feel's own grid, every note an interval above a root: 0 is the
 // root, 7 the fifth, 10 the flat seventh, 12 the octave. It is not written
-// for a key, a box or a reading. Those come at realisation: the interval is
+// for a key, a box or a reading. Those come at realization: the interval is
 // turned into a pitch class against the chord (or the key, when the part is
 // told to stay on the I), snapped to a note the reading allows, and placed
 // on the nearest such note inside the position window. So a part written
@@ -30,7 +30,7 @@
 // rather than forced, so a sparse reading gives a sparser part, not a wrong
 // one.
 // The method behind the parts and styles, and the order to add one in, is
-// docs/STYLES.md; what the research found is docs/STYLES-CATALOGUE.md.
+// docs/STYLES.md; what the research found is docs/STYLES-CATALOG.md.
 (function(){
   'use strict';
   const GT = (window.GT = window.GT || {});
@@ -752,7 +752,7 @@
       // Straight, the chord doing most of the work: the down-down-up-up-
       // down-up strum with the ups on the top strings, broken chords out
       // of the root, 3rd, 5th and octave, and lines that are melodies —
-      // chord tones held, the 9th and 6th as colour, a step into the next
+      // chord tones held, the 9th and 6th as color, a step into the next
       // chord's root or 3rd rather than a chromatic slide.
       'Pop': [
         {
@@ -804,7 +804,7 @@
     funk: {
       // Sixteenths, short, with rests: the hit on one and the chops on the
       // top strings in the gaps the drums leave, and single-note lines that
-      // are mostly the root and the octave with the ♭7 and ♭3 for flavour
+      // are mostly the root and the octave with the ♭7 and ♭3 for flavor
       // — said in syncopated bursts, not runs — sliding into the next
       // chord from a semitone below.
       'Classic funk': [
@@ -1210,7 +1210,7 @@
   // ---- which notes a reading allows ----------------------------------------
   // Pitch classes, as the neck would show them. These mirror the rules in
   // fretboard-view.js rather than asking it, because the neck only ever
-  // shows one chord at a time and a part is realised for the whole
+  // shows one chord at a time and a part is realized for the whole
   // progression at once.
   const pc = name => SEMITONE[name] % 12;
   const setOf = (root, offsets) => new Set(offsets.map(o => (root + o) % 12));
@@ -1226,7 +1226,7 @@
   function chordTones(chord){
     const tones = [chord.note, chord.third, chord.fifth].map(pc);
     if (chord.seventh) tones.push(pc(chord.seventh));
-    (chord.ext || []).forEach(iv => tones.push((pc(chord.note) + iv) % 12));   // the colour a 9th or a ♯9 adds
+    (chord.ext || []).forEach(iv => tones.push((pc(chord.note) + iv) % 12));   // the color a 9th or a ♯9 adds
     return new Set(tones);
   }
 
@@ -1260,7 +1260,7 @@
     }
     if (blues && !isMinor) return { root: chordRoot, allowed: setOf(chordRoot, BLUES_SCALE) };
     if (scaleTheory === 'modal'){
-      // the key's notes, plus the chord's own tones, centred on the chord
+      // the key's notes, plus the chord's own tones, centered on the chord
       const allowed = setOf(keyRoot, keyMinor ? MINOR : MAJOR);
       chordTones(chord).forEach(t => allowed.add(t));
       return { root: chordRoot, allowed };
@@ -1269,7 +1269,7 @@
     return { root: chordRoot, allowed: setOf(chordRoot, isMinor ? MINOR : flat7 ? MIXO : MAJOR) };
   }
 
-  // ---- realisation ----------------------------------------------------------
+  // ---- realization ----------------------------------------------------------
   // Snap an interval to a note the reading allows: the note itself if it's
   // there, else the nearest within a tone — downward first, since a blues
   // line resolves down more often than up — else nothing.
@@ -1384,15 +1384,15 @@
         default:     return low;
       }
     };
-    // A strum is a pick sweep across neighbouring strings. A window that
+    // A strum is a pick sweep across neighboring strings. A window that
     // cuts into a grip can leave its cells on strings that aren't
-    // neighbours (x-7-x-7-x-7 for a chord the window holds three notes
+    // neighbors (x-7-x-7-x-7 for a chord the window holds three notes
     // of), which no hand plays as a chord: the grip is then completed a
     // fret or two past the window, those notes marked `reach`, before the
     // window's own cells are settled for.
     const { min, max } = opts.window;
     // A 7♯9 or a 9th struck whole is its own grip — x-7-6-7-8-x, x-7-6-7-7-7,
-    // root on the A string — not a CAGED 7th with the colour left out: the
+    // root on the A string — not a CAGED 7th with the color left out: the
     // ♯9 is the point of the chord. Only when the grip can be had whole.
     if ((voicing === 'full' || voicing == null) && chord.quality === 'maj' && chord.seventh && chord.ext && (chord.ext.includes(3) || chord.ext.includes(2) || chord.ext.includes(14))){
       const ninth = !chord.ext.includes(3);
@@ -1444,10 +1444,10 @@
   const strumStringLevel = strings => Math.min(1, 1.45 / Math.sqrt(strings));
 
   const techOn = (opts, k) => !(opts.tech && opts.tech[k] === false);
-  // Realise one written bar against one chord: a list of playable notes.
+  // Realize one written bar against one chord: a list of playable notes.
   // `nextChord` is what the bar after this one holds, for the notes that
   // point at it; without one, the next chord is this one.
-  function realiseBar(written, chord, opts, nextChord){
+  function realizeBar(written, chord, opts, nextChord){
     const { root, allowed } = palette(chord, opts);
     // the pick hand's rule for this bar: slots a beat from the grid (four
     // on sixteen, three on twelve), and whether it moves in sixteenths
@@ -1596,9 +1596,9 @@
   }
 
   // ---- the roll -------------------------------------------------------------
-  // A part is realised from a seed: the same seed gives the same fills, the
+  // A part is realized from a seed: the same seed gives the same fills, the
   // same tails, the same stop-time bars, so a link or a test can hold a
-  // realisation still; "New fills" is a new seed.
+  // realization still; "New fills" is a new seed.
   function rng(seed){
     let x = (seed * 9301 + 49297) % 233280;
     return () => { x = (x * 9301 + 49297) % 233280; return x / 233280; };
@@ -1608,7 +1608,7 @@
   // ---- easy mode ------------------------------------------------------------
   // The beginner's version of a part. Where the part carries one (`easy`) it
   // is used; anywhere else the rule below does it: ghost notes go, so do
-  // rakes, tremolo, chord slides and colour tones; bends, hammer-ons,
+  // rakes, tremolo, chord slides and color tones; bends, hammer-ons,
   // pull-offs and slides play plain (double stops stay — they are not the
   // hard part); sixteenths move back onto the eighths and the middle of a
   // triplet goes; tails, pickups and stop-time stay in the part with their
@@ -1792,14 +1792,14 @@
   // ...and the 9th chord the same way, the 9th where the ♯9 was and the 5th
   // above it on the top string (x-7-6-7-7-7 for E9) — the T-Bone and
   // B.B. King grip Red House is comped with
-  // The Hendrix chord is a dominant's colour: a chord that already has its
+  // The Hendrix chord is a dominant's color: a chord that already has its
   // ♯9, or a ♭7 to put it over. A `sharp9` strum on a plain major chord —
   // the G and the A round Purple Haze's E7♯9 — is that chord's own grip
   // struck whole, not a 7♯9 made of it (B82).
   const sharp9Applies = chord => chord.quality === 'maj' && !!((chord.ext && chord.ext.includes(3)) || (chord.seventh && (pc(chord.seventh) - pc(chord.note) + 12) % 12 === 10));
   function sharp9Voicing(chord, opts, ninth = false){
     // on a chord that isn't major (the part's changes moved to a minor
-    // one) the top of the grip the window has: neighbouring strings, as a
+    // one) the top of the grip the window has: neighboring strings, as a
     // sweep wants, where a shell would mute the string between
     if (chord.quality !== 'maj') return strumCells(chord, opts, 'high');
     if (!ninth && !sharp9Applies(chord)) return strumCells(chord, opts, 'full');
@@ -1819,11 +1819,11 @@
         out.push(c);
       }
       if (ok) return out;
-      if (out.length >= 3) return out;                 // root, 3rd, ♭7 on neighbouring strings: the heart of it
+      if (out.length >= 3) return out;                 // root, 3rd, ♭7 on neighboring strings: the heart of it
     }
     return strumCells(chord, opts, 'high');
   }
-  // One extra note above a grip: a colour tone (the 9th, the 6th) on a strum
+  // One extra note above a grip: a color tone (the 9th, the 6th) on a strum
   // — snapped to the reading, or, when the strum is `free`, the exact
   // interval (the 6th on a rockabilly E6 stays a 6th in every reading)
   function placeIv(chord, opts, iv, above, free = false){
@@ -1866,7 +1866,7 @@
     return notes;
   }
 
-  // ---- the realiser ---------------------------------------------------------
+  // ---- the realizer ---------------------------------------------------------
   // The whole part over the progression's bars. A bar is a figure bar or a
   // fill bar (every `phrase` bars, the last of each pair by default); the
   // figures take the phrases in turn, or are rolled when the part says so;
@@ -1879,13 +1879,13 @@
   // turnaround and the stop-time bars — the same part as comping, as a
   // lead pass, or the way a player does both.
   // Then each written bar is placed on the neck: strums through the voicing
-  // asked for, double stops by shape, single notes through realiseBar, and
+  // asked for, double stops by shape, single notes through realizeBar, and
   // the flags applied after — ghost, staccato, palm mute, vibrato, rake,
-  // chord slides, colour tones, tremolo.
+  // chord slides, color tones, tremolo.
   //   feat: { grid, phrase, easy, blend }
   const hasLeads = part => !!(part && part.leads && part.leads.length);
   const BLENDS = ['rhythm', 'mixed', 'lead'];
-  function realise(part, bars, seed, opts, feat = {}){
+  function realize(part, bars, seed, opts, feat = {}){
     const grid = feat.grid || 16;
     if (feat.easy){
       part = easyVersion(part, grid);
@@ -1896,7 +1896,7 @@
     const roll = rng(Number(seed) || 1);
     const phrase = feat.phrase || 2;
     // the palette the part asks for; and whether its chords are plucked
-    // (a fingerpicked part's strings needn't be neighbours) or swept
+    // (a fingerpicked part's strings needn't be neighbors) or swept
     opts = { ...opts, blues: !!part.blues, plucked: !!part.fingers };
     const out = [];
     const stopBars = new Set();
@@ -1953,25 +1953,25 @@
         }
       }
       // strums with a voicing of their own, on the next chord or with a
-      // colour tone, and double stops, are placed here; the rest goes
-      // through realiseBar
+      // color tone, and double stops, are placed here; the rest goes
+      // through realizeBar
       const plain = [], extra = [], pairs = [];
-      // the pick hand's rule for this bar, for the strums placed here and in realiseBar alike
+      // the pick hand's rule for this bar, for the strums placed here and in realizeBar alike
       const per = grid % 3 === 0 ? 3 : 4;
       const fine = fineBar(written, per);
       const barOpts = { ...opts, grid, fine };
       const doubleOk = !(opts.tech && opts.tech.double === false);
       written.forEach(w => {
         if (w.strum && (w.voicing === 'shell' || w.voicing === 'power' || w.voicing === 'sharp9' || w.voicing === 'ninth' || w.voicing === 'bass' || w.voicing === 'fifth' || w.add || w.next)) extra.push(w);
-        else if (w.tech === 'double' && doubleOk && !w.unison) pairs.push(w);   // a unison bend is placed by realiseBar
+        else if (w.tech === 'double' && doubleOk && !w.unison) pairs.push(w);   // a unison bend is placed by realizeBar
         else plain.push(w);
       });
-      let notes = realiseBar(plain, bar.chord, barOpts, next);
+      let notes = realizeBar(plain, bar.chord, barOpts, next);
       const pal = palette(bar.chord, opts), nextPal = palette(next, opts);
       pairs.forEach(w => {
         const reachCells = w.reach ? cellsIn({ min: Math.max(0, Math.min(opts.window.min, opts.window.min + w.reach)), max: Math.min(FRET_COUNT, Math.max(opts.window.max, opts.window.max + w.reach)) }) : cells;
         const placed = placePair(w, reachCells, w.next ? nextPal : pal, homeMidi(cells, (w.next ? nextPal : pal).root));
-        if (!placed){ notes = notes.concat(realiseBar([w], w.next ? next : bar.chord, barOpts, next)); return; }
+        if (!placed){ notes = notes.concat(realizeBar([w], w.next ? next : bar.chord, barOpts, next)); return; }
         const mk = (c, more) => ({ at: w.at, dur: w.dur, vel: w.vel, string: c.string, fret: c.fret, midi: c.midi, iv: w.iv, next: !!w.next, tech: 'double', ...(w.reach ? { reach: w.reach } : {}), ...more });
         notes.push(mk(placed.c1, {}), mk(placed.c2, { pair: true, iv: w.iv2 }));
       });
@@ -1986,33 +1986,33 @@
                  : strumCells(on, opts, w.voicing || 'full');
         if (!grip) return;
         grip = grip.slice().sort((a, b) => a.midi - b.midi);
-        let colour = null;
-        // (a colour tone on a strum — the 9th on top, the 6th in the chicka —
+        let color = null;
+        // (a color tone on a strum — the 9th on top, the 6th in the chicka —
         // except in the triads reading, where every strum is the triad the
         // neck shows and nothing else)
         if (w.add && !triads){
           const top = grip[grip.length - 1];
-          colour = placeIv(on, opts, w.add, top.midi, !!w.free);
-          // the colour tone sits on the string beside the grip's top one —
+          color = placeIv(on, opts, w.add, top.midi, !!w.free);
+          // the color tone sits on the string beside the grip's top one —
           // a 9th on top is x-7-6-7-7-7, not a note a string away with the
           // string between left out of the sweep — reached for past the
           // window if need be, or left out
-          if (colour && colour.string !== top.string - 1){
-            const st = top.string - 1, want = colour.midi % 12;
-            colour = null;
+          if (color && color.string !== top.string - 1){
+            const st = top.string - 1, want = color.midi % 12;
+            color = null;
             if (st >= 0){
               const { min, max } = opts.window;
               const frets = [];
               for (let f = Math.max(0, min - 2); f <= Math.min(FRET_COUNT, max + 2); f++) if ((STRING_MIDI[st] + f) % 12 === want && STRING_MIDI[st] + f > top.midi) frets.push(f);
               frets.sort((a, b) => Math.abs(a - (min + max) / 2) - Math.abs(b - (min + max) / 2));
-              if (frets.length) colour = { string: st, fret: frets[0], midi: STRING_MIDI[st] + frets[0], ...(frets[0] < min || frets[0] > max ? { reach: true } : {}) };
+              if (frets.length) color = { string: st, fret: frets[0], midi: STRING_MIDI[st] + frets[0], ...(frets[0] < min || frets[0] > max ? { reach: true } : {}) };
             }
           }
           // no room above the grip's top string (the E shape at the nut, its
-          // top an open E): a free colour tone takes the place of the grip's
+          // top an open E): a free color tone takes the place of the grip's
           // 5th on that string instead — E6's C♯ on the B string where the B
           // was, the rockabilly "chicka" — or of its lowest chord tone
-          if (!colour && w.free){
+          if (!color && w.free){
             const want = ((pc(on.note) + w.add) % 12 + 12) % 12, fifth = pc(on.fifth);
             const swap = grip.find(c => c.midi % 12 === fifth) || grip[0];
             const { min, max } = opts.window;
@@ -2020,11 +2020,11 @@
             for (let f = Math.max(0, min - 2); f <= Math.min(FRET_COUNT, max + 2); f++) if ((STRING_MIDI[swap.string] + f) % 12 === want) frets.push(f);
             frets.sort((a, b) => Math.abs(a - swap.fret) - Math.abs(b - swap.fret));
             if (frets.length){
-              grip.splice(grip.indexOf(swap), 1, { string: swap.string, fret: frets[0], midi: STRING_MIDI[swap.string] + frets[0], colour: true, swapped: true, ...(frets[0] < min || frets[0] > max ? { reach: true } : {}) });
+              grip.splice(grip.indexOf(swap), 1, { string: swap.string, fret: frets[0], midi: STRING_MIDI[swap.string] + frets[0], color: true, swapped: true, ...(frets[0] < min || frets[0] > max ? { reach: true } : {}) });
               grip.sort((a, b) => a.midi - b.midi);
             }
           }
-          if (colour) grip.push(colour);
+          if (color) grip.push(color);
         }
         const each = w.vel * strumStringLevel(grip.length);
         const stroke = w.stroke || strokeFor(per, w.at, fine);
@@ -2033,7 +2033,7 @@
         grip.forEach((c, k) => notes.push({ at: w.at, dur: w.dur, vel: each, string: c.string, fret: c.fret, midi: c.midi,
                                              strum: true, voicing: w.voicing === 'sharp9' && !sharp9Applies(on) ? 'full' : w.voicing, mute: !!w.mute, next: !!w.next, spread: k * STRUM_SPREAD, stroke, ...grips,
                                              ...(c.reach ? { reach: 2 } : {}),           // a power chord's 5th past the window
-                                             ...(c === colour || c.colour ? { colour: true } : {}), ...(c.swapped ? { swapped: true } : {}) }));
+                                             ...(c === color || c.color ? { color: true } : {}), ...(c.swapped ? { swapped: true } : {}) }));
       });
       if (part.fingers) notes = fingersOffThumb(notes, cells);
       // the flags, matched back to the written note by its moment
@@ -2100,7 +2100,7 @@
   const rollFills = (part, barCount, random = Math.random) => newSeed(random);
 
   GT.parts = { get LIBRARY(){ return LIBRARY_NOW; }, set LIBRARY(v){ LIBRARY_NOW = v; }, LIBRARY_BASE: LIBRARY,
-               SIMPLE_FEEL, TECHNIQUES, EASY_TECH, partsFor, palette, snap, realiseBar, realise, rollFills, newSeed, rng, figureFor,
+               SIMPLE_FEEL, TECHNIQUES, EASY_TECH, partsFor, palette, snap, realizeBar, realize, rollFills, newSeed, rng, figureFor,
                simplify, easyVersion, placePair, thumbCell, powerVoicing, shellVoicing, sharp9Voicing, sharp9Applies, placeIv, fingersOffThumb, strokeFor, fineBar,
                cellsIn, homeMidi, gripIn, triadIn, strumCells, strumStringLevel, hasLeads, BLENDS };
 })();

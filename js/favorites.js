@@ -1,21 +1,21 @@
-// Favourites: a star on the things you would want to come back to — a card
+// Favorites: a star on the things you would want to come back to — a card
 // on a deep dive, the Jam tab as it is set (its key, chords, feel, part and
-// tempo), a drill as it is set — and a page listing them. A favourite is
+// tempo), a drill as it is set — and a page listing them. A favorite is
 // what it names and a link that reopens it: a card by its id on its page,
 // the Jam and Drills tabs by the state they already write into the address
 // bar, so the link is the same one Copy link gives. The list lives in this
-// browser's localStorage (`gt.favourites`); keeping it across devices is
+// browser's localStorage (`gt.favorites`); keeping it across devices is
 // T75. Nothing here plays or renders a card — the pages do that.
 (function(){
   'use strict';
   const GT = (window.GT = window.GT || {});
-  const KEY = 'gt.favourites';
+  const KEY = 'gt.favorites';
   const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;');
   const KINDS = { dive: 'Deep dives', jam: 'Jam', drills: 'Drills' };
   const listeners = [];
 
   let cache = null, clock = 0;
-  // two favourites added in one millisecond still have an order
+  // two favorites added in one millisecond still have an order
   const now = () => { clock = Math.max(Date.now(), clock + 1); return clock; };
   const reload = () => { cache = null; return load(); };
   function load(){
@@ -63,7 +63,7 @@
   window.addEventListener('storage', e => { if (e.key === KEY){ reload(); listeners.forEach(fn => { try { fn(list()); } catch (x) { /* theirs */ } }); } });
 
   // ---- a star button: the one look everywhere ----
-  // `descriptor()` gives the favourite as it would be added now (the Jam
+  // `descriptor()` gives the favorite as it would be added now (the Jam
   // tab's changes as you go); the button reads the list on each refresh.
   function star(btn, descriptor, { onToggle } = {}){
     const paint = () => {
@@ -72,14 +72,14 @@
       btn.classList.toggle('on', on);
       btn.setAttribute('aria-pressed', String(on));
       btn.textContent = on ? '★' + (btn.dataset.label ? ' ' + btn.dataset.label : '') : '☆' + (btn.dataset.label ? ' ' + btn.dataset.label : '');
-      btn.title = on ? 'In your favourites — click to take it out' : 'Keep this in your favourites';
+      btn.title = on ? 'In your favorites — click to take it out' : 'Keep this in your favorites';
     };
     btn.addEventListener('click', async e => {
       e.preventDefault(); e.stopPropagation();
       const d = descriptor();
       if (!d) return;
-      // a favourite is kept with the person's account: signed out, the star asks first
-      if (GT.sync && GT.sync.require && !(await GT.sync.require('favourite'))) return;
+      // a favorite is kept with the person's account: signed out, the star asks first
+      if (GT.sync && GT.sync.require && !(await GT.sync.require('favorite'))) return;
       const on = toggle(d);
       paint();
       if (onToggle) onToggle(on, d);
@@ -89,10 +89,10 @@
     return paint;
   }
 
-  // ---- the page of favourites ----
+  // ---- the page of favorites ----
   const when = ts => { try { return new Date(ts).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }); } catch (e) { return ''; } };
   function renderPage(host){
-    host = host || document.getElementById('favouritesList');
+    host = host || document.getElementById('favoritesList');
     if (!host) return;
     const favs = list();
     if (!favs.length){
@@ -106,12 +106,12 @@
         <ul class="favs">${fs.map(f => `
           <li class="fav" data-id="${esc(f.id)}">
             <a class="fav-main" href="${esc(f.href)}"><span class="fav-title">${esc(f.title)}</span>${f.sub ? `<span class="fav-sub">${esc(f.sub)}</span>` : ''}</a>
-            <span class="fav-side"><span class="fav-when">${when(f.added)}</span><a class="btn small" href="${esc(f.href)}">Open →</a><button type="button" class="fav-remove" title="Take it out of your favourites" aria-label="Remove ${esc(f.title)}">✕</button></span>
+            <span class="fav-side"><span class="fav-when">${when(f.added)}</span><a class="btn small" href="${esc(f.href)}">Open →</a><button type="button" class="fav-remove" title="Take it out of your favorites" aria-label="Remove ${esc(f.title)}">✕</button></span>
           </li>`).join('')}</ul>
-      </section>`).join('') + `<p class="favs-foot">${favs.length} ${favs.length === 1 ? 'favourite' : 'favourites'}, kept in this browser. <button type="button" class="linklike" id="favsClear">Clear them all</button></p>`;
+      </section>`).join('') + `<p class="favs-foot">${favs.length} ${favs.length === 1 ? 'favorite' : 'favorites'}, kept in this browser. <button type="button" class="linklike" id="favsClear">Clear them all</button></p>`;
     host.querySelectorAll('.fav-remove').forEach(b => b.addEventListener('click', () => { remove(b.closest('.fav').dataset.id); renderPage(host); }));
     const clearBtn = host.querySelector('#favsClear');
-    if (clearBtn) clearBtn.addEventListener('click', () => { if (confirm('Forget every favourite?')){ clear(); renderPage(host); } });
+    if (clearBtn) clearBtn.addEventListener('click', () => { if (confirm('Forget every favorite?')){ clear(); renderPage(host); } });
   }
 
   // a way to the page from the pages that are not the app's tabs (the deep dives)
@@ -120,8 +120,8 @@
     if (!top || document.getElementById('siteTabs') || top.querySelector('.favs-link')) return;
     const a = document.createElement('a');
     a.className = 'favs-link';
-    a.href = 'index.html#favourites';
-    a.title = 'Your favourites';
+    a.href = 'index.html#favorites';
+    a.title = 'Your favorites';
     a.textContent = '★';
     top.appendChild(a);
   }
@@ -129,5 +129,5 @@
   // the list changed underneath (sync wrote it): read it again and tell everyone
   const refresh = () => { reload(); listeners.forEach(fn => { try { fn(list()); } catch (e) { /* theirs */ } }); };
 
-  GT.favourites = { KEY, KINDS, list, has, get, add, remove, toggle, clear, reload, refresh, onChange, star, renderPage, linkFromPage };
+  GT.favorites = { KEY, KINDS, list, has, get, add, remove, toggle, clear, reload, refresh, onChange, star, renderPage, linkFromPage };
 })();
