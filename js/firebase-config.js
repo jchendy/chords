@@ -20,5 +20,5 @@ window.GT_FIREBASE = {
   messagingSenderId: '701712968654',
   appId: '1:701712968654:web:f827f282d222b91dc1599f',
   measurementId: 'G-YW8SMFH3RW',
-  clientId: null,   // the OAuth web client ID, once it is known
+  clientId: '701712968654-kl5a90nj2suk2k28mcrqllt1gbg3rr9a.apps.googleusercontent.com',
 };
