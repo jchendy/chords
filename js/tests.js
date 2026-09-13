@@ -3098,6 +3098,90 @@
     t.equal(bad.join('; '), '', 'Favourites are kept with their name and link, newest first, listed by kind with a way out, and read back from storage');
   }
 
+  // Sync across devices (js/sync.js): the merge is by time, item by item —
+  // a favourite starred here and removed there is whichever happened last,
+  // a piece marked and un-marked likewise, a preference its newest value, a
+  // course's ticks and place the newer side's; what a page writes to
+  // localStorage is read as a change with its time; and a backend attached
+  // round-trips — the cloud's document lands in localStorage and the modules
+  // are told, a local change goes up, a change from elsewhere comes down.
+  async function testTheSyncMergesByTime(t){
+    const S = GT.sync;
+    const bad = [];
+    const fav = (id, added) => ({ id, kind: 'dive', title: id, sub: '', href: `hendrix.html#${id}`, added });
+    // ---- the merge, pure ----
+    const a = { v: 1, favourites: { items: [fav('x1', 100), fav('x2', 300)], removed: [{ id: 'x3', at: 500 }] },
+                courses: [{ prefix: 'hendrix', done: [{ key: 'a/1', at: 100 }, { key: 'a/2', at: 400 }], undone: [{ key: 'a/3', at: 250 }], ticks: [{ key: 'a/c', ticks: [true, false] }], last: { lesson: 'a', piece: '2' }, at: 900 }],
+                prefs: [{ key: 'gt.hendrixNeck', value: 'chords', at: 100 }, { key: 'gt.tabRows', value: '3', at: 700 }] };
+    const b = { v: 1, favourites: { items: [fav('x2', 300), fav('x3', 600), fav('x4', 50)], removed: [{ id: 'x1', at: 200 }] },
+                courses: [{ prefix: 'hendrix', done: [{ key: 'a/3', at: 200 }, { key: 'a/4', at: 100 }], undone: [{ key: 'a/2', at: 300 }], ticks: [{ key: 'a/c', ticks: [true, true] }], last: { lesson: 'b', piece: '1' }, at: 800 },
+                          { prefix: 'psychobilly', done: [{ key: 'boom/x', at: 10 }], undone: [], ticks: [], last: null, at: 20 }],
+                prefs: [{ key: 'gt.hendrixNeck', value: 'scale', at: 200 }, { key: 'gt.psychobillyNeck', value: 'off', at: 50 }] };
+    const m = S.merge(a, b);
+    const ids = m.favourites.items.map(f => f.id).sort().join(',');
+    if (ids !== 'x2,x3,x4') bad.push(`the favourites merged to ${ids} (x1 was removed after it was starred, x3 starred after it was removed)`);
+    if (!m.favourites.removed.some(r => r.id === 'x1' && r.at === 200) || m.favourites.removed.some(r => r.id === 'x3')) bad.push(`the tombstones are ${JSON.stringify(m.favourites.removed)}`);
+    const h = m.courses.find(c => c.prefix === 'hendrix');
+    const done = h.done.map(d => d.key).sort().join(',');
+    if (done !== 'a/1,a/2,a/4') bad.push(`the hendrix course merged to ${done} done (a/2 was re-marked after it was un-marked, a/3 un-marked after it was marked)`);
+    if (!h.undone.some(u => u.key === 'a/3')) bad.push('the un-marking of a/3 was lost');
+    if (h.ticks[0].ticks.join() !== 'true,false' || h.last.lesson !== 'a') bad.push('the ticks and the place did not come from the newer side');
+    if (!m.courses.some(c => c.prefix === 'psychobilly' && c.done.length === 1)) bad.push('a course only one side had was dropped');
+    const pref = k => (m.prefs.find(p => p.key === k) || {}).value;
+    if (pref('gt.hendrixNeck') !== 'scale' || pref('gt.tabRows') !== '3' || pref('gt.psychobillyNeck') !== 'off') bad.push(`the preferences merged to ${JSON.stringify(m.prefs)}`);
+    if (S.canon(S.merge(a, b)) !== S.canon(S.merge(b, a))) bad.push('the merge depends on which side is which');
+    if (S.canon(S.merge(m, m)) !== S.canon(m)) bad.push('merging a document with itself changes it');
+    // ---- the watch, and the round trip through a backend ----
+    const F = GT.favourites;
+    const keys = ['gt.favourites', 'gt.hendrixCourse', 'gt.hendrixNeck', S.META_KEY, S.ON_KEY];
+    const kept = Object.fromEntries(keys.map(k => [k, localStorage.getItem(k)]));
+    try {
+      keys.forEach(k => localStorage.removeItem(k));
+      S.resetMeta(); F.reload();
+      // a favourite starred then removed leaves a tombstone; a preference written has a time
+      F.add(fav('x9', 1)); F.remove('x9');
+      localStorage.setItem('gt.hendrixNeck', 'scale');
+      const meta = S.meta();
+      if (!meta.favRemoved.x9) bad.push('removing a favourite left no tombstone');
+      if (!meta.prefsAt['gt.hendrixNeck']) bad.push('a preference written has no time');
+      // a fake backend: signed in, one favourite and one done piece already in the cloud
+      const cloud = { doc: { v: 1, favourites: { items: [fav('x1', 100)], removed: [] }, courses: [{ prefix: 'hendrix', done: [{ key: 'thumb/card-x1', at: 100 }], undone: [], ticks: [], last: null, at: 100 }], prefs: [], updated: 100 }, writes: 0, subs: [] };
+      let userFn = null;
+      const backend = { name: 'fake', user: () => ({ uid: 'u1', name: 'Test', email: 't@example.com' }), onUser: fn => { userFn = fn; }, signIn: async () => {}, signOut: async () => { userFn(null); },
+        read: async () => cloud.doc, write: async doc => { cloud.doc = doc; cloud.writes++; }, subscribe: fn => { cloud.subs.push(fn); return () => { cloud.subs = cloud.subs.filter(x => x !== fn); }; }, remove: async () => { cloud.doc = null; }, deleteAccount: async () => {} };
+      let seen = 0; const off = F.onChange(() => { seen++; });
+      await S.attach(backend);
+      if (!F.has('x1')) bad.push('the cloud\'s favourite did not land in the browser');
+      if (!seen) bad.push('the favourites module was not told');
+      const course = JSON.parse(localStorage.getItem('gt.hendrixCourse') || '{}');
+      if (!course.done || !course.done['thumb/card-x1']) bad.push('the cloud\'s course progress did not land in the browser');
+      if (cloud.writes !== 1) bad.push(`the merged state was written ${cloud.writes} times (once: the local preference and tombstone were new to the cloud)`);
+      if (!cloud.doc.prefs.some(p => p.key === 'gt.hendrixNeck' && p.value === 'scale')) bad.push('the local preference did not go up');
+      if (!cloud.doc.favourites.removed.some(r => r.id === 'x9')) bad.push('the tombstone did not go up');
+      if (S.status().state !== 'synced' || !S.isOn()) bad.push(`after attaching the state is ${S.status().state}, on=${S.isOn()}`);
+      // a local change goes up after a moment
+      F.add(fav('x2', 200));
+      await new Promise(r => setTimeout(r, 1500));
+      if (!cloud.doc.favourites.items.some(f => f.id === 'x2')) bad.push('a favourite starred here did not reach the cloud');
+      // a change from elsewhere comes down
+      const later = Date.now() + 60000;   // newer than anything written here
+      const remote = S.merge(cloud.doc, { v: 1, favourites: { items: [fav('x5', later)], removed: [] }, courses: [], prefs: [{ key: 'gt.hendrixNeck', value: 'off', at: later }], updated: later });
+      remote.updated = 1000; remote.device = 'other';
+      cloud.subs.forEach(fn => fn(remote));
+      await new Promise(r => setTimeout(r, 300));
+      if (!F.has('x5')) bad.push('a favourite starred elsewhere did not come down');
+      if (localStorage.getItem('gt.hendrixNeck') !== 'off') bad.push('a preference changed elsewhere did not come down');
+      off();
+      await S.signOut();
+      if (S.isOn()) bad.push('signing out left sync switched on');
+    } finally {
+      S.detach();
+      keys.forEach(k => { if (kept[k] == null) localStorage.removeItem(k); else localStorage.setItem(k, kept[k]); });
+      S.resetMeta(); F.reload();
+    }
+    t.equal(bad.join('; '), '', 'Sync merges by time (favourites and their removals, pieces marked and un-marked, the newest preference), watches what the page writes, and round-trips through a backend');
+  }
+
   // The deep dives as courses (js/course.js): every piece of both pages is
   // in a lesson — nothing on the page is left out — every piece points at
   // something that exists, the place is kept across a read-back of the
@@ -3217,6 +3301,7 @@
       ['The tab shows the fingering', testTheTabShowsTheFingering],
       ['The example player fingers the tab', testTheExampleIsFingered],
       ['Favourites are kept', testTheFavouritesAreKept],
+      ['Sync across devices', testTheSyncMergesByTime],
       ['The deep dives as courses', testTheCoursesCoverTheirPages],
       ['Chord finder output is identifiable in reverse', testFinderOutputIsIdentifiable],
       ['Chord finder shows the everyday grips', testCanonicalGrips],

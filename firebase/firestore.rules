@@ -1,0 +1,24 @@
+// Firestore rules for the site's sync (js/sync.js). Paste into the Firebase
+// console: Build → Firestore Database → Rules → Publish.
+//
+// One document a person, under their own id: users/{uid}. A signed-in person
+// can read and write their own and nothing else; nobody can list them. The
+// document is the merged state js/sync.js writes (favourites, the courses'
+// progress, the preferences) and is kept small.
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{uid} {
+      allow read, write: if request.auth != null
+                         && request.auth.uid == uid
+                         && (request.method != 'create' && request.method != 'update' || request.resource.data.v == 1);
+    }
+    // To keep sync to a few people, replace the rule above with this one and
+    // list their Google addresses:
+    //
+    // match /users/{uid} {
+    //   allow read, write: if request.auth != null && request.auth.uid == uid
+    //                      && request.auth.token.email in ['jeff@jeffsguitartools.com'];
+    // }
+  }
+}

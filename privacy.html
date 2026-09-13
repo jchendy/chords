@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>What the site stores | Jeff's Guitar Tools</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    color-scheme: dark;
+    --bg:#0c0b0a; --panel:#141312; --panel2:#1b1a18; --line:#2a2724; --line2:#3a3631;
+    --ink:#ece7dc; --muted:#a49a8a; --muted2:#6f675b; --a:#e0a84a;
+  }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--bg); color:var(--ink); font:15px/1.6 Inter,system-ui,sans-serif; }
+  a{ color:var(--a); }
+  .top{ display:flex; align-items:baseline; gap:18px; padding:14px 22px; border-bottom:1px solid var(--line); }
+  .top .site{ font-family:Fraunces,Georgia,serif; font-weight:600; color:var(--muted); text-decoration:none; }
+  .top .site:hover{ color:var(--ink); }
+  .top .crumb{ color:var(--muted2); font-size:12px; letter-spacing:.08em; text-transform:uppercase; }
+  main{ max-width:72ch; margin:0 auto; padding:26px 22px 80px; }
+  h1{ font:600 2rem/1.15 Fraunces,Georgia,serif; margin:0 0 10px; text-wrap:balance; }
+  h2{ font:600 1.3rem/1.2 Fraunces,Georgia,serif; margin:28px 0 8px; }
+  p, li{ color:var(--muted); }
+  p b, li b{ color:var(--ink); }
+  .kicker{ font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted2); margin:0 0 4px; }
+  ul{ padding-left:20px; }
+  li{ margin:0 0 6px; }
+  .note{ padding:10px 14px; border-left:3px solid var(--line2); background:var(--panel); border-radius:0 8px 8px 0; }
+</style>
+</head>
+<body>
+<div class="top"><a class="site" href="index.html">Jeff's Guitar Tools</a><span class="crumb">What the site stores</span></div>
+<main>
+  <p class="kicker">Privacy</p>
+  <h1>What this site stores, where, and how to get rid of it</h1>
+  <p>This is a practice site with no accounts, no analytics and no advertising. It remembers a few things so you can pick up where you left off. Here is exactly what, and where it lives.</p>
+
+  <h2>In your browser</h2>
+  <p>Every page keeps what it remembers in your browser's own storage (localStorage), on this device only. Nothing in it is sent anywhere unless you switch sync on.</p>
+  <ul>
+    <li><b>Favourites</b> — the cards, jam settings and drills you starred, each with its name and the link that reopens it.</li>
+    <li><b>Course progress</b> — which pieces of the Hendrix and psychobilly courses you marked complete, the lines you ticked in their check lists, and the piece you were last on.</li>
+    <li><b>Preferences</b> — the neck, fingering, count-in and contents choices on the deep-dive pages, the number of tab rows shown, the styles you used recently in the Jam tab.</li>
+  </ul>
+  <p>To clear it: the <b>Reset progress</b> and <b>Clear them all</b> buttons on the course and Favourites pages, or clear the site's data in your browser's settings.</p>
+
+  <h2>In the cloud, only if you sign in</h2>
+  <p>The Favourites page offers <b>Sign in with Google</b> to keep the same things on every device you use. If you never click it, nothing below applies and no Google code is loaded.</p>
+  <ul>
+    <li><b>What Google gives the site.</b> Your name, email address and profile picture, as Google's consent screen says. They are kept in the site's Firebase Authentication account list so the site can tell your data from anyone else's. They are not put into the synced document and are not shown to other people.</li>
+    <li><b>What is synced.</b> One small document in the site's Firestore database, under your account's id, holding the three things above: favourites, course progress and preferences. Nothing else — not what you played, not how long, not where you were.</li>
+    <li><b>Who can read it.</b> The database's rules let a signed-in person read and write only their own document. The site's owner can see the account list and the documents in the Firebase console, as the person running the project; nobody else can.</li>
+    <li><b>Where it is.</b> On Google's servers, in the region the Firebase project was created in. Google's own terms cover that infrastructure.</li>
+  </ul>
+  <p class="note"><b>To delete it:</b> on the Favourites page, <b>Delete my data from the cloud</b> removes your synced document and your account for this site in one go; what is in your browser stays until you clear it. Or email <a href="mailto:jeff@jeffsguitartools.com">jeff@jeffsguitartools.com</a> from the address you signed in with and it will be removed by hand.</p>
+
+  <h2>Cookies and third parties</h2>
+  <p>The site sets no cookies of its own. Fonts are loaded from Google Fonts, which sees the request for the font file. With sync on, the Firebase library is loaded from Google and keeps your sign-in session in your browser's storage. There is nothing else.</p>
+
+  <p class="kicker" style="margin-top:34px">Last changed</p>
+  <p>12 September 2026.</p>
+</main>
+</body>
+</html>

@@ -280,7 +280,17 @@
   .favs-empty, .favs-foot{ color:var(--muted); max-width:70ch; }
   .favs .btn.small{ display:inline-block; font:600 12px/1 Inter,system-ui,sans-serif; padding:7px 12px; border-radius:999px; border:1px solid var(--line2); background:var(--panel2); color:var(--ink); text-decoration:none; white-space:nowrap; }
   .favs .btn.small:hover{ border-color:var(--a); }
-  .favs-foot .linklike{ background:none; border:0; padding:0; font:inherit; color:var(--a); cursor:pointer; text-decoration:underline; }
+  .favs-foot .linklike, .sync-panel .linklike{ background:none; border:0; padding:0; font:inherit; color:var(--a); cursor:pointer; text-decoration:underline; }
+  /* sync across devices */
+  .sync-panel{ margin:0 0 22px; padding:12px 16px; border:1px solid var(--line2); border-radius:12px; background:var(--panel); max-width:80ch; }
+  .sync-panel .kicker{ font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted2); margin:0 0 6px; }
+  .sync-line{ margin:0 0 8px; }
+  .sync-line.muted{ color:var(--muted); font-size:.9rem; }
+  .sync-line b{ color:var(--a); }
+  .sync-err{ color:#e069a6; }
+  .sync-btns{ display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:0; }
+  .sync-panel .btn.small{ display:inline-block; font:600 12px/1 Inter,system-ui,sans-serif; padding:7px 12px; border-radius:999px; border:1px solid var(--line2); background:var(--panel2); color:var(--ink); text-decoration:none; cursor:pointer; white-space:nowrap; }
+  .sync-panel .btn.small:hover{ border-color:var(--a); }
   @media (max-width:640px){ .fav{ flex-direction:column; align-items:flex-start; } .fav-when{ display:none; } }
 
   /* ---------- the one transport ---------- */
@@ -776,6 +786,7 @@
     </button>
     <div class="menu" id="siteMenu" hidden>
       <a class="menu-item" href="parts.html">The parts, explained</a>
+      <a class="menu-item" href="privacy.html">What the site stores</a>
       <a class="menu-item" href="mailto:jeff@jeffsguitartools.com">Email Jeff</a>
     </div>
   </span>
@@ -1500,7 +1511,8 @@
 <div class="tab-page" id="page-favourites" hidden>
   <section class="page favourites">
     <h2 class="dives-title">Favourites</h2>
-    <p class="dives-note">The things you starred, each with the link that reopens it as it was: a card on a deep dive, the Jam tab as it was set, a drill as it was set. Kept in this browser.</p>
+    <p class="dives-note">The things you starred, each with the link that reopens it as it was: a card on a deep dive, the Jam tab as it was set, a drill as it was set.</p>
+    <div id="syncPanel"></div>
     <div id="favouritesList"></div>
   </section>
 </div>
@@ -1533,6 +1545,8 @@
 <script src="js/tooltips.js"></script>
 <script src="js/tabs.js"></script>
 <script src="js/favourites.js"></script>
+<script src="js/firebase-config.js"></script>
+<script src="js/sync.js"></script>
 <script src="js/fretboard-view.js"></script>
 <script src="js/jam.js"></script>
 <script src="js/stage.js"></script>

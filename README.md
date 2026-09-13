@@ -1255,8 +1255,61 @@ what it drills. The **Favourites** tab on the front page lists them by
 kind, newest first, each with its name, a line of what it is, when it was
 starred, an Open link and a way out; the deep dives carry a ★ link to it in
 their top bar. The list lives in this browser's localStorage
-(`gt.favourites`, `js/favourites.js`) — nothing is sent anywhere, and
-keeping it across devices is an open item (T75).
+(`gt.favourites`, `js/favourites.js`) — nothing is sent anywhere unless
+sync is on.
+
+## Sync across devices
+
+Everything the site remembers lives in the browser's localStorage: the
+favourites (`gt.favourites`), each course's progress (`gt.<dive>Course`)
+and the preferences (every other `gt.*` key — the neck, fingering,
+count-in and contents choices on the dive pages, the tab rows, the recent
+styles). `js/sync.js` keeps the same things as one small document in
+Firestore, under the signed-in person's own id, and merges it with the
+browser's on every page load and on every change, so what was done on any
+device is done on all of them. Sign-in is Google, through Firebase
+Authentication, and the session stays in the browser, so it is one click
+per browser rather than one per visit.
+
+The merge is per item, by time — the one rule that makes two devices safe
+to use offline. A favourite starred on one device and removed on another
+is whichever happened last; a piece marked complete here and un-marked
+there likewise; a preference is its newest value; a course's ticks and
+place are the newer side's. The bookkeeping that needs — when a favourite
+was removed, when a piece was un-marked, when a preference last changed —
+is kept in `gt.sync.meta`, written by watching `localStorage.setItem`
+itself, so the favourites, course and page modules did not have to learn
+about sync; they read what it writes back through `refresh()`. The
+document is arrays of records rather than maps, since Firestore field
+names cannot carry the dots and slashes the keys have. A test holds the
+merge (both orders give one answer, merging a document with itself changes
+nothing), the watch, and a round trip through a fake backend.
+
+Nothing of this loads unless it is wanted. `js/firebase-config.js` holds
+the Firebase project's web config, `null` by default: with no config, or
+on a page opened from disk, the Favourites page says sync is not set up
+and no Google code is fetched. With a config, the page shows **Sign in
+with Google**; once someone has signed in, that browser loads the Firebase
+compat scripts (app, auth, firestore — plain scripts, from Google's CDN)
+on every page and syncs by itself, until they sign out. **Delete my data
+from the cloud** removes the document and the account in one go.
+`privacy.html` says all of this in plain words, and `firebase/firestore.rules`
+is the one rule the database needs: a signed-in person reads and writes
+their own document and nothing else, with an allowlist variant beside it
+for keeping sync to a few people.
+
+**Setting it up** takes about twenty minutes in the Firebase console
+(free, no card): add a project (Analytics off); Build → Authentication →
+Sign-in method → Google → enable, with a public-facing name and a support
+email; Authentication → Settings → Authorized domains → add the site's
+domain (localhost is there already); Build → Firestore Database → create in
+production mode, then paste `firebase/firestore.rules` under Rules and
+publish; Project settings → General → Your apps → add a web app and copy
+its config into `js/firebase-config.js`. Optionally, in the Google Cloud
+console, restrict the API key to the site's domain and fill in the OAuth
+consent screen (name, support email, homepage, a link to
+`privacy.html`) and publish it — the only scopes used are non-sensitive,
+so no verification is needed.
 
 ## Usage
 
@@ -1797,6 +1850,10 @@ by what each part does:
 | `tooltips.js` | The (i) info bubbles. |
 | `tabs.js` | Tab switching, plus the URL fragment and page title that go with each tab — including `setState`, which lets a tab write its own state after the slug so an exercise can be bookmarked. |
 | `favourites.js` | Favourites: the list in localStorage (id, kind, title, sub, href, added), the one star button every page draws from it (`star(button, descriptor)`), the Favourites page listed by kind with removal, and the ★ link the deep dives carry to it. |
+| `sync.js` | Sync across devices: the local state collected as one document with its times, the merge by item and time, the watch on localStorage that keeps the tombstones, the Firebase backend (Google sign-in, one Firestore document a person) loaded only when sync is on, the panel on the Favourites page, and `attach()` for a backend of the tests' own. |
+| `firebase-config.js` | The Firebase project's web config, `null` until sync is set up; identifiers, not secrets. |
+| `firebase/firestore.rules` | The one Firestore rule sync needs — a signed-in person's own document and nothing else — with an allowlist variant. |
+| `privacy.html` | What the site stores, in the browser and in the cloud, who can read it, and how to delete it. |
 | `main.js` | Boots each tab and wires the header together; puts each course's progress on its dive card, from the summary the course keeps. |
 | `tests.js` | The regression tests, run by `tests.html`. |
 | `js/tests-sound.js` | The measured tests: the mix rendered offline and read as numbers — no clipping, a strum's sum, the part not ducking the band, the techniques heard, the kit's hits, choke, rim and beater, the room's reflections, the two pinned levels, the guitar's own fallback, the upright slapped and the snare brushed and the note popped. |

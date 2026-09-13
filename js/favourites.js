@@ -124,5 +124,8 @@
     top.appendChild(a);
   }
 
-  GT.favourites = { KEY, KINDS, list, has, get, add, remove, toggle, clear, reload, onChange, star, renderPage, linkFromPage };
+  // the list changed underneath (sync wrote it): read it again and tell everyone
+  const refresh = () => { reload(); listeners.forEach(fn => { try { fn(list()); } catch (e) { /* theirs */ } }); };
+
+  GT.favourites = { KEY, KINDS, list, has, get, add, remove, toggle, clear, reload, refresh, onChange, star, renderPage, linkFromPage };
 })();

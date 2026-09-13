@@ -314,6 +314,13 @@
       renderPiece(lesson, piece);
     }
 
+    // where the progress is kept: this browser, or this browser and the cloud
+    const syncLine = () => {
+      const s = GT.sync && GT.sync.status();
+      if (s && s.user) return `Progress is kept in this browser and synced to your Google account (${esc(s.user.email || s.user.name)}); every device you sign in on has it.`;
+      if (s && s.available) return `Progress is kept in this browser; <a href="index.html#favourites">sign in with Google</a> to have it on every device.`;
+      return 'Progress is kept in this browser only (nothing is sent anywhere); clearing the site\'s data clears it.';
+    };
     // ---- the dashboard ----
     const ring = (frac, n, done) => {
       const r = 15, c = 2 * Math.PI * r;
@@ -355,7 +362,7 @@
               <div class="lesson-side"><span class="status ${slug(status)}">${status}${!all && started ? ` · ${d}/${l.pieces.length}` : ''}</span><a class="btn small" href="${hrefOf(l, null)}">${all ? 'Review' : started ? 'Continue' : 'Start'} →</a></div>
             </li>`; }).join('')}</ol>
           <footer class="course-foot">
-            <p>Everything on the full page is in these lessons — the reading, the grips, the figures, every card, the records, the faults, the check lists, the sources — in the order the page's Start-here list gives. Progress is kept in this browser only (nothing is sent anywhere); clearing the site's data clears it.</p>
+            <p>Everything on the full page is in these lessons — the reading, the grips, the figures, every card, the records, the faults, the check lists, the sources — in the order the page's Start-here list gives. ${syncLine()}</p>
             <p><a href="#s1">Read the full page instead</a> · <button type="button" class="linklike" id="courseReset">Reset progress</button></p>
           </footer>
         </div>`;
@@ -528,6 +535,8 @@
     const api = {
       key: KEY, lessons: course, coverage, summary, resumePoint, isDone, setDone, load: () => { state = load(); return state; }, state: () => state, reset: () => { state = blank(); save(); },
       current: () => current ? { lesson: current.lesson.n, piece: current.lesson.pieces.indexOf(current.piece) + 1 } : null, route, hrefOf, inCourse: () => inCourse,
+      // the state changed underneath (sync wrote it): read it again and redraw what is on the screen
+      refresh(){ state = load(); if (inCourse) route(); markStartHere(); },
       init(){
         state = load();
         save();                      // the summary the front page reads, kept current with the lessons as they are now
