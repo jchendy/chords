@@ -1300,7 +1300,9 @@ their own document and nothing else, with an allowlist variant beside it
 for keeping sync to a few people.
 
 **Setting it up** takes about twenty minutes in the Firebase console
-(free, no card): add a project (Analytics off); Build → Authentication →
+(free, no card): add a project (Analytics on or off — the site loads no
+Analytics code either way, and `privacy.html` says it may count visitors
+so that switching it on later needs no new promise); Build → Authentication →
 Sign-in method → Google → enable, with a public-facing name and a support
 email; Authentication → Settings → Authorized domains → add the site's
 domain (localhost is there already); Build → Firestore Database → create in
