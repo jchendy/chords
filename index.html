@@ -264,6 +264,7 @@
   /* ---------- favourites: the stars, and the page ---------- */
   .tbtn.star.on{ color:var(--a); border-color:var(--a); }
   .ib.star-ib{ font-size:1.05rem; line-height:1; }
+  .transport .ib:disabled{ opacity:.4; cursor:default; }
   .ib.star-ib.on{ color:var(--a); border-color:var(--a); }
   .tb-hint{ color:var(--muted2); font-size:.82rem; margin-left:10px; }
   .favs-group{ margin:0 0 22px; }
@@ -906,7 +907,6 @@
           <svg class="key-caret" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 6l4.5 4.5L12.5 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
           <select id="partSelect" class="key-select" aria-label="Part"></select>
         </span>
-        <button type="button" class="ib" id="partPrint" aria-label="Print the tab" title="Just the tab, with its title, in a new tab for printing"><svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 7.5V3.5h8v4"/><rect x="3" y="7.5" width="14" height="6.5" rx="1.5"/><path d="M6.5 12h7v4.5h-7z"/></svg></button>
         <button type="button" class="ib" id="partReroll" aria-label="New fills: a fresh roll of the same part" title="New fills: a fresh roll of the same part"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="2" y="2" width="16" height="16" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="6.3" cy="6.3" r="1.6"/><circle cx="13.7" cy="6.3" r="1.6"/><circle cx="10" cy="10" r="1.6"/><circle cx="6.3" cy="13.7" r="1.6"/><circle cx="13.7" cy="13.7" r="1.6"/></svg></button>
         <!-- a part written with lead lines can be played as comping alone,
              as a lead pass, or the way a player does both — lead lines in
@@ -1099,6 +1099,8 @@
     <!-- a link to everything as it stands — key, chords, style, tempo, the
          neck's view, the part's roll — so it belongs with the page's own
          controls, not the progression's -->
+    <!-- the part's tab for printing: with the page's controls, greyed until the tabbed part is showing -->
+    <button type="button" class="ib" id="partPrint" disabled aria-label="Print the tab" title="Just the tab, with its title, in a new tab for printing"><svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 7.5V3.5h8v4"/><rect x="3" y="7.5" width="14" height="6.5" rx="1.5"/><path d="M6.5 12h7v4.5h-7z"/></svg></button>
     <!-- the star: this jam, as it stands, kept in the favourites (the same star sits in the Share row of the controls) -->
     <button type="button" class="ib star-ib" id="jamStarQuick" aria-label="Keep this in your favourites" aria-pressed="false">☆</button>
     <button type="button" class="ib" id="quickShare" aria-label="Copy a link to all of this" title="Copy a link to all of this: the key, the chords, the style and tempo, the neck as it is shown and the part as it was rolled"><svg class="i-link" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8.2 11.8a3.4 3.4 0 0 0 5 .3l2.6-2.6a3.4 3.4 0 0 0-4.8-4.8l-1.5 1.5"/><path d="M11.8 8.2a3.4 3.4 0 0 0-5-.3L4.2 10.5a3.4 3.4 0 0 0 4.8 4.8l1.5-1.5"/></svg><svg class="i-tick" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 10.5l3.5 3.5 7.5-8"/></svg></button>

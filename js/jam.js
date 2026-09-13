@@ -1994,6 +1994,7 @@
     chartViewGroup.querySelectorAll('.seg-btn').forEach(b => b.classList.toggle('active', (b.dataset.value === 'part') === partOn));
     chordsEl.hidden = partOn;
     partPanel.hidden = !partOn;
+    syncPrintButton();
     if (!force && partSignature() === partSig) return;
     partWindow = view.positionView().window;
     partBarShown = -1;
@@ -2058,6 +2059,7 @@
       totalSlots: bars.length * grid,
     };
     partTabEl._tabExample = example;                 // for the print view
+    syncPrintButton();
     // On a wide screen the tab wraps to as many bars as fit across, and the
     // viewport shows two rows of it, scrolling down to the row being played
     // — a page of tab, turned when the bottom row runs out. On a phone a
@@ -2206,6 +2208,15 @@
   partSelect.addEventListener('change', () => { partIdx = Number(partSelect.value) || 0; partSeed = 0; rebuildPart(); writeShareState(); });
   document.getElementById('partReroll').addEventListener('click', () => { partSeed = 0; rebuildPart(); writeShareState(); });
   // the part's tab alone, with its name, the style and the key, for printing
+  // — the button sits in the playback bar with the page's controls, and is
+  // greyed until the tabbed part is showing, since the chord chart has no tab
+  function syncPrintButton(){
+    const printBtn = document.getElementById('partPrint');
+    if (!printBtn) return;
+    const can = !!partOn && !!partTabEl._tabExample;   // (the tab is shown a moment after it is drawn; the click checks again)
+    printBtn.disabled = !can;
+    printBtn.title = can ? 'Just the tab, with its title, in a new tab for printing' : 'Print the tab: switch to the tabbed guitar part first';
+  }
   document.getElementById('partPrint').addEventListener('click', () => {
     if (!partTabEl._tabExample || partTabEl.hidden) return;
     GT.tabPrint.open({ title: partNow() ? partNow().name : 'Part', meta: `${styleLabel.textContent} · ${currentTonic} ${currentMode}${loadedLabel ? ' · ' + loadedLabel : ''} · ${getTempo()} BPM`, example: partTabEl._tabExample });

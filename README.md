@@ -168,7 +168,10 @@ names the tab you're on.
   the band — comp, bass and drums together — so it can be pulled down under
   the part or under you. ‹ › steps through the
   feel's parts and "New fills" re-rolls the answering bars of the one
-  you're on; nothing changes otherwise, however long you practise — in
+  you're on; the print icon in the playback bar, beside the star, opens
+  the tab alone in a new browser tab for printing, and is greyed while
+  the chord chart is showing, since the chart has no tab; nothing
+  changes otherwise, however long you practise — in
   particular the neck following the playing chord into another box does
   not move it. The part stays in the window it was set in, and only
   stepping the box yourself takes it along. "Follow chords" moves the notes
