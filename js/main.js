@@ -38,6 +38,8 @@
     go.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') follow(e); });
     card.appendChild(line);
   });
+  GT.favourites.renderPage();
+  GT.favourites.onChange(() => GT.favourites.renderPage());
   GT.tabs.init({
     // whichever tab you're leaving, don't let it keep playing
     onSwitch: () => { GT.jam.stop(); GT.earTraining.stop(); GT.drills.stop(); },
@@ -49,6 +51,7 @@
       reverse: () => GT.reverseFinder.refresh(),
       ear: () => GT.earTraining.refresh(),
       drills: () => GT.drills.refresh(),
+      favourites: () => GT.favourites.renderPage(),
     },
   });
 })();

@@ -36,7 +36,7 @@
     .forEach(id => add('span', id));
   ['chords', 'chordSlots', 'presetVariantGroup', 'presetVariantRow',
    'clickRow', 'rootOnlyRow', 'keyMenu', 'keyMenuGrid'].forEach(id => add('div', id));
-  ['quickKeyDice', 'quickRandomChords', 'shareBtn', 'styleProgBtn', 'styleTempoBtn'].forEach(id => add('button', id, { type: 'button' }));
+  ['quickKeyDice', 'quickRandomChords', 'shareBtn', 'styleProgBtn', 'styleTempoBtn', 'jamStar'].forEach(id => add('button', id, { type: 'button' }));
   // the tab reaches for the label wrapping a checkbox to grey it out
   ['commonToggle', 'randomSeventhsToggle', 'clickToggle', 'countInToggle',
    'rootOnlyToggle'].forEach(id => {
@@ -1102,8 +1102,40 @@
     t.equal(bad.join('; '), '', 'A click on the tab while paused sets where Play begins, lights the bar and shows the playhead');
   }
 
+  // The star in the Share row keeps the tab as it is set — named by its
+  // preset or chords, key, feel, part and tempo — with the link Copy link
+  // would give, and says so as the state changes; starred again, it is gone.
+  function testTheStarKeepsTheJam(t){
+    start();
+    const bad = [];
+    const F = GT.favourites;
+    const kept = localStorage.getItem(F.KEY);
+    try {
+      F.clear();
+      setKey('major:C'); setTempo(120);
+      const d = GT.jam.describeState();
+      if (!d.title || !/C major/.test(d.sub) || !/120 BPM/.test(d.sub)) bad.push(`the state is described as ${JSON.stringify(d)}`);
+      const star = q('#jamStar');
+      star.click();
+      const favs = F.list();
+      if (favs.length !== 1 || favs[0].kind !== 'jam') bad.push(`starring kept ${favs.length} favourites of kind ${favs[0] && favs[0].kind}`);
+      if (favs.length && !/^index\.html#jam\?k=major%3AC/.test(favs[0].href)) bad.push(`the favourite's link is ${favs[0] && favs[0].href}`);
+      if (star.textContent[0] !== '★' || star.getAttribute('aria-pressed') !== 'true') bad.push(`the star reads ${star.textContent} after starring`);
+      // a change of state is another thing: the star goes hollow, and the kept one stays
+      setTempo(96);
+      if (star.textContent[0] !== '☆') bad.push('the star stayed lit for a state that is not kept');
+      if (F.list().length !== 1) bad.push('changing the tempo changed the list');
+      setTempo(120);
+      if (star.textContent[0] !== '★') bad.push('back at the kept state the star is not lit');
+      star.click();
+      if (F.list().length !== 0 || star.textContent[0] !== '☆') bad.push('starring again did not take it out');
+    } finally { if (kept == null) localStorage.removeItem(F.KEY); else localStorage.setItem(F.KEY, kept); F.reload(); }
+    t.equal(bad.join('; '), '', 'The star in the Share row keeps the jam as set, named, with its link, and follows the state');
+  }
+
   GT.jamSuites = [
     ['Jam: a shared link round-trips', testShareLinkRoundTrips],
+    ['Jam: the star keeps the tab as set', testTheStarKeepsTheJam],
     ['Jam: the styles are one list', testTheStyleListIsOneList],
     ['Jam: a hit ends when the next begins', testAHitEndsWhenTheNextBegins],
     ['Jam: the downbeat is an accent, not another instrument', testTheDownbeatIsAnAccentNotAnInstrument],

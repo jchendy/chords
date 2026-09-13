@@ -1583,6 +1583,21 @@
       t.equal(onBass.length, 0, `no embellishment sits on the E or A string under the thumb (${bars} thumb-over bars)${onBass.length ? ': ' + onBass.slice(0, 3).join('; ') : ''}`);
       t.ok(singles > 0 && treble / singles >= 0.85, `the notes between the chords are on the G, B and e strings (${treble} of ${singles})`);
       t.equal(past.length, 0, `every note is at the hand's fret or says it reaches${past.length ? ': ' + past.slice(0, 3).join('; ') : ''}`);
+      // ...and the fuzz riff under the Hendrix chord climbs E, G, A, B♭, B
+      // without dropping its last note an octave: at the 7♯9's position the
+      // B is the D string's 9th fret, a fret past the grip's window, reached
+      // for (B84), never the low E string
+      let fuzz = null;
+      Object.keys(LIBRARY.hendrix || {}).forEach(feel => LIBRARY.hendrix[feel].forEach(part => { if (part.name === '7♯9 stabs and the riff') fuzz = part; }));
+      const E79 = chordFromName('E7#9');
+      const riffBars = [E79, E79, E79, E79].map(chord => ({ chord }));
+      let lowE = 0, reached = 0, riffNotes = 0;
+      [1, 2, 3].forEach(seed => [false, true].forEach(easy => {
+        const out = realise(fuzz, riffBars, seed, { ...opts, reading: 'penta', window: { min: 5, max: 8 }, key: { tonic: 'E', mode: 'major' } }, { grid: 16, easy });
+        // (the octaves variant puts the lower note of each pair on the low E by design: pairs are not counted)
+        out.filter(x => !x.strum && !x.next && x.tech !== 'double').forEach(x => { riffNotes++; if (x.string === 5) lowE++; if (x.string === 3 && x.fret === 9 && x.reach) reached++; });
+      }));
+      t.ok(fuzz && riffNotes > 0 && lowE === 0 && reached > 0, `the fuzz riff climbs to its 5th on the D string's 9th fret, reached for (${reached} times), and never drops to the low E (${lowE} of ${riffNotes} riff notes there)`);
     }
   }
 
@@ -3046,6 +3061,43 @@
     t.equal(bad.join('; '), '', 'The example player fingers the tab: the whole hand a change, no finger a note, the neck on the shape struck');
   }
 
+  // Favourites (js/favourites.js): a starred thing is kept with its name
+  // and its link, newest first, starred again it is gone, the list survives
+  // a read-back from storage, and the page lists them by kind with a way to
+  // take each out — and says so when there are none.
+  function testTheFavouritesAreKept(t){
+    const F = GT.favourites;
+    const bad = [];
+    const kept = localStorage.getItem(F.KEY);
+    const host = document.createElement('div');
+    document.body.appendChild(host);
+    try {
+      F.clear();
+      F.renderPage(host);
+      if (!host.querySelector('.favs-empty')) bad.push('an empty list does not say so');
+      const a = F.add({ id: 'dive:hendrix:x1', kind: 'dive', title: 'The thumb and the split chord, plain', sub: 'Hendrix · Soul ballad', href: 'hendrix.html#x1' });
+      const b = F.add({ id: 'jam:k=major%3AC&t=120', kind: 'jam', title: 'Hendrix: Little Wing', sub: 'C major · 120 BPM', href: 'index.html#jam?k=major%3AC&t=120' });
+      if (!a || !b) bad.push('adding returned nothing');
+      if (!F.has('dive:hendrix:x1') || !F.has('jam:k=major%3AC&t=120')) bad.push('a favourite added is not there');
+      if (F.list()[0].id !== 'jam:k=major%3AC&t=120') bad.push('the list is not newest first');
+      if (F.add({ id: 'x', kind: 'jam', title: 'no link' })) bad.push('a favourite with no link was kept');
+      F.reload();
+      if (F.list().length !== 2) bad.push(`read back from storage, ${F.list().length} favourites`);
+      if (F.toggle({ id: 'dive:hendrix:x1', kind: 'dive', title: 't', href: 'hendrix.html#x1' }) !== false || F.has('dive:hendrix:x1')) bad.push('toggling a kept favourite did not take it out');
+      if (F.toggle({ id: 'dive:hendrix:x1', kind: 'dive', title: 't', href: 'hendrix.html#x1' }) !== true || !F.has('dive:hendrix:x1')) bad.push('toggling it again did not put it back');
+      F.renderPage(host);
+      const groups = [...host.querySelectorAll('.favs-group h3')].map(h => h.textContent.replace(/\s*\d+$/, '').trim());
+      if (groups.join(',') !== 'Deep dives,Jam') bad.push(`the page groups them as ${groups.join(',')}`);
+      if (host.querySelectorAll('.fav').length !== 2) bad.push(`${host.querySelectorAll('.fav').length} entries on the page`);
+      const link = host.querySelector('.fav[data-id="dive:hendrix:x1"] .fav-main');
+      if (!link || link.getAttribute('href') !== 'hendrix.html#x1') bad.push('the entry does not link to its card');
+      const rm = host.querySelector('.fav[data-id="dive:hendrix:x1"] .fav-remove');
+      if (rm) rm.click();
+      if (!rm || F.has('dive:hendrix:x1') || host.querySelectorAll('.fav').length !== 1) bad.push('removing from the page did not take it out');
+    } finally { host.remove(); if (kept == null) localStorage.removeItem(F.KEY); else localStorage.setItem(F.KEY, kept); F.reload(); }
+    t.equal(bad.join('; '), '', 'Favourites are kept with their name and link, newest first, listed by kind with a way out, and read back from storage');
+  }
+
   // The deep dives as courses (js/course.js): every piece of both pages is
   // in a lesson — nothing on the page is left out — every piece points at
   // something that exists, the place is kept across a read-back of the
@@ -3101,6 +3153,21 @@
           await wait(800);
           if (!w.document.querySelector('#course .piece article.ex .tab svg')) bad.push('the card piece drew no tab');
           if (!w.document.querySelector('.page').hidden) bad.push('the full page is still shown in the course');
+          // the star on the course's copy of a card keeps the card by its id on its page, and lights the page's own copy too
+          const favKept = w.localStorage.getItem(w.GT.favourites.KEY);
+          try {
+            w.GT.favourites.clear();
+            const star = w.document.querySelector('#course .piece article.ex .star');
+            if (!star) bad.push('the card in the course has no star');
+            else {
+              star.click();
+              const cardId = l1.pieces[firstCard - 1].cardId;
+              const f = w.GT.favourites.get(`dive:${page}:${cardId}`);
+              if (!f || f.kind !== 'dive' || f.href !== `${page}.html#${cardId}`) bad.push(`starring the card kept ${JSON.stringify(f)}`);
+              const pageStar = w.document.querySelector(`main article.ex#${cardId} .star`);
+              if (!pageStar || pageStar.textContent[0] !== '★') bad.push("the page's own copy of the card is not lit");
+            }
+          } finally { if (favKept == null) w.localStorage.removeItem(w.GT.favourites.KEY); else w.localStorage.setItem(w.GT.favourites.KEY, favKept); w.GT.favourites.reload(); }
           w.location.hash = '#s1';
           await wait(400);
           if (w.document.querySelector('.page').hidden || !w.document.getElementById('course').hidden) bad.push('leaving the course did not show the page');
@@ -3149,6 +3216,7 @@
       ['The hand is fingered', testTheHandIsFingered],
       ['The tab shows the fingering', testTheTabShowsTheFingering],
       ['The example player fingers the tab', testTheExampleIsFingered],
+      ['Favourites are kept', testTheFavouritesAreKept],
       ['The deep dives as courses', testTheCoursesCoverTheirPages],
       ['Chord finder output is identifiable in reverse', testFinderOutputIsIdentifiable],
       ['Chord finder shows the everyday grips', testCanonicalGrips],

@@ -49,6 +49,7 @@
   add('input', 'drillFingers', { type: 'checkbox' }, card);
   add('input', 'drillNeckToggle', { type: 'checkbox', checked: true }, card);
   add('button', 'drillShare', { type: 'button' }, card);
+  add('button', 'drillStar', { type: 'button' }, card);
   add('button', 'drillPrint', { type: 'button' }, card);
   add('button', 'drillExpand', { type: 'button' }, card);
   add('button', 'drillClose', { type: 'button', hidden: true }, card);
@@ -303,8 +304,35 @@
     t.equal(bad.join('; '), '', 'A tab of more than two rows scrolls in a pane, more or fewer rows by its control, the choice kept');
   }
 
+  // The star by Copy link keeps the drill as set, named by its kind and
+  // what it drills, with the link that reopens it
+  function testTheStarKeepsTheDrill(t){
+    start();
+    const bad = [];
+    const F = GT.favourites;
+    const kept = localStorage.getItem(F.KEY);
+    try {
+      F.clear();
+      q('#drillKindGroup [data-value="scale"]').click();
+      const d = GT.drills.describeState();
+      if (!/^Scale shapes: /.test(d.title) || !/BPM/.test(d.sub)) bad.push(`the drill is described as ${JSON.stringify(d)}`);
+      const star = q('#drillStar');
+      star.click();
+      const favs = F.list();
+      if (favs.length !== 1 || favs[0].kind !== 'drills' || !/^index\.html#drills\?d=scale/.test(favs[0].href)) bad.push(`starring kept ${JSON.stringify(favs.map(f => [f.kind, f.href]))}`);
+      if (star.textContent[0] !== '★') bad.push('the star is not lit');
+      q('#drillKindGroup [data-value="changes"]').click();
+      if (star.textContent[0] !== '☆') bad.push('another drill shows the star lit');
+      q('#drillKindGroup [data-value="scale"]').click();
+      star.click();
+      if (F.list().length !== 0) bad.push('starring again did not take it out');
+    } finally { if (kept == null) localStorage.removeItem(F.KEY); else localStorage.setItem(F.KEY, kept); F.reload(); }
+    t.equal(bad.join('; '), '', 'The star by Copy link keeps the drill as set, named, with its link');
+  }
+
   GT.drillsSuites = [
     ['Drills: a long tab in a pane', testALongTabInAPane],
+    ['Drills: the star keeps the drill as set', testTheStarKeepsTheDrill],
     ['Drills: a scale drill', testAScaleDrill],
     ['Drills: picking and string crossing', testPickingAndCrossing],
     ['Drills: chord changes and arpeggios', testChangesAndArpeggios],

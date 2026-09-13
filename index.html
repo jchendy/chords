@@ -261,6 +261,27 @@
   .dive-course .bar span{ display:block; height:100%; background:var(--a); }
   .dive-course .go{ color:var(--a); font-weight:600; white-space:nowrap; cursor:pointer; }
   .dive-course .go:hover, .dive-course .go:focus-visible{ text-decoration:underline; outline:none; }
+  /* ---------- favourites: the stars, and the page ---------- */
+  .tbtn.star.on{ color:var(--a); border-color:var(--a); }
+  .tb-hint{ color:var(--muted2); font-size:.82rem; margin-left:10px; }
+  .favs-group{ margin:0 0 22px; }
+  .favs-group h3{ font-family:Fraunces,Georgia,serif; font-weight:600; font-size:1.15rem; margin:0 0 8px; }
+  .favs-count{ font:600 11px/1 Inter,system-ui,sans-serif; color:var(--muted2); padding:3px 8px; border:1px solid var(--line2); border-radius:999px; vertical-align:2px; margin-left:4px; }
+  .favs{ list-style:none; margin:0; padding:0; display:grid; gap:8px; }
+  .fav{ display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 14px; border:1px solid var(--line2); border-radius:10px; background:var(--panel); }
+  .fav-main{ min-width:0; color:var(--ink); text-decoration:none; }
+  .fav-main:hover .fav-title{ color:var(--a); }
+  .fav-title{ display:block; font-weight:600; }
+  .fav-sub{ display:block; color:var(--muted); font-size:.86rem; margin-top:2px; }
+  .fav-side{ display:flex; align-items:center; gap:10px; flex:none; }
+  .fav-when{ color:var(--muted2); font-size:.78rem; font-variant-numeric:tabular-nums; }
+  .fav-remove{ width:26px; height:26px; border-radius:50%; border:1px solid var(--line2); background:transparent; color:var(--muted); cursor:pointer; font:600 12px/1 Inter,system-ui,sans-serif; }
+  .fav-remove:hover{ border-color:#e069a6; color:#e069a6; }
+  .favs-empty, .favs-foot{ color:var(--muted); max-width:70ch; }
+  .favs .btn.small{ display:inline-block; font:600 12px/1 Inter,system-ui,sans-serif; padding:7px 12px; border-radius:999px; border:1px solid var(--line2); background:var(--panel2); color:var(--ink); text-decoration:none; white-space:nowrap; }
+  .favs .btn.small:hover{ border-color:var(--a); }
+  .favs-foot .linklike{ background:none; border:0; padding:0; font:inherit; color:var(--a); cursor:pointer; text-decoration:underline; }
+  @media (max-width:640px){ .fav{ flex-direction:column; align-items:flex-start; } .fav-when{ display:none; } }
 
   /* ---------- the one transport ---------- */
   .transport{ position:fixed; left:0; right:0; bottom:0; z-index:20; display:flex; align-items:center; gap:22px; padding:12px 22px; padding-bottom:calc(12px + env(safe-area-inset-bottom, 0px)); background:var(--panel); border-top:1px solid var(--line); }
@@ -744,6 +765,7 @@
     <button type="button" class="seg-btn site-tab" data-tab="ear">Ear training</button>
     <button type="button" class="seg-btn site-tab" data-tab="drills">Drills</button>
     <button type="button" class="seg-btn site-tab" data-tab="dives">Style Deep Dives</button>
+    <button type="button" class="seg-btn site-tab" data-tab="favourites">Favourites</button>
   </nav>
   <span class="sp"></span>
   <!-- the rest of the site: the things that aren't a tool you'd switch to
@@ -1131,6 +1153,7 @@
     </select></div>
     <h3>Share</h3>
     <div class="frow"><button type="button" class="tbtn" id="shareBtn">Copy a link to all of this</button><input type="text" class="sel share-out" id="shareOut" readonly hidden aria-label="Link to this progression"></div>
+    <div class="frow"><button type="button" class="tbtn star" id="jamStar" data-label="Favourite" aria-pressed="false">☆ Favourite</button><span class="tb-hint">Keeps all of this, as set, on the <a href="#favourites">Favourites</a> page.</span></div>
   </div>
 </div>
 
@@ -1430,6 +1453,7 @@
         <label class="check"><input type="checkbox" id="drillFingers" title="A chord diagram at each change of grip, a finger number over each note"><span>Fingering</span></label>
         <label class="check"><input type="checkbox" id="drillNeckToggle" checked><span>Neck</span></label>
         <button type="button" class="tbtn" id="drillShare">Copy link</button>
+        <button type="button" class="tbtn star" id="drillStar" data-label="Favourite" aria-pressed="false">☆ Favourite</button>
         <button type="button" class="tbtn" id="drillPrint" title="Just the tab, with its title, in a new tab for printing">Print</button>
         <button type="button" class="tbtn" id="drillExpand" title="The drill large, tab and neck side by side">Expand ⤢</button>
         <button type="button" class="tbtn" id="drillClose" hidden>Close ✕</button>
@@ -1471,6 +1495,15 @@
     <p class="dives-note">Each study is also a course — the same page as eight lessons, one piece at a time, with the place kept in this browser: <b>Course</b> at the top of either page, or the line on its card once you have started.</p>
   </section>
 </div>
+
+<!-- ================= Favourites ===================================== -->
+<div class="tab-page" id="page-favourites" hidden>
+  <section class="page favourites">
+    <h2 class="dives-title">Favourites</h2>
+    <p class="dives-note">The things you starred, each with the link that reopens it as it was: a card on a deep dive, the Jam tab as it was set, a drill as it was set. Kept in this browser.</p>
+    <div id="favouritesList"></div>
+  </section>
+</div>
 </main>
 
 <div class="tooltip-bubble" id="tooltipBubble" role="tooltip" hidden></div>
@@ -1499,6 +1532,7 @@
 <script src="js/neck.js"></script>
 <script src="js/tooltips.js"></script>
 <script src="js/tabs.js"></script>
+<script src="js/favourites.js"></script>
 <script src="js/fretboard-view.js"></script>
 <script src="js/jam.js"></script>
 <script src="js/stage.js"></script>

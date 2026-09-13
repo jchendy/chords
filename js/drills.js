@@ -401,7 +401,16 @@
     state.fingers = p.get('fg') === '1';
     return true;
   }
-  const writeState = () => GT.tabs.setState('drills', shareState().toString());
+  const writeState = () => { GT.tabs.setState('drills', shareState().toString()); const star = $('drillStar'); if (star && star._paintStar) star._paintStar(); };
+  // The drill as it is set, in words — what a favourite of it is called
+  function describeState(){
+    const kind = KINDS[state.kind] ? KINDS[state.kind].name : state.kind;
+    const scale = SCALES.find(x => x.id === state.scale);
+    const what = state.kind === 'changes' || state.kind === 'arpeggio' ? (state.chords.trim() || 'the chords').split(/\s+/).join(' – ')
+      : `${scale ? scale.name : state.scale}${state.box && state.box.includes('@') ? `, the ${state.box.split('@')[0]} shape at ${state.box.split('@')[1] === '0' ? 'the nut' : 'fret ' + state.box.split('@')[1]}` : ''}${PATTERNS[state.pattern] && state.pattern !== 'updown' ? ', ' + PATTERNS[state.pattern].toLowerCase() : ''}`;
+    return { title: `${kind}: ${what}`, sub: `${state.tonic} ${state.mode} · ${state.tempo} BPM${state.kind === 'changes' ? ' · ' + (state.custom ? 'the part\'s strumming' : STRUMS[state.strum] ? STRUMS[state.strum].name || state.strum : state.strum) : ''}` };
+  }
+  const drillFavourite = () => { const params = shareState().toString(); const d = describeState(); return { id: `drills:${params}`, kind: 'drills', title: d.title, sub: d.sub, href: `index.html#drills?${params}` }; };
 
   let drill = null, metrics = null, card = null, neckState = { geo: null, drawn: null };
   let big = null, expanded = false, cardHome = null;      // the full-window view, and where the card came from
@@ -598,6 +607,7 @@
       if (e.code !== 'Space' || GT.keys.typing(e.target)) return;
       e.preventDefault(); togglePlay();
     });
+    if ($('drillStar') && GT.favourites) GT.favourites.star($('drillStar'), drillFavourite);
     $('drillShare').addEventListener('click', async () => {
       writeState();
       try { await navigator.clipboard.writeText(location.href); $('drillShare').textContent = 'Copied'; setTimeout(() => { $('drillShare').textContent = 'Copy link'; }, 1200); } catch (e) { /* nothing to copy to */ }
@@ -627,5 +637,5 @@
   function refresh(){ if (window.innerWidth !== drawnWidth || !metrics){ drawnWidth = window.innerWidth; render(); } }
   function stop(){ if (playingHere()) player().stop(); }
 
-  GT.drills = { init, refresh, stop, expand, collapse, isExpanded: () => expanded, realiseDrill, SCALES, KINDS, PATTERNS, CROSSINGS, STRUMS, STRING_SETS, POSITIONS, boxesFor, boxId, windowOf, shareState, applyState, state, encodeStrums, decodeStrums };
+  GT.drills = { init, refresh, stop, expand, collapse, isExpanded: () => expanded, realiseDrill, SCALES, KINDS, PATTERNS, CROSSINGS, STRUMS, STRING_SETS, POSITIONS, boxesFor, boxId, windowOf, shareState, applyState, describeState, favourite: drillFavourite, state, encodeStrums, decodeStrums };
 })();

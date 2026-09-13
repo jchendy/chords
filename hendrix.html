@@ -126,6 +126,10 @@
   .playing .play{ background:var(--a); color:#0c0b0a; border-color:var(--a); }
   .drill{ font:600 12px Inter,system-ui,sans-serif; padding:6px 12px; border-radius:999px; border:1px solid var(--line2); color:var(--a); text-decoration:none; }
   .drill:hover{ border-color:var(--a); }
+  .drill.star{ min-width:34px; text-align:center; padding-left:9px; padding-right:9px; color:var(--muted); }
+  .drill.star.on{ color:var(--a); border-color:var(--a); }
+  .top .favs-link{ color:var(--muted2); text-decoration:none; font-size:15px; margin-left:12px; align-self:center; }
+  .top .favs-link:hover{ color:var(--a); }
   .meta{ display:flex; flex-wrap:wrap; gap:4px 14px; margin:2px 0 6px; color:var(--muted2); font-size:12px; font-variant-numeric:tabular-nums; }
   .blurb{ margin:6px 0 4px; color:var(--muted); max-width:80ch; }
   .tab{ overflow-x:auto; }
@@ -372,6 +376,7 @@
 <script src="js/example-player.js"></script>
 <script src="js/neck-follow.js"></script>
 <script src="js/drills.js"></script>
+<script src="js/favourites.js"></script>
 <script src="js/deep-dive.js"></script>
 <script src="js/course.js"></script>
 <script src="js/hendrix-guide.js"></script>

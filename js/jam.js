@@ -1202,7 +1202,11 @@
     tempoVal.textContent = `${getTempo()} BPM`;
     document.querySelectorAll('.bpm-preset')
       .forEach(b => b.classList.toggle('active', Number(b.dataset.bpm) === getTempo()));
+    // the star follows the tempo as it moves; the address bar when it settles
+    const star = document.getElementById('jamStar');
+    if (star && star._paintStar) star._paintStar();
   });
+  tempoInput.addEventListener('change', () => writeShareState());
   function setTempo(bpm){
     tempoInput.value = String(Math.max(Number(tempoInput.min) || 40, Math.min(Number(tempoInput.max) || 200, Math.round(bpm))));
     tempoInput.dispatchEvent(new Event('input'));
@@ -1701,7 +1705,24 @@
   // which is the part the address bar can't do for you.
   function writeShareState(){
     GT.tabs.setState('caged', shareState().toString());
+    const star = document.getElementById('jamStar');
+    if (star && star._paintStar) star._paintStar();   // the star says whether this exact state is kept
   }
+  // The tab as it is set, in words — what a favourite of it is called: the
+  // preset and its variant, or the chords; then the key, the feel, the part
+  // if one is on, and the tempo.
+  function describeState(){
+    const preset = presetIdx != null ? GT.progressionPresets[presetIdx] : null;
+    const variant = preset && preset.variants && preset.variants[variantIdx];
+    const chords = currentProgression.map(c => displayName(c)).join(' – ');
+    const title = preset ? `${preset.name}${variant && variant.name ? ': ' + variant.name : ''}` : chords || 'The jam tab';
+    const part = partOn && partNow() ? partNow().name : '';
+    const sub = [`${currentTonic} ${currentMode}`, preset ? chords : '', feelName(currentStyle, currentVariant), part, `${getTempo()} BPM`].filter(Boolean).join(' · ');
+    return { title, sub };
+  }
+  // the favourite: this state, named, with the link that reopens it
+  const jamFavourite = () => { const params = shareState().toString(); const d = describeState(); return { id: `jam:${params}`, kind: 'jam', title: d.title, sub: d.sub, href: `index.html#jam?${params}` }; };
+
 
   // Bring a shared link's state in. Returns false if there wasn't one, so the
   // caller can roll a progression as usual.
@@ -2428,7 +2449,7 @@
     // leaving the tab shouldn't leave a progression playing behind you
     stop(){ if (isPlaying) togglePlay(); },
     loadProgression,
-    copyShareLink,
+    copyShareLink, describeState, favourite: jamFavourite,
     simpleHitSeconds, SIMPLE_ACCENT, CLICK, DEFAULT_FEEL,
     setTempo, getTempo,
     stepCursor, setLoop, loopState: () => ({ ...loop }), cursor: () => ({ chordIdx, beatInChord }),
@@ -2467,6 +2488,9 @@
       // own mode offers, with the picker showing which one it is. The dice
       // are right there for a random one.
       if (!applyShareState(GT.tabs.stateParams())) startFresh();
+      // the star in the Share row: bound once the tab is set up, since it reads the whole state
+      const jamStar = document.getElementById('jamStar');
+      if (jamStar && GT.favourites) GT.favourites.star(jamStar, jamFavourite);
       // The address bar should describe the page from the moment it settles,
       // not from the first time something is touched. It's written after the
       // header has wired the tabs up, since only the tab on show may write.

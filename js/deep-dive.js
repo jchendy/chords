@@ -280,11 +280,17 @@
     art.innerHTML = `
       <div class="ex-head"><div><h4>${esc(ex.title)}</h4>
         <div class="meta"><span>${esc(ex.feel)}</span>${ex.part ? `<span>${esc(ex.part)}</span>` : ''}<span>${esc(ex.key)} ${ex.mode === 'minor' ? 'minor' : 'major'}</span><span>${ex.tempo} BPM · start at ${practiceTempo(ex)}</span>${swung}<span>${kind}</span>${level ? `<span class="chip ${level}">${level}</span>` : ''}</div></div>
-        <span class="btns"><span class="seg neck-seg" role="group" aria-label="Neck"><span class="lbl">Neck</span>${['off', 'chords', 'scale'].map(v => `<button type="button" data-value="${v}"${v === mode0 ? ' class="active"' : ''}>${v[0].toUpperCase() + v.slice(1)}</button>`).join('')}</span><span class="seg fingers-seg"><button type="button" class="fingers${show.fingers ? ' active' : ''}" aria-pressed="${show.fingers}" title="A chord diagram at each change of grip, a finger number over each note">Fingering</button></span><button type="button" class="play">Play</button><a class="drill" href="${link}">${openText(ex)} →</a><button type="button" class="drill print" title="Just the tab, with its title, in a new tab for printing">Print</button>${cfg.big ? '<button type="button" class="drill close-big">Close ✕</button>' : '<button type="button" class="drill expand" title="The example large, tab and neck side by side">Expand ⤢</button>'}</span></div>
+        <span class="btns"><span class="seg neck-seg" role="group" aria-label="Neck"><span class="lbl">Neck</span>${['off', 'chords', 'scale'].map(v => `<button type="button" data-value="${v}"${v === mode0 ? ' class="active"' : ''}>${v[0].toUpperCase() + v.slice(1)}</button>`).join('')}</span><span class="seg fingers-seg"><button type="button" class="fingers${show.fingers ? ' active' : ''}" aria-pressed="${show.fingers}" title="A chord diagram at each change of grip, a finger number over each note">Fingering</button></span><button type="button" class="play">Play</button><a class="drill" href="${link}">${openText(ex)} →</a><button type="button" class="drill print" title="Just the tab, with its title, in a new tab for printing">Print</button>${cfg.big ? '<button type="button" class="drill close-big">Close ✕</button>' : '<button type="button" class="drill expand" title="The example large, tab and neck side by side">Expand ⤢</button>'}${GT.favourites ? '<button type="button" class="drill star" aria-pressed="false">☆</button>' : ''}</span></div>
       <p class="blurb">${ex.blurb}</p>
       <div class="body"><div class="tab"></div><div class="neck" hidden></div></div>
       ${ex.refs ? `<p class="refs">${ex.refs}</p>` : ''}`;
     host.appendChild(art);
+    // the star: this card, by its id on its page, whichever copy of it was starred
+    if (GT.favourites){
+      const baseId = ex.id.replace(/-(course|big)$/, '');
+      GT.favourites.star(art.querySelector('.star'), () => ({ id: `dive:${config.prefix}:${baseId}`, kind: 'dive', title: ex.title.replace(/^\d+\.\s*/, ''),
+        sub: `${config.presetName} · ${ex.feel} · ${ex.key} ${ex.mode === 'minor' ? 'minor' : 'major'} · ${ex.tempo} BPM`, href: `${config.prefix}.html#${baseId}` }));
+    }
     if (!r){ art.querySelector('.tab').innerHTML = `<p class="missing">This example's part is missing: ${esc(ex.feel)} / ${esc(ex.part)}</p>`; return; }
     const tabHost = art.querySelector('.tab');
     // the fingering, when shown, is the thumb-over hand: the page's
@@ -576,7 +582,14 @@
 
   return { helpers, jamLink, drillsLink, openLink, realiseExample, chordNeck, scaleNeck, gripSVG, feelByLabel, feelIndex,
            windowAt, card, exampleById, renderCards, countInOn, setCountIn, prefKey,
-           init(){ render(); renderToc(); bindTocFold(); bindCountIn(); } };
+           init(){
+             render(); renderToc(); bindTocFold(); bindCountIn();
+             if (GT.favourites){
+               GT.favourites.linkFromPage();
+               // a card starred in one place (the course's copy, the large view) is starred in every copy
+               GT.favourites.onChange(() => document.querySelectorAll('article.ex .star').forEach(b => { if (b._paintStar) b._paintStar(); }));
+             }
+           } };
   }
 
   GT.deepDive = { create, helpers };

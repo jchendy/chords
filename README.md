@@ -32,6 +32,9 @@ A single-page, dependency-free site with six tabs under one header:
   course (**Course** in its top bar): the same page as eight lessons, one
   piece at a time, marked complete as you go, your place kept in the
   browser and a Continue button to pick it up.
+- **Favourites** — a ☆ on every card of the deep dives, in the Jam tab's
+  Share row and in the Drills toolbar keeps that thing, as it is set, on a
+  page of its own, each with the link that reopens it.
 
 The site's name in the header is the way home: it opens the jam tab as a
 fresh page does, a preset showing, the default feel and tempo, no part,
@@ -1240,6 +1243,21 @@ tab, which keeps its explicit **Copy link**: its state is a whole
 progression, and rewriting twelve chords into the URL on every twiddle would
 be noise.
 
+**Favourites** are the same links with a name on them. The ☆ on a deep
+dive's card (in the Read view, the course and the large view alike) keeps
+the card by its id on its page; the ☆ in the Jam tab's Share row keeps the
+tab as it is set — its key, chords or preset, feel, part and tempo, named
+by them ("Hendrix: Little Wing · E minor · Soul ballad · Thumb bass and
+the split chord · 70 BPM") with the link Copy link would give, and it goes
+hollow the moment any of that changes and lights again at a kept state;
+the ☆ in the Drills toolbar keeps the drill as set, named by its kind and
+what it drills. The **Favourites** tab on the front page lists them by
+kind, newest first, each with its name, a line of what it is, when it was
+starred, an Open link and a way out; the deep dives carry a ★ link to it in
+their top bar. The list lives in this browser's localStorage
+(`gt.favourites`, `js/favourites.js`) — nothing is sent anywhere, and
+keeping it across devices is an open item (T75).
+
 ## Usage
 
 Open `index.html` in any modern browser. No build step, no dependencies
@@ -1778,6 +1796,7 @@ by what each part does:
 | `ear-training.js` | Ear training tab: what's on the neck — a chord shape, a pentatonic box or a scale box — and the drill over its notes. Draws and sounds chords from the chord finder's own code and boxes from the jam tab's, so no tab can drift from another. |
 | `tooltips.js` | The (i) info bubbles. |
 | `tabs.js` | Tab switching, plus the URL fragment and page title that go with each tab — including `setState`, which lets a tab write its own state after the slug so an exercise can be bookmarked. |
+| `favourites.js` | Favourites: the list in localStorage (id, kind, title, sub, href, added), the one star button every page draws from it (`star(button, descriptor)`), the Favourites page listed by kind with removal, and the ★ link the deep dives carry to it. |
 | `main.js` | Boots each tab and wires the header together; puts each course's progress on its dive card, from the summary the course keeps. |
 | `tests.js` | The regression tests, run by `tests.html`. |
 | `js/tests-sound.js` | The measured tests: the mix rendered offline and read as numbers — no clipping, a strum's sum, the part not ducking the band, the techniques heard, the kit's hits, choke, rim and beater, the room's reflections, the two pinned levels, the guitar's own fallback, the upright slapped and the snare brushed and the note popped. |

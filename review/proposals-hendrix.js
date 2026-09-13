@@ -49,6 +49,7 @@
   // stays a sus4), F1 the reverse (the sus4 pulled off to the chord's 3rd), R2F
   // the 9th on the top string hammered to the 3rd a fret past the window
   const F2 = { free2: true }, F1 = { free: true, free2: false }, R2F = { free: true, free2: false, reach: 1 };
+  const PMR = { pm: true, reach: 1 };   // a muted riff note a fret past the window
   // WHERE THE NOTES SIT. The thumb-over feels put the root under the thumb on
   // the low E string, and a part's intervals are measured from that root
   // (parts.js, homeMidi), so the E shape's strings are: 0 the root (E), 5
@@ -180,20 +181,21 @@
             name: '7♯9 stabs and the riff',
             blues: true,
             why: 'The Hendrix chord struck on one and left to ring, then the riff on the low strings: root, ♭3, root, the 4th, the ♭5 as a passing note (free, so it stays a ♭5 in every reading) up to the 5th, in eighths, muted between. The variant says the riff in octaves the way the Octavia would. The fills climb the box and land on the next root.',
-            figure: [s(0, 3, 0.95, 'sharp9', null, { stroke: 'down' }), n(6, 0, 2, 0.85, PM), n(8, 3, 2, 0.85, PM), n(10, 0, 2, 0.8, PM), n(12, 5, 2, 0.85, PM), n(14, 6, 1, 0.8, { free: true, pm: true }), n(15, 7, 1, 0.85, PM)],
+            // (the riff climbs E, G, A, B♭, B: at the 7th position its B is the D string's 9th fret, a fret past the grip's window, reached for rather than dropped an octave — B84)
+            figure: [s(0, 3, 0.95, 'sharp9', null, { stroke: 'down' }), n(6, 0, 2, 0.85, PM), n(8, 3, 2, 0.85, PM), n(10, 0, 2, 0.8, PM), n(12, 5, 2, 0.85, PM), n(14, 6, 1, 0.8, { free: true, pm: true }), n(15, 7, 1, 0.85, PMR)],
             variants: [
               [d(0, 0, 12, 2, 0.9), d(2, 0, 12, 2, 0.7), d(4, 3, 15, 2, 0.85), d(6, 0, 12, 2, 0.7), d(8, 5, 17, 2, 0.85), d(10, 6, 18, 1, 0.8, F), d(11, 7, 19, 1, 0.85), s(12, 3, 0.9, 'sharp9', null, { stroke: 'down' })],
-              [s(0, 1.5, 0.95, 'sharp9', null, { stroke: 'down' }), s(2, 1.5, 0.7, 'sharp9', 'mute'), s(4, 3, 0.9, 'sharp9', null, { stroke: 'down' }), n(8, 0, 2, 0.85, PM), n(10, 3, 2, 0.8, PM), n(12, 5, 2, 0.85, PM), n(14, 7, 2, 0.85, PM)],
+              [s(0, 1.5, 0.95, 'sharp9', null, { stroke: 'down' }), s(2, 1.5, 0.7, 'sharp9', 'mute'), s(4, 3, 0.9, 'sharp9', null, { stroke: 'down' }), n(8, 0, 2, 0.85, PM), n(10, 3, 2, 0.8, PM), n(12, 5, 2, 0.85, PM), n(14, 7, 2, 0.85, PMR)],
             ],
             fills: [
               [s(0, 3, 0.95, 'sharp9', null, { stroke: 'down' }), n(6, 12, 2, 0.85), n(8, 10, 2, 0.8), n(10, 7, 2, 0.8), n(12, 6, 1, 0.75, F), n(13, 5, 1, 0.8), n(14, 3, 2, 0.85)],
             ],
             fillsOnChange: [
-              [n(0, 0, 2, 0.9, PM), n(2, 3, 2, 0.85, PM), n(4, 5, 2, 0.85, PM), n(6, 7, 2, 0.85, PM), n(8, 10, 2, 0.85), n(10, 12, 2, 0.85), nx(12, 3, 2, 0.8), nx(14, 0, 2, 0.9)],
-              [s(0, 3, 0.95, 'sharp9', null, { stroke: 'down' }), n(6, 7, 2, 0.85), n(8, 6, 1, 0.75, F), n(9, 5, 1, 0.8), n(10, 3, 2, 0.85), nx(12, -2, 2, 0.8, PM), nx(14, -1, 2, 0.85, PM)],
+              [n(0, 0, 2, 0.9, PM), n(2, 3, 2, 0.85, PM), n(4, 5, 2, 0.85, PM), n(6, 7, 2, 0.85, PMR), n(8, 10, 2, 0.85), n(10, 12, 2, 0.85), nx(12, 3, 2, 0.8), nx(14, 0, 2, 0.9)],
+              [s(0, 3, 0.95, 'sharp9', null, { stroke: 'down' }), n(6, 7, 2, 0.85, { reach: 1 }), n(8, 6, 1, 0.75, F), n(9, 5, 1, 0.8), n(10, 3, 2, 0.85), nx(12, -2, 2, 0.8, PM), nx(14, -1, 2, 0.85, PM)],
             ],
             fillsOnStay: [
-              [s(0, 3, 0.95, 'sharp9', null, { stroke: 'down' }), b(6, 10, 2, 4, 0.9, V), n(10, 7, 2, 0.8), n(12, 5, 2, 0.8), n(14, 3, 2, 0.85)],
+              [s(0, 3, 0.95, 'sharp9', null, { stroke: 'down' }), b(6, 10, 2, 4, 0.9, V), n(10, 7, 2, 0.8, { reach: 1 }), n(12, 5, 2, 0.8), n(14, 3, 2, 0.85)],
             ],
             leads: [
               [un(0, 24, 4, 0.9, V), n(4, 22, 2, 0.8), n(6, 19, 2, 0.8), n(8, 17, 2, 0.75), n(10, 15, 2, 0.8), n(12, 12, 4, 0.85, V)],
@@ -201,8 +203,8 @@
               [n(0, 19, 2, 0.85, { trill: 22 }), n(2, 19, 2, 0.6), n(4, 17, 2, 0.8), n(6, 15, 2, 0.8), n(8, 16, 1, 0.75, F), n(9, 15, 1, 0.8), n(10, 12, 2, 0.85), n(12, 10, 2, 0.8), n(14, 12, 2, 0.85, V)],
             ],
             leadChance: 0.5,
-            stops: [[s(0, 2, 1, 'sharp9', null, { stroke: 'down' }), n(8, 12, 2, 0.9, { rake: true }), n(10, 10, 2, 0.85), n(12, 7, 2, 0.85), n(14, 3, 2, 0.9)]], stopChance: 0.15,
-            easy: { figure: [s(0, 4, 0.9, 'sharp9', null, { stroke: 'down' }), n(8, 0, 2, 0.85), n(10, 3, 2, 0.8), n(12, 5, 2, 0.85), n(14, 7, 2, 0.85)] },
+            stops: [[s(0, 2, 1, 'sharp9', null, { stroke: 'down' }), n(8, 12, 2, 0.9, { rake: true }), n(10, 10, 2, 0.85), n(12, 7, 2, 0.85, { reach: 1 }), n(14, 3, 2, 0.9)]], stopChance: 0.15,
+            easy: { figure: [s(0, 4, 0.9, 'sharp9', null, { stroke: 'down' }), n(8, 0, 2, 0.85), n(10, 3, 2, 0.8), n(12, 5, 2, 0.85), n(14, 7, 2, 0.85, { reach: 1 })] },
           },
           {
             name: 'Power chords with the open strings',
