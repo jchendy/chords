@@ -1,14 +1,18 @@
 // Sync across devices: the Firebase project this copy of the site talks to
-// (js/sync.js). Leave it null and the site keeps everything in the browser,
+// (js/sync.js). Set to null and the site keeps everything in the browser,
 // as it always did — no Google code is loaded, no button appears.
 //
-// To switch sync on, put the web app config from the Firebase console here
-// (Project settings → General → Your apps → the </> web app → "Config").
 // These values identify the project; they are not secrets — the Firestore
 // rules (firebase/firestore.rules) are what keep one person's data theirs.
-//
-//   window.GT_FIREBASE = {
-//     apiKey: '…', authDomain: '<project>.firebaseapp.com', projectId: '<project>',
-//     storageBucket: '<project>.appspot.com', messagingSenderId: '…', appId: '…',
-//   };
-window.GT_FIREBASE = null;
+// From the Firebase console: Project settings → General → Your apps → the
+// web app → "Config". The site loads no Analytics, so measurementId is
+// unused; it is kept only because the console hands it out with the rest.
+window.GT_FIREBASE = {
+  apiKey: 'AIzaSyDkTQLfjrUYQmL2xbv_K3v9ERDteASbZB8',
+  authDomain: 'jeffs-guitar-tools.firebaseapp.com',
+  projectId: 'jeffs-guitar-tools',
+  storageBucket: 'jeffs-guitar-tools.firebasestorage.app',
+  messagingSenderId: '701712968654',
+  appId: '1:701712968654:web:f827f282d222b91dc1599f',
+  measurementId: 'G-YW8SMFH3RW',
+};

@@ -1286,9 +1286,10 @@ merge (both orders give one answer, merging a document with itself changes
 nothing), the watch, and a round trip through a fake backend.
 
 Nothing of this loads unless it is wanted. `js/firebase-config.js` holds
-the Firebase project's web config, `null` by default: with no config, or
-on a page opened from disk, the Favourites page says sync is not set up
-and no Google code is fetched. With a config, the page shows **Sign in
+the Firebase project's web config (the `jeffs-guitar-tools` project, open
+to anyone with a Google account; set it to `null` to switch sync off):
+with no config, or on a page opened from disk, the Favourites page says
+sync is not set up and no Google code is fetched. With a config, the page shows **Sign in
 with Google**; once someone has signed in, that browser loads the Firebase
 compat scripts (app, auth, firestore — plain scripts, from Google's CDN)
 on every page and syncs by itself, until they sign out. **Delete my data
