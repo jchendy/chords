@@ -1546,6 +1546,44 @@
       t.ok(libParts >= 6, `the fingerpicked parts are marked (${libParts})`);
       t.equal(libClash, 0, 'no fingerpicked part in the library puts a finger on the thumb\'s string');
     }
+    {
+      // The thumb-over parts (B83): the Hendrix feels put the root under the
+      // thumb on the low E, and the embellishments live on the strings over
+      // it — so in every bar with a thumb bass note, a single note on the low
+      // E or A string stays within the thumb's reach (two frets), and the
+      // notes between the chords sit on the D, G, B and e strings, in the
+      // chords reading and in easy mode, the hand at each chord's own fret.
+      const { LIBRARY } = GT.parts;
+      const parts = ['Thumb bass and the split chord', 'Sliding 6ths and rolling hammer-ons (the Mayfield way)', 'Hammered double stops between the chords'];
+      const found = [];
+      Object.keys(LIBRARY.hendrix || {}).forEach(feel => LIBRARY.hendrix[feel].forEach(part => { if (parts.includes(part.name)) found.push(part); }));
+      t.equal(found.length, 3, `the three thumb-over parts are in the library (${found.length})`);
+      // the hand sits at each chord's fret, the root under the thumb: a
+      // single note on the E or A string is then out of the fingers' reach
+      // — the only one allowed is the root itself, picked where the thumb is
+      // (the walk-ups written against the next chord are the thumb moving, and are not counted)
+      const positions = [['Em', 0], ['G', 3], ['Am', 5], ['Bm', 7], ['C', 8], ['E', 0], ['A', 5]];
+      let bars = 0, singles = 0, treble = 0, past = [], onBass = [];
+      found.forEach(part => [1, 2, 3].forEach(seed => [false, true].forEach(easy => ['caged', 'penta'].forEach(reading => {
+        const chords = positions.map(([name, at]) => ({ chord: chordFromName(name), window: { min: at, max: at + 3 } }));
+        const o = { ...opts, reading, key: { tonic: 'E', mode: 'minor' }, scaleTheory: 'modal' };
+        const out = realise(part, chords, seed, o, { grid: 16, easy });
+        chords.forEach((bar, b) => {
+          const hand = bar.window.min;
+          const notes = out.filter(x => x.bar === b && !x.strum && !x.next);
+          bars++;
+          notes.forEach(x => {
+            singles++;
+            if (x.string <= 2) treble++;
+            if (x.string >= 4 && !(x.string === 5 && x.fret === hand)) onBass.push(`${part.name.slice(0, 10)} ${reading}${easy ? ' easy' : ''} s${seed} bar ${b + 1} (${positions[b][0]} at ${hand}): string ${x.string} fret ${x.fret}`);
+            if (!x.reach && (x.fret < bar.window.min || x.fret > bar.window.max)) past.push(`${part.name.slice(0, 10)} bar ${b + 1}: fret ${x.fret} outside ${bar.window.min}–${bar.window.max}`);
+          });
+        });
+      }))));
+      t.equal(onBass.length, 0, `no embellishment sits on the E or A string under the thumb (${bars} thumb-over bars)${onBass.length ? ': ' + onBass.slice(0, 3).join('; ') : ''}`);
+      t.ok(singles > 0 && treble / singles >= 0.85, `the notes between the chords are on the G, B and e strings (${treble} of ${singles})`);
+      t.equal(past.length, 0, `every note is at the hand's fret or says it reaches${past.length ? ': ' + past.slice(0, 3).join('; ') : ''}`);
+    }
   }
 
   function testTheSuggestedParts(t){

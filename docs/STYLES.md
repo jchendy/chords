@@ -68,7 +68,12 @@ beat), nine for a jazz waltz (three beats of three). Every event has a slot
   and B strings — the split chord a thumb-over hand strikes after its bass
   note), `sharp9` (the 7♯9 grip, x-7-6-7-8-x with the root on the A
   string) and `ninth` (the 9th grip, x-7-6-7-7-7); the two grips may sit a
-  fret past the window (`reach: 1`). `sn` strikes the
+  fret past the window (`reach: 1`). `free2` says for the second note of
+  a hammer-on, pull-off or double stop whether it is free, when the first
+  is not, or is: `h(…, 16, 17, …, { free2: true })` hammers the chord's
+  own 3rd to a 4th that stays a sus4 in every reading, `p(…, 17, 16, …,
+  { free: true, free2: false })` pulls the sus4 off to the chord's 3rd.
+  `sn` strikes the
   next chord early (the "and of 4" push). `add: 14` puts a colour tone (the
   9th) on top — and with `free` the tone keeps its note in every reading
   and, where the grip has no room above its top string (the E shape at
@@ -161,6 +166,14 @@ string holds to 23 and folds the rest down an octave. So parts written for
 a feel whose review key roots on the A string (E, C, G, D and most others)
 peak on the 5th, 6th and ♭7 above the octave (19–23); the A, B♭ and G♯
 keys reach 24–28. The `tools/reach.js` script prints this per key.
+A feel that puts the root under the thumb on the low E (the Hendrix
+soul ballad and R&B, `positions` on their cards) is the low-E case
+however the review key is spelt: its embellishments are written in the
+fingers' register over that root — the E shape's strings run 5 and 7 on
+the A, 10 and 12 on the D, 15 to 17 on the G, 19 to 21 on the B, 24 to
+26 on the e — and only the walk-ups sit below it, since a note on the E
+or A string away from the thumb's fret has no finger to play it (B83; a
+test holds those three parts to it).
 
 ## Double stops, the thumb, the voicings
 

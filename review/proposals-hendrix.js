@@ -44,6 +44,19 @@
   const p  = (at, iv, iv2, dur, vel, x) => ({ at, iv, iv2, dur, vel, tech: 'pull', ...(x || {}) });
   const sl = (at, from, iv, dur, vel, x) => ({ at, iv, from, dur, vel, tech: 'slide', ...(x || {}) });
   const F = { free: true }, V = { vib: true }, FV = { free: true, vib: true }, W = { wah: true }, PM = { pm: true };
+  // a hammer-on or pull-off with one note the chord's own and the other free:
+  // F2 the first snapped and the second free (the 3rd hammered to a sus4 that
+  // stays a sus4), F1 the reverse (the sus4 pulled off to the chord's 3rd), R2F
+  // the 9th on the top string hammered to the 3rd a fret past the window
+  const F2 = { free2: true }, F1 = { free: true, free2: false }, R2F = { free: true, free2: false, reach: 1 };
+  // WHERE THE NOTES SIT. The thumb-over feels put the root under the thumb on
+  // the low E string, and a part's intervals are measured from that root
+  // (parts.js, homeMidi), so the E shape's strings are: 0 the root (E), 5
+  // and 7 the 4th and 5th (A), 10 and 12 the ♭7 and the octave (D), 15 to
+  // 17 the 3rd and the 4th (G), 19 and 21 the 5th and the 6th (B), 24 and
+  // 26 the octave and the 9th (e). The embellishments of the split chord,
+  // the 6ths and the R&B fills are written in that register — the fingers'
+  // strings, over the thumb — and the walk-ups below the root (B83).
   // a bar of wah scratches: sixteen muted strokes, the beats a shade harder
   const scratch = (vel = 0.45) => [...Array(16).keys()].map(k => g(k, 0.9, k % 4 === 0 ? vel + 0.15 : vel, 'high', W));
 
@@ -68,67 +81,67 @@
           {
             name: 'Thumb bass and the split chord',
             why: 'The thumb-over shape as one hand plays it: the root alone on one, the D–G–B triad on the "and", then the embellishments that live inside the E shape — the 4th hammered on the G string, the 9th on the top string, the 6th on the B — written as the notes they are (free), so a sus4 stays a sus4 whatever the reading. The change fills walk down the pentatonic into the next root; the lead lines are the melody the chord already had.',
-            figure: [s(0, 2, 0.85, 'bass'), s(2, 2, 0.7, 'mid'), h(4, 4, 5, 2, 0.7, F), s(6, 2, 0.55, 'mid'),
-                     s(8, 2, 0.8, 'bass'), d(10, 7, 12, 2, 0.65), h(12, 12, 14, 2, 0.7, F), n(14, 7, 2, 0.55)],
+            figure: [s(0, 2, 0.85, 'bass'), s(2, 2, 0.7, 'mid'), h(4, 16, 17, 2, 0.7, F2), s(6, 2, 0.55, 'mid'),
+                     s(8, 2, 0.8, 'bass'), d(10, 19, 24, 2, 0.65), h(12, 24, 26, 2, 0.7, F), n(14, 19, 2, 0.55)],
             variants: [
               // the 6th hammered onto the 5th on the B string, and the triad answered by its top pair
-              [s(0, 2, 0.85, 'bass'), s(2, 2, 0.7, 'mid'), h(4, 7, 9, 2, 0.7, F), d(6, 4, 7, 2, 0.55),
-               s(8, 2, 0.8, 'bass'), s(10, 2, 0.65, 'mid'), p(12, 5, 4, 2, 0.7, F), n(14, 0, 2, 0.55)],
+              [s(0, 2, 0.85, 'bass'), s(2, 2, 0.7, 'mid'), h(4, 19, 21, 2, 0.7, F), d(6, 16, 19, 2, 0.55),
+               s(8, 2, 0.8, 'bass'), s(10, 2, 0.65, 'mid'), p(12, 17, 16, 2, 0.7, F1), n(14, 12, 2, 0.55)],
               // the whole chord on one, then the bass note and the pentatonic pair
-              [s(0, 4, 0.85), s(4, 2, 0.55, 'mid'), n(6, 12, 2, 0.6), s(8, 2, 0.8, 'bass'), d(10, 10, 14, 2, 0.6, F), h(12, 3, 5, 2, 0.65, F), n(14, 7, 2, 0.55)],
+              [s(0, 4, 0.85), s(4, 2, 0.55, 'mid'), n(6, 24, 2, 0.6), s(8, 2, 0.8, 'bass'), d(10, 22, 26, 2, 0.6, F), h(12, 15, 17, 2, 0.65, F), n(14, 19, 2, 0.55)],
             ],
             figureMode: 'roll',
             fills: [
-              [s(0, 2, 0.85, 'bass'), s(2, 2, 0.7, 'mid'), n(4, 12, 2, 0.7), n(6, 10, 2, 0.65), n(8, 7, 2, 0.7), h(10, 3, 5, 2, 0.65, F), n(12, 0, 4, 0.75, V)],
+              [s(0, 2, 0.85, 'bass'), s(2, 2, 0.7, 'mid'), n(4, 24, 2, 0.7), n(6, 22, 2, 0.65), n(8, 19, 2, 0.7), h(10, 15, 17, 2, 0.65, F), n(12, 12, 4, 0.75, V)],
             ],
             fillsOnChange: [
               // down the box and onto the next root
-              [s(0, 2, 0.85, 'bass'), s(2, 2, 0.7, 'mid'), n(6, 12, 2, 0.7), n(8, 10, 2, 0.65), n(10, 7, 2, 0.7), n(12, 5, 2, 0.65, F), nx(14, 0, 2, 0.8)],
+              [s(0, 2, 0.85, 'bass'), s(2, 2, 0.7, 'mid'), n(6, 24, 2, 0.7), n(8, 22, 2, 0.65), n(10, 19, 2, 0.7), n(12, 17, 2, 0.65, F), nx(14, 0, 2, 0.8)],
               // the sliding 4ths on the top strings, then the next chord's 3rd and root
-              [s(0, 2, 0.85, 'bass'), s(2, 2, 0.7, 'mid'), sl(6, 5, 7, 2, 0.65), n(8, 12, 2, 0.65), d(10, 7, 12, 2, 0.6), nx(12, 4, 2, 0.65), nx(14, 0, 2, 0.75)],
+              [s(0, 2, 0.85, 'bass'), s(2, 2, 0.7, 'mid'), sl(6, 17, 19, 2, 0.65), n(8, 24, 2, 0.65), d(10, 19, 24, 2, 0.6), nx(12, 16, 2, 0.65), nx(14, 0, 2, 0.75)],
             ],
             fillsOnStay: [
               // the 3rds down the shape
-              [s(0, 2, 0.85, 'bass'), s(2, 2, 0.7, 'mid'), d(6, 7, 10, 2, 0.6), d(8, 4, 7, 2, 0.65), d(10, 2, 5, 2, 0.6, F), d(12, 0, 4, 4, 0.7)],
+              [s(0, 2, 0.85, 'bass'), s(2, 2, 0.7, 'mid'), d(6, 21, 24, 2, 0.6, F), d(8, 17, 21, 2, 0.65, F), d(10, 16, 19, 2, 0.6), d(12, 12, 16, 4, 0.7)],
               // the 9th said twice and let go
-              [s(0, 2, 0.85, 'bass'), h(2, 12, 14, 2, 0.7, F), n(6, 14, 2, 0.6, F), n(8, 12, 2, 0.7), s(10, 2, 0.6, 'mid'), n(12, 7, 4, 0.7, V)],
+              [s(0, 2, 0.85, 'bass'), h(2, 24, 26, 2, 0.7, F), n(6, 26, 2, 0.6, F), n(8, 24, 2, 0.7), s(10, 2, 0.6, 'mid'), n(12, 19, 4, 0.7, V)],
             ],
-            tails: [[n(8, 12, 2, 0.7), n(10, 14, 1, 0.6, F), n(11, 12, 1, 0.6), n(12, 10, 2, 0.65), n(14, 7, 2, 0.6)]], tailChance: 0.35,
-            pickups: [[nx(12, 5, 2, 0.6), nx(14, 4, 2, 0.7)]], pickupChance: 0.4,
+            tails: [[n(8, 24, 2, 0.7), n(10, 26, 1, 0.6, F), n(11, 24, 1, 0.6), n(12, 22, 2, 0.65), n(14, 19, 2, 0.6)]], tailChance: 0.35,
+            pickups: [[nx(12, 17, 2, 0.6, F), nx(14, 16, 2, 0.7)]], pickupChance: 0.4,
             leads: [
               // the melody the chord had: the pentatonic on the top strings, a double stop on the way down
-              [n(0, 12, 2, 0.8, V), n(2, 14, 1, 0.65, F), n(3, 12, 1, 0.6), n(4, 10, 2, 0.75), d(6, 7, 12, 2, 0.65), n(8, 7, 2, 0.7), b(10, 5, 2, 4, 0.8, V), n(14, 0, 2, 0.6)],
-              [d(0, 12, 16, 3, 0.8), n(3, 14, 1, 0.6, F), n(4, 12, 2, 0.75), n(6, 10, 2, 0.7), n(8, 12, 4, 0.75, V), n(12, 7, 2, 0.65), n(14, 10, 2, 0.6)],
-              [sl(0, 10, 12, 2, 0.8), n(2, 14, 2, 0.65, F), n(4, 12, 2, 0.75), n(6, 7, 2, 0.65), d(8, 4, 7, 2, 0.65), d(10, 0, 4, 2, 0.6), n(12, 0, 4, 0.7, V)],
+              [n(0, 24, 2, 0.8, V), n(2, 26, 1, 0.65, F), n(3, 24, 1, 0.6), n(4, 22, 2, 0.75), d(6, 19, 24, 2, 0.65), n(8, 19, 2, 0.7), b(10, 17, 2, 4, 0.8, V), n(14, 12, 2, 0.6)],
+              [d(0, 24, 28, 3, 0.8), n(3, 26, 1, 0.6, F), n(4, 24, 2, 0.75), n(6, 22, 2, 0.7), n(8, 24, 4, 0.75, V), n(12, 19, 2, 0.65), n(14, 22, 2, 0.6)],
+              [sl(0, 22, 24, 2, 0.8), n(2, 26, 2, 0.65, F), n(4, 24, 2, 0.75), n(6, 19, 2, 0.65), d(8, 16, 19, 2, 0.65), d(10, 12, 16, 2, 0.6), n(12, 12, 4, 0.7, V)],
             ],
             leadChance: 0.5,
             easy: { figure: [s(0, 4, 0.85, 'bass'), s(4, 4, 0.7, 'mid'), s(8, 4, 0.8, 'bass'), s(12, 4, 0.65, 'mid')] },
           },
-          {
+                    {
             name: 'Sliding 6ths and rolling hammer-ons (the Mayfield way)',
             why: 'What Mayfield and Cropper play and Hendrix took: 6ths on the D and B strings slid into from a fret below, the 2nd rolling onto the 3rd and the 4th onto the 5th in double stops, a 4th on the top two strings slid up to it. Two notes at a time, restraint between them. In Chords the hammered notes are free, so the roll keeps its sus.',
-            figure: [sl(0, 3, 4, 2, 0.75), d(2, 4, 12, 2, 0.75), n(4, 12, 2, 0.5), h(6, 2, 4, 2, 0.7, F), d(8, 7, 16, 2, 0.75), n(10, 16, 2, 0.5), h(12, 5, 7, 2, 0.7, F), d(14, 4, 12, 2, 0.6)],
+            figure: [sl(0, 15, 16, 2, 0.75), d(2, 16, 24, 2, 0.75), n(4, 24, 2, 0.5), h(6, 26, 28, 2, 0.7, R2F), d(8, 12, 21, 2, 0.75, F), n(10, 16, 2, 0.5), h(12, 17, 19, 2, 0.7, F), d(14, 16, 24, 2, 0.6)],
             variants: [
-              [d(0, 4, 12, 3, 0.8), d(3, 2, 10, 1, 0.55, F), d(4, 4, 12, 2, 0.7), h(8, 2, 4, 2, 0.7, F), n(10, 7, 2, 0.55), h(12, 5, 7, 2, 0.7, F), n(14, 12, 2, 0.55)],
-              [d(0, 7, 16, 2, 0.75), d(2, 4, 12, 2, 0.7), d(4, 0, 9, 2, 0.7, F), s(6, 2, 0.5, 'mid'), h(8, 2, 4, 2, 0.7, F), h(10, 5, 7, 2, 0.65, F), d(12, 7, 12, 4, 0.7)],
+              [d(0, 16, 24, 3, 0.8), d(3, 17, 26, 1, 0.55, F), d(4, 16, 24, 2, 0.7), h(8, 26, 28, 2, 0.7, R2F), n(10, 19, 2, 0.55), h(12, 17, 19, 2, 0.7, F), n(14, 24, 2, 0.55)],
+              [d(0, 12, 21, 2, 0.75, F), d(2, 16, 24, 2, 0.7), d(4, 17, 26, 2, 0.7, F), s(6, 2, 0.5, 'mid'), h(8, 26, 28, 2, 0.7, R2F), h(10, 17, 19, 2, 0.65, F), d(12, 19, 24, 4, 0.7)],
             ],
             fills: [
-              [d(0, 4, 12, 2, 0.75), d(2, 2, 10, 2, 0.6, F), d(4, 0, 9, 2, 0.7, F), n(8, 12, 2, 0.7, V), n(10, 10, 2, 0.6), n(12, 7, 4, 0.7)],
+              [d(0, 16, 24, 2, 0.75), d(2, 17, 26, 2, 0.6, F), d(4, 12, 21, 2, 0.7, F), n(8, 24, 2, 0.7, V), n(10, 22, 2, 0.6), n(12, 19, 4, 0.7)],
             ],
             fillsOnChange: [
-              [d(0, 4, 12, 2, 0.75), h(4, 2, 4, 2, 0.7, F), n(6, 7, 2, 0.55), n(8, 10, 2, 0.65), n(10, 7, 2, 0.6), nx(12, 5, 2, 0.6), nx(14, 4, 2, 0.75)],
-              [sl(0, 2, 4, 2, 0.75, F), d(2, 4, 12, 2, 0.7), n(6, 12, 2, 0.6), d(8, 2, 10, 2, 0.6, F), nx(12, 3, 2, 0.6), nx(14, 0, 2, 0.75)],
+              [d(0, 16, 24, 2, 0.75), h(4, 26, 28, 2, 0.7, R2F), n(6, 19, 2, 0.55), n(8, 22, 2, 0.65), n(10, 19, 2, 0.6), nx(12, 17, 2, 0.6), nx(14, 16, 2, 0.75)],
+              [sl(0, 14, 16, 2, 0.75), d(2, 16, 24, 2, 0.7), n(6, 24, 2, 0.6), d(8, 17, 26, 2, 0.6, F), nx(12, 15, 2, 0.6), nx(14, 0, 2, 0.75)],
             ],
             fillsOnStay: [
-              [d(0, 4, 12, 2, 0.75), n(4, 12, 2, 0.55), h(6, 2, 4, 2, 0.7, F), h(8, 5, 7, 2, 0.7, F), n(10, 12, 2, 0.55), d(12, 4, 12, 4, 0.7)],
+              [d(0, 16, 24, 2, 0.75), n(4, 24, 2, 0.55), h(6, 26, 28, 2, 0.7, R2F), h(8, 17, 19, 2, 0.7, F), n(10, 24, 2, 0.55), d(12, 16, 24, 4, 0.7)],
             ],
             leads: [
-              [d(0, 7, 12, 2, 0.75), n(2, 14, 2, 0.6, F), n(4, 12, 2, 0.75), n(6, 10, 2, 0.65), n(8, 12, 4, 0.75, V), d(12, 4, 7, 2, 0.6), n(14, 7, 2, 0.6)],
-              [h(0, 5, 7, 2, 0.75, F), n(2, 12, 2, 0.6), h(4, 9, 10, 2, 0.7, F), n(6, 12, 2, 0.6), n(8, 7, 2, 0.7), d(10, 4, 12, 2, 0.65), n(12, 0, 4, 0.7, V)],
+              [d(0, 19, 24, 2, 0.75), n(2, 26, 2, 0.6, F), n(4, 24, 2, 0.75), n(6, 22, 2, 0.65), n(8, 24, 4, 0.75, V), d(12, 16, 19, 2, 0.6), n(14, 19, 2, 0.6)],
+              [h(0, 17, 19, 2, 0.75, F), n(2, 24, 2, 0.6), h(4, 21, 22, 2, 0.7, F), n(6, 24, 2, 0.6), n(8, 19, 2, 0.7), d(10, 16, 24, 2, 0.65), n(12, 12, 4, 0.7, V)],
             ],
             leadChance: 0.5,
           },
-          {
+                    {
             name: 'Chord-melody lead (the Leslie lead)',
             why: 'A lead part, the way the solo on a ballad of his goes: the minor pentatonic on the top three strings with the 9th and the major 3rd let in as passing colour, double stops out of the shape between the phrases, a slide up into the box above and back, wide vibrato on the held note, a unison bend at the top. Every line is written against the chord it sits on, so it follows the changes.',
             figure: [n(0, 12, 2, 0.8, V), n(2, 14, 1, 0.65, F), n(3, 12, 1, 0.6), n(4, 10, 2, 0.75), n(6, 7, 2, 0.7), d(8, 7, 12, 2, 0.7), n(10, 12, 2, 0.7), b(12, 10, 2, 4, 0.85, V)],
@@ -598,31 +611,31 @@
           {
             name: 'Hammered double stops between the chords',
             why: 'The chord struck on one and left, then the hand rolling through the shape in sixteenths — the 2nd onto the 3rd, the 4th onto the 5th, the 6th onto the 5th coming down — double stops with one note hammered, and a slide up into the next chord\'s shape. Free notes, so the sus4 and the 6th sound in every reading.',
-            figure: [s(0, 3, 0.9, 'full', null, { stroke: 'down' }), h(4, 2, 4, 2, 0.75, F), n(6, 7, 2, 0.6), h(8, 5, 7, 2, 0.75, F), n(10, 12, 2, 0.6), p(12, 9, 7, 2, 0.7, F), d(14, 4, 7, 2, 0.6)],
+            figure: [s(0, 3, 0.9, 'full', null, { stroke: 'down' }), h(4, 26, 28, 2, 0.75, R2F), n(6, 19, 2, 0.6), h(8, 17, 19, 2, 0.75, F), n(10, 24, 2, 0.6), p(12, 21, 19, 2, 0.7, F), d(14, 16, 19, 2, 0.6)],
             variants: [
-              [s(0, 2, 0.9, 'bass'), s(2, 2, 0.75, 'mid'), h(4, 2, 4, 2, 0.75, F), d(6, 4, 7, 2, 0.6), s(8, 2, 0.85, 'bass'), s(10, 2, 0.7, 'mid'), h(12, 5, 7, 2, 0.75, F), d(14, 7, 12, 2, 0.6)],
-              [s(0, 3, 0.9, 'full', null, { stroke: 'down' }), d(4, 4, 7, 2, 0.7), d(6, 2, 5, 2, 0.6, F), d(8, 0, 4, 2, 0.7), h(10, 7, 9, 2, 0.7, F), n(12, 12, 2, 0.65), h(14, 12, 14, 2, 0.65, F)],
+              [s(0, 2, 0.9, 'bass'), s(2, 2, 0.75, 'mid'), h(4, 26, 28, 2, 0.75, R2F), d(6, 16, 19, 2, 0.6), s(8, 2, 0.85, 'bass'), s(10, 2, 0.7, 'mid'), h(12, 17, 19, 2, 0.75, F), d(14, 19, 24, 2, 0.6)],
+              [s(0, 3, 0.9, 'full', null, { stroke: 'down' }), d(4, 16, 19, 2, 0.7), d(6, 17, 21, 2, 0.6, F), d(8, 12, 16, 2, 0.7), h(10, 19, 21, 2, 0.7, F), n(12, 24, 2, 0.65), h(14, 24, 26, 2, 0.65, F)],
             ],
             fills: [
-              [s(0, 3, 0.9, 'full', null, { stroke: 'down' }), n(4, 12, 2, 0.75), n(6, 14, 1, 0.6, F), n(7, 12, 1, 0.6), n(8, 9, 2, 0.7), n(10, 7, 2, 0.7), n(12, 4, 2, 0.7), n(14, 0, 2, 0.75)],
+              [s(0, 3, 0.9, 'full', null, { stroke: 'down' }), n(4, 24, 2, 0.75), n(6, 26, 1, 0.6, F), n(7, 24, 1, 0.6), n(8, 21, 2, 0.7), n(10, 19, 2, 0.7), n(12, 16, 2, 0.7), n(14, 12, 2, 0.75)],
             ],
             fillsOnChange: [
-              [s(0, 3, 0.9, 'full', null, { stroke: 'down' }), h(4, 2, 4, 2, 0.75, F), n(6, 7, 2, 0.6), n(8, 9, 2, 0.7), n(10, 12, 2, 0.7), nx(12, 4, 2, 0.7), nx(14, 7, 2, 0.75)],
-              [s(0, 3, 0.9, 'full', null, { stroke: 'down' }), d(4, 4, 7, 2, 0.7), d(6, 7, 12, 2, 0.65), nx(8, -5, 2, 0.8, PM), nx(10, -3, 2, 0.75, PM), nx(12, -2, 2, 0.8, PM), nx(14, -1, 2, 0.85, PM)],
+              [s(0, 3, 0.9, 'full', null, { stroke: 'down' }), h(4, 26, 28, 2, 0.75, R2F), n(6, 19, 2, 0.6), n(8, 21, 2, 0.7), n(10, 24, 2, 0.7), nx(12, 16, 2, 0.7), nx(14, 19, 2, 0.75)],
+              [s(0, 3, 0.9, 'full', null, { stroke: 'down' }), d(4, 16, 19, 2, 0.7), d(6, 19, 24, 2, 0.65), nx(8, -5, 2, 0.8, PM), nx(10, -3, 2, 0.75, PM), nx(12, -2, 2, 0.8, PM), nx(14, -1, 2, 0.85, PM)],
             ],
             fillsOnStay: [
-              [s(0, 3, 0.9, 'full', null, { stroke: 'down' }), h(4, 5, 7, 2, 0.75, F), n(6, 12, 2, 0.6), h(8, 2, 4, 2, 0.75, F), n(10, 7, 2, 0.6), d(12, 4, 12, 2, 0.7), d(14, 4, 12, 2, 0.5)],
+              [s(0, 3, 0.9, 'full', null, { stroke: 'down' }), h(4, 17, 19, 2, 0.75, F), n(6, 24, 2, 0.6), h(8, 26, 28, 2, 0.75, R2F), n(10, 19, 2, 0.6), d(12, 16, 24, 2, 0.7), d(14, 16, 24, 2, 0.5)],
             ],
-            tails: [[h(12, 5, 7, 2, 0.75, F), n(14, 9, 2, 0.6, F)]], tailChance: 0.35,
-            pickups: [[nx(12, 5, 2, 0.6), nx(14, 4, 2, 0.75)]], pickupChance: 0.4,
+            tails: [[h(12, 17, 19, 2, 0.75, F), n(14, 21, 2, 0.6, F)]], tailChance: 0.35,
+            pickups: [[nx(12, 17, 2, 0.6, F), nx(14, 16, 2, 0.75)]], pickupChance: 0.4,
             leads: [
-              [n(0, 12, 2, 0.85), n(2, 14, 1, 0.65, F), n(3, 12, 1, 0.65), n(4, 9, 2, 0.75), n(6, 7, 2, 0.75), d(8, 4, 7, 2, 0.7), d(10, 7, 12, 2, 0.7), n(12, 12, 4, 0.8, V)],
-              [h(0, 5, 7, 2, 0.8, F), n(2, 9, 2, 0.7), n(4, 12, 2, 0.8), n(6, 9, 2, 0.7), b(8, 7, 2, 4, 0.85, V), n(12, 4, 2, 0.7), n(14, 0, 2, 0.75)],
+              [n(0, 24, 2, 0.85), n(2, 26, 1, 0.65, F), n(3, 24, 1, 0.65), n(4, 21, 2, 0.75), n(6, 19, 2, 0.75), d(8, 16, 19, 2, 0.7), d(10, 19, 24, 2, 0.7), n(12, 24, 4, 0.8, V)],
+              [h(0, 17, 19, 2, 0.8, F), n(2, 21, 2, 0.7), n(4, 24, 2, 0.8), n(6, 21, 2, 0.7), b(8, 17, 2, 4, 0.85, V), n(12, 16, 2, 0.7), n(14, 12, 2, 0.75)],
             ],
             leadChance: 0.5,
             easy: { figure: [s(0, 4, 0.9), s(4, 2, 0.6, 'mid'), s(8, 4, 0.85), s(12, 2, 0.6, 'mid')] },
           },
-          {
+                    {
             name: 'Cropper chucks and 6ths',
             why: 'The Stax job: a 6th on the D and B strings slid into on one, the chord muted on two, the 6th on three, muted on four — two notes at a time and a chuck between them — and one-note fills outlining the chord. The change fill walks the bass up.',
             figure: [d(0, 4, 12, 3, 0.8), s(4, 1, 0.6, 'high', 'mute'), d(8, 2, 11, 3, 0.75, F), s(12, 1, 0.6, 'high', 'mute'), n(14, 0, 2, 0.6)],

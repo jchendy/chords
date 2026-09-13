@@ -1491,8 +1491,12 @@
       // A `free` note is not snapped: it is the chromatic note it was
       // written as (the ♭5 between the 4th and the 5th, the major 3rd over
       // a minor pentatonic line) wherever the reading would have moved it.
-      const place = (iv, keep) => {
-        const sn = w.free ? { pc: (((pal.root + iv) % 12) + 12) % 12, shift: 0 } : snap(pal.root, iv, pal.allowed);
+      // The second note of a hammer-on, pull-off or double stop may say for
+      // itself (`free2`): the chord's own 3rd hammered to a 4th that stays
+      // a sus4 in every reading is `h(…, 16, 17, …, { free2: true })`.
+      const free2 = w.free2 != null ? !!w.free2 : !!w.free;
+      const place = (iv, keep, free = w.free) => {
+        const sn = free ? { pc: (((pal.root + iv) % 12) + 12) % 12, shift: 0 } : snap(pal.root, iv, pal.allowed);
         if (!sn) return null;
         const wantMidi = base + iv + sn.shift;
         const cands = reachable.filter(c => c.midi % 12 === sn.pc && (!keep || keep(c)));
@@ -1503,6 +1507,8 @@
       };
       const note = (c, extra) => ({ at: w.at, dur: w.dur, vel: w.vel, string: c.string, fret: c.fret, midi: c.midi,
                                     iv: w.iv, next: !!w.next, ...(w.reach ? { reach: w.reach } : {}), ...(w.free ? { free: true } : {}), ...extra });
+      // the second note of a pair says for itself whether it was free
+      const note2 = (c, extra) => { const n = note(c, extra); if (free2) n.free = true; else delete n.free; return n; };
       const allowedTech = !w.tech || !opts.tech || opts.tech[w.tech] !== false;
       const c = place(w.iv);
       if (!c) return;
@@ -1524,9 +1530,9 @@
       }
       if (w.tech === 'double' && allowedTech){
         // the second note on another string, at the same moment
-        const c2 = place(w.iv2, x => x.string !== c.string && x.midi !== c.midi);
+        const c2 = place(w.iv2, x => x.string !== c.string && x.midi !== c.midi, free2);
         out.push(note(c, { tech: 'double' }));
-        if (c2) out.push(note(c2, { tech: 'double', pair: true }));
+        if (c2) out.push(note2(c2, { tech: 'double', pair: true }));
         prev = c;
         return;
       }
@@ -1546,11 +1552,11 @@
       if (w.tech === 'hammer' || w.tech === 'pull'){
         // the second note on the same string, above or below, within the window
         const up = w.tech === 'hammer';
-        const c2 = place(w.iv2, x => x.string === c.string && (up ? x.fret > c.fret : x.fret < c.fret));
+        const c2 = place(w.iv2, x => x.string === c.string && (up ? x.fret > c.fret : x.fret < c.fret), free2);
         if (allowedTech && c2){
           const half = w.dur / 2;
           out.push({ ...note(c), dur: half, tech: up ? 'h' : 'p', to: c2.fret });
-          out.push({ ...note(c2), at: w.at + half, dur: half, vel: w.vel * 0.75, soft: true, iv: w.iv2 });
+          out.push({ ...note2(c2), at: w.at + half, dur: half, vel: w.vel * 0.75, soft: true, iv: w.iv2 });
           prev = c2; return;
         }
         // plain: both notes picked — or the first alone, held, if the
@@ -1558,7 +1564,7 @@
         if (c2){
           const half = w.dur / 2;
           out.push({ ...note(c), dur: half });
-          out.push({ ...note(c2), at: w.at + half, dur: half, vel: w.vel * 0.9, iv: w.iv2 });
+          out.push({ ...note2(c2), at: w.at + half, dur: half, vel: w.vel * 0.9, iv: w.iv2 });
           prev = c2;
         } else { out.push(note(c)); prev = c; }
         return;
